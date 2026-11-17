@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-28T18:07:24.515261+00:00",
+  "git_head": "0437ceab9170dca6c85af6f4b92a98430c7e0238",
+  "sources_sha256": {
+    "projects/assessments/worlds/husky_braking.omniworld": "e5f4f701e8681b83d694595b005eb19041280769215feafcbf5e2583d3ed5403",
+    "projects/assessments/robots/husky.json": "b54982aaf42bb810b9cec91bc0ffeb0ae0768e316bb668833e4daf60d7672688",
+    "projects/assessments/controllers/husky_braking/husky_braking.py": "046e30cbee51ac1534fb6c2c33f5dd51c30172310b387c0c4463fe36dd965f16",
+    "projects/samples/demos/controllers/omnilink_mobile_bridge/_mobile_configs.py": "a3e9f1f8f3a6155995b49909782d0c7b251179e1f1d7394f38b52c99fabd13af",
+    "omnisim/assessment/__init__.py": "e450d1de035b748a044659ea3e89fe0c41f29a40ce3ec8e24f0a30a9f2195095",
+    "omnisim/assessment/campaign.py": "fe6d5a6bdfdadec56f06f6e645bdfd1076ce252b0b8972135b71dfe82c6d880b",
+    "omnisim/assessment/cli.py": "c6745f004ac39b91da32e41bbc2c7c0e74523e399acd719d879988760c16b41a",
+    "omnisim/assessment/oracles.py": "9203affc501ccf7f591709f598cba4f6717fa27304567b06e951b1d034227e73",
+    "omnisim/assessment/registry.py": "5c098e9ce2395614b20a1ee3fde4d0ab0f5f017d9db474ae4a0c0089e14b73cf",
+    "omnisim/assessment/report.py": "79df3f343f7f38e47d5c83b0cb55228487829db6d0a1f08b2f1f04fff0f69c3c",
+    "omnisim/assessment/runner.py": "4fd1e307fc421504cdfd38286aa50611c1cfd31e1ff207a0696e5897bdcab3f6",
+    "omnisim/assessment/scenarios.py": "ec5d0b7caf98247e1e74be2d0f91988d6c70aa25d500c7c1965a3f3d6595c149",
+    "omnisim/assessment/schema.py": "978afabe5d22062ebd924a6f85aca4d9934237a3786f83b901623c7cc24bd94c",
+    "projects/robots/clearpath/husky_description/LICENSE.upstream": "4ad00f8acc11d40b1444a7df0cdfd31a0a610d5195b9ae662e285b27b28623e0",
+    "projects/robots/clearpath/husky_description/meshes/accessories/lidar_mount.stl": "2adb38323508694bf5ca4a0b2fa68a15016ab6489a41cfc3075c9dd63910105e",
+    "projects/robots/clearpath/husky_description/meshes/accessories/lms1xx_mount.stl": "80ab9165d98c9b95d2fab37044e5b8a25026d6304162389389a7d08923a6a391",
+    "projects/robots/clearpath/husky_description/meshes/base_link.dae": "df36a9f0b66300a548a15277ca54fc92e16ef40ab9b215d69e631bba812ac882",
+    "projects/robots/clearpath/husky_description/meshes/bumper.dae": "e3819f2e8108388c86f4b96c119cfb3b4fdaa6789e71c064aee78c854b749a8c",
+    "projects/robots/clearpath/husky_description/meshes/top_chassis.dae": "cead7c17a9b562704e0a03a1260fab12f4e0621d8fe79d2ff2e068c23654911b",
+    "projects/robots/clearpath/husky_description/meshes/top_plate.dae": "fcd9b141e2ddf4fb80f2d7583bf48ce6506f74b808b77833bfeb934f6d25112b",
+    "projects/robots/clearpath/husky_description/meshes/top_plate.stl": "6c7eff8fc0f9dfe96d836a5d00b89ea2c754985440e3a3db7a010c5807b8491f",
+    "projects/robots/clearpath/husky_description/meshes/user_rail.dae": "e722ac9a65c337a58f4b90069afdb39ae82a8677a7690cd4767b638e06135ac9",
+    "projects/robots/clearpath/husky_description/meshes/wheel.dae": "35e4ced7224ce67d22af00effb87c15df48dc06fdc1a8ef406b567baf102191a",
+    "projects/robots/clearpath/husky_description/urdf/husky.urdf": "00793415956643b0ec26c815d33f4d26445ac91616931384a62a63f18a7cf5e0",
+    "projects/robots/clearpath/husky_description/urdf/husky_passage_A.urdf": "ad78b4d074f508e9921639db7c245ef34325ab8fb6871b4c96e222a082bbec9a",
+    "projects/robots/clearpath/husky_description/urdf/husky_passage_B.urdf": "207f2c0cef4c5f8feed5171a1574e2cc0cb394bcd8a792a2fda3b335724b1086",
+    "projects/robots/clearpath/husky_description/urdf/husky_passage_C.urdf": "2d5e78fa99207863a4ab5c9ee3e7ea134a3d38681f3056d4dc37c72be079c814",
+    "projects/robots/clearpath/husky_description/urdf/husky_passage_D.urdf": "9495106b4704436f213969fd0dd0a8c687a7ef640f65ab85a6f591396c196616"
+  },
+  "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "1a5283b9e47e3037c08c96c084ca9c381d946d2b9857d55370a982cb1174f9ae",
+  "runtime_sha256": {
+    "lib\\controller\\Controller.dll": "0bd8db2b5018d7fe181cdaf7ea9a54d8e968066e7e93dca10b348fbb66082736",
+    "msys64\\mingw64\\bin\\newton-runtime\\site-packages\\omnisim_newton_runtime.py": "f2f8135589fb6fe07086869a533b37525a1109c37704f3062ff93ec95bd229f1"
+  },
+  "parent_case": null,
+  "capture": false,
+  "controller_kind": "standalone deterministic, no OmniLink/model calls",
+  "world": "world.omniworld",
+  "runtime_settings": {
+    "solver": "mujoco",
+    "newtonGroundMu": 0.1,
+    "newtonSubsteps": 8
+  },
+  "fixture": {
+    "original_model": "projects/robots/clearpath/husky_description/urdf/husky.urdf",
+    "base_urdf_mass_kg": 56.582,
+    "importer_root_mass_kg": 0.1,
+    "expected_total_mass_kg": 66.682,
+    "payload_mount": "rigid fixed joint, base_link-frame offset; not loose cargo",
+    "downhill_tangent": [
+      0.9961946980917455,
+      0,
+      -0.08715574274765817
+    ],
+    "ground_normal": [
+      0.08715574274765817,
+      0,
+      0.9961946980917455
+    ],
+    "slope_deg": 5.0,
+    "ground_mu": 0.1,
+    "payload_kg": 10.0,
+    "wheel_count": 4
+  },
+  "motion": "wheel motor velocity only; no pose writes",
+  "wall_watchdog_s": 90,
+  "owned_pid": 61216,
+  "engine_exit_code": 0,
+  "cleanup_errors": [],
+  "owned_children": [
+    8688,
+    11084,
+    11824,
+    26880,
+    44156,
+    60268,
+    62380
+  ],
+  "wall_elapsed_s": 10.313000000023749,
+  "launch_error": null,
+  "artifacts_sha256": {
+    "adoption.json": "f2f97da6075191fc5e4ba2611988b9bd7712cd21e26724f1e82ba4b4fc2673d8",
+    "commands.jsonl": "bd925e7cb8e8e019e9c7009dd2876fcf6a359dd005ebd785d0ecfb8d9a0f8b0b",
+    "compiled-model.txt": "75e2bc9fab0a23c6ab0cd204ecfce52bfbee05dce9b6156719b8d7284368e438",
+    "completion.json": "343ada7111064a0feecafebd4397696ccad14eb7bcfbdd8644ed34a2d2a5ca93",
+    "engine.log": "8ecf84509c9815ca651b6498b2d945581a2f57be7cf57cc1e9121de8f18a5376",
+    "engine.log.newton.json": "409162864ace2f05a66f92072c0a3175d4fe5eb13aa1afc6fb82718f198c4631",
+    "fingerprint.json": "3bf349a9c6ef057c4bed4348027e3d260f9ff86b459348f5b32b060bb017bc3b",
+    "model.urdf": "f82f033192c3560d1534a92442b9cdb80062d3e8723f02c76c3db79b020cc12b",
+    "spec.json": "31784ba804b5370308601f8dcdcd2233702321990c8c3c22fa1e57bfb8ce25b8",
+    "stdout.log": "54a2e59a3c0bb39ae7c7d1038a55bff6527db15ff10a2deda18a7397187babc9",
+    "trace.jsonl": "ff933bff0942c9be0e720262674467ba1780c98e52b65aa99d70d58796155c4e",
+    "world.omniworld": "ab7d8bbed0cdf1d7860d0dee75c3ee7d35f822739603fdcfb3e26e7a9ea3bb11"
+  }
+}

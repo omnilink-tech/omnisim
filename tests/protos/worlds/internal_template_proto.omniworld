@@ -1,0 +1,81 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/InternalTemplateParent.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+  lineScale 1
+}
+Viewpoint {
+  orientation -0.8999515417256047 0.42450878383113183 0.0993957493855782 0.509061
+  position 0.303563 0.46348 0.936228
+}
+Background {
+  skyColor [
+    0 0.811765 0.992157
+  ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  direction 0 0.5 -1
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+DEF BOX InternalTemplateParent {
+}
+Robot {
+  translation 0.1 0 0.15
+  rotation 0 1 0 1.5708
+  children [
+    DistanceSensor {
+      name "ds1"
+      lookupTable [
+        0 0 0
+        0.5 1000 0
+      ]
+      type "infra-red"
+    }
+    DistanceSensor {
+      translation 0 0 0.1
+      name "ds2"
+      lookupTable [
+        0 0 0
+        0.5 1000 0
+      ]
+      type "infra-red"
+    }
+    TestSuiteEmitter {
+    }
+  ]
+  controller "internal_template_proto_update"
+  supervisor TRUE
+}
+TestSuiteSupervisor {
+}

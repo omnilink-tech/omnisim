@@ -1,0 +1,286 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "../protos/ScaleBot.proto"
+
+WorldInfo {
+  title "AgenticSimBench BuildScale 250 null"
+  basicTimeStep 32
+  newtonSolver "mujoco"
+  newtonSubsteps 4
+  newtonRobotColliders TRUE
+  newtonNjmax 64000
+  newtonNconmax 32000
+}
+Viewpoint { position 0 0 500 }
+
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  name "floor"
+  children [ DEF FLOOR_GEOMETRY Shape { geometry Box { size 60 510 0.1 } } ]
+  boundingObject USE FLOOR_GEOMETRY
+}
+DEF CONTACT_WITNESS_SUPPORT Solid {
+  translation 20 252 0.05
+  name "contact witness support"
+  children [ DEF CONTACT_WITNESS_SUPPORT_SHAPE Shape { geometry Box { size 2 2 0.1 } } ]
+  boundingObject USE CONTACT_WITNESS_SUPPORT_SHAPE
+  physics Physics { density -1 mass 1 }
+}
+DEF CONTACT_WITNESS Solid {
+  translation 20 252 0.19
+  name "contact witness"
+  children [ DEF CONTACT_WITNESS_SHAPE Shape { geometry Box { size 0.2 0.2 0.2 } } ]
+  boundingObject USE CONTACT_WITNESS_SHAPE
+  physics Physics { density -1 mass 0.1 }
+}
+
+ScaleBot { translation -10 -249 0 name "scale_000" controller "build_scale_idle" }
+ScaleBot { translation -10 -247 0 name "scale_001" controller "build_scale_idle" }
+ScaleBot { translation -10 -245 0 name "scale_002" controller "build_scale_idle" }
+ScaleBot { translation -10 -243 0 name "scale_003" controller "build_scale_idle" }
+ScaleBot { translation -10 -241 0 name "scale_004" controller "build_scale_idle" }
+ScaleBot { translation -10 -239 0 name "scale_005" controller "build_scale_idle" }
+ScaleBot { translation -10 -237 0 name "scale_006" controller "build_scale_idle" }
+ScaleBot { translation -10 -235 0 name "scale_007" controller "build_scale_idle" }
+ScaleBot { translation -10 -233 0 name "scale_008" controller "build_scale_idle" }
+ScaleBot { translation -10 -231 0 name "scale_009" controller "build_scale_idle" }
+ScaleBot { translation -10 -229 0 name "scale_010" controller "build_scale_idle" }
+ScaleBot { translation -10 -227 0 name "scale_011" controller "build_scale_idle" }
+ScaleBot { translation -10 -225 0 name "scale_012" controller "build_scale_idle" }
+ScaleBot { translation -10 -223 0 name "scale_013" controller "build_scale_idle" }
+ScaleBot { translation -10 -221 0 name "scale_014" controller "build_scale_idle" }
+ScaleBot { translation -10 -219 0 name "scale_015" controller "build_scale_idle" }
+ScaleBot { translation -10 -217 0 name "scale_016" controller "build_scale_idle" }
+ScaleBot { translation -10 -215 0 name "scale_017" controller "build_scale_idle" }
+ScaleBot { translation -10 -213 0 name "scale_018" controller "build_scale_idle" }
+ScaleBot { translation -10 -211 0 name "scale_019" controller "build_scale_idle" }
+ScaleBot { translation -10 -209 0 name "scale_020" controller "build_scale_idle" }
+ScaleBot { translation -10 -207 0 name "scale_021" controller "build_scale_idle" }
+ScaleBot { translation -10 -205 0 name "scale_022" controller "build_scale_idle" }
+ScaleBot { translation -10 -203 0 name "scale_023" controller "build_scale_idle" }
+ScaleBot { translation -10 -201 0 name "scale_024" controller "build_scale_idle" }
+ScaleBot { translation -10 -199 0 name "scale_025" controller "build_scale_idle" }
+ScaleBot { translation -10 -197 0 name "scale_026" controller "build_scale_idle" }
+ScaleBot { translation -10 -195 0 name "scale_027" controller "build_scale_idle" }
+ScaleBot { translation -10 -193 0 name "scale_028" controller "build_scale_idle" }
+ScaleBot { translation -10 -191 0 name "scale_029" controller "build_scale_idle" }
+ScaleBot { translation -10 -189 0 name "scale_030" controller "build_scale_idle" }
+ScaleBot { translation -10 -187 0 name "scale_031" controller "build_scale_idle" }
+ScaleBot { translation -10 -185 0 name "scale_032" controller "build_scale_idle" }
+ScaleBot { translation -10 -183 0 name "scale_033" controller "build_scale_idle" }
+ScaleBot { translation -10 -181 0 name "scale_034" controller "build_scale_idle" }
+ScaleBot { translation -10 -179 0 name "scale_035" controller "build_scale_idle" }
+ScaleBot { translation -10 -177 0 name "scale_036" controller "build_scale_idle" }
+ScaleBot { translation -10 -175 0 name "scale_037" controller "build_scale_idle" }
+ScaleBot { translation -10 -173 0 name "scale_038" controller "build_scale_idle" }
+ScaleBot { translation -10 -171 0 name "scale_039" controller "build_scale_idle" }
+ScaleBot { translation -10 -169 0 name "scale_040" controller "build_scale_idle" }
+ScaleBot { translation -10 -167 0 name "scale_041" controller "build_scale_idle" }
+ScaleBot { translation -10 -165 0 name "scale_042" controller "build_scale_idle" }
+ScaleBot { translation -10 -163 0 name "scale_043" controller "build_scale_idle" }
+ScaleBot { translation -10 -161 0 name "scale_044" controller "build_scale_idle" }
+ScaleBot { translation -10 -159 0 name "scale_045" controller "build_scale_idle" }
+ScaleBot { translation -10 -157 0 name "scale_046" controller "build_scale_idle" }
+ScaleBot { translation -10 -155 0 name "scale_047" controller "build_scale_idle" }
+ScaleBot { translation -10 -153 0 name "scale_048" controller "build_scale_idle" }
+ScaleBot { translation -10 -151 0 name "scale_049" controller "build_scale_idle" }
+ScaleBot { translation -10 -149 0 name "scale_050" controller "build_scale_idle" }
+ScaleBot { translation -10 -147 0 name "scale_051" controller "build_scale_idle" }
+ScaleBot { translation -10 -145 0 name "scale_052" controller "build_scale_idle" }
+ScaleBot { translation -10 -143 0 name "scale_053" controller "build_scale_idle" }
+ScaleBot { translation -10 -141 0 name "scale_054" controller "build_scale_idle" }
+ScaleBot { translation -10 -139 0 name "scale_055" controller "build_scale_idle" }
+ScaleBot { translation -10 -137 0 name "scale_056" controller "build_scale_idle" }
+ScaleBot { translation -10 -135 0 name "scale_057" controller "build_scale_idle" }
+ScaleBot { translation -10 -133 0 name "scale_058" controller "build_scale_idle" }
+ScaleBot { translation -10 -131 0 name "scale_059" controller "build_scale_idle" }
+ScaleBot { translation -10 -129 0 name "scale_060" controller "build_scale_idle" }
+ScaleBot { translation -10 -127 0 name "scale_061" controller "build_scale_idle" }
+ScaleBot { translation -10 -125 0 name "scale_062" controller "build_scale_idle" }
+ScaleBot { translation -10 -123 0 name "scale_063" controller "build_scale_idle" }
+ScaleBot { translation -10 -121 0 name "scale_064" controller "build_scale_idle" }
+ScaleBot { translation -10 -119 0 name "scale_065" controller "build_scale_idle" }
+ScaleBot { translation -10 -117 0 name "scale_066" controller "build_scale_idle" }
+ScaleBot { translation -10 -115 0 name "scale_067" controller "build_scale_idle" }
+ScaleBot { translation -10 -113 0 name "scale_068" controller "build_scale_idle" }
+ScaleBot { translation -10 -111 0 name "scale_069" controller "build_scale_idle" }
+ScaleBot { translation -10 -109 0 name "scale_070" controller "build_scale_idle" }
+ScaleBot { translation -10 -107 0 name "scale_071" controller "build_scale_idle" }
+ScaleBot { translation -10 -105 0 name "scale_072" controller "build_scale_idle" }
+ScaleBot { translation -10 -103 0 name "scale_073" controller "build_scale_idle" }
+ScaleBot { translation -10 -101 0 name "scale_074" controller "build_scale_idle" }
+ScaleBot { translation -10 -99 0 name "scale_075" controller "build_scale_idle" }
+ScaleBot { translation -10 -97 0 name "scale_076" controller "build_scale_idle" }
+ScaleBot { translation -10 -95 0 name "scale_077" controller "build_scale_idle" }
+ScaleBot { translation -10 -93 0 name "scale_078" controller "build_scale_idle" }
+ScaleBot { translation -10 -91 0 name "scale_079" controller "build_scale_idle" }
+ScaleBot { translation -10 -89 0 name "scale_080" controller "build_scale_idle" }
+ScaleBot { translation -10 -87 0 name "scale_081" controller "build_scale_idle" }
+ScaleBot { translation -10 -85 0 name "scale_082" controller "build_scale_idle" }
+ScaleBot { translation -10 -83 0 name "scale_083" controller "build_scale_idle" }
+ScaleBot { translation -10 -81 0 name "scale_084" controller "build_scale_idle" }
+ScaleBot { translation -10 -79 0 name "scale_085" controller "build_scale_idle" }
+ScaleBot { translation -10 -77 0 name "scale_086" controller "build_scale_idle" }
+ScaleBot { translation -10 -75 0 name "scale_087" controller "build_scale_idle" }
+ScaleBot { translation -10 -73 0 name "scale_088" controller "build_scale_idle" }
+ScaleBot { translation -10 -71 0 name "scale_089" controller "build_scale_idle" }
+ScaleBot { translation -10 -69 0 name "scale_090" controller "build_scale_idle" }
+ScaleBot { translation -10 -67 0 name "scale_091" controller "build_scale_idle" }
+ScaleBot { translation -10 -65 0 name "scale_092" controller "build_scale_idle" }
+ScaleBot { translation -10 -63 0 name "scale_093" controller "build_scale_idle" }
+ScaleBot { translation -10 -61 0 name "scale_094" controller "build_scale_idle" }
+ScaleBot { translation -10 -59 0 name "scale_095" controller "build_scale_idle" }
+ScaleBot { translation -10 -57 0 name "scale_096" controller "build_scale_idle" }
+ScaleBot { translation -10 -55 0 name "scale_097" controller "build_scale_idle" }
+ScaleBot { translation -10 -53 0 name "scale_098" controller "build_scale_idle" }
+ScaleBot { translation -10 -51 0 name "scale_099" controller "build_scale_idle" }
+ScaleBot { translation -10 -49 0 name "scale_100" controller "build_scale_idle" }
+ScaleBot { translation -10 -47 0 name "scale_101" controller "build_scale_idle" }
+ScaleBot { translation -10 -45 0 name "scale_102" controller "build_scale_idle" }
+ScaleBot { translation -10 -43 0 name "scale_103" controller "build_scale_idle" }
+ScaleBot { translation -10 -41 0 name "scale_104" controller "build_scale_idle" }
+ScaleBot { translation -10 -39 0 name "scale_105" controller "build_scale_idle" }
+ScaleBot { translation -10 -37 0 name "scale_106" controller "build_scale_idle" }
+ScaleBot { translation -10 -35 0 name "scale_107" controller "build_scale_idle" }
+ScaleBot { translation -10 -33 0 name "scale_108" controller "build_scale_idle" }
+ScaleBot { translation -10 -31 0 name "scale_109" controller "build_scale_idle" }
+ScaleBot { translation -10 -29 0 name "scale_110" controller "build_scale_idle" }
+ScaleBot { translation -10 -27 0 name "scale_111" controller "build_scale_idle" }
+ScaleBot { translation -10 -25 0 name "scale_112" controller "build_scale_idle" }
+ScaleBot { translation -10 -23 0 name "scale_113" controller "build_scale_idle" }
+ScaleBot { translation -10 -21 0 name "scale_114" controller "build_scale_idle" }
+ScaleBot { translation -10 -19 0 name "scale_115" controller "build_scale_idle" }
+ScaleBot { translation -10 -17 0 name "scale_116" controller "build_scale_idle" }
+ScaleBot { translation -10 -15 0 name "scale_117" controller "build_scale_idle" }
+ScaleBot { translation -10 -13 0 name "scale_118" controller "build_scale_idle" }
+ScaleBot { translation -10 -11 0 name "scale_119" controller "build_scale_idle" }
+ScaleBot { translation -10 -9 0 name "scale_120" controller "build_scale_idle" }
+ScaleBot { translation -10 -7 0 name "scale_121" controller "build_scale_idle" }
+ScaleBot { translation -10 -5 0 name "scale_122" controller "build_scale_idle" }
+ScaleBot { translation -10 -3 0 name "scale_123" controller "build_scale_idle" }
+ScaleBot { translation -10 -1 0 name "scale_124" controller "build_scale_idle" }
+ScaleBot { translation -10 1 0 name "scale_125" controller "build_scale_idle" }
+ScaleBot { translation -10 3 0 name "scale_126" controller "build_scale_idle" }
+ScaleBot { translation -10 5 0 name "scale_127" controller "build_scale_idle" }
+ScaleBot { translation -10 7 0 name "scale_128" controller "build_scale_idle" }
+ScaleBot { translation -10 9 0 name "scale_129" controller "build_scale_idle" }
+ScaleBot { translation -10 11 0 name "scale_130" controller "build_scale_idle" }
+ScaleBot { translation -10 13 0 name "scale_131" controller "build_scale_idle" }
+ScaleBot { translation -10 15 0 name "scale_132" controller "build_scale_idle" }
+ScaleBot { translation -10 17 0 name "scale_133" controller "build_scale_idle" }
+ScaleBot { translation -10 19 0 name "scale_134" controller "build_scale_idle" }
+ScaleBot { translation -10 21 0 name "scale_135" controller "build_scale_idle" }
+ScaleBot { translation -10 23 0 name "scale_136" controller "build_scale_idle" }
+ScaleBot { translation -10 25 0 name "scale_137" controller "build_scale_idle" }
+ScaleBot { translation -10 27 0 name "scale_138" controller "build_scale_idle" }
+ScaleBot { translation -10 29 0 name "scale_139" controller "build_scale_idle" }
+ScaleBot { translation -10 31 0 name "scale_140" controller "build_scale_idle" }
+ScaleBot { translation -10 33 0 name "scale_141" controller "build_scale_idle" }
+ScaleBot { translation -10 35 0 name "scale_142" controller "build_scale_idle" }
+ScaleBot { translation -10 37 0 name "scale_143" controller "build_scale_idle" }
+ScaleBot { translation -10 39 0 name "scale_144" controller "build_scale_idle" }
+ScaleBot { translation -10 41 0 name "scale_145" controller "build_scale_idle" }
+ScaleBot { translation -10 43 0 name "scale_146" controller "build_scale_idle" }
+ScaleBot { translation -10 45 0 name "scale_147" controller "build_scale_idle" }
+ScaleBot { translation -10 47 0 name "scale_148" controller "build_scale_idle" }
+ScaleBot { translation -10 49 0 name "scale_149" controller "build_scale_idle" }
+ScaleBot { translation -10 51 0 name "scale_150" controller "build_scale_idle" }
+ScaleBot { translation -10 53 0 name "scale_151" controller "build_scale_idle" }
+ScaleBot { translation -10 55 0 name "scale_152" controller "build_scale_idle" }
+ScaleBot { translation -10 57 0 name "scale_153" controller "build_scale_idle" }
+ScaleBot { translation -10 59 0 name "scale_154" controller "build_scale_idle" }
+ScaleBot { translation -10 61 0 name "scale_155" controller "build_scale_idle" }
+ScaleBot { translation -10 63 0 name "scale_156" controller "build_scale_idle" }
+ScaleBot { translation -10 65 0 name "scale_157" controller "build_scale_idle" }
+ScaleBot { translation -10 67 0 name "scale_158" controller "build_scale_idle" }
+ScaleBot { translation -10 69 0 name "scale_159" controller "build_scale_idle" }
+ScaleBot { translation -10 71 0 name "scale_160" controller "build_scale_idle" }
+ScaleBot { translation -10 73 0 name "scale_161" controller "build_scale_idle" }
+ScaleBot { translation -10 75 0 name "scale_162" controller "build_scale_idle" }
+ScaleBot { translation -10 77 0 name "scale_163" controller "build_scale_idle" }
+ScaleBot { translation -10 79 0 name "scale_164" controller "build_scale_idle" }
+ScaleBot { translation -10 81 0 name "scale_165" controller "build_scale_idle" }
+ScaleBot { translation -10 83 0 name "scale_166" controller "build_scale_idle" }
+ScaleBot { translation -10 85 0 name "scale_167" controller "build_scale_idle" }
+ScaleBot { translation -10 87 0 name "scale_168" controller "build_scale_idle" }
+ScaleBot { translation -10 89 0 name "scale_169" controller "build_scale_idle" }
+ScaleBot { translation -10 91 0 name "scale_170" controller "build_scale_idle" }
+ScaleBot { translation -10 93 0 name "scale_171" controller "build_scale_idle" }
+ScaleBot { translation -10 95 0 name "scale_172" controller "build_scale_idle" }
+ScaleBot { translation -10 97 0 name "scale_173" controller "build_scale_idle" }
+ScaleBot { translation -10 99 0 name "scale_174" controller "build_scale_idle" }
+ScaleBot { translation -10 101 0 name "scale_175" controller "build_scale_idle" }
+ScaleBot { translation -10 103 0 name "scale_176" controller "build_scale_idle" }
+ScaleBot { translation -10 105 0 name "scale_177" controller "build_scale_idle" }
+ScaleBot { translation -10 107 0 name "scale_178" controller "build_scale_idle" }
+ScaleBot { translation -10 109 0 name "scale_179" controller "build_scale_idle" }
+ScaleBot { translation -10 111 0 name "scale_180" controller "build_scale_idle" }
+ScaleBot { translation -10 113 0 name "scale_181" controller "build_scale_idle" }
+ScaleBot { translation -10 115 0 name "scale_182" controller "build_scale_idle" }
+ScaleBot { translation -10 117 0 name "scale_183" controller "build_scale_idle" }
+ScaleBot { translation -10 119 0 name "scale_184" controller "build_scale_idle" }
+ScaleBot { translation -10 121 0 name "scale_185" controller "build_scale_idle" }
+ScaleBot { translation -10 123 0 name "scale_186" controller "build_scale_idle" }
+ScaleBot { translation -10 125 0 name "scale_187" controller "build_scale_idle" }
+ScaleBot { translation -10 127 0 name "scale_188" controller "build_scale_idle" }
+ScaleBot { translation -10 129 0 name "scale_189" controller "build_scale_idle" }
+ScaleBot { translation -10 131 0 name "scale_190" controller "build_scale_idle" }
+ScaleBot { translation -10 133 0 name "scale_191" controller "build_scale_idle" }
+ScaleBot { translation -10 135 0 name "scale_192" controller "build_scale_idle" }
+ScaleBot { translation -10 137 0 name "scale_193" controller "build_scale_idle" }
+ScaleBot { translation -10 139 0 name "scale_194" controller "build_scale_idle" }
+ScaleBot { translation -10 141 0 name "scale_195" controller "build_scale_idle" }
+ScaleBot { translation -10 143 0 name "scale_196" controller "build_scale_idle" }
+ScaleBot { translation -10 145 0 name "scale_197" controller "build_scale_idle" }
+ScaleBot { translation -10 147 0 name "scale_198" controller "build_scale_idle" }
+ScaleBot { translation -10 149 0 name "scale_199" controller "build_scale_idle" }
+ScaleBot { translation -10 151 0 name "scale_200" controller "build_scale_idle" }
+ScaleBot { translation -10 153 0 name "scale_201" controller "build_scale_idle" }
+ScaleBot { translation -10 155 0 name "scale_202" controller "build_scale_idle" }
+ScaleBot { translation -10 157 0 name "scale_203" controller "build_scale_idle" }
+ScaleBot { translation -10 159 0 name "scale_204" controller "build_scale_idle" }
+ScaleBot { translation -10 161 0 name "scale_205" controller "build_scale_idle" }
+ScaleBot { translation -10 163 0 name "scale_206" controller "build_scale_idle" }
+ScaleBot { translation -10 165 0 name "scale_207" controller "build_scale_idle" }
+ScaleBot { translation -10 167 0 name "scale_208" controller "build_scale_idle" }
+ScaleBot { translation -10 169 0 name "scale_209" controller "build_scale_idle" }
+ScaleBot { translation -10 171 0 name "scale_210" controller "build_scale_idle" }
+ScaleBot { translation -10 173 0 name "scale_211" controller "build_scale_idle" }
+ScaleBot { translation -10 175 0 name "scale_212" controller "build_scale_idle" }
+ScaleBot { translation -10 177 0 name "scale_213" controller "build_scale_idle" }
+ScaleBot { translation -10 179 0 name "scale_214" controller "build_scale_idle" }
+ScaleBot { translation -10 181 0 name "scale_215" controller "build_scale_idle" }
+ScaleBot { translation -10 183 0 name "scale_216" controller "build_scale_idle" }
+ScaleBot { translation -10 185 0 name "scale_217" controller "build_scale_idle" }
+ScaleBot { translation -10 187 0 name "scale_218" controller "build_scale_idle" }
+ScaleBot { translation -10 189 0 name "scale_219" controller "build_scale_idle" }
+ScaleBot { translation -10 191 0 name "scale_220" controller "build_scale_idle" }
+ScaleBot { translation -10 193 0 name "scale_221" controller "build_scale_idle" }
+ScaleBot { translation -10 195 0 name "scale_222" controller "build_scale_idle" }
+ScaleBot { translation -10 197 0 name "scale_223" controller "build_scale_idle" }
+ScaleBot { translation -10 199 0 name "scale_224" controller "build_scale_idle" }
+ScaleBot { translation -10 201 0 name "scale_225" controller "build_scale_idle" }
+ScaleBot { translation -10 203 0 name "scale_226" controller "build_scale_idle" }
+ScaleBot { translation -10 205 0 name "scale_227" controller "build_scale_idle" }
+ScaleBot { translation -10 207 0 name "scale_228" controller "build_scale_idle" }
+ScaleBot { translation -10 209 0 name "scale_229" controller "build_scale_idle" }
+ScaleBot { translation -10 211 0 name "scale_230" controller "build_scale_idle" }
+ScaleBot { translation -10 213 0 name "scale_231" controller "build_scale_idle" }
+ScaleBot { translation -10 215 0 name "scale_232" controller "build_scale_idle" }
+ScaleBot { translation -10 217 0 name "scale_233" controller "build_scale_idle" }
+ScaleBot { translation -10 219 0 name "scale_234" controller "build_scale_idle" }
+ScaleBot { translation -10 221 0 name "scale_235" controller "build_scale_idle" }
+ScaleBot { translation -10 223 0 name "scale_236" controller "build_scale_idle" }
+ScaleBot { translation -10 225 0 name "scale_237" controller "build_scale_idle" }
+ScaleBot { translation -10 227 0 name "scale_238" controller "build_scale_idle" }
+ScaleBot { translation -10 229 0 name "scale_239" controller "build_scale_idle" }
+ScaleBot { translation -10 231 0 name "scale_240" controller "build_scale_idle" }
+ScaleBot { translation -10 233 0 name "scale_241" controller "build_scale_idle" }
+ScaleBot { translation -10 235 0 name "scale_242" controller "build_scale_idle" }
+ScaleBot { translation -10 237 0 name "scale_243" controller "build_scale_idle" }
+ScaleBot { translation -10 239 0 name "scale_244" controller "build_scale_idle" }
+ScaleBot { translation -10 241 0 name "scale_245" controller "build_scale_idle" }
+ScaleBot { translation -10 243 0 name "scale_246" controller "build_scale_idle" }
+ScaleBot { translation -10 245 0 name "scale_247" controller "build_scale_idle" }
+ScaleBot { translation -10 247 0 name "scale_248" controller "build_scale_idle" }
+ScaleBot { translation -10 249 0 name "scale_249" controller "build_scale_idle" }

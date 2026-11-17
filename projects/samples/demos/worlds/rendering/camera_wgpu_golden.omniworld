@@ -1,0 +1,66 @@
+#OMNISIM R2025a utf8
+
+# Golden-image reference world for the wgpu Camera path (Phase ζ parity infra).
+#
+# Unlike camera_wgpu_scene_smoke.omniworld (where the 0.6 box at 0.7 m exactly FILLS
+# the 0.8-FOV frame, yielding a flat single-color readback that can't catch a
+# geometry regression), this world places a SMALLER box FARTHER away so it
+# subtends only the centre ~third of the frame. The readback therefore has:
+#   - the lit cyan box face in the centre,
+#   - the 0.18-gray viewport clear around it,
+#   - four box edges between them.
+# A golden diff against this frame catches box-not-rendered (→ all gray),
+# wrong base color, wrong size (edges move), wrong position (box off-centre),
+# and broken Lambertian shading — none of which the flat-fill frame could.
+#
+# Camera at origin looking +X, FOV 0.8 (half-angle 0.4). Box centre x=2.0,
+# size 0.5 → front face at x=1.75; half-frame-width there = 1.75*tan(0.4) ≈
+# 0.74 m, box half-width 0.25 m → box ≈ 34% of the half-width, centred.
+#
+# Captured + checked by scripts/dev/wgpu_probe_golden.py --world <this>.
+# Companion to docs/developer/engine-migration-plan.md §8.1 (golden-parity gap).
+
+WorldInfo {
+  info [
+    "wgpu Camera golden-image reference — centred box with visible edges"
+  ]
+  title "wgpu Camera golden reference"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Camera {
+      name "cam_wgpu"
+      width 64
+      height 48
+      fieldOfView 0.8
+      near 0.05
+      far 10.0
+      renderBackend "wgpu"
+    }
+    DEF CYAN_BOX Solid {
+      translation 2.0 0 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.5 0.5 0.5
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "camera_wgpu_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

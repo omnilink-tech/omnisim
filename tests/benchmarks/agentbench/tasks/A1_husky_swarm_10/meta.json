@@ -1,0 +1,57 @@
+{
+  "id": "A1_husky_swarm_10",
+  "tier": "author",
+  "flagship": true,
+  "prompt_file": "prompt.txt",
+  "grader": "agentbench.graders.a1",
+  "par_s": 720,
+  "timeout_s": 2160,
+  "repeats_default": 1,
+  "stresses": "multi-robot authoring, controller wiring, solver choice, self-verification",
+  "initial_state": "empty scratch directory; the repository read-only; no world pre-loaded; no harness pre-started",
+  "phases": {
+    "harness": {
+      "enabled": true,
+      "answers": [
+        "A1.1",
+        "A1.2",
+        "A1.4"
+      ],
+      "why_not_more": "the injected supervisor is synchronization FALSE and the engine runs --mode=fast, so the world free-runs between RPCs and no 'at t=0' question is answerable here"
+    },
+    "standalone": {
+      "settle_s": 1.0,
+      "duration_s": 30.0,
+      "contact_steps": 10,
+      "answers": [
+        "A1.3",
+        "A1.5",
+        "A1.6",
+        "A1.7",
+        "A1.8",
+        "A1.9",
+        "A1.10"
+      ]
+    }
+  },
+  "constants": {
+    "N_ROBOTS": 10,
+    "SETTLE_S": 1.0,
+    "WINDOW_S": 30.0,
+    "MIN_NET_DISPLACEMENT_M": 2.0,
+    "MIN_PATH_LENGTH_M": 4.0,
+    "MAX_ABS_DZ_M": 0.3,
+    "MIN_Z_M": -0.1,
+    "MAX_CIRCULAR_RESULTANT": 0.7,
+    "MIN_AABB_CLEARANCE_M": 0.05
+  },
+  "budget": {
+    "rule": "timeout_s = min(3 x par_s, TASK_HARD_CEILING_S)",
+    "hard_ceiling_s": 2700,
+    "truncated_by_ceiling": false,
+    "ratio_to_par": 3.0,
+    "runs_per_cell": 1,
+    "variance_measured": false,
+    "note": "the full 3x-par rule applies under the 2700 s (45 min) ceiling. ONE run per (task, arm): a single observation is an OUTCOME, never a rate -- pass@1 and a confidence interval are undefined at n = 1 (SPEC 3.5)."
+  }
+}

@@ -1,0 +1,129 @@
+#OMNISIM R2025a utf8
+
+# Screenshot variant of g1_sit_mimic.omniworld: identical seated real+ghost G1s, plus a
+# DEF CAMBOT camera-bot (controller g1_sit_shot) that photographs the seated
+# arm-mimic via Camera.saveImage. Launch with rendering ON (--mode=fast
+# --minimize; NOT --batch / --no-window) and the seated Newton env (STATICS /
+# SUBSTEPS=4 / FORCE_MUJOCO / URDF_USE_INERTIA / BASE_GUARD / TARGET_KE=400).
+# PNGs -> _scratch/g1_sit_shots/.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Unitree G1 -- seated arm-mimic (screenshot)"
+  newtonSolver "mujoco"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 6.111 -6.505 6.936
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 8 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+# ----- Chair under the real robot. Seat top ~0.33 + a REAL collision
+# boundingObject (Newton static collider) so the robot RESTS on the seat. -----
+DEF CHAIR_MIMIC Solid {
+  translation 0 -0.55 0
+  name "chair_mimic"
+  boundingObject Pose {
+    translation 0 0 0.30
+    children [ Box { size 0.44 0.44 0.06 } ]
+  }
+  children [
+    Pose {
+      translation 0 0 0.30
+      children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.32 0.26 0.22 roughness 0.7 metalness 0.1 } geometry Box { size 0.44 0.44 0.06 } } ]
+    }
+    DEF CHAIR_MIMIC_BACK Solid {
+      translation -0.085 0 0.66
+      name "chair_mimic_back"
+      boundingObject Box { size 0.04 0.44 0.52 }
+      children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.32 0.26 0.22 roughness 0.7 metalness 0.1 } geometry Box { size 0.04 0.44 0.52 } } ]
+    }
+    Pose { translation  0.18  0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.20 0.16 0.13 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+    Pose { translation  0.18 -0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.20 0.16 0.13 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+    Pose { translation -0.18  0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.20 0.16 0.13 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+    Pose { translation -0.18 -0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.20 0.16 0.13 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+  ]
+}
+
+# ----- Chair under the ghost (visual-only hologram, lowered to match) -----
+DEF CHAIR_GHOST Solid {
+  translation 0 0.55 0
+  name "chair_ghost"
+  children [
+    Pose {
+      translation 0 0 0.30
+      children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.30 0.34 0.40 transparency 0.35 roughness 0.7 metalness 0.1 } geometry Box { size 0.44 0.44 0.06 } } ]
+    }
+    Pose {
+      translation -0.085 0 0.66
+      children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.30 0.34 0.40 transparency 0.35 roughness 0.7 metalness 0.1 } geometry Box { size 0.04 0.44 0.52 } } ]
+    }
+    Pose { translation  0.18  0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.22 0.26 0.32 transparency 0.35 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+    Pose { translation  0.18 -0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.22 0.26 0.32 transparency 0.35 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+    Pose { translation -0.18  0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.22 0.26 0.32 transparency 0.35 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+    Pose { translation -0.18 -0.18 0.15 children [ Shape { castShadows FALSE appearance PBRAppearance { baseColor 0.22 0.26 0.32 transparency 0.35 roughness 0.6 metalness 0.2 } geometry Box { size 0.05 0.05 0.30 } } ] }
+  ]
+}
+
+# ----- Real robot: the MIMIC (Newton deploy physics), pelvis WELDED via staticBase. -----
+DEF G1_REAL URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_23dof_omnisim_prim.urdf"
+  translation 0 -0.55 0.47
+  name "g1"
+  supervisor TRUE
+  controller "g1_seated_mimic"
+  physicsBackend "newton"
+}
+
+# ----- Ghost: kinematic, translucent, displays the same reference -----
+DEF G1_GHOST URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 0.55 0.47
+  name "g1_ghost"
+  supervisor TRUE
+  controller "g1_seated_ghost"
+  staticBase TRUE
+}
+
+# ----- Camera-bot: photographs the scene, then quits the sim -----
+DEF CAMBOT Robot {
+  translation 3.4 -3.0 1.55
+  children [
+    Camera {
+      name "cam"
+      width 1280
+      height 800
+      fieldOfView 0.85
+    }
+  ]
+  name "cambot"
+  controller "g1_sit_shot"
+  supervisor TRUE
+}

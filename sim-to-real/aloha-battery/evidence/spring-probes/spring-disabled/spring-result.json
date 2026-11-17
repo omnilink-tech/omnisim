@@ -1,0 +1,23 @@
+{
+  "complete": true,
+  "parameters": {
+    "stiffness_n_m": 0,
+    "damping_n_s_m": 0,
+    "preload_n": 0,
+    "travel_m": 0.01,
+    "contact_mass_kg": 0.002,
+    "coil_rest_length_m": 0.014,
+    "spring_rest_face_x": 0.0005,
+    "positive_face_x": 0.0435,
+    "slot_y": -0.0095,
+    "battery_axis_z": 0.0128,
+    "battery_length_m": 0.049,
+    "battery_radius_m": 0.0068
+  },
+  "equilibrium_compression_m": 0.009999999776482582,
+  "expected_compression_m": null,
+  "released_compression_m": 0.009999999776482582,
+  "passed": false,
+  "body_pose_writes": 0,
+  "spring_update_hz": 1000.0
+}

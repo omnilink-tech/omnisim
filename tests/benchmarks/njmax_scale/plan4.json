@@ -1,0 +1,7 @@
+[{"tag":"nostats12","n":12,"stats":null},
+ {"tag":"rep_w24a","n":24},
+ {"tag":"rep_w24b","n":24},
+ {"tag":"rep_b24a","n":24,"njmax":2048,"nconmax":2048},
+ {"tag":"rep_b24b","n":24,"njmax":2048,"nconmax":2048},
+ {"tag":"b48","n":48,"njmax":4096,"nconmax":4096,"timeout":1200},
+ {"tag":"b64","n":64,"njmax":4096,"nconmax":4096,"timeout":1500}]

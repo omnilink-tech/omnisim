@@ -1,0 +1,131 @@
+#OMNISIM R2025a utf8
+
+# Test fixture for the R4 wgpu overlays that need LIVE ground contacts:
+# contact-points (VF_CONTACT_POINTS) and the support polygon (convex hull of
+# ground contacts). A static floor with three rigid bodies resting on it — once
+# physics steps, each body has a non-empty WbSolid::contactPoints() set, which the
+# static (load-time) worlds (panda/camera) never produce. No TestSuite supervisor,
+# so it runs indefinitely and the GUI self-check (mPhase>5) can sample settled
+# contacts.
+#
+# ⚠️ The old instruction here was "Run with OMNISIM_FORCE_ODE=1 so contacts populate
+# on the golden engine". DO NOT: src/ode was DELETED (commit bdc02139), so that var
+# now selects a backend with no implementation -- the bodies never move and never
+# touch, so the contact set stays EMPTY, which is the opposite of what this fixture
+# needs. Run it on the default backend: Newton's native contact readback has been ON
+# by default since 2026-08-07, so a resting body genuinely reports its ground
+# contacts (OMNISIM_NEWTON_NATIVE_CONTACTS=0 is the revert hatch).
+
+WorldInfo {
+  basicTimeStep 4
+  FPS 30
+  # Keep resting bodies AWAKE so WbSolid::contactPoints() keeps reporting their ground
+  # contacts (a settled body otherwise sleeps and reports none — the whole point of this
+  # fixture is a continuous non-empty contact set for the overlay self-check).
+  physicsDisableLinearThreshold 0
+  physicsDisableAngularThreshold 0
+}
+Viewpoint {
+  orientation -0.55 -0.4 0.73 1.9
+  position 0.64 -0.64 0.48
+}
+Background {
+  skyColor [ 0.15 0.20 0.30 ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  color 1.0 0.95 0.85
+  direction -0.5 -0.5 -0.8
+  intensity 2.5
+  castShadows TRUE
+}
+DEF FLOOR Solid {
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.45 0.48
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Box {
+        size 4 4 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 4 4 0.1
+  }
+}
+DEF BALL Solid {
+  translation 0 0 0.151
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.25 0.20
+        roughness 0.5
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.1
+        subdivision 3
+      }
+    }
+  ]
+  name "ball"
+  boundingObject Sphere {
+    radius 0.1
+  }
+  physics Physics {
+    density -1
+    mass 0.5
+  }
+}
+DEF CRATE Solid {
+  translation 0.5 0.1 0.151
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.20 0.45 0.80
+        roughness 0.6
+        metalness 0.0
+      }
+      geometry Box {
+        size 0.2 0.2 0.2
+      }
+    }
+  ]
+  name "crate"
+  boundingObject Box {
+    size 0.2 0.2 0.2
+  }
+  physics Physics {
+    density -1
+    mass 0.6
+  }
+}
+DEF DRUM Solid {
+  translation -0.45 -0.3 0.201
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.65 0.35
+        roughness 0.6
+        metalness 0.0
+      }
+      geometry Cylinder {
+        height 0.3
+        radius 0.12
+      }
+    }
+  ]
+  name "drum"
+  boundingObject Cylinder {
+    height 0.3
+    radius 0.12
+  }
+  physics Physics {
+    density -1
+    mass 0.7
+  }
+}

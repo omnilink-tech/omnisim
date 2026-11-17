@@ -1,0 +1,91 @@
+{
+  "complete": true,
+  "case": "table",
+  "parameters": {
+    "stiffness_n_m": 100.0,
+    "damping_n_s_m": 0.18,
+    "preload_n": 0.15,
+    "travel_m": 0.01,
+    "contact_mass_kg": 0.002,
+    "coil_rest_length_m": 0.014,
+    "spring_rest_face_x": 0.0005,
+    "positive_face_x": 0.0435,
+    "slot_y": -0.0095,
+    "battery_axis_z": 0.0128,
+    "battery_length_m": 0.049,
+    "battery_radius_m": 0.0068
+  },
+  "passed": true,
+  "floor_contact_observed": false,
+  "final": {
+    "time_s": 2.4,
+    "position_m": 0.0,
+    "compression_m": -0.0,
+    "velocity_m_s": 0.0,
+    "spring_force_n": 0.15,
+    "probe_load_n": 0.0,
+    "battery_in_remote": [
+      0.15800000149011612,
+      0.05700000149011612,
+      0.006796581447124481
+    ],
+    "battery_rotation": [
+      -3.422854171747217e-08,
+      0.0,
+      0.9999999999999994,
+      0.0,
+      1.0,
+      0.0,
+      -0.9999999999999994,
+      0.0,
+      -3.422854171747217e-08
+    ],
+    "remote_rotation": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+    ],
+    "battery_position": [
+      0.10000000149011612,
+      0.10000000149011612,
+      0.01679658144712448
+    ],
+    "negative_points": [],
+    "positive_points": [],
+    "floor_points": [],
+    "contact_points": [
+      {
+        "id": 94,
+        "point": [
+          0.18250000084936618,
+          0.05700000149011612,
+          -1.7086182356688268e-06
+        ],
+        "depth": 3.418652081652387e-06
+      },
+      {
+        "id": 94,
+        "point": [
+          0.13350000213086605,
+          0.05700000149011612,
+          -1.7086182356688268e-06
+        ],
+        "depth": 3.418652081652387e-06
+      }
+    ]
+  },
+  "upward_test_force_n": 0,
+  "test_interval_s": null,
+  "runtime_environment": {
+    "OMNISIM_NEWTON_FINGER_KE": "2000",
+    "OMNISIM_NEWTON_MULTICCD": "1"
+  },
+  "body_pose_writes": 0,
+  "scope": "Isolated mechanism/geometry test, not a robot insertion"
+}

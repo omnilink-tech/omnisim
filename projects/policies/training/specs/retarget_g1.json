@@ -1,0 +1,30 @@
+{
+  "name": "g1",
+  "model": "_scratch/foot_redesign/g1_fk_only.urdf",
+  "sole": 0.035,
+  "foot_lx": 0.085,
+  "foot_ly": 0.030,
+  "bodies": {
+    "pelvis": "pelvis",
+    "torso": "torso_link",
+    "foot_l": "left_ankle_roll_link",
+    "foot_r": "right_ankle_roll_link",
+    "hip_l": "left_hip_pitch_link",
+    "hip_r": "right_hip_pitch_link",
+    "knee_l": "left_knee_link",
+    "knee_r": "right_knee_link",
+    "shoulder_l": "left_shoulder_pitch_link",
+    "shoulder_r": "right_shoulder_pitch_link",
+    "elbow_l": "left_elbow_link",
+    "elbow_r": "right_elbow_link",
+    "hand_l": "left_wrist_roll_rubber_hand",
+    "hand_r": "right_wrist_roll_rubber_hand"
+  },
+  "legs12": ["left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+             "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+             "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+             "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint"],
+  "nominal": {"hip_pitch": -0.10, "knee": 0.30, "ankle_pitch": -0.20, "elbow": 0.50},
+  "posture_reg": {"shoulder_yaw": 0.12, "wrist": 0.12, "shoulder_roll": 0.04},
+  "root_speed_envelope": 0.75
+}

@@ -1,0 +1,216 @@
+{
+ "summary": {
+  "provenance": {
+   "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+   "binary_sha256_16": "785786e4621110d4",
+   "binary_mtime": "2026-08-28 16:50:41",
+   "machine": "LAPTOP-H61DJILS",
+   "platform": "Windows-11-10.0.26200-SP0",
+   "mode": "concurrent2",
+   "gap_s": 0.0,
+   "worlds": [
+    "projects\\samples\\demos\\worlds\\physics\\newton_smoke_test.omniworld"
+   ]
+  },
+  "launches": 10,
+  "finalised": 10,
+  "raced": 0,
+  "raced_qt_teardown": 0,
+  "raced_silent_exit": 0,
+  "shared_port_rounds": 0,
+  "failed_other": 0,
+  "race_rate": 0.0
+ },
+ "rows": [
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 8.05,
+   "exited_at": null,
+   "secs": 16.47,
+   "pid": 30424,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 18.1,
+   "round": 0,
+   "i": 0,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 28
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 7.95,
+   "exited_at": null,
+   "secs": 16.47,
+   "pid": 31516,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 18.1,
+   "round": 0,
+   "i": 1,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 30
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 8.3,
+   "exited_at": null,
+   "secs": 16.73,
+   "pid": 20124,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 9.5,
+   "round": 1,
+   "i": 2,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 28
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 8.3,
+   "exited_at": null,
+   "secs": 16.73,
+   "pid": 30516,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 9.5,
+   "round": 1,
+   "i": 3,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 29
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 7.85,
+   "exited_at": null,
+   "secs": 16.32,
+   "pid": 5876,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 8.8,
+   "round": 2,
+   "i": 4,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 28
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 7.85,
+   "exited_at": null,
+   "secs": 16.32,
+   "pid": 7136,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 8.8,
+   "round": 2,
+   "i": 5,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 29
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 6.58,
+   "exited_at": null,
+   "secs": 15.09,
+   "pid": 24296,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 11.9,
+   "round": 3,
+   "i": 6,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 29
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 6.48,
+   "exited_at": null,
+   "secs": 15.09,
+   "pid": 18656,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 11.9,
+   "round": 3,
+   "i": 7,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 30
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 6.86,
+   "exited_at": null,
+   "secs": 15.44,
+   "pid": 21104,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 10.0,
+   "round": 4,
+   "i": 8,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 28
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 6.86,
+   "exited_at": null,
+   "secs": 15.44,
+   "pid": 16872,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 10.0,
+   "round": 4,
+   "i": 9,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 30
+  }
+ ]
+}

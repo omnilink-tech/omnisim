@@ -1,0 +1,210 @@
+[
+ {
+  "cell": "20260812_round1_a1_omnisim_c1",
+  "path": "o:\\omnisim\\tests\\benchmarks\\agentbench\\results\\cc_lane\\20260812_round1_a1_omnisim_c1",
+  "source": "tests/benchmarks/agentbench/results/cc_lane/20260812_round1_a1_omnisim_c1\\transcript.jsonl",
+  "tool_calls": 65,
+  "defect_encounters": 7,
+  "transcript_encounters": 5,
+  "by_signature": {
+   "stale_ode_doc_claim": 1,
+   "zero_motion_reading": 2,
+   "screenshot_zero_bytes": 1,
+   "capture_path_failed": 1,
+   "graded_on_dot_sibling": 1,
+   "measured_under_concurrency": 1
+  },
+  "hits": [
+   {
+    "sig": "stale_ode_doc_claim",
+    "call": 19,
+    "t_s": 202.9,
+    "tool": "Write",
+    "note": "agent wrote/tuned an ODE-era field the engine does not read",
+    "excerpt": "{\"file_path\": \"C:\\\\Users\\\\<user>\\\\AppData\\\\Local\\\\Temp\\\\agentbench_cc\\\\instances\\\\20260812_100848_omnisim_A1\\\\projects\\\\samples\\\\demos\\\\worlds\\\\showcase\\\\husky_random_swarm_10.wbt\", \"content\": \"#OMNISIM R2025a utf8\\n\\n# T"
+   },
+   {
+    "sig": "zero_motion_reading",
+    "call": 27,
+    "t_s": 356.3,
+    "tool": "Bash",
+    "note": "the agent measured a fleet that did not move",
+    "excerpt": "{\"command\": \"cd \\\"C:/Users/<user>/AppData/Local/Temp/agentbench_cc/instances/20260812_100848_omnisim_A1\\\" && \\\" =>   #939      (   0.00,    0.00)\r\n  HUSKY_0   ( -18.00,   -8.00)\r\n  HUSKY_1   (  -9.00,   -8.00)\r\n  HUSKY_2   (   0.00,   -8.00)\r\n  HUSKY_3   (   9.00,   -8.00)\r\n"
+   },
+   {
+    "sig": "zero_motion_reading",
+    "call": 31,
+    "t_s": 451.7,
+    "tool": "Bash",
+    "note": "the agent measured a fleet that did not move",
+    "excerpt": "{\"command\": \"cd \\\"C:/Users/<user>/AppData/Local/Temp/agentbench_cc/instances/20260812_100848_omnisim_A1\\\" && \\\" => loading projects/samples/demos/worlds/showcase/husky_random_swarm_10.wbt (fresh controllers)...\r\n  load ok=True in 3506 ms\r\n\r\nt0 = first sample after load, 10 r"
+   },
+   {
+    "sig": "screenshot_zero_bytes",
+    "call": 37,
+    "t_s": 552.6,
+    "tool": "Bash",
+    "note": "/world/screenshot wrote an empty body",
+    "excerpt": "{\"command\": \"cd \\\"C:/Users/<user>/AppData/Local/Temp/agentbench_cc/instances/20260812_100848_omnisim_A1\\\" && ls => -rw-r--r-- 1 <user> 197609     0 Aug 12 10:17 husky_after.png\n-rw-r--r-- 1 <user> 197609     0 Aug 12 10:17 husky_before.png\n-rw-r--r-- 1 <user> 197609 12046 Aug 1"
+   },
+   {
+    "sig": "capture_path_failed",
+    "call": 55,
+    "t_s": 800.5,
+    "tool": "Bash",
+    "note": "/capture/screenshot with a path failed",
+    "excerpt": "{\"command\": \"cd \\\"C:/Users/<user>/AppData/Local/Temp/agentbench_cc/instances/20260812_100848_omnisim_A1\\\" && cu => Exit code 1\nok= True\r\nsize=247022\r\nTraceback (most recent call last):\r\n  File \"<string>\", line 4, in <module>\r\n  File \"C:\\Users\\<user>\\AppData\\Local\\Programs\\Pyt"
+   }
+  ],
+  "report_hits": [
+   {
+    "sig": "graded_on_dot_sibling",
+    "count": 1,
+    "note": "the graded artifact is a dot-prefixed sibling the agent did not write"
+   },
+   {
+    "sig": "measured_under_concurrency",
+    "count": 1,
+    "note": "another lane was live while this cell ran"
+   }
+  ],
+  "error_calls": 15,
+  "calls_lost_to_defects": 11,
+  "error_call_pct": 23.1,
+  "time_to_first_working_scene_s": 68.0,
+  "first_working_scene": {
+   "call": 12,
+   "t_s": 68.0,
+   "tool": "Read",
+   "excerpt": "1\t# Copyright 2026 OmniLink\n2\t#\n3\t# Licensed under the Apache License, Version 2.0 (the \"License\");\n4\t# you may not use this file except in compliance with the "
+  },
+  "outcome": "FAIL",
+  "failed_assertion": "A1.1",
+  "assertions_passed": 3,
+  "assertions_total": 10,
+  "t_agent_s": 951.046,
+  "usd": 6.5955699999999995,
+  "engine_sha": "8a6f8bc54194dd582d65744ebb58a732142c269ae768c677ad2bddac2f6455df",
+  "pinned_model": "claude-opus-5"
+ },
+ {
+  "cell": "20260812_round1_a1_omnisim_c2",
+  "path": "o:\\omnisim\\tests\\benchmarks\\agentbench\\results\\cc_lane\\20260812_round1_a1_omnisim_c2",
+  "source": "tests/benchmarks/agentbench/results/cc_lane/20260812_round1_a1_omnisim_c2\\cc_stream.jsonl",
+  "tool_calls": 64,
+  "defect_encounters": 6,
+  "transcript_encounters": 4,
+  "by_signature": {
+   "stale_ode_doc_claim": 2,
+   "screenshot_zero_bytes": 1,
+   "service_unreachable": 1,
+   "cross_cell_interference": 2
+  },
+  "hits": [
+   {
+    "sig": "stale_ode_doc_claim",
+    "call": 17,
+    "t_s": 144.0,
+    "tool": "Write",
+    "note": "agent wrote/tuned an ODE-era field the engine does not read",
+    "excerpt": "{\"file_path\": \"C:/Users/<user>/AppData/Local/Temp/agentbench_cc/instances/20260812_102807_omnisim_A1/projects/samples/demos/worlds/showcase/husky_random_10.wbt\", \"content\": \"#OMNISIM R2025a utf8\\n\\n# Ten Huskies random-wa"
+   },
+   {
+    "sig": "screenshot_zero_bytes",
+    "call": 26,
+    "t_s": 296.6,
+    "tool": "Bash",
+    "note": "/world/screenshot wrote an empty body",
+    "excerpt": "{\"command\": \"cd \\\"C:/Users/<user>/AppData/Local/Temp/agentbench_cc/instances/20260812_102807_omnisim_A1\\\" && ls => -rw-r--r-- 1 <user> 197609 0 Aug 12 10:32 .build_tmp/husky10_t0.png\n-rw-r--r-- 1 <user> 197609 0 Aug 12 10:33 .build_tmp/husky10_t1.png\n=== direct screenshot atte"
+   },
+   {
+    "sig": "service_unreachable",
+    "call": 51,
+    "t_s": 601.1,
+    "tool": "Bash",
+    "note": "the harness/capture service was unreachable",
+    "excerpt": "{\"command\": \"cd \\\"C:/Users/<user>/AppData/Local/Temp/agentbench_cc/instances/20260812_102807_omnisim_A1\\\" && gr => 244:def write_sibling_world(original: Path, width: int, height: int, fov: float) -> Path:\n245-    sibling = sibling_path_for(original)\n246-    content = origina"
+   },
+   {
+    "sig": "stale_ode_doc_claim",
+    "call": 56,
+    "t_s": 678.5,
+    "tool": "Write",
+    "note": "agent wrote/tuned an ODE-era field the engine does not read",
+    "excerpt": "{\"file_path\": \"C:/Users/<user>/AppData/Local/Temp/agentbench_cc/instances/20260812_102807_omnisim_A1/projects/samples/demos/worlds/showcase/husky_random_10.wbt\", \"content\": \"#OMNISIM R2025a utf8\\n\\n# Ten Huskies random-wa"
+   }
+  ],
+  "report_hits": [
+   {
+    "sig": "cross_cell_interference",
+    "count": 2,
+    "note": "processes reaped by this cell's sweeps"
+   }
+  ],
+  "error_calls": 17,
+  "calls_lost_to_defects": 5,
+  "error_call_pct": 26.6,
+  "time_to_first_working_scene_s": 92.0,
+  "first_working_scene": {
+   "call": 15,
+   "t_s": 92.0,
+   "tool": "Bash",
+   "excerpt": "BOUNDARY_DEFAULT_MARGIN_M = 8.0\n\n# Stall + replan.\nSTALL_TORQUE_THRESHOLD_NM = 12.0\nSTALL_DEBOUNCE_MS = 800\nNO_PROGRESS_DISTANCE_M = 3.0   # required progress o"
+  },
+  "outcome": null,
+  "failed_assertion": null,
+  "assertions_passed": null,
+  "assertions_total": null,
+  "t_agent_s": null,
+  "usd": null,
+  "engine_sha": "8a6f8bc54194dd582d65744ebb58a732142c269ae768c677ad2bddac2f6455df",
+  "pinned_model": "claude-opus-5"
+ },
+ {
+  "cell": "20260812_round1_a1_omnisim_c3",
+  "path": "o:\\omnisim\\tests\\benchmarks\\agentbench\\results\\cc_lane\\20260812_round1_a1_omnisim_c3",
+  "source": "tests/benchmarks/agentbench/results/cc_lane/20260812_round1_a1_omnisim_c3\\cc_stream.jsonl",
+  "tool_calls": 44,
+  "defect_encounters": 4,
+  "transcript_encounters": 1,
+  "by_signature": {
+   "robots_counts_supervisor": 1,
+   "cross_cell_interference": 3
+  },
+  "hits": [
+   {
+    "sig": "robots_counts_supervisor",
+    "call": 31,
+    "t_s": 332.3,
+    "tool": "Bash",
+    "note": "/robots included the harness's own supervisor",
+    "excerpt": "{\"command\": \"cd \\\"C:/Users/<user>/AppData/Local/Temp/agentbench_cc/instances/20260812_104800_omnisim_A1\\\" && cu => 'HUSKY_0' | 'husky_0' | [-1.9673140048980713, -17.564788818359375, 0.1328696608543396]\r\n'HUSKY_1' | 'husky_1' | [7.216314315795898, -7.073683261871338, 0.132158"
+   }
+  ],
+  "report_hits": [
+   {
+    "sig": "cross_cell_interference",
+    "count": 3,
+    "note": "processes reaped by this cell's sweeps"
+   }
+  ],
+  "error_calls": 8,
+  "calls_lost_to_defects": 3,
+  "error_call_pct": 18.2,
+  "time_to_first_working_scene_s": 71.5,
+  "first_working_scene": {
+   "call": 14,
+   "t_s": 71.5,
+   "tool": "Bash",
+   "excerpt": "Makefile\n__pycache__\nhusky_random.py\nruntime.ini\n=== SOURCE ===\n# Copyright 2026 OmniLink\r\n#\r\n# Licensed under the Apache License, Version 2.0 (the \"License\");\r"
+  },
+  "outcome": null,
+  "failed_assertion": null,
+  "assertions_passed": null,
+  "assertions_total": null,
+  "t_agent_s": null,
+  "usd": null,
+  "engine_sha": "8a6f8bc54194dd582d65744ebb58a732142c269ae768c677ad2bddac2f6455df",
+  "pinned_model": "claude-opus-5"
+ }
+]

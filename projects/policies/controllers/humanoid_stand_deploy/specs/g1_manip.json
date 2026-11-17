@@ -1,0 +1,125 @@
+{
+  "name": "g1",
+  "urdf": "projects/robots/unitree/g1/urdf/g1_23dof_omnisim.urdf",
+  "spawn_z": 0.78,
+  "_note": "G1 deterministic stand + TABLE MANIPULATION. Derived from g1_armsdown.json: the lower-body stand (stiff squat + lean + hip auto_trim) is UNCHANGED and load-bearing. The NEW 'manip' block reaches with ONE arm (right) via position-only IK to pick/lift/move/place cubes off a table while the OTHER arm (left) keeps arm_balance running as the fast balancer. Fingerless rubber hand -> kinematic WELD grasp (magnet attach), NOT a physical fingered grasp. All waypoints are IK-verified reachable (<=1mm) for the right 5-DOF arm with the chain below.",
+  "joint_order": [
+    "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+    "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+    "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+    "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+    "waist_yaw_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+  ],
+  "nominal": {
+    "left_hip_pitch_joint": -0.30, "left_knee_joint": 0.52, "left_ankle_pitch_joint": -0.23,
+    "right_hip_pitch_joint": -0.30, "right_knee_joint": 0.52, "right_ankle_pitch_joint": -0.23,
+    "left_shoulder_pitch_joint": 0.95, "left_shoulder_roll_joint": 0.12,
+    "left_shoulder_yaw_joint": 0.0, "left_elbow_joint": 0.45, "left_wrist_roll_joint": 0.0,
+    "right_shoulder_pitch_joint": 0.95, "right_shoulder_roll_joint": -0.12,
+    "right_shoulder_yaw_joint": 0.0, "right_elbow_joint": 0.45, "right_wrist_roll_joint": 0.0
+  },
+  "_nominal_note": "NATURAL arms-hanging-down rest pose (shoulder_pitch=0.95, elbow=0.45, slight shoulder_roll out): each arm hangs down beside the body (hand ~x=-0.12, below the shoulder) -- the natural rest for this arm. NOT the old shoulder_pitch=1.5708 which (per FK) points the arms BACKWARD-and-UP (hand x=-0.29, shoulder height) and looks unnatural. CoM is close to that old pose so the stand stays stable. shoulder_roll mirrors L(+)/R(-) to keep each elbow slightly outboard.",
+  "ankle_pitch_joints": ["left_ankle_pitch_joint", "right_ankle_pitch_joint"],
+  "ankle_roll_joints": ["left_ankle_roll_joint", "right_ankle_roll_joint"],
+  "hip_pitch_joints": ["left_hip_pitch_joint", "right_hip_pitch_joint"],
+  "arm_hold": [
+    "waist_yaw_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+  ],
+  "deploy_ke": 400,
+  "deploy_kd": 60,
+  "ank_bias": -0.10,
+  "upright": {"bz_min": 0.55, "roll_max": 0.7, "pitch_max": 0.7},
+  "settle_s": 0.2,
+  "lean": {
+    "_note": "Disturbance-driven (vx, pitch_rate); ~0 during a slow feedforward reach so it does NOT fight the manipulation trajectory, but it still catches thrown cubes. Keep ON.",
+    "enabled": true
+  },
+  "arm_balance": {
+    "_note": "P balancer on the shoulders (proven cube-defense gains). When manip is active the controller filters this to the BALANCE arm only (left); on DONE both arms balance again. It now swings around the NATURAL arms-down nominal, so the balance motion reads as a person steadying themselves rather than a contortion.",
+    "enabled": true,
+    "kp_pitch": 6.0,
+    "ki_pitch": 0.5,
+    "kd_pitch": 0.0,
+    "kp_roll": 1.2,
+    "ki_roll": 0.4,
+    "clamp": 1.5,
+    "iclamp": 1.2
+  },
+  "auto_trim": {
+    "_note": "HIP-ONLY return-to-home; the slow high-authority effector that absorbs the forward CoM creep from the extended reaching arm.",
+    "enabled": true,
+    "kp": 0.5,
+    "ki": 0.30,
+    "clamp": 0.16,
+    "hip": 1.0
+  },
+  "capture_step": {"enabled": false},
+  "manip": {
+    "_note": "Deterministic table manipulation overlay. State machine per cube: REACH_ABOVE -> DESCEND -> GRASP(weld) -> LIFT -> MOVE -> PLACE -> RELEASE -> RETRACT, then next cube. TCP targets are world coords; IK solves the 5 reach-arm joints. Cube live position is read each REACH_ABOVE. Carry = teleport cube to the hand link world pose + setVelocity([0]*6) every tick (warm-solver bounce fix). All waypoints IK-verified <=1mm.",
+    "enabled": true,
+    "reach_arm": "right",
+    "balance_arm": "left",
+    "grasp_radius": 0.10,
+    "start_s": 3.0,
+    "c_reach": 0.30,
+    "ff_ref": 0.0,
+    "ff_clamp": 0.12,
+    "c_ank": 0.25,
+    "ank_clamp": 0.10,
+    "c_cw": 0.80,
+    "cw_clamp": 0.40,
+    "table_top": 0.78,
+    "posture_gain": 0.12,
+    "_posture_note": "Null-space posture bias keeps the redundant arm DOF (the 5-DOF arm has 2 redundant DOF for a 3-DOF position) at a NATURAL, body-clear config: elbow abducted OUT (shoulder_roll ~-0.30), wrist + shoulder_yaw ~0. Without it the position-only IK contorts the arm THROUGH the torso. Verified: elbow stays outboard (y<=-0.18, never inside the torso) through every waypoint, pos err <=~10mm.",
+    "q_rest_right": [-0.10, -0.30, 0.0, 1.05, 0.0],
+    "q_rest_left": [-0.10, 0.30, 0.0, 1.05, 0.0],
+    "ik": {"max_iters": 60, "tol": 2.0e-3, "damping": 0.08, "max_dq": 0.2},
+    "timing": {"move_s": 2.0, "dwell_s": 0.3, "grasp_dwell_s": 0.6},
+    "offsets": {"z_above": 0.18, "grasp_dz": 0.05, "lift_dz": 0.16, "place_dz": 0.01},
+    "pin_ticks": 400,
+    "pin_release_dist": 0.30,
+    "home_tcp": [0.22, -0.16, 0.92],
+    "reach_joints_right": [
+      "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+      "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+    ],
+    "reach_joints_left": [
+      "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+      "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint"
+    ],
+    "hand_link_right": "right_wrist_roll_rubber_hand",
+    "hand_link_left": "left_wrist_roll_rubber_hand",
+    "tcp_right": [0.108, -0.0016, 0.0020],
+    "tcp_left": [0.108, 0.0016, 0.0020],
+    "ik_seed_right": [0.30, -0.10, 0.0, 0.70, 0.0],
+    "ik_seed_left": [0.30, 0.10, 0.0, 0.70, 0.0],
+    "limits_right": [[-3.0892, 2.6704], [-2.2515, 1.5882], [-2.618, 2.618], [-1.0472, 2.0944], [-1.972222, 1.972222]],
+    "limits_left": [[-3.0892, 2.6704], [-1.5882, 2.2515], [-2.618, 2.618], [-1.0472, 2.0944], [-1.972222, 1.972222]],
+    "_chain_note": "Per-joint URDF tuple [origin_x,y,z, rpy_r,p,y, axis_x,y,z] relative to torso_link, extracted from g1_23dof_omnisim.urdf (shoulder_pitch/roll/yaw, elbow, wrist_roll). The right chain mirrors the left in y. If the URDF arm changes, re-extract.",
+    "chain_right": [
+      [0.0039563, -0.10021, 0.23778, -0.27931, 5.4949e-05, 0.00019159, 0, 1, 0],
+      [0, -0.038, -0.013831, 0.27925, 0, 0, 1, 0, 0],
+      [0, -0.00624, -0.1032, 0, 0, 0, 0, 0, 1],
+      [0.015783, 0, -0.080518, 0, 0, 0, 0, 1, 0],
+      [0.100, -0.00188791, -0.010, 0, 0, 0, 1, 0, 0]
+    ],
+    "chain_left": [
+      [0.0039563, 0.10022, 0.23778, 0.27931, 5.4949e-05, -0.00019159, 0, 1, 0],
+      [0, 0.038, -0.013831, -0.27925, 0, 0, 1, 0, 0],
+      [0, 0.00624, -0.1032, 0, 0, 0, 0, 0, 1],
+      [0.015783, 0, -0.080518, 0, 0, 0, 0, 1, 0],
+      [0.100, 0.00188791, -0.010, 0, 0, 0, 1, 0, 0]
+    ],
+    "cubes": [
+      {"def": "GRASP_CUBE0", "place": [0.34, -0.18, 0.81]}
+    ]
+  }
+}

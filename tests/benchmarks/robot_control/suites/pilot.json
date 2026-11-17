@@ -1,0 +1,181 @@
+{
+  "schema": "omnisim-control-bench/1",
+  "name": "robot-control-pilot-v1",
+  "split": "development",
+  "provenance": "Authored during harness development by Codex. Includes known v4 regression classes. Not blind, independently authored or eligible for public leadership claims. Frozen heldout campaigns must use a separate externally reviewed task pack.",
+  "tasks": [
+    {
+      "id": "husky_return",
+      "family": "return",
+      "category": "sequence",
+      "robot": "husky",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.4 metres, then reverse 0.4 metres.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.4
+                }
+              },
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": -0.4
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "husky_unspecified",
+      "family": "unspecified",
+      "category": "non_action",
+      "robot": "husky",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Back up a bit, just a little.",
+          "expect": {
+            "no_motion": true,
+            "status": "clarify"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_condition_false",
+      "family": "condition",
+      "category": "state",
+      "robot": "tb3_burger",
+      "setup": [
+        {
+          "tool": "drive_forward",
+          "args": {
+            "distance": -0.4
+          }
+        }
+      ],
+      "turns": [
+        {
+          "prompt": "If your measured x coordinate is above 0.2 metres, turn left 45 degrees; otherwise turn right 45 degrees.",
+          "expect": {
+            "path": [
+              {
+                "tool": "turn",
+                "args": {
+                  "angle_rad": -0.7853981633974483
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tb3_burger_transient",
+      "family": "transient",
+      "category": "recovery",
+      "robot": "tb3_burger",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Drive forward 0.4 metres. If the tool is temporarily unavailable before any motion, retry once. Never repeat a successful movement.",
+          "expect": {
+            "path": [
+              {
+                "tool": "drive_forward",
+                "args": {
+                  "distance": 0.4
+                }
+              }
+            ]
+          },
+          "fault": "first_motion_unavailable"
+        }
+      ]
+    },
+    {
+      "id": "omniarm6_joint",
+      "family": "arm_joint",
+      "category": "grounding",
+      "robot": "omniarm6",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Move the six joints to these radians in order: [0.10, 0.1855, 0.7417, 0, 2.2144, 0].",
+          "expect": {
+            "path": [
+              {
+                "tool": "set_joint_positions",
+                "args": {
+                  "q": [
+                    0.1,
+                    0.1855,
+                    0.7417,
+                    0,
+                    2.2144,
+                    0
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "omniarm6_transfer",
+      "family": "arm_transfer",
+      "category": "manipulation",
+      "robot": "omniarm6",
+      "setup": [],
+      "turns": [
+        {
+          "prompt": "Pick up the blue cube and keep holding it.",
+          "expect": {
+            "holding": "GRASP_CUBE_BLUE",
+            "path": [
+              {
+                "tool": "pick",
+                "args": {
+                  "object": "blue"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "prompt": "Place the held cube at world coordinates [0.30, 0.34, 0.025] metres and release it.",
+          "expect": {
+            "holding": null,
+            "object_at": {
+              "GRASP_CUBE_BLUE": [
+                0.3,
+                0.34,
+                0.025
+              ]
+            },
+            "path": [
+              {
+                "tool": "place",
+                "args": {
+                  "xyz": [
+                    0.3,
+                    0.34,
+                    0.025
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

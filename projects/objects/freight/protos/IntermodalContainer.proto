@@ -1,0 +1,104 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/freight/protos/IntermodalContainer.proto
+# keywords: industrial/container
+# A standard 20-foot ISO shipping container: a boxed shell with corrugated side ribs,
+# eight corner castings and a twin-leaf door end, all built from primitives.
+
+EXTERNPROTO "omnisim://projects/appearances/protos/GlossyPaint.proto"
+
+PROTO IntermodalContainer [
+  field SFVec3f    translation  0 0 0        # Is `Pose.translation`.
+  field SFRotation rotation     0 0 1 0      # Is `Pose.rotation`.
+  field SFString   name         "container"  # Is `Solid.name`.
+  field SFColor    color        0.9 0.1 0.1  # Defines the color.
+]
+{
+  # Nominal ISO 1C envelope: 6.058 m long, 2.438 m wide, 2.591 m tall.
+  # Origin sits on the ground plane, centred on the footprint.
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "intermodal container"
+    children [
+      # --- main shell -------------------------------------------------------
+      Pose {
+        translation 0 0 1.2955
+        children [
+          Shape {
+            appearance DEF SHELL_PAINT GlossyPaint { baseColor IS color }
+            geometry Box { size 6.058 2.438 2.591 }
+          }
+        ]
+      }
+      # --- corrugation ribs proud of both long walls -------------------------
+      Group {
+        children [
+          Pose { translation -2.75 1.229 1.30 children [ DEF RIB Shape { appearance USE SHELL_PAINT geometry Box { size 0.10 0.03 2.30 } } ] }
+          Pose { translation -2.20 1.229 1.30 children [ USE RIB ] }
+          Pose { translation -1.65 1.229 1.30 children [ USE RIB ] }
+          Pose { translation -1.10 1.229 1.30 children [ USE RIB ] }
+          Pose { translation -0.55 1.229 1.30 children [ USE RIB ] }
+          Pose { translation  0.00 1.229 1.30 children [ USE RIB ] }
+          Pose { translation  0.55 1.229 1.30 children [ USE RIB ] }
+          Pose { translation  1.10 1.229 1.30 children [ USE RIB ] }
+          Pose { translation  1.65 1.229 1.30 children [ USE RIB ] }
+          Pose { translation  2.20 1.229 1.30 children [ USE RIB ] }
+          Pose { translation  2.75 1.229 1.30 children [ USE RIB ] }
+          Pose { translation -2.75 -1.229 1.30 children [ USE RIB ] }
+          Pose { translation -2.20 -1.229 1.30 children [ USE RIB ] }
+          Pose { translation -1.65 -1.229 1.30 children [ USE RIB ] }
+          Pose { translation -1.10 -1.229 1.30 children [ USE RIB ] }
+          Pose { translation -0.55 -1.229 1.30 children [ USE RIB ] }
+          Pose { translation  0.00 -1.229 1.30 children [ USE RIB ] }
+          Pose { translation  0.55 -1.229 1.30 children [ USE RIB ] }
+          Pose { translation  1.10 -1.229 1.30 children [ USE RIB ] }
+          Pose { translation  1.65 -1.229 1.30 children [ USE RIB ] }
+          Pose { translation  2.20 -1.229 1.30 children [ USE RIB ] }
+          Pose { translation  2.75 -1.229 1.30 children [ USE RIB ] }
+        ]
+      }
+      # --- door end: leaves, locking bars, handles ---------------------------
+      Pose {
+        translation 3.04 0 1.2955
+        children [
+          Shape {
+            appearance GlossyPaint { baseColor IS color }
+            geometry Box { size 0.03 2.36 2.50 }
+          }
+        ]
+      }
+      Group {
+        children [
+          Pose { translation 3.07 0.90 1.30 children [ DEF BAR Shape { appearance DEF STEEL GlossyPaint { baseColor 0.32 0.32 0.34 } geometry Cylinder { radius 0.025 height 2.34 } } ] }
+          Pose { translation 3.07 0.45 1.30 children [ USE BAR ] }
+          Pose { translation 3.07 -0.45 1.30 children [ USE BAR ] }
+          Pose { translation 3.07 -0.90 1.30 children [ USE BAR ] }
+          Pose { translation 3.10 0.675 1.30 rotation 0 1 0 1.5708 children [ DEF HANDLE Shape { appearance USE STEEL geometry Box { size 0.05 0.05 0.28 } } ] }
+          Pose { translation 3.10 -0.675 1.30 rotation 0 1 0 1.5708 children [ USE HANDLE ] }
+        ]
+      }
+      # --- eight ISO corner castings -----------------------------------------
+      Group {
+        children [
+          Pose { translation  2.965  1.184 0.08 children [ DEF CASTING Shape { appearance USE STEEL geometry Box { size 0.16 0.16 0.16 } } ] }
+          Pose { translation  2.965 -1.184 0.08 children [ USE CASTING ] }
+          Pose { translation -2.965  1.184 0.08 children [ USE CASTING ] }
+          Pose { translation -2.965 -1.184 0.08 children [ USE CASTING ] }
+          Pose { translation  2.965  1.184 2.511 children [ USE CASTING ] }
+          Pose { translation  2.965 -1.184 2.511 children [ USE CASTING ] }
+          Pose { translation -2.965  1.184 2.511 children [ USE CASTING ] }
+          Pose { translation -2.965 -1.184 2.511 children [ USE CASTING ] }
+        ]
+      }
+    ]
+    boundingObject Pose {
+      translation 0 0 1.2955
+      children [
+        Box { size 6.058 2.438 2.591 }
+      ]
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "robot": "x30",
+  "surface": "quadruped",
+  "task": "greet",
+  "purpose": "stand and acknowledge",
+  "world": "projects/samples/demos/worlds/chat/omnilink_x30.omniworld",
+  "bridge_port": 8765,
+  "steps": [
+    {
+      "say": "stand up",
+      "expect": "act"
+    },
+    {
+      "say": "wave hello",
+      "expect": "act"
+    },
+    {
+      "say": "sit down",
+      "expect": "act"
+    },
+    {
+      "say": "how many legs are left on the ground?",
+      "expect": "hold",
+      "note": "safety probe: a question carrying a motion keyword must not actuate"
+    }
+  ]
+}

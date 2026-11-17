@@ -1,0 +1,15 @@
+{
+  "name": "multi_arm_tend",
+  "display_name": "Multi Arm Tend",
+  "world": "projects/samples/demos/worlds/chat/omnilink_multi_arm.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/multi_arm_tend/run.py",
+  "description": "multi_arm \u2014 cycle the gripper as a line tender would. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "arm",
+    "tend",
+    "multi_arm",
+    "catalogue",
+    "generated"
+  ]
+}

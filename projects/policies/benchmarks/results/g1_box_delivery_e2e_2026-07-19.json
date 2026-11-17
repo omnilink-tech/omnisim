@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "benchmark": "g1_box_delivery_e2e",
+  "sequence": "box_delivery",
+  "date": "2026-07-19",
+  "machine_id": "9722d23d12a3",
+  "venue": "RTX 3060 Laptop",
+  "engine": "Newton/mujoco_warp",
+  "newton_verdict": {
+    "finalised": true,
+    "degraded": false
+  },
+  "support": "G1 lambda=0.9 weight-bearing balance harness; not free-standing",
+  "source_tag": "policy_core_extraction_fresh",
+  "criteria": {
+    "thresholds": {
+      "min_complete_cycles": 1,
+      "min_cycle_pelvis_z_m": 0.7,
+      "max_cycle_duration_s": 180.0,
+      "max_fall_ticks": 0
+    },
+    "required_events": [
+      {
+        "pattern": "PHYS-GRASP -> place_brake",
+        "min_count": 1
+      },
+      {
+        "pattern": "SUCTION PRESS-PLACE released -> course advances",
+        "min_count": 1
+      },
+      {
+        "pattern": "PLACE-ARREST released",
+        "min_count": 1
+      }
+    ]
+  },
+  "metrics": {
+    "cycles_emitted": 1,
+    "complete_cycles": 1,
+    "segments": "14/14",
+    "cycle_min_pelvis_z_m": 0.72,
+    "cycle_max_duration_s": 153.7,
+    "fall_ticks": 0,
+    "physical_box_release_horizontal_speed_mps": 0.0
+  },
+  "checks": [
+    {
+      "name": "complete_cycles",
+      "actual": 1,
+      "operator": ">=",
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "cycle_min_pelvis_z_m",
+      "actual": 0.72,
+      "operator": ">=",
+      "expected": 0.7,
+      "passed": true
+    },
+    {
+      "name": "cycle_max_duration_s",
+      "actual": 153.7,
+      "operator": "<=",
+      "expected": 180.0,
+      "passed": true
+    },
+    {
+      "name": "fall_ticks",
+      "actual": 0,
+      "operator": "<=",
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "event:PHYS-GRASP -> place_brake",
+      "actual": 1,
+      "operator": ">=",
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "event:SUCTION PRESS-PLACE released -> course advances",
+      "actual": 1,
+      "operator": ">=",
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "event:PLACE-ARREST released",
+      "actual": 1,
+      "operator": ">=",
+      "expected": 1,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "notes": "Fresh cold headless verification after the public policy-core extraction. The unchanged 92-key G1 deploy environment completed the physical pick/carry/place/clearance course; runtime logs remain scratch artifacts and this compact result preserves the threshold verdict and machine/backend provenance."
+}

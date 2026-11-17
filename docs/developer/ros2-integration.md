@@ -1,0 +1,459 @@
+# ROS 2 and OmniSim
+
+**2026-08-17.** OmniSim ships first-party ROS 2 support: the ROS 2
+[`simulation_interfaces`](https://github.com/ros-simulation/simulation_interfaces)
+standard plus a live robot surface (`/clock`, `/tf`, `JointState`, `cmd_vel`,
+`/odom`), implemented as a **sidecar package** over OmniSim's existing HTTP
+surface. The package is [`packages/omnisim-ros2/`](../../packages/omnisim-ros2/).
+
+**This page used to say the opposite.** Until 2026-08-17, ROS 2 was a documented
+non-goal. That history is kept below, because the reasoning that produced it is
+still half-true and it explains the shape of what was built.
+
+---
+
+## The history, and what changed
+
+### What the decision was (2026-07-10 → 2026-08-17)
+
+> *OmniSim's agent interface is HTTP/JSON, not ROS.* The whole product thesis is
+> agent-native: an LLM agent authors a world and drives a robot over a small,
+> versioned HTTP surface it can reason about, without a ROS graph, a middleware,
+> or a message-type compilation step. That is a different bet from the ROS
+> ecosystem, made on purpose.
+
+That reasoning was sound and **is still the reason the HTTP surface stays
+first-class**. What it got wrong was treating "HTTP is our agent interface" and
+"we should have a ROS bridge" as alternatives. They are not. An agent-native
+simulator that a robotics lab cannot plug into its existing stack is a simulator
+that lab will not evaluate at all — and the cost of supporting both turned out to
+be far lower than the old page assumed, because the harness already implements
+every verb the ROS standard asks for.
+
+### What changed
+
+1. **The project owner reversed the decision** and asked for full ROS 2 support.
+2. **`simulation_interfaces` matured.** The old page predated the standard being
+   a realistic target. It is now implemented by Gazebo, Isaac Sim and O3DE, which
+   makes it the interoperability layer rather than a fourth bespoke bridge. It
+   maps almost one-to-one onto verbs the harness already served.
+3. **The old page's own escape hatch turned out to be the right architecture.**
+   It sketched "a small ROS 2 node that polls the OmniSim bridge over HTTP and
+   republishes as ROS messages" and called it *"a SKETCH of the pattern, not a
+   shipped package"*. That sketch is now the shipped package. Nothing about the
+   approach needed to change — only the decision to maintain and test it.
+
+### What did NOT change
+
+- **The engine stays ROS-free.** No `rclcpp` in `src/omnisim/`, no ROS in the
+  engine Makefiles, no ROS build dependency. A non-ROS user's build is unaffected.
+- **HTTP/JSON remains the first-class agent interface.** [PROTOCOL.md](../../PROTOCOL.md)
+  is still the contract; ROS 2 is *additive*, layered on top of it, and every ROS
+  verb is implemented by calling an HTTP endpoint that already existed.
+- **We did not port `webots_ros2`.** The old page named that as the reversible
+  path. It was the wrong one: `webots_ros2` targets the Webots controller
+  protocol and node set, from which OmniSim has genuinely diverged (`URDFRobot`,
+  the `omnisim://` scheme, `newton*` fields, deleted `Fluid`/physics-plugin API).
+  Building on OmniSim's own HTTP surface is less code and cannot rot against
+  upstream Webots.
+
+---
+
+## Architecture
+
+```
+   ROS 2 graph                    HTTP/JSON                 OmniSim
+┌────────────────┐          ┌──────────────────┐      ┌────────────────┐
+│ your nodes,    │  ROS 2   │ omnisim_ros2     │ HTTP │ World Harness  │
+│ rviz2, rosbag  │◄────────►│ (sidecar package)│◄────►│    :6789       │
+└────────────────┘ services └──────────────────┘      ├────────────────┤
+                   topics            │           HTTP │ robot bridge   │
+                                     └───────────────►│    :8765       │
+                                                      ├────────────────┤
+                                                      │  omnisim-bin   │
+                                                      │  (no ROS deps) │
+                                                      └────────────────┘
+```
+
+Two HTTP surfaces, for a structural reason:
+
+- **The World Harness (`:6789`)** answers everything about the *scene* — entities,
+  poses, stepping, spawning, world loading, joint positions.
+- **The per-robot bridge (`:8765`)** answers everything about a *device*.
+  `GET /robot/<def>/sensor/<name>` on the harness returns **501 by design**:
+  OmniSim, like upstream Webots, restricts device APIs to the controller that
+  owns the device, so the supervisor genuinely cannot read another robot's camera
+  or drive another robot's motors. Anything device-shaped — sensors, `cmd_vel`,
+  joint commands, odometry — therefore goes to the robot's own bridge.
+
+That 501 is not a gap to route around; it is the reason the ROS surface is split
+across two clients.
+
+---
+
+## What is implemented
+
+### Tier 1 — `simulation_interfaces` ✅
+
+15 services + the `SimulateSteps` action, against
+[`simulation_interfaces` 2.1.0](https://github.com/ros-simulation/simulation_interfaces).
+`GetSimulatorFeatures` advertises 21 features and `spawn_formats: [vrml, urdf]`.
+
+| Service | Harness endpoint |
+|---|---|
+| `GetSimulatorFeatures` | *(static declaration)* |
+| `GetSimulationState` / `SetSimulationState` | `GET /sim/state` · `POST /sim/reset` |
+| `StepSimulation` · `SimulateSteps` (action) | `POST /sim/step` |
+| `ResetSimulation` | `POST /sim/reset` + `POST /scene/delete` |
+| `GetEntities` · `GetEntityState` · `GetEntitiesStates` | `GET /scene/tree` |
+| `SetEntityState` | `POST /scene/set_pose` |
+| `GetEntityInfo` · `GetEntityBounds` | `GET /scene/node/<def>` · `?bounds=1` |
+| `SpawnEntity` · `DeleteEntity` | `POST /scene/spawn` · `POST /scene/delete` |
+| `LoadWorld` · `GetCurrentWorld` | `POST /world/load` · `GET /sim/state` |
+
+### Tier 2 — the live robot surface ✅
+
+| Topic | Type | Source |
+|---|---|---|
+| `/clock` | `rosgraph_msgs/Clock` | bridge `POST /get_robot_state` → `sim_time` when the bridge is up (default bring-up); else `GET /sim/state` → `engine_time_ms`. ⚠ Fixed 2026-10-02: it used to publish `sim_time_ms`, the harness supervisor's loop counter, which ran 23 s while the engine ran 281 s, so every `use_sim_time:=true` node published at ~0.1 Hz. `engine_time_ms` alone was the right ruler but sampled only when the supervisor stepped (11 values in 30 s), still throttling timers. On the bridge clock, measured on the Husky: `/scan` 5.0 Hz and `joint_states` 2.5 Hz in simulated time, exactly as configured |
+| `/tf`, `/tf_static` | `tf2_msgs/TFMessage` | `GET /scene/tree` |
+| `<robot>/joint_states` | `sensor_msgs/JointState` | `GET /robot/<def>/joints` |
+| `/odom` | `nav_msgs/Odometry` | bridge `POST /get_robot_state` |
+| `/cmd_vel` *(sub)* | `geometry_msgs/Twist` | bridge `POST /set_velocity` |
+| `/joint_command` *(sub)* | `sensor_msgs/JointState` | bridge `POST /set_joint_positions` |
+| `/imu/data` | `sensor_msgs/Imu` | bridge `POST /read_sensor` |
+| `/scan` | `sensor_msgs/LaserScan` | bridge `POST /read_sensor` |
+| `/gps/local` *or* `/gps/fix` | `PointStamped` / `NavSatFix` | bridge `POST /read_sensor` |
+
+`use_sim_time` is supported throughout, and TF is a **real tree** — each node is
+published relative to its nearest DEF-bearing ancestor, not flattened to `world`.
+
+**Sensor topics (added 2026-08-17).** The blocker was never the ROS side: the
+harness's `GET /robot/<def>/sensor/<name>` is a deliberate 501, so data had to
+come from the robot's own controller, and **no shipped bridge implemented the
+optional `/read_sensor` verb**. `omnilink_mobile_bridge` now does, plus
+`/list_sensors` for discovery, and `sensor_node` publishes from it.
+
+Three things about that lane are load-bearing and are documented at the source
+rather than discovered later:
+
+- ⚠ **A URDF robot has no devices unless the world was loaded with
+  `OMNISIM_URDF_USE_SENSORS=1`.** The importer parses `<gazebo>` sensor blocks
+  always and drops them at emit time when the variable is unset. Measured on the
+  shipped Husky: **0 devices without it, 5 with it**. The gate's own source
+  comment claims the emission path "crashes OmniSim' device registration
+  mid-startup"; that is **stale** — it loads cleanly and produces working
+  devices, presumably fixed by the later rework that moved sensor carriers
+  inline into their link's Solid.
+- ✅ **`Gyro` and `Accelerometer` are FIXED (engine `bde550489`, 2026-09-01) and
+  the ROS side is re-pointed at them — but the re-point is code-verified, not
+  live-verified.** The historical defect: the gyro read exactly `[0,0,0]` while
+  the robot rotated and the accelerometer never yielded a sample, not even
+  gravity, while the `InertialUnit` in the *same* emitted carrier Solid worked
+  perfectly.
+
+  The asymmetry was in how the two device families read their pose.
+  `OmGyro`/`OmAccelerometer` went through **`upperSolid()->bodyHandle()`**,
+  which is non-null only when that *exact* Solid owns a Newton body;
+  `InertialUnit` and GPS-position go through **`matrix()`**, a scene-graph read
+  that needs no body. The URDF importer's nested IMU carrier owns none — the
+  registration fold welds it into its leader — so the cluster structurally
+  could not serve Gyro or Accelerometer. Measured (OmniBench lane 4,
+  2026-08-17): a real Newton body read `[0, 0, 2.0000]` against a
+  supervisor-measured 2.0000 rad/s; the importer's exact carrier pattern read
+  `[0, 0, 0.0]`.
+
+  The engine fix (`bde550489`): both devices now resolve via the new
+  **`carrierBodyHandle()`** — the ancestor-walking read welds already used, so
+  a folded child reads its merge-leader's body, with point-velocity reads
+  taking the sensor's own world position for an exact lever arm. A body-less
+  Accelerometer publishes gravity-only (never NaN) with a latched warning.
+  Verified by lane-4 probes `device.accelerometer` and
+  `device.imu_nested_carrier` (the importer's exact emission pattern, with a
+  direct-mount in-run control): both **`works`**.
+
+  **`sensor_msgs/Imu` semantics since 2026-09-01**: `angular_velocity` and
+  `linear_acceleration` are populated whenever the bridge's `/read_sensor`
+  returns three finite values, with `covariance[0] = 0.0` ("available,
+  accuracy unknown"); `covariance[0] = -1` ("not available") is kept, per
+  message, when the device is absent, warming up, or non-finite — a stale
+  pre-fix engine still yields zeros-or-NaN, and only the NaN half is
+  detectable client-side. The bridge's pose-differenced yaw rate stays on
+  `/odom` and is never blended into the Imu message. ⚠ **Not yet
+  live-verified**: no engine or ROS stack was run for the re-point (the WSL
+  bringup lane owns that); a live check would assert `angular_velocity.z`
+  tracking a commanded turn and `linear_acceleration` magnitude ≈ 9.81 m/s²
+  at rest, with both `covariance[0]` entries at `0.0`.
+- ⛔ **No camera exists in this tree**, so no `Image`/`CameraInfo` was shipped.
+
+The Husky URDF gained a `<sensor type="ray">` block (a SICK LMS111 on the sensor
+arch, 270° / 541 samples / 0.1–20 m) so the lidar path could be verified against
+a real device. It is **inert** unless the flag above is set — verified by a
+control run: the same world reports `devices: []` without it.
+
+**TurtleBot3 and Jackal lidars (2026-09-30).** The three TurtleBot3 URDFs now
+carry the LDS-01 (`lds_lfcd_sensor` on `base_scan`: ROBOTIS' upstream Gazebo
+values, 360 samples over 6.28 rad, 0.12–3.5 m) and the Jackal carries
+upstream's default `JACKAL_LASER` accessory (`front_laser`, a SICK LMS1xx on
+the upright front bracket: 720 samples over 270°, 0.1–30 m). Same gate: no
+lidar without `OMNISIM_URDF_USE_SENSORS=1`. Measured against walls at known
+distances with `scripts/dev/measure_urdf_lidar.py` (worlds
+`showcase/tb3_lidar_walls.omniworld`, `showcase/jackal_lidar_walls.omniworld`):
+perpendicular beams within 1 mm, ≥ 98 % of all beams agree with the authored
+geometry, and a 0.99 m drive shrinks the Jackal's forward range by 0.9953 m.
+The Husky's LMS111 has its own known-wall world since 2026-10-02
+(`showcase/husky_lidar_walls.omniworld`, bridge :8783, `measure_urdf_lidar.py
+husky`: every check passes, a 0.987 m drive shrinks the forward range by 0.987 m).
+
+✅ **`/scan` verified end to end through ROS 2 (2026-10-02)** on all three
+scanners: engine on Windows → `omnilink_mobile_bridge` → `wsl_harness_link`
+tunnel → `sensor_node` under Humble in WSL → a ROS subscriber, every beam scored
+at the angle ROS publishes for it against the authored walls. TurtleBot3:
+360/360 beams equal to the bridge's raw row (reversed), 359/360 agree with the
+geometry within 5.5 mm, walls at +90° / −90° where they belong. Jackal:
+720/720 equal, 720/720 agree within 8 mm. Husky: 541/541 equal, 540/541 agree
+within 9 mm. The two misses are beams grazing a box corner ~3.5 mm outside it
+(well inside one beam's footprint). `/tf_static` base→scanner equals the
+bridge's measured mount on all three; 5 Hz requested, 4.99–5.03 Hz received
+through the tunnel. The in-simulator half is reproducible with
+`scripts/dev/measure_urdf_lidar.py`; the ROS-side capture rig is not in this
+repository. Three
+things a `/scan` consumer must know:
+
+- ⚠ **An engine built before 2026-09-30 turns these planar scanners into the
+  Lidar node's default 4-layer fan** (±5.7° / ±1.9°): the importer only wrote
+  `numberOfLayers` above 1. The bottom layer hits the floor (TurtleBot3: a
+  ring at ~1.8 m), and `sensor_node`'s default `lidar_layer: -1` picks the
+  layer with the most returns — that floor layer. Fixed in `OmUrdfImporter.cpp`
+  the same day and pinned by `tests/test_urdf_lidar_tb3_jackal.py` (single
+  layer, 6/6 on the rebuilt engine); the Husky's LMS111 is single-layer now
+  too. On an older binary, pass `lidar_layer:=1`.
+- **Beam order**: OmniSim index 0 is the LEFT end of the FOV and the scan
+  sweeps clockwise (theta_i = fov/2 − (i + 0.5)·fov/n); `sensor_node` reverses
+  it so angles increase counter-clockwise, and since 2026-10-02 publishes the
+  engine's own bin centres: `angle_increment = fov/n`, `angle_min = −fov/2 +
+  fov/(2n)` (`conversions.scan_angles`). Before that it spread the beams
+  edge-to-edge (`fov/(n − 1)`), up to half a step off (0.5° on the LDS-01),
+  with the TurtleBot3's first and last beams both claiming ±π. For the
+  TurtleBot3, index 0 still points straight behind, not straight ahead as on
+  the real LDS-01 driver (which publishes `angle_min = 0`): index by angle,
+  not by position.
+- **No noise**: the importer ignores `<noise>`; ranges are exact to ~1 mm.
+
+### Tier 3 — `ros2_control` ✅ velocity-commanded bases · ⛔ arms
+
+[`packages/omnisim-ros2/src/omnisim_ros2_control/`](../../packages/omnisim-ros2/src/omnisim_ros2_control/)
+ships `omnisim_ros2_control/OmniSimSystem`, a C++
+`hardware_interface::SystemInterface`. `controller_manager` treats an OmniSim
+robot as ordinary hardware, so stock controllers drive it unmodified.
+
+| | |
+|---|---|
+| state | harness `GET /robot/<def>/joints` → `position` + `velocity` interfaces |
+| commands | bridge `POST /set_velocity` (`diff_drive`) or `POST /set_joint_positions` |
+| verified | `diff_drive_controller` + `joint_state_broadcaster` on the Husky |
+
+Neither endpoint is new. The plugin adds no OmniSim-side surface, and the engine
+is untouched.
+
+```bash
+ros2 launch omnisim_ros2_control husky_diff_drive.launch.py
+```
+
+**Measured, machine `9722d23d12a3`, 2026-08-17.** With
+`omnilink_husky.omniworld` loaded, `ros2 control list_hardware_interfaces`
+reports four claimed `velocity` command interfaces and eight `position`/
+`velocity` state interfaces; both controllers report `active`; and a
+`cmd_vel_unstamped` publish drove the Husky from `x = −0.00000` to
+`x = +5.59211` — **5.5921 m over 195.22 s of simulated time**, with the pose and
+the clock read out of the simulator rather than from the command.
+
+⚠ **`update_rate` is not the actuation rate.** `read()` / `write()` do no I/O; a
+background thread owns the HTTP at `comms_rate_hz`. The **ceiling is OmniSim's
+supervisor round trip, not TCP**: `GET /robot/<def>/joints` costs 21.01 ms
+against 4.48 ms for a bare `GET /healthz` on the same server, so one read plus
+one write is ~22 ms and the hard ceiling is near **45 Hz**. The shipped default
+is 25 Hz. Full table, the WSL-tunnel figures and the live diagnostics are in the
+package README.
+
+✅ **The arm-bridge blocker is FIXED (2026-08-19): `omnilink_arm_bridge` now has
+the non-blocking, superseding servo verb — `POST /servo_joint_positions`
+(PROTOCOL.md §6.1).** The old goal contract is unchanged and still measured true:
+a second `set_joint_positions` 50 ms after the first comes back
+`HTTP 409  accepted=False  error='busy'` with `"this set_joint_positions was NOT
+applied"` — a trajectory controller pointing at *that* verb still lands in
+pieces. The servo verb is the lane it points at instead: last-write-wins, never
+a 409 for servo-on-servo, preempts an in-flight goal and says so
+(`preempted: "set_joint_positions"`), and the measured result parks into
+`get_robot_state.last_command` when the stream goes quiet. Verified on
+`omnilink_ur5e.omniworld`: 24 setpoints at ~18 Hz, 24/24 accepted, zero 409s,
+parked max error 0.011 rad. ✅ **The ROS-side wiring is ALSO done (2026-08-19,
+same day):** both `joint_command` (Tier 2) and `command_mode: joint_positions`
+(Tier 3) read the bridge's `/capabilities` and stream to
+`/servo_joint_positions` when `capabilities.servo` is advertised, falling back
+to the goal verb — with the 409-explainer demoted to that fallback lane — on
+bridges without it. Verified live on the Tier 2 lane (machine `9722d23d12a3`,
+WSL Humble → the Windows engine over the port tunnel: 60 `joint_command`
+messages at 15 Hz through the real `command_node`, zero 409s, arm settled
+0.018 rad from target, and a single stream `seq` per target proving
+last-write-wins retargeting). ⚠️ Tier 3's servo path is compiled and
+unit-tested under Humble but has **not** run under a live `controller_manager`,
+and **MoveIt has still never been brought up** — say "unblocked", never
+"working".
+
+**Nav2 ✅ brought up end-to-end (2026-08-31).** The first Nav2 stack (ROS 2
+**Jazzy**) ever run against OmniSim drove the Husky autonomously to a
+`NavigateToPose` goal — `(0,0) → (1.3, 0)`, `SUCCEEDED` in ~10–12 s, pose read out
+of the simulator. It ships as its own colcon package,
+[`packages/omnisim-ros2/src/omnisim_ros2_nav2/`](../../packages/omnisim-ros2/src/omnisim_ros2_nav2/)
+(runbook + beta-feedback report), layered on the Tier-2 sidecar with **no** new
+OmniSim surface. Two paths were tried — a Windows-engine + WSL-ROS split (reached
+M1–M5, then stalled on tunnels / `wslrelay` / firewall / ephemeral-port
+exhaustion) and **all-in-WSL** (OmniSim built and run inside the *same* Ubuntu
+24.04 as ROS 2, everything on `localhost`); the all-in-WSL path is the one that
+closed M6 and is the documented, supported path going forward. Winning
+configuration: CPU `mj_step` solver (`OMNISIM_NEWTON_MODEL_DEVICE=cpu`, needed for
+the Lidar rays), a no-window headless sim (`OMNISIM_NO_WINDOW=1`), **CycloneDDS**
+as the RMW on every node (FastDDS discovery is unreliable in WSL2), a static
+identity `map→odom` (OmniSim `/odom` is ground truth, so no SLAM/AMCL), and a lean
+five-server Nav2 launch. ⚠ **Scope it exactly: this demonstrates planning and goal
+execution ONLY — not a full localization or obstacle-avoidance benchmark.** The
+winning config uses a rolling costmap with no `static_layer`, and `lidar_layer:=0`
+sees open space because this short-wall test world's walls are only 0.1 m tall; a
+world with taller walls would exercise real obstacle avoidance. The package is
+written to generalize to any well-defined differential-drive robot, not just the
+Husky. OmniSim is also still absent from the `ros2_control` simulator registry.
+
+---
+
+## Honest limitations
+
+Declared through the feature flags **and** repeated in
+`GetSimulatorFeatures.custom_info`, so a caller learns them from the API:
+
+1. **No pause through the sidecar — a semantics mismatch, not a missing verb.**
+   `SIMULATION_STATE_PAUSE` is not advertised;
+   `GetSimulationState` answers `STATE_PLAYING` whenever a world is loaded and
+   running; and
+   `StepSimulation` means "advance at least N basic steps", not "advance exactly
+   N from a frozen state".
+
+   ⚠️ **Corrected 2026-09-22.** This limitation used to be stated as *"the
+   harness exposes no pause verb"*, and that premise is now false: `POST
+   /sim/pause` and `POST /sim/resume` ship in v9, and a held pause plus
+   `POST /sim/step` is genuine single-stepping. The reason the sidecar still
+   refuses is different, and it is a real one. **The harness pause is _leased_**
+   — default 30 s, min 1 s, max 300 s — and it lifts itself when the lease
+   expires, deliberately, so a client that dies cannot freeze the engine for
+   every other client. `simulation_interfaces` asks for an *indefinite* state:
+   a caller sets `STATE_PAUSED` and expects the simulator to stay paused, and
+   expects `GetSimulationState` to keep answering `STATE_PAUSED`, until told
+   otherwise. A deadline-bounded lease cannot promise that.
+
+   **Open decision for the owner, not taken here.** Wiring ROS 2 pause onto the
+   lease needs answers to: who renews the lease (a keep-alive timer in the node,
+   or the caller?); what `GetSimulationState` reports in the instant between an
+   expiry and a renewal; and what happens to a `SimulateSteps` action in flight
+   when a lease lapses. Until those are decided, the refusal stands and is
+   reported with this reason. **The node's behaviour is unchanged** — only the
+   reason it gives was corrected.
+
+   One consequence of the sidecar not holding a lease: it reports
+   `STATE_PLAYING` for a loaded, running world even while *another* harness
+   client holds a pause. It does not read the `paused` flag that
+   `GET /sim/state` publishes.
+2. **`EntityState.twist` / `.acceleration` are not measured** and are returned as
+   zeros — *unmeasured*, not observed-to-be-zero. The harness reports poses only.
+   Real velocities are available on `/odom` (from the bridge) and in
+   `JointState.velocity`.
+3. **`JointState.velocity` is finite-differenced by the harness**, not read from
+   the engine, and is `null` on a joint's first read. When any joint's velocity is
+   unknown the whole array is published **empty** — the ROS idiom for "not
+   provided" — rather than substituting a zero that reads as "stationary".
+   `effort` is never published; OmniSim does not expose it.
+4. **`ResetSimulation` re-pins every motor** to a position hold. That is the
+   harness's documented reset behaviour; its warning is passed through verbatim.
+5. **`DeleteEntity` removes a node from the scene graph, not from the physics
+   model.** Deleted geometry keeps blocking rays and contacts until a reload.
+6. **Sensor topics cover orientation, rates, acceleration, range and
+   position.** Since 2026-09-01 (engine `bde550489` + the sensor-node
+   re-point, code-verified only) `Imu.angular_velocity` /
+   `linear_acceleration` carry `covariance[0] = 0.0` when the Gyro /
+   Accelerometer reading is finite, and keep the `-1` "not available"
+   declaration when the device is absent, warming up, or non-finite;
+   there is no camera in the tree, so no `Image`/`CameraInfo`. Only
+   `omnilink_mobile_bridge` implements `/read_sensor`
+   ([PROTOCOL.md §6.6](../../PROTOCOL.md)) — other bridges still have no sensor
+   surface, so check `capabilities.sensors` rather than assuming the verb.
+   And on any URDF robot the devices only exist at all when the world was loaded
+   with `OMNISIM_URDF_USE_SENSORS=1`.
+7. **`WorldInfo.coordinateSystem` is not queryable over HTTP.** OmniSim defaults
+   to Z-up/ENU, which is exactly REP-103, so no axis remapping is applied. A world
+   that overrides it to `NUE` cannot be detected at runtime.
+8. **Rates cost TCP connections — for harness traffic.** The **bridge** now sets
+   `protocol_version = "HTTP/1.1"` and the client pools connections, measured at
+   300 requests costing **+0** `TIME_WAIT` sockets at 908.8 req/s, against
+   **+300** at 114.8 req/s before. The World Harness **also speaks HTTP/1.1 with keep-alive since
+   2026-09-01** (it was HTTP/1.0 when this section was written), so
+   `clock_node`, `robot_state_node` and `simulation_interfaces_node` now
+   reuse pooled connections too; the pool's HTTP/1.0-peer detection remains
+   as a safety net for older harnesses.
+   Each closed socket holds an ephemeral port for 120 s against Windows' 16,384,
+   which is how a ~50 Hz bringup previously reached 17,487 sockets in
+   `TIME_WAIT` and `WinError 10048`. Giving the harness keep-alive is the
+   obvious next win and has not been done.
+
+---
+
+## Quickstart
+
+```bash
+# 1. OmniSim side
+python -m omnisim harness --auto-port
+
+# 2. ROS 2 side (Humble or newer)
+bash packages/omnisim-ros2/scripts/bootstrap.sh
+source packages/omnisim-ros2/install/setup.bash
+ros2 launch omnisim_ros2 omnisim_bringup.launch.py
+
+# 3. use it
+ros2 service call /omnisim_simulation_interfaces/get_entities \
+  simulation_interfaces/srv/GetEntities "{}"
+ros2 topic echo /clock --once
+ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.5}}"
+```
+
+Worked examples with real captured output, the Windows+WSL2 transport, and the
+full parameter list: [`packages/omnisim-ros2/README.md`](../../packages/omnisim-ros2/README.md).
+
+---
+
+## When to use something else
+
+Still honest, with two clauses narrowed. **If your stack *is* ROS 2 end to end —
+Nav2, MoveIt, the whole graph — [Gazebo](https://gazebosim.org) remains the
+better-integrated choice today**, and upstream
+[Webots](https://github.com/cyberbotics/webots) + `webots_ros2` is the supported
+path if you want Webots' robot models with a mature bridge. What changed is that
+`ros2_control` is no longer on that list for a velocity-commanded base (a
+`SystemInterface` ships and `diff_drive_controller` is verified), and **Nav2 is no
+longer either**: a full Nav2 stack (ROS 2 Jazzy) now drives the Husky to a goal —
+but only for **planning + goal execution** on the all-in-WSL path, not as a
+localization or obstacle-avoidance benchmark (see the Nav2 note above and
+[`packages/omnisim-ros2/src/omnisim_ros2_nav2/`](../../packages/omnisim-ros2/src/omnisim_ros2_nav2/)).
+What has not changed is the rest — **MoveIt is unblocked (the arm bridge grew its
+servo verb, 2026-08-19) but has never been brought up here, and OmniSim is not in
+the `ros2_control` simulator registry.**
+
+What OmniSim offers instead is the agent-native surface — the harness, MCP,
+structured load diagnostics, the capture/cinema pipeline — with ROS 2 now
+available on top rather than instead.
+
+## See also
+
+- [`packages/omnisim-ros2/`](../../packages/omnisim-ros2/) — the package, its README and tests
+- [`packages/omnisim-ros2/src/omnisim_ros2_nav2/`](../../packages/omnisim-ros2/src/omnisim_ros2_nav2/) — the Nav2 (Jazzy) Husky bring-up: runbook + beta-feedback report (M1–M6)
+- [PROTOCOL.md](../../PROTOCOL.md) — the HTTP/JSON surface underneath
+- [scripts/harness/README.md](../../scripts/harness/README.md) — the World Harness
+- [simulator-comparison.md](simulator-comparison.md) — where OmniSim stands
+- [packages/omnisim-mcp/](../../packages/omnisim-mcp/) — the MCP server over the same surface

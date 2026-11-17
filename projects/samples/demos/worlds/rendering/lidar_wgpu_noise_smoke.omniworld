@@ -1,0 +1,64 @@
+#OMNISIM R2025a utf8
+
+# Lane E1 (P5+P6) smoke world: the R5e Lidar rig + `noise 0.1`. On WREN the noise is the
+# range_noise.frag post-process; on the wgpu arm it is the CPU port
+# (OmAbstractCamera::applyWgpuRangePostFx). Same cyan box as lidar_wgpu_smoke (front face
+# 0.7 m), but fieldOfView 1.2 so the FLANK columns MISS the box (|theta| > atan(0.3/0.7)
+# = 0.405 rad) -- with noise > 0 those columns must read +inf (the WREN range CLIP), never
+# the no-noise clamp value of maxRange.
+#
+# The controller asserts, against the closed form range[theta] = 0.70/cos(theta):
+#   * residual std over the hit columns ~ 0.1 m (sigma = the authored noise, in ABSOLUTE
+#     metres -- there is NO maxRange scaling),
+#   * residual mean ~ 0,
+#   * flank (miss) columns are +inf.
+# RED-CAPABLE: with the port absent (or OMNISIM_WGPU_SENSOR_POSTFX=0) the wgpu floats are
+# noiseless and clamped, so the std collapses to ~0 and the flanks read 10.0 -> FAIL.
+
+WorldInfo {
+  info [
+    "Lane E1 smoke -- wgpu Lidar applies the authored gaussian range noise"
+  ]
+  title "Lane E1 wgpu Lidar noise smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Lidar {
+      name "lidar_wgpu"
+      horizontalResolution 64
+      fieldOfView 1.2
+      verticalFieldOfView 0.1
+      numberOfLayers 1
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+      type "fixed"
+      noise 0.1
+    }
+    DEF CYAN_BOX Solid {
+      translation 1.0 0 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "lidar_wgpu_noise_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

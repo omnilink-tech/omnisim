@@ -1,0 +1,141 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/street_furniture/protos/TrashBin.proto
+# keywords: exterior/street furniture
+# A two-wheeled kerbside wheelie bin: a tapered body, a hinged-looking cover, a grab bar and two wheels.
+
+PROTO TrashBin [
+  field SFVec3f    translation          0 0 0
+  field SFRotation rotation             0 0 1 0
+  field SFString   name                 "trash bin"
+  field SFColor    coverColor           0.1 0.1 0.1                 # Defines the color of the top part of the bin.
+  field SFColor    binColor             0.08 0.46 0                 # Defines the main color of the bin.
+  field MFColor    recognitionColors    [0.08 0.46 0, 0.1 0.1 0.1]  # Is `Solid.recognitionColors`.
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "trash bin"
+    recognitionColors IS recognitionColors
+    children [
+      # --- body -------------------------------------------------------------
+      DEF BODY Pose {
+        translation 0 0 0.5
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor IS binColor
+              roughness 0.5
+              metalness 0
+            }
+            geometry Box {
+              size 0.56 0.5 0.82
+            }
+          }
+        ]
+      }
+      DEF SKIRT Pose {
+        translation 0 0 0.11
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor IS binColor
+              roughness 0.5
+              metalness 0
+            }
+            geometry Box {
+              size 0.48 0.44 0.2
+            }
+          }
+        ]
+      }
+      # --- cover ------------------------------------------------------------
+      DEF COVER Pose {
+        translation 0 0 0.94
+        children [
+          Shape {
+            appearance DEF COVER_PLASTIC PBRAppearance {
+              baseColor IS coverColor
+              roughness 0.35
+              metalness 0
+            }
+            geometry Box {
+              size 0.6 0.54 0.06
+            }
+          }
+        ]
+      }
+      DEF COVER_LIP Pose {
+        translation 0.29 0 0.9
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor IS coverColor
+              roughness 0.35
+              metalness 0
+            }
+            geometry Box {
+              size 0.03 0.54 0.05
+            }
+          }
+        ]
+      }
+      # --- grab bar ---------------------------------------------------------
+      DEF HANDLE Pose {
+        translation -0.3 0 0.95
+        rotation 1 0 0 1.5708
+        children [
+          Shape {
+            appearance DEF BIN_METAL PBRAppearance {
+              baseColor 0.25 0.25 0.26
+              roughness 0.5
+              metalness 0.7
+            }
+            geometry Cylinder {
+              radius 0.02
+              height 0.42
+              subdivision 10
+            }
+          }
+        ]
+      }
+      # --- wheels -----------------------------------------------------------
+      DEF WHEEL_L Pose {
+        translation -0.2 0.22 0.07
+        rotation 1 0 0 1.5708
+        children [
+          DEF WHEEL Shape {
+            appearance DEF BIN_RUBBER PBRAppearance {
+              baseColor 0.05 0.05 0.05
+              roughness 0.9
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.07
+              height 0.05
+              subdivision 14
+            }
+          }
+        ]
+      }
+      DEF WHEEL_R Pose {
+        translation -0.2 -0.22 0.07
+        rotation 1 0 0 1.5708
+        children [
+          USE WHEEL
+        ]
+      }
+    ]
+    boundingObject Pose {
+      translation 0 0 0.48
+      children [
+        Box {
+          size 0.6 0.54 0.97
+        }
+      ]
+    }
+  }
+}

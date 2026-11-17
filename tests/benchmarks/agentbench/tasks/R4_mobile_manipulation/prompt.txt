@@ -1,0 +1,15 @@
+Create a 10 m x 10 m indoor warehouse environment and implement an autonomous mobile-manipulation task.
+
+Requirements:
+- Use a differential-drive mobile base carrying a manipulator arm with at least 4 actuated joints and a gripper.
+- Add a planar LiDAR (at least 180 degrees field of view, at least 180 range samples per scan, at least 5 m maximum range) and a camera on the robot.
+- Start pose: (-4.0, -4.0, 0 degrees).
+- Place five static box obstacles using the obstacle specification provided in benchmark_assets/obstacles.json.
+- Place the table, the cube payload and the delivery pad exactly as benchmark_assets/scene.json specifies, using the names, sizes and positions in that file. The table stands at (3.0, 3.0), the 0.05 m cube payload rests on top of it, and the delivery pad is at (-3.0, 3.5).
+- The robot must navigate to the table using its LiDAR, grasp the payload, transport it to the delivery pad without dropping it, and release it on the pad.
+- The payload must remain held throughout transport -- a dropped or re-acquired payload is a failure.
+- The payload must still be at rest on the pad 2 simulated seconds after it is released.
+- The grasp must be produced by contact between the gripper and the payload. Do not attach the payload with a constraint, a weld, a connector, or by re-parenting it into the robot.
+- Do not teleport, and do not write a pose directly to the robot or to the payload once the simulation is running. Every metre travelled must come from actuators.
+
+Execute the full task before submitting.

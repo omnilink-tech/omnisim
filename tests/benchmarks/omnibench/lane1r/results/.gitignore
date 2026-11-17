@@ -1,0 +1,10 @@
+# Same contract as omnibench/results/.gitignore: only the rows that ARE the
+# result are committable. Replay .npz files and controller breadcrumbs are
+# regenerable from the vendored dataset + the world + run.py (~84 min for the
+# full 550), so they stay local. A campaign leaves ~32 MB of binary here that
+# changes every run; that is not a thing to put in git.
+*
+!*/
+!.gitignore
+!runs.jsonl
+!scores.json

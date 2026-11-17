@@ -1,0 +1,17 @@
+Calibration feedback 03 -- 2026-09-26, from evidence/shift-calibration-holdout-03 (4 oracle + 3
+oracle_bad, one process of 7 -- the campaign's wave shape) and evidence/shift-calibration-dev-03.
+
+shift_holdout_v1 (sha256 c90dee4d...)
+  oracle: 12:halt window_step_never_fired and 34:answered, 4 of 4 runs.
+    Diagnosis from the calibration output (no prompts read): step s36 (trigger moved 0.4) never
+    fires. Its reference is the robot's pose when s35 fired, and s35's calibration drive_to
+    returned in 0.1 s with the robot already AT that target (0.00 m away): under the correct
+    script the robot is already at s35's destination, so it never moves after s35 and s36 waits
+    out its max_wait.
+  oracle_bad did NOT fail: 5:reached, 10:prop_still, 11:reached
+
+shift_dev_v1 (sha256 94c3c2ee...)
+  oracle: passed every check.
+  oracle_bad did NOT fail: 0:reached, 6:reached, 11:prop_still, 12:reached
+
+Real time in this layout: worst 5 s window 0.95-0.97x on every run.

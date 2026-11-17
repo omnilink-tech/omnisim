@@ -1,0 +1,25 @@
+{
+  "world": "projects/samples/demos/worlds/flagship/omniarm6_real_pick_place.omniworld",
+  "resolution": [1920, 1080],
+  "fov": 0.82,
+  "load_wait_s": 30.0,
+  "shots": [
+    {
+      "name": "omniarm6_real_pick",
+      "output": "omniarm6_real_pick.mp4",
+      "duration_s": 16.0,
+      "fps": 30,
+      "codec": "h264",
+      "crf": 16,
+      "preset": "slow",
+      "ease": "smootherstep",
+      "warmup_steps": 8,
+      "playback_speed": 1.2,
+      "path_keyframes": [
+        {"t": 0.0, "position": [2.20, -1.95, 1.36], "target": [0.20, -0.18, 0.38]},
+        {"t": 8.0, "position": [2.08, -1.88, 1.30], "target": [0.22, -0.20, 0.38]},
+        {"t": 16.0, "position": [1.96, -1.80, 1.24], "target": [0.22, -0.24, 0.36]}
+      ]
+    }
+  ]
+}

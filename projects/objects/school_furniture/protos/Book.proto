@@ -1,0 +1,93 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/school_furniture/protos/Book.proto
+# keywords: interior/office
+# A hardback book standing on its spine: two textured covers, a page block and a spine. The origin sits at the centre of the book.
+
+PROTO Book [
+  field SFVec3f    translation 0 0 0.1
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "book"
+  field SFColor    color       1 1 1                # Defines the color of the book.
+  field MFString   textureUrl  "textures/book.jpg"  # Defines the texture used for the book.
+  field SFFloat    mass        0.3                  # Defines the mass of the book in kg.
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      # front cover (+x) -- carries the cover artwork
+      Pose {
+        translation 0.014 0 0
+        children [
+          DEF BOOK_COVER Shape {
+            appearance PBRAppearance {
+              baseColor IS color
+              baseColorMap ImageTexture {
+                url IS textureUrl
+              }
+              roughness 0.85
+              metalness 0
+            }
+            geometry Box {
+              size 0.004 0.15 0.2
+            }
+          }
+        ]
+      }
+      # back cover (-x)
+      Pose {
+        translation -0.014 0 0
+        children [
+          USE BOOK_COVER
+        ]
+      }
+      # page block, flush with the fore-edge and slightly short of the spine
+      Pose {
+        translation 0 0.002 0
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.94 0.93 0.88
+              roughness 1
+              metalness 0
+            }
+            geometry Box {
+              size 0.024 0.146 0.192
+            }
+          }
+        ]
+      }
+      # spine
+      Pose {
+        translation 0 -0.072 0
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor IS color
+              baseColorMap ImageTexture {
+                url IS textureUrl
+              }
+              roughness 0.85
+              metalness 0
+            }
+            geometry Box {
+              size 0.032 0.006 0.2
+            }
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "book"
+    boundingObject Box {
+      size 0.032 0.15 0.2
+    }
+    physics Physics {
+      density -1
+      mass IS mass
+    }
+  }
+}

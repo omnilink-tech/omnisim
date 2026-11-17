@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<!--
+Microsoft Kinect (v1) — RGB camera + depth (RangeFinder). 320x240
+default resolution, ~60 deg horizontal FoV, 0.5-3.5 m depth range.
+Emits two sensors on the same link: an RGB camera and a depth camera
+(URDF importer treats type="depth" as a Camera variant).
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="kinect" params="parent_link prefix:=kinect *origin">
+    <link name="${prefix}_link">
+      <visual>
+        <origin xyz="0 0 0.020" rpy="0 0 0"/>
+        <geometry><box size="0.280 0.063 0.040"/></geometry>
+        <material name="${prefix}_dark"><color rgba="0.12 0.12 0.12 1.0"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.020" rpy="0 0 0"/>
+        <geometry><box size="0.280 0.063 0.040"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0.020" rpy="0 0 0"/>
+        <mass value="0.4"/>
+        <inertia ixx="2.0e-4" ixy="0" ixz="0" iyy="2.8e-3" iyz="0" izz="2.8e-3"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}_link"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+    <gazebo reference="${prefix}_link">
+      <sensor name="${prefix}_color" type="camera">
+        <update_rate>30</update_rate>
+        <camera>
+          <horizontal_fov>1.0</horizontal_fov>
+          <image><width>320</width><height>240</height></image>
+        </camera>
+      </sensor>
+      <sensor name="${prefix}_depth" type="depth">
+        <update_rate>30</update_rate>
+        <camera>
+          <horizontal_fov>1.0</horizontal_fov>
+          <image><width>320</width><height>240</height></image>
+        </camera>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>

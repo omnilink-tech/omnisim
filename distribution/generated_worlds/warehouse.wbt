@@ -1,0 +1,835 @@
+#OMNISIM R2025a utf8
+
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/pallet/protos/WoodenPalletStack.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/containers/protos/CardboardBox.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/containers/protos/PlasticCrate.proto"
+EXTERNPROTO "omnisim://projects/objects/factory/containers/protos/WoodenBox.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "warehouse (omniworld)"
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 66.061 -70.323 61.799
+  bloomThreshold -1.0
+  ambientOcclusionRadius 0
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+  luminosity 0.95
+  castShadows FALSE
+}
+RectangleArena {
+  floorSize 40 24
+  wallHeight 0.05
+}
+
+WoodenPalletStack {
+  translation 9 5.7 0
+  rotation 0 0 1 0.0143272
+  name "WoodenPalletStack_0"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 11.4 5.7 0
+  rotation 0 0 1 -0.00190386
+  name "WoodenPalletStack_1"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 13.8 5.7 0
+  rotation 0 0 1 -0.0248935
+  name "WoodenPalletStack_2"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 16.2 5.7 0
+  rotation 0 0 1 -0.0128467
+  name "WoodenPalletStack_3"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 18.6 5.7 0
+  rotation 0 0 1 -0.025841
+  name "WoodenPalletStack_4"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 21 5.7 0
+  rotation 0 0 1 0.00209832
+  name "WoodenPalletStack_5"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 23.4 5.7 0
+  rotation 0 0 1 -0.0327151
+  name "WoodenPalletStack_6"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 25.8 5.7 0
+  rotation 0 0 1 -0.0322072
+  name "WoodenPalletStack_7"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 28.2 5.7 0
+  rotation 0 0 1 0.00213062
+  name "WoodenPalletStack_8"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 30.6 5.7 0
+  rotation 0 0 1 0.0267732
+  name "WoodenPalletStack_9"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 33 5.7 0
+  rotation 0 0 1 0.0243762
+  name "WoodenPalletStack_10"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 35.4 5.7 0
+  rotation 0 0 1 -0.0251468
+  name "WoodenPalletStack_11"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 9 9.9 0
+  rotation 0 0 1 -0.0238676
+  name "WoodenPalletStack_12"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 11.4 9.9 0
+  rotation 0 0 1 0.00990571
+  name "WoodenPalletStack_13"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 13.8 9.9 0
+  rotation 0 0 1 0.0345776
+  name "WoodenPalletStack_14"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 16.2 9.9 0
+  rotation 0 0 1 -0.0248235
+  name "WoodenPalletStack_15"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 18.6 9.9 0
+  rotation 0 0 1 0.0208872
+  name "WoodenPalletStack_16"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 21 9.9 0
+  rotation 0 0 1 -0.004998
+  name "WoodenPalletStack_17"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 23.4 9.9 0
+  rotation 0 0 1 -0.000653266
+  name "WoodenPalletStack_18"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 25.8 9.9 0
+  rotation 0 0 1 -0.00616377
+  name "WoodenPalletStack_19"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 28.2 9.9 0
+  rotation 0 0 1 -0.00131845
+  name "WoodenPalletStack_20"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 30.6 9.9 0
+  rotation 0 0 1 0.0304826
+  name "WoodenPalletStack_21"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 33 9.9 0
+  rotation 0 0 1 -0.0188401
+  name "WoodenPalletStack_22"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 35.4 9.9 0
+  rotation 0 0 1 0.0310666
+  name "WoodenPalletStack_23"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 9 14.1 0
+  rotation 0 0 1 -0.0161695
+  name "WoodenPalletStack_24"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 11.4 14.1 0
+  rotation 0 0 1 -0.00383761
+  name "WoodenPalletStack_25"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 13.8 14.1 0
+  rotation 0 0 1 -0.0147689
+  name "WoodenPalletStack_26"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 16.2 14.1 0
+  rotation 0 0 1 -0.00383979
+  name "WoodenPalletStack_27"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 18.6 14.1 0
+  rotation 0 0 1 0.0287647
+  name "WoodenPalletStack_28"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 21 14.1 0
+  rotation 0 0 1 0.00138077
+  name "WoodenPalletStack_29"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 23.4 14.1 0
+  rotation 0 0 1 0.00841238
+  name "WoodenPalletStack_30"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 25.8 14.1 0
+  rotation 0 0 1 -0.0217641
+  name "WoodenPalletStack_31"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 28.2 14.1 0
+  rotation 0 0 1 0.00535709
+  name "WoodenPalletStack_32"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 30.6 14.1 0
+  rotation 0 0 1 -0.00745175
+  name "WoodenPalletStack_33"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 33 14.1 0
+  rotation 0 0 1 0.00264631
+  name "WoodenPalletStack_34"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 35.4 14.1 0
+  rotation 0 0 1 -0.0244488
+  name "WoodenPalletStack_35"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 9 18.3 0
+  rotation 0 0 1 0.0107422
+  name "WoodenPalletStack_36"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 11.4 18.3 0
+  rotation 0 0 1 -0.029076
+  name "WoodenPalletStack_37"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 13.8 18.3 0
+  rotation 0 0 1 0.0107663
+  name "WoodenPalletStack_38"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 16.2 18.3 0
+  rotation 0 0 1 0.00623564
+  name "WoodenPalletStack_39"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 18.6 18.3 0
+  rotation 0 0 1 0.0043249
+  name "WoodenPalletStack_40"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 21 18.3 0
+  rotation 0 0 1 0.01725
+  name "WoodenPalletStack_41"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 23.4 18.3 0
+  rotation 0 0 1 -0.0178937
+  name "WoodenPalletStack_42"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 25.8 18.3 0
+  rotation 0 0 1 0.00661539
+  name "WoodenPalletStack_43"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 28.2 18.3 0
+  rotation 0 0 1 -0.0348875
+  name "WoodenPalletStack_44"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 30.6 18.3 0
+  rotation 0 0 1 0.00218964
+  name "WoodenPalletStack_45"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 33 18.3 0
+  rotation 0 0 1 0.0313908
+  name "WoodenPalletStack_46"
+  palletNumber 6
+}
+
+WoodenPalletStack {
+  translation 35.4 18.3 0
+  rotation 0 0 1 -0.0205321
+  name "WoodenPalletStack_47"
+  palletNumber 6
+}
+
+CardboardBox {
+  translation 11.1331 5.77701 1.4
+  rotation 0 0 1 1.01653
+  name "CardboardBox_48"
+}
+
+CardboardBox {
+  translation 11.4884 5.97844 1.4
+  rotation 0 0 1 0.646355
+  name "CardboardBox_49"
+}
+
+PlasticCrate {
+  translation 15.7622 5.84149 1.4
+  rotation 0 0 1 2.29405
+  name "PlasticCrate_50"
+}
+
+PlasticCrate {
+  translation 16.3239 5.42204 1.4
+  rotation 0 0 1 4.95163
+  name "PlasticCrate_51"
+}
+
+PlasticCrate {
+  translation 18.4833 5.99689 1.4
+  rotation 0 0 1 5.95192
+  name "PlasticCrate_52"
+}
+
+CardboardBox {
+  translation 18.4523 5.56682 1.4
+  rotation 0 0 1 1.22991
+  name "CardboardBox_53"
+}
+
+PlasticCrate {
+  translation 35.1975 5.35639 1.4
+  rotation 0 0 1 5.10449
+  name "PlasticCrate_54"
+}
+
+CardboardBox {
+  translation 35.0847 5.86317 1.4
+  rotation 0 0 1 1.86343
+  name "CardboardBox_55"
+}
+
+CardboardBox {
+  translation 15.6525 9.63378 1.4
+  rotation 0 0 1 4.35619
+  name "CardboardBox_56"
+}
+
+CardboardBox {
+  translation 16.2902 9.97405 1.4
+  rotation 0 0 1 4.99166
+  name "CardboardBox_57"
+}
+
+CardboardBox {
+  translation 18.763 9.84502 1.4
+  rotation 0 0 1 0.0418467
+  name "CardboardBox_58"
+}
+
+CardboardBox {
+  translation 18.1733 9.85974 1.4
+  rotation 0 0 1 1.868
+  name "CardboardBox_59"
+}
+
+CardboardBox {
+  translation 20.9494 10.0531 1.4
+  rotation 0 0 1 5.8755
+  name "CardboardBox_60"
+}
+
+CardboardBox {
+  translation 20.5891 10.23 1.4
+  rotation 0 0 1 1.14623
+  name "CardboardBox_61"
+}
+
+CardboardBox {
+  translation 23.4883 9.77477 1.4
+  rotation 0 0 1 2.69272
+  name "CardboardBox_62"
+}
+
+CardboardBox {
+  translation 22.9866 9.68269 1.4
+  rotation 0 0 1 1.20933
+  name "CardboardBox_63"
+}
+
+CardboardBox {
+  translation 28.2508 10.0081 1.4
+  rotation 0 0 1 5.1014
+  name "CardboardBox_64"
+}
+
+CardboardBox {
+  translation 28.6292 10.1079 1.4
+  rotation 0 0 1 5.22371
+  name "CardboardBox_65"
+}
+
+PlasticCrate {
+  translation 30.647 9.80845 1.4
+  rotation 0 0 1 3.09049
+  name "PlasticCrate_66"
+}
+
+CardboardBox {
+  translation 30.0829 10.1051 1.4
+  rotation 0 0 1 1.18828
+  name "CardboardBox_67"
+}
+
+CardboardBox {
+  translation 35.8889 9.71395 1.4
+  rotation 0 0 1 4.14769
+  name "CardboardBox_68"
+}
+
+CardboardBox {
+  translation 35.1805 10.1088 1.4
+  rotation 0 0 1 0.117517
+  name "CardboardBox_69"
+}
+
+CardboardBox {
+  translation 9.18418 14.2282 1.4
+  rotation 0 0 1 4.25828
+  name "CardboardBox_70"
+}
+
+CardboardBox {
+  translation 9.54086 14.3631 1.4
+  rotation 0 0 1 0.777321
+  name "CardboardBox_71"
+}
+
+PlasticCrate {
+  translation 15.8679 13.7958 1.4
+  rotation 0 0 1 3.09997
+  name "PlasticCrate_72"
+}
+
+CardboardBox {
+  translation 16.4437 14.075 1.4
+  rotation 0 0 1 5.92087
+  name "CardboardBox_73"
+}
+
+PlasticCrate {
+  translation 18.3993 13.9822 1.4
+  rotation 0 0 1 0.995059
+  name "PlasticCrate_74"
+}
+
+PlasticCrate {
+  translation 18.175 14.3668 1.4
+  rotation 0 0 1 1.2415
+  name "PlasticCrate_75"
+}
+
+PlasticCrate {
+  translation 21.3082 14.0504 1.4
+  rotation 0 0 1 5.1806
+  name "PlasticCrate_76"
+}
+
+CardboardBox {
+  translation 21.1292 14.3915 1.4
+  rotation 0 0 1 2.72569
+  name "CardboardBox_77"
+}
+
+CardboardBox {
+  translation 23.7726 14.3932 1.4
+  rotation 0 0 1 3.39854
+  name "CardboardBox_78"
+}
+
+PlasticCrate {
+  translation 23.3052 13.9357 1.4
+  rotation 0 0 1 1.98177
+  name "PlasticCrate_79"
+}
+
+CardboardBox {
+  translation 33.114 13.8102 1.4
+  rotation 0 0 1 0.992664
+  name "CardboardBox_80"
+}
+
+CardboardBox {
+  translation 33.108 14.1744 1.4
+  rotation 0 0 1 2.58316
+  name "CardboardBox_81"
+}
+
+CardboardBox {
+  translation 35.848 13.9643 1.4
+  rotation 0 0 1 3.48577
+  name "CardboardBox_82"
+}
+
+CardboardBox {
+  translation 34.9989 13.9492 1.4
+  rotation 0 0 1 3.77481
+  name "CardboardBox_83"
+}
+
+PlasticCrate {
+  translation 8.85738 18.2458 1.4
+  rotation 0 0 1 2.89415
+  name "PlasticCrate_84"
+}
+
+PlasticCrate {
+  translation 9.38027 18.452 1.4
+  rotation 0 0 1 3.76909
+  name "PlasticCrate_85"
+}
+
+CardboardBox {
+  translation 15.9278 18.4825 1.4
+  rotation 0 0 1 5.4862
+  name "CardboardBox_86"
+}
+
+CardboardBox {
+  translation 16.6789 18.4818 1.4
+  rotation 0 0 1 1.13083
+  name "CardboardBox_87"
+}
+
+CardboardBox {
+  translation 23.6694 17.9981 1.4
+  rotation 0 0 1 2.96168
+  name "CardboardBox_88"
+}
+
+CardboardBox {
+  translation 23.2093 18.6191 1.4
+  rotation 0 0 1 3.00527
+  name "CardboardBox_89"
+}
+
+CardboardBox {
+  translation 28.6429 18.2748 1.4
+  rotation 0 0 1 2.24968
+  name "CardboardBox_90"
+}
+
+CardboardBox {
+  translation 27.743 18.3983 1.4
+  rotation 0 0 1 5.65033
+  name "CardboardBox_91"
+}
+
+CardboardBox {
+  translation 32.4496 18.3323 1.4
+  rotation 0 0 1 1.58233
+  name "CardboardBox_92"
+}
+
+CardboardBox {
+  translation 32.9678 18.0011 1.4
+  rotation 0 0 1 1.09347
+  name "CardboardBox_93"
+}
+
+CardboardBox {
+  translation 12.9301 11.3351 0
+  rotation 0 0 1 0.586716
+  name "CardboardBox_94"
+}
+
+CardboardBox {
+  translation 28.1574 14.9883 0
+  rotation 0 0 1 5.3437
+  name "CardboardBox_95"
+}
+
+CardboardBox {
+  translation 9.41839 3.21736 0
+  rotation 0 0 1 2.33592
+  name "CardboardBox_96"
+}
+
+PlasticCrate {
+  translation 22.8535 8.99308 0
+  rotation 0 0 1 4.15675
+  name "PlasticCrate_97"
+}
+
+CardboardBox {
+  translation 11.2975 8.33471 0
+  rotation 0 0 1 2.63373
+  name "CardboardBox_98"
+}
+
+PlasticCrate {
+  translation 16.3529 4.00485 0
+  rotation 0 0 1 3.1674
+  name "PlasticCrate_99"
+}
+
+CardboardBox {
+  translation 13.2149 21.8963 0
+  rotation 0 0 1 2.83427
+  name "CardboardBox_100"
+}
+
+CardboardBox {
+  translation 26.9497 12.7021 0
+  rotation 0 0 1 1.60068
+  name "CardboardBox_101"
+}
+
+CardboardBox {
+  translation 16.928 6.64727 0
+  rotation 0 0 1 0.531418
+  name "CardboardBox_102"
+}
+
+CardboardBox {
+  translation 11.2821 15.7762 0
+  rotation 0 0 1 1.87574
+  name "CardboardBox_103"
+}
+
+PlasticCrate {
+  translation 22.2118 16.0618 0
+  rotation 0 0 1 2.76656
+  name "PlasticCrate_104"
+}
+
+PlasticCrate {
+  translation 9.63676 21.0422 0
+  rotation 0 0 1 6.18262
+  name "PlasticCrate_105"
+}
+
+WoodenBox {
+  translation 14.5485 14.649 0
+  rotation 0 0 1 0.607981
+  name "WoodenBox_106"
+}
+
+CardboardBox {
+  translation 39.1077 9.00808 0
+  rotation 0 0 1 0.0355059
+  name "CardboardBox_107"
+}
+
+CardboardBox {
+  translation 29.6636 3.28966 0
+  rotation 0 0 1 2.28506
+  name "CardboardBox_108"
+}
+
+CardboardBox {
+  translation 37.7767 13.1754 0
+  rotation 0 0 1 2.65207
+  name "CardboardBox_109"
+}
+
+CardboardBox {
+  translation 7.68972 1.68399 0
+  rotation 0 0 1 2.93838
+  name "CardboardBox_110"
+}
+
+CardboardBox {
+  translation 35.5298 6.27769 0
+  rotation 0 0 1 0.245525
+  name "CardboardBox_111"
+}
+
+CardboardBox {
+  translation 17.9434 3.42497 0
+  rotation 0 0 1 1.43792
+  name "CardboardBox_112"
+}
+
+WoodenBox {
+  translation 13.9582 7.33901 0
+  rotation 0 0 1 0.646802
+  name "WoodenBox_113"
+}
+
+CardboardBox {
+  translation 27.9361 3.73497 0
+  rotation 0 0 1 1.17905
+  name "CardboardBox_114"
+}
+
+WoodenBox {
+  translation 31.9218 2.29697 0
+  rotation 0 0 1 1.64811
+  name "WoodenBox_115"
+}
+
+WoodenBox {
+  translation 23.531 6.55896 0
+  rotation 0 0 1 2.91405
+  name "WoodenBox_116"
+}
+
+PlasticCrate {
+  translation 18.5303 15.0524 0
+  rotation 0 0 1 2.5352
+  name "PlasticCrate_117"
+}
+
+WoodenBox {
+  translation 22.1827 14.7082 0
+  rotation 0 0 1 2.14224
+  name "WoodenBox_118"
+}
+
+CardboardBox {
+  translation 30.0964 8.00838 0
+  rotation 0 0 1 3.5347
+  name "CardboardBox_119"
+}
+
+CardboardBox {
+  translation 9.59636 14.7096 0
+  rotation 0 0 1 2.88149
+  name "CardboardBox_120"
+}
+
+PlasticCrate {
+  translation 34.2151 19.9477 0
+  rotation 0 0 1 0.2764
+  name "PlasticCrate_121"
+}
+
+CardboardBox {
+  translation 29.0797 19.3079 0
+  rotation 0 0 1 5.8658
+  name "CardboardBox_122"
+}
+
+CardboardBox {
+  translation 22.0231 11.2683 0
+  rotation 0 0 1 5.03323
+  name "CardboardBox_123"
+}
+
+CardboardBox {
+  translation 39.3702 7.03415 0
+  rotation 0 0 1 5.99008
+  name "CardboardBox_124"
+}
+
+WoodenBox {
+  translation 15.9838 2.3541 0
+  rotation 0 0 1 3.40073
+  name "WoodenBox_125"
+}

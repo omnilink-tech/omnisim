@@ -1,0 +1,15 @@
+{
+  "name": "omniquad_patrol",
+  "display_name": "Omniquad Patrol",
+  "world": "projects/samples/demos/worlds/chat/omnilink_omniquad.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/omniquad_patrol/run.py",
+  "description": "omniquad \u2014 stand, cover ground, and settle. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "quadruped",
+    "patrol",
+    "omniquad",
+    "catalogue",
+    "generated"
+  ]
+}

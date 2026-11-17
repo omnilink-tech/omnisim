@@ -1,0 +1,62 @@
+#OMNISIM R2025a utf8
+
+# R5f smoke world: a 7-LAYER, non-rotating Lidar facing a cyan box that is
+# OFFSET UPWARD (centre z=0.15) so the elevation profile is ASYMMETRIC -- the
+# box extends to +0.57 rad above the sensor axis but only -0.21 rad below. That
+# asymmetry is what makes the vertical (per-layer) resample orientation
+# testable: a layer-flip would swap which layers see the box and is detectable,
+# unlike a vertically-centred box.
+#
+# With OMNISIM_LIDAR_WGPU=1 the multi-layer wgpu path renders the radial-range
+# perspective once and 2D-bilinear-resamples uniform-angle (theta, phi) into the
+# layer grid. Checks: the centre layer (j=3, phi=0) matches range=0.70/cos(theta)
+# (front face 0.7 m), and more layers ABOVE centre see the box than BELOW.
+#
+# Companion to docs/developer/engine-migration-plan.md R5 WbLidar multi-layer.
+
+WorldInfo {
+  info [
+    "R5f smoke -- wgpu multi-layer Lidar (asymmetric elevation)"
+  ]
+  title "R5f wgpu multi-layer Lidar smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Lidar {
+      name "lidar_wgpu"
+      horizontalResolution 64
+      fieldOfView 0.8
+      verticalFieldOfView 0.8
+      numberOfLayers 7
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+      type "fixed"
+    }
+    DEF CYAN_BOX Solid {
+      translation 1.0 0 0.15
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "lidar_wgpu_multilayer_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

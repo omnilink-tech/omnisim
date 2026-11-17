@@ -1,0 +1,426 @@
+{
+  "schema": "agenticsimbench/red-evidence/v1",
+  "suite": "agenticsimbench/v1",
+  "task": "R3_pick_and_place",
+  "sim": "omnisim",
+  "fixture": "wrong_destination",
+  "fixture_kind": "real_supervisor_cube_fixture",
+  "fixture_transforms": [],
+  "expected_failures": [
+    "R3.7"
+  ],
+  "observed_failures": [
+    "R3.7"
+  ],
+  "outcome": "FAIL",
+  "qualifies_as_non_null_red_evidence": true,
+  "generated_utc": "2026-08-13T17:06:27.841062+00:00",
+  "engine_binary": {
+    "path": "msys64\\mingw64\\bin\\omnisim-bin.exe",
+    "sha256": "cbd80861c9f0d314f9760a39abc0f686ce161cac74337f80c41f5e2b5e0b836d"
+  },
+  "sources": [
+    {
+      "path": "tests\\benchmarks\\agentbench\\tasks\\R3_pick_and_place\\initial\\pick_and_place.wbt",
+      "sha256": "4aa956138ea757b43224eb233088c1b8f73ca0215d26f7e91e5a94957d87106f"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\tasks\\R3_pick_and_place\\initial\\benchmark_assets\\scene.json",
+      "sha256": "1fb1ce832f1285269ac1ed025ac3de1c7a2fbee51b5da5585fe3c7a92b207e18"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\tasks\\R3_pick_and_place\\meta.json",
+      "sha256": "521e61cef35be77650abeb236dab2bffa37ac7dae15c5c2bb64b799be4e27f24"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\fixtures\\r3\\arm_stanza.wbtfrag",
+      "sha256": "17840303e06afe29834db0720a3f03ac36830ca0b52704f7f74b23f67b515598"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\run_r3_red_fixture.py",
+      "sha256": "85f93dc385134b014d234a1486540b0521be212381cddb58ccfe9ef3fc01e6eb"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\graders\\r3_core.py",
+      "sha256": "323b6491e4565d90f7e6a308056c6cfdcb2cf914abde8b5d0b295296d750552d"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\fixtures\\r3\\controllers\\r3_fixture\\r3_fixture.py",
+      "sha256": "7a9da7a9dbf4c0427b422e2141c7932d8726bffaa95f65e1ffa231487925f55c"
+    }
+  ],
+  "staged_world_sha256": "b473301ca3862c5bd0cc0088e10f2e6abebcd7f1fd3bc7d2dab04f3788981ab1",
+  "verdict": {
+    "task": "R3_pick_and_place",
+    "outcome": "FAIL",
+    "progress": 3,
+    "progress_name": "artifact_runs",
+    "assertions": {
+      "R3.1": {
+        "ok": true,
+        "what": "the run is clean",
+        "measured": {
+          "exit code": 0,
+          "ERROR: lines": 0,
+          "driver reached a clean quit": true,
+          "timed out": false
+        },
+        "threshold": {
+          "exit code": 0,
+          "ERROR: lines": 0
+        },
+        "detail": "",
+        "basis": "mixed",
+        "attested": [
+          "error stream + exit code: the per-run engine log at $OMNISIM_LOG_PATH plus the process exit code from the headless launch"
+        ],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "clean run",
+            "how_to_fail": "a non-zero exit code, an error-class line, a timeout, or a driver that never reached its target simulated time",
+            "witness": "the adapter captured the exit code AND the simulator's own error stream",
+            "witness_present": true,
+            "detail": ""
+          }
+        ]
+      },
+      "R3.2": {
+        "ok": true,
+        "what": "the benchmark scene is intact",
+        "measured": {
+          "measured table top z (m)": 0.75,
+          "table AABB error vs the shipped spec (m)": 0.0,
+          "bin AABB error vs the shipped spec (m)": 0.0,
+          "fixture bodies not found": []
+        },
+        "threshold": {
+          "table AABB error (m)": "<= 0.010",
+          "bin AABB error (m)": "<= 0.010"
+        },
+        "detail": "the table surface and the bin volume every later assertion is stated against are measured from the frozen t=0 scan, never assumed from the file",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "scene measured",
+            "how_to_fail": "a table raised or lowered, or a bin moved, widened or deepened, so that 'inside the bin' means something else",
+            "witness": "world-space AABBs for BOTH fixture bodies at a frozen t=0",
+            "witness_present": true,
+            "detail": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)"
+          }
+        ]
+      },
+      "R3.3": {
+        "ok": true,
+        "what": "there is a graspable cube and a distinct arm",
+        "measured": {
+          "cube matched at t=0 by": "aabb",
+          "bodies matching the cube spec": 1,
+          "the cube still has a mass model": true,
+          "other robot-class bodies with >= 3 joints": 1,
+          "their names": [
+            "fixture arm"
+          ]
+        },
+        "threshold": {
+          "bodies matching the cube spec": 1,
+          "the cube still has a mass model": true,
+          "robot-class bodies with enough joints": ">= 1"
+        },
+        "detail": "the cube is found by its t=0 geometry -- a 0.050 m cube within 0.02 m of the specified start -- and never by name or DEF; 'dynamic' is the anti-cheat clause a body nailed in place would fail",
+        "basis": "mixed",
+        "attested": [
+          "cube identity: type=Robot num_joints=0 (recorder t=0 scan)"
+        ],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "cube size verified",
+            "how_to_fail": "a body at the right place that is not the specified cube",
+            "witness": "a world-space AABB for the candidate body at t=0",
+            "witness_present": true,
+            "detail": ""
+          },
+          {
+            "clause": "dynamics attached",
+            "how_to_fail": "the agent 'held' the cube by removing its dynamics",
+            "witness": "the adapter answers 'is this body dynamic' either way, rather than returning None",
+            "witness_present": true,
+            "detail": ""
+          }
+        ]
+      },
+      "R3.4": {
+        "ok": true,
+        "what": "the cube started at rest on the table",
+        "measured": {
+          "first sample xy (m)": [
+            0.45,
+            0.0
+          ],
+          "xy error vs the specified start (m)": 0.0,
+          "first sample z (m)": 0.7749,
+          "z error vs table top + half the cube (m)": 0.0001,
+          "pose row resolved by": "body_id"
+        },
+        "threshold": {
+          "xy error (m)": "<= 0.020",
+          "z error (m)": "<= 0.015"
+        },
+        "detail": "expected rest z is 0.7750 m = the MEASURED table top plus half the cube; this is the clause a cube spawned already inside the bin fails",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R3.5": {
+        "ok": true,
+        "what": "the cube was lifted clear and carried toward the bin",
+        "measured": {
+          "longest contiguous time clear of everything (s)": 1.888,
+          "the height that counts as clear (m)": 0.895,
+          "highest z reached (m)": 0.9975,
+          "horizontal travel while clear (m)": 0.3606,
+          "ended nearer the bin than it started": true
+        },
+        "threshold": {
+          "time clear (s)": ">= 0.50",
+          "horizontal travel while clear (m)": ">= 0.15",
+          "ended nearer the bin": true
+        },
+        "detail": "above 0.8950 m the cube's lowest face clears the bin rim by 0.02 m and the table by 0.12 m, so it is touching nothing in the scene; this is the clause a cube SLID along the table into the bin fails, and it is the whole grasp proof",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "carried through free space",
+            "how_to_fail": "a cube that never left the table, or one pushed/knocked in",
+            "witness": "a pose series long enough to contain a 0.50 s window",
+            "witness_present": true,
+            "detail": "recorded 44.992 s"
+          }
+        ]
+      },
+      "R3.6": {
+        "ok": true,
+        "what": "the cube was released and settled",
+        "measured": {
+          "descent from the end of the carry (m)": 0.1224,
+          "z spread over the last 2.0 s (m)": 0.0,
+          "final z (m)": 0.7749
+        },
+        "threshold": {
+          "descent (m)": ">= 0.08",
+          "z spread (m)": "<= 0.020"
+        },
+        "detail": "gravity acting on a body nobody is holding any more is the witness here; a cube still being carried at the end of the run has not descended, and one still bouncing has not settled",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "descended then rested",
+            "how_to_fail": "a cube parked in mid-air, or one still moving at the end",
+            "witness": "a recorded window longer than the 2.0 s rest test",
+            "witness_present": true,
+            "detail": "recorded 44.992 s"
+          }
+        ]
+      },
+      "R3.7": {
+        "ok": false,
+        "what": "the cube is inside the bin and stayed there",
+        "measured": {
+          "samples in the last 2.0 s": 126,
+          "the window actually covered (s)": 2.0,
+          "of those, outside the bin": 126,
+          "final xyz (m)": [
+            0.15,
+            0.2,
+            0.7749
+          ],
+          "how far the centre may sit from the bin centre (m)": 0.045
+        },
+        "threshold": {
+          "samples outside the bin": 0,
+          "window covered (s)": ">= 2.0",
+          "samples": ">= 20"
+        },
+        "detail": "'inside' means the whole cube is between the bin walls and its centre is below the rim. The bin box it is computed from is the shipped one, and R3.2 is what makes that legitimate: it pins the MEASURED bin to within 0.010 m of it, so a widened or moved bin fails there rather than quietly redefining 'inside' here. The sample count stops a coarse recording from satisfying a 2-second claim with two points",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "stayed put",
+            "how_to_fail": "a cube that bounced out, was dragged out, or was never in",
+            "witness": ">= 20 samples inside the last 2.0 s of the recording",
+            "witness_present": true,
+            "detail": ""
+          }
+        ]
+      },
+      "R3.8": {
+        "ok": true,
+        "what": "the cube was never teleported",
+        "measured": {
+          "fastest the cube ever moved (m/s)": 0.3606,
+          "largest single-sample step (m)": 0.0058
+        },
+        "threshold": {
+          "speed (m/s)": "<= 5.0",
+          "single-sample step (m)": "<= 0.10"
+        },
+        "detail": "the start-to-bin jump is 0.381 m, which at any plausible timestep is far over both bounds; a rate bound cannot see a continuous supervisor-driven animation, and meta.json says so rather than implying otherwise",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      }
+    },
+    "n_pass": 7,
+    "n_total": 8,
+    "failed_assertion": "R3.7",
+    "failed_assertions": [
+      "R3.7"
+    ],
+    "self_verified": false,
+    "attribution": {
+      "backend": "newton",
+      "solver": "MuJoCo (cpu/mj_step, default)",
+      "degraded": false,
+      "finalised": true,
+      "source": "<log>.newton.json sidecar"
+    },
+    "measurements": {
+      "phase_b": {
+        "world": "O:\\omnisim\\.agentbench-v1-red-work\\r3-wrong_destination\\project\\worlds\\pick_and_place.wbt",
+        "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\r3-wrong_destination\\project\\worlds\\_agentbench_phaseB_pick_and_place.wbt",
+        "rc": 0,
+        "wall_s": 52.39607310000065,
+        "timed_out": false,
+        "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\r3-wrong_destination\\phaseB\\phaseB_engine.log",
+        "sidecar": {
+          "backend": "newton",
+          "degraded": false,
+          "finalised": true,
+          "runtime": {
+            "device": "cpu",
+            "mujoco": "3.8.1",
+            "mujoco_warp": "3.8.0.3",
+            "newton": "1.2.0",
+            "warp": "1.13.0"
+          },
+          "solver": "MuJoCo (cpu/mj_step, default)",
+          "present": true
+        },
+        "recorder_complete": true,
+        "rows": 2813,
+        "n_robots": 2,
+        "n_tracks": 2,
+        "n_link_tracks": 0,
+        "n_solid_tracks": 0,
+        "links_truncated": false,
+        "scene_scan": {
+          "supported": true,
+          "cap": 128,
+          "found": 1,
+          "bounded": 1,
+          "truncated": false
+        },
+        "run_contacts": {
+          "supported": true,
+          "every_n_steps": 8,
+          "steps_sampled": 352,
+          "total_observed": 1316,
+          "distinct_named": 1316,
+          "unpaired": 0,
+          "truncated": false,
+          "error": null
+        },
+        "run_contact_pairs": [
+          "cube/table"
+        ],
+        "attempts_used": 1,
+        "launch_backend_env": {},
+        "tamper": [],
+        "error": null
+      }
+    },
+    "artifacts": {
+      "world": "O:\\omnisim\\.agentbench-v1-red-work\\r3-wrong_destination\\project\\worlds\\pick_and_place.wbt"
+    },
+    "notes": [],
+    "basis": {
+      "core-physical": [
+        "R3.2",
+        "R3.4",
+        "R3.5",
+        "R3.6",
+        "R3.7",
+        "R3.8"
+      ],
+      "mixed": [
+        "R3.1",
+        "R3.3"
+      ]
+    },
+    "vacuous_assertions": {}
+  },
+  "run": {
+    "world": "O:\\omnisim\\.agentbench-v1-red-work\\r3-wrong_destination\\project\\worlds\\pick_and_place.wbt",
+    "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\r3-wrong_destination\\project\\worlds\\_agentbench_phaseB_pick_and_place.wbt",
+    "rc": 0,
+    "wall_s": 52.39607310000065,
+    "timed_out": false,
+    "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\r3-wrong_destination\\phaseB\\phaseB_engine.log",
+    "sidecar": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.8.1",
+        "mujoco_warp": "3.8.0.3",
+        "newton": "1.2.0",
+        "warp": "1.13.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, default)",
+      "present": true
+    },
+    "recorder_complete": true,
+    "rows": 2813,
+    "n_robots": 2,
+    "n_tracks": 2,
+    "n_link_tracks": 0,
+    "n_solid_tracks": 0,
+    "links_truncated": false,
+    "scene_scan": {
+      "supported": true,
+      "cap": 128,
+      "found": 1,
+      "bounded": 1,
+      "truncated": false
+    },
+    "run_contacts": {
+      "supported": true,
+      "every_n_steps": 8,
+      "steps_sampled": 352,
+      "total_observed": 1316,
+      "distinct_named": 1316,
+      "unpaired": 0,
+      "truncated": false,
+      "error": null
+    },
+    "run_contact_pairs": [
+      "cube/table"
+    ],
+    "attempts_used": 1,
+    "launch_backend_env": {},
+    "tamper": [],
+    "error": null
+  }
+}

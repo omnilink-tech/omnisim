@@ -1,0 +1,155 @@
+#OMNISIM R2025a utf8
+
+# Husky + massive granular sphere field — broadphase showcase.
+
+#
+
+# Same setup as warehouse_husky_granular.omniworld, but with 10× the particle
+
+# count (10 000 spheres, 50 g each) made tractable by the uniform-grid
+
+# broadphase (cellSize = 2·radius, linked-list per cell, ~27-cell
+
+# neighbour walk in computeForces). Real-time on RTX 3060 at ~0.7 ms
+
+# kernel-time per outer step.
+
+#
+
+# Reuses the warehouse Husky's husky_random controller. Both directions
+
+# of two-way coupling stay active: Husky's wheels + chassis push
+
+# particles, particles push back via dBodyAddForceAtPos.
+
+#
+
+# What you SHOULD see: a deep ball pit covering most of the floor; the
+
+# Husky wades through it, displacing balls in front of the wheels and
+
+# slowing visibly when ploughing into the densest patches.
+
+
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+
+
+
+WorldInfo {
+
+  basicTimeStep 16
+
+  title "Husky + GranularGroup (10k massive)"
+
+}
+
+Viewpoint {
+
+  orientation -0.5773 0.5773 0.5773 2.0944
+
+  position 0 0 13
+
+}
+
+Background {
+
+  skyColor [ 0.02 0.03 0.06 ]
+
+  atmosphericSky "earth"
+
+}
+
+DEF SUN DirectionalLight {
+
+  ambientIntensity 0.5
+
+  direction 0.4 -0.6 1.1
+
+  intensity 2.0
+
+  color 0.95 0.96 1.0
+
+  castShadows TRUE
+
+}
+
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+RectangleArena {
+
+  floorSize 8 8
+
+  wallHeight 0.4
+
+  floorAppearance Asphalt {
+
+    colorOverride 0.55 0.57 0.60
+
+  }
+
+}
+
+URDFRobot {
+
+  url "../../projects/robots/clearpath/husky_description/urdf/husky.urdf"
+
+  translation -3 -3 0.1
+
+  name "husky"
+
+  controller "husky_random"
+
+  supervisor TRUE
+
+  customData "{\"world_centre\":[0,0],\"world_size\":8.0,\"boundary_margin\":1.0}"
+
+}
+
+GranularGroup {
+
+  radius 0.05
+
+  count 10000
+
+  boundsHalfWidth 4.0
+
+  mass 0.05
+
+  # 50 g per ball × 10 000 = 500 kg total pile. Uniform-grid broadphase
+
+  # makes 10 k contacts per step tractable (~0.7 ms on RTX 3060). With
+
+  # two-way coupling on, the Husky's wheels + chassis push particles AND
+
+  # the particles push back via dBodyAddForceAtPos.
+
+}
+

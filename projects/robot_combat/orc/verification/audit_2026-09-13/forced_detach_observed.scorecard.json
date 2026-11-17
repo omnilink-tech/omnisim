@@ -1,0 +1,73 @@
+{
+  "match_t_s": 4.0,
+  "winner": "draw",
+  "win_reason": "timeout_tie",
+  "fighters": [
+    {
+      "name": "blue_alpha",
+      "immobile": false,
+      "disqualify_reason": null,
+      "broken_parts": [],
+      "wheels_remaining": 4,
+      "weapon_intact": true,
+      "part_hp": {
+        "chassis": 120.0,
+        "fl_wheel": 10.0,
+        "fr_wheel": 10.0,
+        "rl_wheel": 10.0,
+        "rr_wheel": 10.0,
+        "weapon": 25.0
+      }
+    },
+    {
+      "name": "blue_bravo",
+      "immobile": false,
+      "disqualify_reason": null,
+      "broken_parts": [
+        "weapon"
+      ],
+      "wheels_remaining": 4,
+      "weapon_intact": false,
+      "part_hp": {
+        "chassis": 120.0,
+        "fl_wheel": 10.0,
+        "fr_wheel": 10.0,
+        "rl_wheel": 10.0,
+        "rr_wheel": 10.0,
+        "weapon": 25.0
+      }
+    },
+    {
+      "name": "red_alpha",
+      "immobile": false,
+      "disqualify_reason": null,
+      "broken_parts": [],
+      "wheels_remaining": 4,
+      "weapon_intact": true,
+      "part_hp": {
+        "chassis": 120.0,
+        "fl_wheel": 10.0,
+        "fr_wheel": 10.0,
+        "rl_wheel": 10.0,
+        "rr_wheel": 10.0,
+        "weapon": 25.0
+      }
+    },
+    {
+      "name": "red_bravo",
+      "immobile": false,
+      "disqualify_reason": null,
+      "broken_parts": [],
+      "wheels_remaining": 4,
+      "weapon_intact": true,
+      "part_hp": {
+        "chassis": 120.0,
+        "fl_wheel": 10.0,
+        "fr_wheel": 10.0,
+        "rl_wheel": 10.0,
+        "rr_wheel": 10.0,
+        "weapon": 25.0
+      }
+    }
+  ]
+}

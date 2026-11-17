@@ -1,0 +1,68 @@
+#OMNISIM R2025a utf8
+
+# OmniQuad RL deploy world.
+#
+# Loads a trained ONNX policy via the omniquad_rl_deploy controller. The
+# controller picks up its policy from OMNIQUAD_POLICY_ONNX / OMNISIM_POLICY_ONNX,
+# falling back to the canonical walker under projects/policies/research/inference/policies/.
+#
+# Physics: Newton (migrated from ODE 2026-06-11). Launch with the standard
+# OmniQuad Newton knobs (OMNISIM_NEWTON_TARGET_KE=250 / KD=60 / GROUND_MU=2.0 /
+# SEED_POSE=1 / FORCE_MUJOCO=1 / OMNISIM_URDF_USE_INERTIA=1) and a
+# Newton-trained policy, e.g. omniquad_newton_walk.
+#
+# *** STATUS 2026-06-11 (later): the W6 collapse is FIXED (W1 self-collision,
+# see newton-ode-replacement-plan.md). OmniQuad stands + steps stably at
+# OMNISIM_NEWTON_TARGET_KE=500 KD=200 SUBSTEPS=8; the shipped ONNX walking
+# policies predate the fix and need retraining on honest geometry. ***
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "OmniQuad RL deploy"
+  info [
+    "OmniQuad quadruped. Drives a trained PPO policy loaded from ONNX."
+    "Velocity command: OMNIQUAD_VX (default 0.5) m/s forward."
+  ]
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.624 -4.923 5.476
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad.urdf"
+  translation 0 0 0.70
+  name "omniquad"
+  supervisor TRUE
+  controller "omniquad_rl_deploy"
+  physicsBackend "newton"
+}

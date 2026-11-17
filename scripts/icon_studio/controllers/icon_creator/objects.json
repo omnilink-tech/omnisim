@@ -1,0 +1,775 @@
+{
+  "default": {
+    "colorThreshold": 0.01,
+    "background": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "fields": "rotation 0 1 0 0.3",
+    "nodeString": ""
+  },
+  "projects/objects/advertising_board/protos/AdvertisingBoard": {
+    "fields": "    translation 0 0 1.63 rotation 0.0 0.0 -1.0 -1.0853953071795859",
+    "nodeString": "    AdvertisingBoard{ translation 0 0 1.63 rotation 0.0 0.0 -1.0 -1.0853953071795859 }"
+  },
+  "projects/objects/apartment_structure/protos/Ceiling": {
+    "background": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "fields": "    translation 0 0 0.01 rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "    Ceiling{ translation 0 0 0.01 rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/apartment_structure/protos/Door": {
+    "fields": "    rotation 0.0 0.0 1.0 -2.0615953071795863",
+    "nodeString": "    Door{ rotation 0.0 0.0 1.0 -2.0615953071795863 }"
+  },
+  "projects/objects/apartment_structure/protos/DoorLever": {
+    "fields": "    rotation 0.0 0.0 1.0 -2.6215953071795863",
+    "nodeString": "    Solid { translation 0 0 0.04 rotation 0.0 0.0 1.0 -2.6215953071795863 children [ Slot { endPoint DoorLever { } } ] }"
+  },
+  "projects/objects/apartment_structure/protos/GenericDoorAppearance": {
+    "fields": "    rotation 0.0 0.0 1.0 -2.0615953071795863",
+    "nodeString": "    Door { rotation 0.0 0.0 1.0 -2.0615953071795863 }"
+  },
+  "projects/objects/apartment_structure/protos/Wall": {
+    "fields": "    rotation 0.0 0.0 1.0 -2.0561943071795863",
+    "nodeString": "    Wall{ rotation 0.0 0.0 1.0 -2.0561943071795863 }"
+  },
+  "projects/objects/apartment_structure/protos/Window": {
+    "fields": "    rotation 0.0 0.0 1.0 1.09",
+    "nodeString": "    Window{ rotation 0.0 0.0 1.0 1.09 }"
+  },
+  "projects/objects/balls/protos/SoccerBall": {
+    "fields": "   translation 0 0 0.113 rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "     SoccerBall{ translation 0 0 0.113 rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/bathroom/protos/BathroomSink": {
+    "fields": "    translation 0 0 0.05 rotation -8.189669972535657e-05 -1.245809995822133e-08 0.9999999966464652 -1.0471853071795865",
+    "nodeString": "    BathroomSink{ translation 0 0 0.05 rotation -8.189669972535657e-05 -1.245809995822133e-08 0.9999999966464652 -1.0471853071795865 }"
+  },
+  "projects/objects/bathroom/protos/Toilet": {
+    "fields": "    rotation 0.0 0.0 -1.0 0.785399",
+    "nodeString": "    Toilet{ rotation 0.0 0.0 -1.0 0.785399 }"
+  },
+  "projects/objects/bedroom/protos/Bed": {
+    "fields": "    rotation 0.0 0.0 1.0 -2.712385307179586",
+    "nodeString": "    Bed{ rotation 0.0 0.0 1.0 -2.712385307179586 }"
+  },
+  "projects/objects/buildings/protos/Auditorium": {
+    "background": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "fields": "    rotation -2.44631e-08 9.58978e-09 -1.0 0.747199",
+    "nodeString": "    Auditorium{ rotation -2.44631e-08 9.58978e-09 -1.0 0.747199 }"
+  },
+  "projects/objects/buildings/protos/BigGlassTower": {
+    "background": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "fields": "    rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "    BigGlassTower{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/buildings/protos/Carwash": {
+    "fields": "    rotation 0.0 0.0 -1.0 1.2708",
+    "nodeString": "    Carwash{ rotation 0.0 0.0 -1.0 1.2708 }"
+  },
+  "projects/objects/buildings/protos/Church": {
+    "fields": "    rotation 0.0 0.0 1.0 -1.9631753071795863",
+    "nodeString": "    Church{ rotation 0.0 0.0 1.0 -1.9631753071795863 }"
+  },
+  "projects/objects/buildings/protos/CommercialBuilding": {
+    "background": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "fields": "    rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "    CommercialBuilding{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/buildings/protos/ComposedHouse": {
+    "fields": "    rotation 0.0 0.0 -1.0 1.27079",
+    "nodeString": "    ComposedHouse{ rotation 0.0 0.0 -1.0 1.27079 }"
+  },
+  "projects/objects/buildings/protos/CyberboticsTower": {
+    "background": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "fields": "    rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "    CyberboticsTower{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/buildings/protos/GasStation": {
+    "fields": "    rotation 0.0 0.0 -1.0 2.31799",
+    "nodeString": "    GasStation{ rotation 0.0 0.0 -1.0 2.31799 }"
+  },
+  "projects/objects/buildings/protos/HollowBuilding": {
+    "background": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "fields": "    rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "    HollowBuilding{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/buildings/protos/Hotel": {
+    "background": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "fields": "    rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "    Hotel{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/buildings/protos/HouseWithGarage": {
+    "fields": "    rotation 0.0 0.0 1.0 -1.2707953071795863",
+    "nodeString": "    HouseWithGarage{ rotation 0.0 0.0 1.0 -1.2707953071795863 }"
+  },
+  "projects/objects/buildings/protos/LargeResidentialTower": {
+    "fields": "    rotation 0.0 0.0 1.0 -2.0561953071795864",
+    "nodeString": "    LargeResidentialTower{ rotation 0.0 0.0 1.0 -2.0561953071795864 }"
+  },
+  "projects/objects/buildings/protos/ModernSuburbanHouse": {
+    "fields": "    rotation 0.0 0.0 1.0 4.22699",
+    "nodeString": "    ModernSuburbanHouse{ rotation 0.0 0.0 1.0 4.22699 }"
+  },
+  "projects/objects/buildings/protos/MotelReception": {
+    "fields": "   rotation 0.0 0.0 1.0 4.488790192",
+    "nodeString": "   MotelReception{ rotation 0.0 0.0 1.0 4.488790192 }"
+  },
+  "projects/objects/buildings/protos/Museum": {
+    "background": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "fields": "   rotation 0.0 0.0 1.0 -1.2713853071795862",
+    "nodeString": "   Museum{ rotation 0.0 0.0 1.0 -1.2713853071795862 }"
+  },
+  "projects/objects/buildings/protos/OldResidentialBuilding": {
+    "fields": "   rotation 0.0 0.0 1.0 -1.7943953071795864",
+    "nodeString": "   OldResidentialBuilding{ rotation 0.0 0.0 1.0 -1.7943953071795864 }"
+  },
+  "projects/objects/buildings/protos/ResidentialBuilding": {
+    "background": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "fields": "   rotation 0.0 0.0 1.0 4.488790192",
+    "nodeString": "   ResidentialBuilding{ rotation 0.0 0.0 1.0 4.488790192 }"
+  },
+  "projects/objects/buildings/protos/ResidentialBuildingWithRoundFront": {
+    "fields": "   rotation 0.0 0.0 1.0 4.488790192",
+    "nodeString": "   ResidentialBuildingWithRoundFront{ rotation 0.0 0.0 1.0 4.488790192 }"
+  },
+  "projects/objects/buildings/protos/ResidentialTower": {
+    "fields": "  rotation 0.0 0.0 1.0 4.488790192",
+    "nodeString": "  ResidentialTower{ rotation 0.0 0.0 1.0 4.488790192 }"
+  },
+  "projects/objects/buildings/protos/SmallManor": {
+    "fields": "  rotation 0.0 0.0 1.0 4.488790192",
+    "nodeString": "  SmallManor{ rotation 0.0 0.0 1.0 4.488790192 }"
+  },
+  "projects/objects/buildings/protos/SmallResidentialBuilding": {
+    "fields": "  rotation 0.0 0.0 1.0 4.75059",
+    "nodeString": "  SmallResidentialBuilding{ rotation 0.0 0.0 1.0 4.75059 }"
+  },
+  "projects/objects/buildings/protos/SmallResidentialTower": {
+    "fields": "  rotation 0.0 0.0 1.0 4.48879",
+    "nodeString": "  SmallResidentialTower{ rotation 0.0 0.0 1.0 4.48879 }"
+  },
+  "projects/objects/buildings/protos/StripBuilding": {
+    "fields": "  rotation 0.0 0.0 1.0 -1.8325973071795865",
+    "nodeString": "  StripBuilding{ rotation 0.0 0.0 1.0 -1.8325973071795865 }"
+  },
+  "projects/objects/buildings/protos/SuburbanHouse": {
+    "fields": "  rotation 0.0 0.0 1.0 4.22699",
+    "nodeString": "  SuburbanHouse{ rotation 0.0 0.0 1.0 4.22699 }"
+  },
+  "projects/objects/buildings/protos/TheThreeTowers": {
+    "background": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 0.823599",
+    "nodeString": "  TheThreeTowers{ rotation 0.0 0.0 1.0 0.823599 }"
+  },
+  "projects/objects/buildings/protos/Warehouse": {
+    "fields": "  rotation 0.0 0.0 1.0 4.22699",
+    "nodeString": "  Warehouse{ rotation 0.0 0.0 1.0 4.22699 }"
+  },
+  "projects/objects/buildings/protos/Windmill": {
+    "fields": "  rotation 0.0 0.0 1.0 5.01239",
+    "nodeString": "  Windmill{ rotation 0.0 0.0 1.0 5.01239 }"
+  },
+  "projects/buildings/protos/Silo": {
+    "fields": "     rotation 0.0 0.0 1.0 0.0",
+    "nodeString": "     Silo { rotation 0 0 1 -0.655 }"
+  },
+  "projects/objects/chairs/protos/Chair": {
+    "fields": "  rotation 0.0 0.0 1.0 -1.2707953071795863",
+    "nodeString": "  Chair{ rotation 0.0 0.0 1.0 -1.2707953071795863 }"
+  },
+  "projects/objects/computers/protos/Keyboard": {
+    "fields": "  rotation 0.0 0.0 -1.0 -1.608405307179586",
+    "nodeString": "  Keyboard{ rotation 0.0 0.0 -1.0 -1.608405307179586 }"
+  },
+  "projects/objects/drinks/protos/Can": {
+    "background": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 -2.3179999999999996",
+    "nodeString": "  Can{ rotation 0.0 0.0 1.0 -2.3179999999999996 }"
+  },
+  "projects/objects/factory/containers/protos/CardboardBox": {
+    "fields": "  rotation 0.0 0.0 1.0 -2.841595307179586",
+    "nodeString": "  CardboardBox{ rotation 0.0 0.0 1.0 -2.841595307179586 }"
+  },
+  "projects/objects/factory/containers/protos/PlasticCrate": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  PlasticCrate{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/factory/containers/protos/WoodenBox": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  WoodenBox{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/factory/conveyors/protos/ConveyorBelt": {
+    "fields": "  rotation 0.0 0.0 1.0 -0.7471953071795863",
+    "nodeString": "  ConveyorBelt{ rotation 0.0 0.0 1.0 -0.7471953071795863 }"
+  },
+  "projects/objects/factory/pallet/protos/WoodenPallet": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  WoodenPallet{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/factory/pallet/protos/WoodenPalletStack": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  WoodenPalletStack{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/factory/tools/protos/Bolt": {
+    "fields": "  rotation 0.0 0.0 1.0 -2.8415953071795856",
+    "nodeString": "  Bolt{ rotation 0.0 0.0 1.0 -2.8415953071795856 }"
+  },
+  "projects/objects/factory/tools/protos/CapScrew": {
+    "fields": "  translation 0 0 0.01 rotation 0.0 0.0 1.0 0.788407",
+    "nodeString": "  CapScrew{ translation 0 0 0.01 rotation 0.0 0.0 1.0 0.788407 }"
+  },
+  "projects/objects/factory/tools/protos/PlatformCart": {
+    "fields": "  rotation 1.1455573151552005e-17 8.80339070094291e-18 -1.0 1.270795307179586",
+    "nodeString": "  PlatformCart{ rotation 1.1455573151552005e-17 8.80339070094291e-18 -1.0 1.270795307179586 }"
+  },
+  "projects/objects/floors/protos/CircleArena": {
+    "fields": "  translation 0 0 0.01 rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  CircleArena{ translation 0 0 0.01 rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/floors/protos/Floor": {
+    "fields": "  translation 0 0 0.01 rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Floor{ translation 0 0 0.01 rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/floors/protos/RectangleArena": {
+    "fields": "  translation 0 0 0.01 rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  RectangleArena{ translation 0 0 0.01 rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/floors/protos/UnevenTerrain": {
+    "fields": "  translation 0 0 0.01 rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  UnevenTerrain{ translation 0 0 0.01 rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/freight/protos/IntermodalContainer.proto": {
+    "fields": "  rotation 0.0 0.0 1.0 0.970796",
+    "nodeString": "  IntermodalContainer{ rotation 0.0 0.0 1.0 0.970796 }"
+  },
+  "projects/objects/freight/protos/IntermodalOfficeContainer.proto": {
+    "fields": "  rotation 0.0 0.0 1.0 -2.212385307179586",
+    "nodeString": "  IntermodalOfficeContainer{ rotation 0.0 0.0 1.0 -2.212385307179586 }"
+  },
+  "projects/objects/fruits/protos/Apple": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Apple{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/fruits/protos/Orange": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Orange{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/garden/protos/Barbecue": {
+    "fields": "  rotation 0.0 0.0 1.0 -1.5325953071795864",
+    "nodeString": "  Barbecue{ rotation 0.0 0.0 1.0 -1.5325953071795864 }"
+  },
+  "projects/objects/garden/protos/DogHouse": {
+    "fields": "  rotation 0.0 0.0 1.0 4.22699",
+    "nodeString": "  DogHouse{ rotation 0.0 0.0 1.0 4.22699 }"
+  },
+  "projects/objects/garden/protos/Gnome": {
+    "fields": "  rotation 0.0 0.0 1.0 4.22699",
+    "nodeString": "  Gnome{ rotation 0.0 0.0 1.0 4.22699 }"
+  },
+  "projects/objects/garden/protos/Pergolas": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Pergolas{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/garden/protos/PicketFence": {
+    "fields": "  rotation 0.0 0.0 1.0 1.3472",
+    "nodeString": "  PicketFence{ rotation 0.0 0.0 1.0 1.3472 }"
+  },
+  "projects/objects/garden/protos/PicketFenceWithDoor": {
+    "fields": "  rotation 0.0 0.0 1.0 1.609",
+    "nodeString": "  PicketFenceWithDoor{ rotation 0.0 0.0 1.0 1.609 }"
+  },
+  "projects/objects/garden/protos/Slide": {
+    "fields": "  rotation 0.0 0.0 1.0 5.75959",
+    "nodeString": "  Slide{ rotation 0.0 0.0 1.0 5.75959 }"
+  },
+  "projects/objects/garden/protos/Swing": {
+    "fields": "  rotation 0.0 0.0 1.0 1.3472",
+    "nodeString": "  Swing{ rotation 0.0 0.0 1.0 1.3472 }"
+  },
+  "projects/objects/garden/protos/SwingCouch": {
+    "background": [
+      1.0,
+      0.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 -1.5325953071795864",
+    "nodeString": "  SwingCouch{ rotation 0.0 0.0 1.0 -1.5325953071795864 }"
+  },
+  "projects/objects/garden/protos/TableWithUmbrella": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  TableWithUmbrella{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/garden/protos/WateringCan": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  WateringCan{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/garden/protos/Wheelbarrow": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Wheelbarrow{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/geometries/protos/Extrusion": {
+    "fields": " rotation 0 0 1 0.3",
+    "nodeString": " Shape { appearance Appearance { material Material { } texture ImageTexture { url [ \"omnisim://projects/default/worlds/textures/tagged_wall.jpg\" ] } } geometry Extrusion { crossSection [ -1 -1, 0 1, 1 -1, -1 -1 ] spine [ 0 0.5 0, 0 2 6, 6 4 6, 6 6 0, 6 8 -6, 0 10 -6, -6 19 -6, -6 14 3 ] scale [ 0.4 0.4 ] splineSubdivision 12 } }"
+  },
+  "projects/objects/geometries/protos/Rectangle": {
+    "fields": "  rotation 0.0 0.0 1.0 -1.31",
+    "nodeString": "  Transform { translation 0 0 0.05 rotation 0.0 0.0 1.0 -1.31 children [ Shape { appearance Appearance { material Material { } texture ImageTexture { url [ \"omnisim://projects/default/worlds/textures/tagged_wall.jpg\" ] } } geometry Rectangle { } } ] }"
+  },
+  "projects/objects/geometries/protos/TexturedBox": {
+    "fields": "  rotation 0.0 0.0 -1.0 0.52",
+    "nodeString": "  Transform { translation 0 0 0.07 rotation 0.0 0.0 -1.0 0.52 scale 1.3 1.3 1.3 children [ Shape { appearance Appearance { material Material { } texture ImageTexture { url [ \"omnisim://projects/default/worlds/textures/tagged_wall.jpg\" ] } } geometry TexturedBox { } } ] }"
+  },
+  "projects/objects/geometries/protos/TexturedParallelepiped": {
+    "fields": "   rotation 0.0 0.364549 0.931184 -0.561795",
+    "nodeString": "   Transform { translation 0 0 0.06 rotation 0.0 0.364549 0.931184 -0.561795  children [ Shape { appearance Appearance { material Material { } texture ImageTexture { url [ \"omnisim://projects/default/worlds/textures/tagged_wall.jpg\" ] } } geometry TexturedParallelepiped { } } ] }"
+  },
+  "projects/objects/kitchen/breakfast/protos/BiscuitBox": {
+    "background": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "fields": "  translation 0 0 0.04 rotation -0.6147756165851626 -0.4936806921079866 0.6150856163918261 -2.22443",
+    "nodeString": "  BiscuitBox{ translation 0 0 0.04 rotation -0.6147756165851626 -0.4936806921079866 0.6150856163918261 -2.22443 }"
+  },
+  "projects/objects/kitchen/breakfast/protos/CerealBox": {
+    "fields": "  rotation 0.0 0.0 -0.9999999999999999 1.27239",
+    "nodeString": "  CerealBox{ rotation 0.0 0.0 -0.9999999999999999 1.27239 }"
+  },
+  "projects/objects/kitchen/breakfast/protos/JamJar": {
+    "background": [
+      1.0,
+      0.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 -2.3181853071795864",
+    "nodeString": "  JamJar{ rotation 0.0 0.0 1.0 -2.3181853071795864 }"
+  },
+  "projects/objects/lights/protos/ConstructionLamp": {
+    "fields": "  rotation 0.0 0.0 1.0 -1.5415953071795858 spotLightIntensity 0",
+    "nodeString": "  ConstructionLamp{ rotation 0.0 0.0 1.0 -1.5415953071795858 spotLightIntensity 0 }"
+  },
+  "projects/objects/lights/protos/DoubleFluorescentLamp": {
+    "fields": "  rotation 0.0 0.0 1.0 2.8708",
+    "nodeString": "  DoubleFluorescentLamp { rotation 0.0 0.0 1.0 2.8708 }"
+  },
+  "projects/objects/mirror/protos/Mirror": {
+    "fields": "  rotation -0.98429273545463 0.10780197102639155 0.13980896242396965 -1.3243953071795866",
+    "nodeString": "  Mirror { translation -0.008 -0.038 0.015 rotation -0.98429273545463 0.10780197102639155 0.13980896242396965 -1.3243953071795866 fieldOfView 0.5 height 0.5 }"
+  },
+  "projects/objects/obstacles/protos/OilBarrel": {
+    "fields": "  rotation 0.0 0.0 1.0 1.8708",
+    "nodeString": "  OilBarrel{ rotation 0.0 0.0 1.0 1.8708 }"
+  },
+  "projects/objects/plants/protos/BunchOfSunFlowers": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  BunchOfSunFlowers{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/plants/protos/PottedTree": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  PottedTree{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/road/protos/CrashBarrier": {
+    "fields": "  rotation 0.0 0.0 -1.0 -0.523595307179586 path [ 0 0 0, 4.2 0 0 ]",
+    "nodeString": "  CrashBarrier{ rotation 0.0 0.0 -1.0 -0.523595307179586 path [ 0 0 0, 4.2 0 0 ] }"
+  },
+  "projects/objects/road/protos/Crossroad": {
+    "fields": " rotation 0 0 1 0.3",
+    "nodeString": " Group { children [ Crossroad { translation 7.0 4.0 0.01 shape [ 0 0 0 0 7 0 7 7 0 7 0 0 ] } Road { translation 7 0.5 0.01 wayPoints [ 0 0 0 10 0 0 ] startLine [ \"textures/road_line_dashed.png\" \"textures/road_line_triangle.png\" ] } Road { translation 0 0.5 0.01 rotation 0 0 1 3.1415 name \"road(1)\" wayPoints [ 0 0 0 10 0 0 ] startLine [ \"textures/road_line_dashed.png\" \"textures/road_line_triangle.png\" ] } Road { translation 3.5 4 0.01 rotation 0 0 1 1.5707996938995747 name \"road(2)\" rightBorder FALSE leftBorder FALSE wayPoints [ 0 0 0 10 0 0 ] startLine [ \"textures/road_line_dashed.png\" \"textures/road_line_triangle.png\" ] } ] }"
+  },
+  "projects/objects/road/protos/Road": {
+    "fields": "  translation 0 0 0.01 rotation 0.475148914734884 0.0 0.8799053976571926 -1.4398996938995747 wayPoints [ 0 0 0, 0 0 6, 3 0 10, -2 0 20 ] splineSubdivision 16",
+    "nodeString": "  Road{ translation 0 0 0.01 rotation 0.475148914734884 0.0 0.8799053976571926 -1.4398996938995747 wayPoints [ 0 0 0, 0 0 6, 3 0 10, -2 0 20 ] splineSubdivision 16 }"
+  },
+  "projects/objects/road/protos/RoadLine": {
+    "fields": "  translation 0 0.5 0.03 rotation 0.0 0.0 1.0 1.57",
+    "nodeString": "    Road { translation 0 0.5 0.03 rotation 0.0 0.0 1.0 1.57 width 16 numberOfLanes 4 wayPoints [ 0 0 0 -20.0 -10.0 0 -50.0 10.0 0 ] lines [ RoadLine { type \"dashed\" } RoadLine { type \"continuous\" } RoadLine { type \"double\" color 1 1 0 } ] splineSubdivision 6 } "
+  },
+  "projects/objects/rocks/protos/Rock": {
+    "background": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Rock{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/school_furniture/protos/Book": {
+    "fields": "  rotation 0.0 0.0 -0.9999999999999999 0.4869910000000001",
+    "nodeString": "  Book{ rotation 0.0 0.0 -0.9999999999999999 0.4869910000000001 }"
+  },
+  "projects/objects/shapes/protos/TexturedBoxShape": {
+    "fields": "  rotation 0.0 0.0 1.0 6.02",
+    "nodeString": "  Transform { translation 0 0 0.05 rotation 0.0 0.0 1.0 6.02 children [ TexturedBoxShape { } ] }"
+  },
+  "projects/objects/solids/protos/SolidBox": {
+    "fields": "  translation 0 0 1 rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  SolidBox{ translation 0 0 1 rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/solids/protos/SolidPipe": {
+    "fields": "  translation 0 0 1.3 rotation -0.4588675018509486 0.7608424491507817 -0.4588675008271012 4.44240113790767",
+    "nodeString": "  SolidPipe{ translation 0 0 1.3 rotation -0.4588675018509486 0.7608424491507817 -0.4588675008271012 4.44240113790767 }"
+  },
+  "projects/objects/solids/protos/SolidRoundedBox": {
+    "fields": "  translation 0 0 0.95 rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  SolidRoundedBox{ translation 0 0 0.95 rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/solids/protos/SolidTorus": {
+    "fields": "  translation 0.673474604293481 -0.011487731066173942 2.9359738531380777 rotation -0.8450804294727176 -0.2646433610066595 -0.4645459710268791 2.545192800312096",
+    "nodeString": "  SolidTorus{ translation 0.673474604293481 -0.011487731066173942 2.9359738531380777 rotation -0.8450804294727176 -0.2646433610066595 -0.4645459710268791 2.545192800312096 }"
+  },
+  "projects/objects/stairs/protos/StraightStairs": {
+    "fields": "  rotation 0.0 0.0 -1.0 -0.8236053071795864",
+    "nodeString": "  StraightStairs{ rotation 0.0 0.0 -1.0 -0.8236053071795864 }"
+  },
+  "projects/objects/stairs/protos/StraightStairsRail": {
+    "fields": "  rotation 0.0 0.0 -1.0 -0.8236053071795864",
+    "nodeString": "  StraightStairsRail{ rotation 0.0 0.0 -1.0 -0.8236053071795864 }"
+  },
+  "projects/objects/street_furniture/protos/Atm": {
+    "background": [
+      1.0,
+      0.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 -2.0561953071795864",
+    "nodeString": "  Atm{ rotation 0.0 0.0 1.0 -2.0561953071795864 }"
+  },
+  "projects/objects/street_furniture/protos/Bench": {
+    "fields": "  rotation 0.0 0.0 1.0 -1.5707953071795862",
+    "nodeString": "  Bench{ rotation 0.0 0.0 1.0 -1.5707953071795862 }"
+  },
+  "projects/objects/street_furniture/protos/BusStop": {
+    "background": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 -1.8325953071795862",
+    "nodeString": "  BusStop{ rotation 0.0 0.0 1.0 -1.8325953071795862 }"
+  },
+  "projects/objects/street_furniture/protos/ClothRecyclingContainer": {
+    "background": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 4.488790192",
+    "nodeString": "  ClothRecyclingContainer{ rotation 0.0 0.0 1.0 4.488790192 }"
+  },
+  "projects/objects/street_furniture/protos/DrinkingFountain": {
+    "fields": "  rotation 0.0 0.0 1.0 4.488790192",
+    "nodeString": "  DrinkingFountain{ rotation 0.0 0.0 1.0 4.488790192 }"
+  },
+  "projects/objects/street_furniture/protos/ElectricalCabinet": {
+    "fields": "  rotation 0.0 0.0 1.0 4.48879",
+    "nodeString": "  ElectricalCabinet{ rotation 0.0 0.0 1.0 4.48879 }"
+  },
+  "projects/objects/street_furniture/protos/Fence": {
+    "fields": "  rotation 0.0 0.0 -1.0 -0.5236053071795865 path [ 0 0 0, 5.1 0 0 ]",
+    "nodeString": "  Fence{ rotation 0.0 0.0 -1.0 -0.5236053071795865 path [ 0 0 0, 5.1 0 0 ] }"
+  },
+  "projects/objects/street_furniture/protos/FireHydrant": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  FireHydrant{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/street_furniture/protos/GlassRecyclingContainer": {
+    "background": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 -1.2707953071795863",
+    "nodeString": "  GlassRecyclingContainer{ rotation 0.0 0.0 1.0 -1.2707953071795863 }"
+  },
+  "projects/objects/street_furniture/protos/GuardShelter": {
+    "fields": "  rotation 0.0 0.0 1.0 4.48879",
+    "nodeString": "  GuardShelter{ rotation 0.0 0.0 1.0 4.48879 }"
+  },
+  "projects/objects/street_furniture/protos/IceFreezerContainer": {
+    "fields": "  rotation 0.0 0.0 1.0 4.22699",
+    "nodeString": "  IceFreezerContainer{ rotation 0.0 0.0 1.0 4.22699 }"
+  },
+  "projects/objects/street_furniture/protos/Mailbox": {
+    "fields": "  rotation 0.0 0.0 1.0 -1.2707953071795863",
+    "nodeString": "  Mailbox{ rotation 0.0 0.0 1.0 -1.2707953071795863 }"
+  },
+  "projects/objects/street_furniture/protos/MetallicTrash": {
+    "fields": "  rotation 0.0 0.0 1.0 0.823599",
+    "nodeString": "  MetallicTrash{ rotation 0.0 0.0 1.0 0.823599 }"
+  },
+  "projects/objects/street_furniture/protos/NewsStand": {
+    "fields": "  rotation 0.0 0.0 1.0 4.48879",
+    "nodeString": "  NewsStand{ rotation 0.0 0.0 1.0 4.48879 }"
+  },
+  "projects/objects/street_furniture/protos/OldBench": {
+    "fields": "  rotation 0.0 0.0 1.0 4.48879",
+    "nodeString": "  OldBench{ rotation 0.0 0.0 1.0 4.48879 }"
+  },
+  "projects/objects/street_furniture/protos/PhoneBooth": {
+    "fields": "  rotation 0.0 0.0 1.0 3.70339",
+    "nodeString": "  PhoneBooth{ rotation 0.0 0.0 1.0 3.70339 }"
+  },
+  "projects/objects/street_furniture/protos/PublicBin": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  PublicBin{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/street_furniture/protos/PublicToilet": {
+    "background": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "colorThreshold": 0.002,
+    "fields": "  rotation 0.0 0.0 1.0 -1.047195307179586",
+    "nodeString": "  PublicToilet{ rotation 0.0 0.0 1.0 -1.047195307179586 }"
+  },
+  "projects/objects/street_furniture/protos/SimpleBench": {
+    "fields": "  rotation 0.0 0.0 -1.0 -2.6561853071795865",
+    "nodeString": "  SimpleBench{ rotation 0.0 0.0 -1.0 -2.6561853071795865 }"
+  },
+  "projects/objects/street_furniture/protos/SmallKiosk": {
+    "fields": "  rotation 0.0 0.0 1.0 5.27419",
+    "nodeString": "  SmallKiosk{ rotation 0.0 0.0 1.0 5.27419 }"
+  },
+  "projects/objects/street_furniture/protos/SnackStand": {
+    "fields": "  rotation 0.0 0.0 1.0 4.22699",
+    "nodeString": "  SnackStand{ rotation 0.0 0.0 1.0 4.22699 }"
+  },
+  "projects/objects/street_furniture/protos/StoneBench": {
+    "background": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "colorThreshold": 0.002,
+    "fields": "  rotation 0.0 0.0 1.0 1.3472",
+    "nodeString": "  StoneBench{ rotation 0.0 0.0 1.0 1.3472 }"
+  },
+  "projects/objects/street_furniture/protos/StoneFountain": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  StoneFountain{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/street_furniture/protos/TrashBin": {
+    "fields": "  rotation 0.0 0.0 1.0 -2.225295307179586",
+    "nodeString": "  TrashBin{ rotation 0.0 0.0 1.0 -2.225295307179586 }"
+  },
+  "projects/objects/street_furniture/protos/TrashContainer": {
+    "fields": "  rotation 0.0 0.0 1.0 5.27419",
+    "nodeString": "  TrashContainer{ rotation 0.0 0.0 1.0 5.27419 }"
+  },
+  "projects/objects/street_furniture/protos/UndergroundContainer": {
+    "background": [
+      1.0,
+      0.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 4.22699",
+    "nodeString": "  UndergroundContainer{ rotation 0.0 0.0 1.0 4.22699 }"
+  },
+  "projects/objects/street_furniture/protos/UrbanFence": {
+    "fields": "  rotation 0.0 0.0 1.0 1.3472",
+    "nodeString": "  UrbanFence{ rotation 0.0 0.0 1.0 1.3472 }"
+  },
+  "projects/objects/street_furniture/protos/WorkTrashContainer": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  WorkTrashContainer{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/tables/protos/Desk": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Desk{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/tables/protos/Table": {
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Table{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/toys/protos/RubberDuck": {
+    "fields": "  translation 0 0 0.03 rotation 0.0 0.0 1.0 -2.8415953071795856",
+    "nodeString": "  RubberDuck{ translation 0 0 0.03 rotation 0.0 0.0 1.0 -2.8415953071795856 }"
+  },
+  "projects/objects/traffic/protos/ControlledStreetLight": {
+    "fields": "  radius 0.01",
+    "nodeString": "  ControlledStreetLight{ radius 0.01 }"
+  },
+  "projects/objects/traffic/protos/DirectionPanel": {
+    "fields": "  translation 0 0 0.23 rotation 0.0 0.0 1.0 4.48879",
+    "nodeString": "  DirectionPanel{ translation 0 0 0.23 rotation 0.0 0.0 1.0 4.48879 }"
+  },
+  "projects/objects/traffic/protos/ParkingMeter": {
+    "fields": "  rotation 0.0 0.0 1.0 -1.7943953071795864",
+    "nodeString": "  ParkingMeter{ rotation 0.0 0.0 1.0 -1.7943953071795864 }"
+  },
+  "projects/objects/traffic/protos/PedestrianCrossing": {
+    "background": [
+      1.0,
+      0.0,
+      0.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 -1.2707953071795863",
+    "nodeString": "  PedestrianCrossing{ rotation 0.0 0.0 1.0 -1.2707953071795863 }"
+  },
+  "projects/objects/traffic/protos/SignPole": {
+    "fields": "  rotation 0.0 0.0 1.0 4.75059",
+    "nodeString": "  SignPole{ rotation 0.0 0.0 1.0 4.75059 }"
+  },
+  "projects/objects/traffic/protos/SpeedLimitPanel": {
+    "fields": "  translation 0 0 0.32 rotation 0.0 0.0 1.0 4.22",
+    "nodeString": "  SpeedLimitPanel{ translation 0 0 0.32 rotation 0.0 0.0 1.0 4.22 }"
+  },
+  "projects/objects/traffic/protos/SpeedLimitSign": {
+    "fields": "  rotation 0.0 0.0 1.0 4.75059",
+    "nodeString": "  SpeedLimitSign{ rotation 0.0 0.0 1.0 4.75059 }"
+  },
+  "projects/objects/traffic/protos/StreetLight": {
+    "fields": "  on FALSE",
+    "nodeString": "  StreetLight{ on FALSE }"
+  },
+  "projects/objects/traffic/protos/TrafficCone": {
+    "background": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  TrafficCone{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/traffic/protos/TrafficLight": {
+    "fields": "  rotation 0.0 0.0 1.0 5.23",
+    "nodeString": "  Robot { rotation 0.0 0.0 1.0 5.23 children [ TrafficLight { } ] }"
+  },
+  "projects/objects/traffic/protos/TrafficLightStandardLampGeometry": {
+    "fields": "  rotation 0.0 -1.0 0.0 1.57",
+    "nodeString": "  Transform { translation 0 0 0.1 rotation 0.0 -1.0 0.0 1.57 children [ Shape { appearance PBRAppearance { baseColor 1 0 0 metalness 0 roughness 0.9 } geometry TrafficLightStandardLampGeometry { } } ] }"
+  },
+  "projects/objects/traffic/protos/WorkBarrier": {
+    "fields": "  rotation 0.0 0.0 1.0 1.3472",
+    "nodeString": "  WorkBarrier{ rotation 0.0 0.0 1.0 1.3472 }"
+  },
+  "projects/objects/trees/protos/BigSassafras": {
+    "background": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  BigSassafras{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/trees/protos/Cypress": {
+    "background": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Cypress{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/trees/protos/Forest": {
+    "background": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "fields": "  translation 0 0 0.1 rotation 0.0 0.0 -1.0 -0.29999530717958667",
+    "nodeString": "  Forest{ translation 0 0 0.1 rotation 0.0 0.0 -1.0 -0.29999530717958667 }"
+  },
+  "projects/objects/trees/protos/Oak": {
+    "background": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Oak{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/trees/protos/PalmTree": {
+    "background": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  PalmTree{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/trees/protos/Pine": {
+    "background": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Pine{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/trees/protos/Sassafras": {
+    "background": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Sassafras{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/trees/protos/SimpleTree": {
+    "background": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  SimpleTree{ rotation 0.0 0.0 1.0 0.3 }"
+  },
+  "projects/objects/trees/protos/Tree": {
+    "background": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "fields": "  rotation 0.0 0.0 1.0 0.3",
+    "nodeString": "  Tree{ rotation 0.0 0.0 1.0 0.3 }"
+  }
+}

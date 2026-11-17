@@ -1,0 +1,70 @@
+{
+  "date": "2026-09-20",
+  "machine_id": "9722d23d12a3",
+  "environment_file": "environment.json",
+  "runtime_environment": {
+    "OMNISIM_NEWTON_FINGER_KE": "2000"
+  },
+  "solver": {
+    "backend": "newton",
+    "degraded": false,
+    "finalised": true,
+    "runtime": {
+      "device": "cpu",
+      "mujoco": "3.11.0",
+      "mujoco_warp": "3.11.0",
+      "newton": "1.5.0",
+      "warp": "1.16.0"
+    },
+    "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5"
+  },
+  "model_kinematics": {
+    "source_poses": 12,
+    "maximum_position_or_rotation_element_error": 7.346291377566261e-06,
+    "tolerance": 1e-05,
+    "mujoco_version": "3.11.0",
+    "passed": true
+  },
+  "checks": {
+    "evaluator_unit_tests": 4,
+    "python_files_compiled": 9,
+    "left_urdf_topology_and_physics": "PASS",
+    "right_urdf_topology_and_physics": "PASS",
+    "authored_task_passes": 2,
+    "authored_task_runs": 2,
+    "matching_600_frame_pose_joint_contact_traces": true,
+    "open_gripper_control_passed": true,
+    "recorded_actions_task_success": false,
+    "updated_launcher_world_sync": "PASS: 600-frame open-gripper run completed",
+    "both_comparison_videos": "PASS: 1920x1080, 600 frames, 50 fps, 12 seconds; labels visually checked"
+  },
+  "authored_metrics": {
+    "bilateral_airborne_s": 3.4,
+    "bilateral_transport_m": 0.1439163358358851,
+    "max_carry_slip_m": 0.01796164366419139,
+    "left_brace_contact_s": 5.62,
+    "inside_slot": true,
+    "released": true,
+    "settled": true,
+    "strict_grip_stability_passed": false
+  },
+  "video": {
+    "frames": 600,
+    "fps": 50,
+    "duration_s": 12,
+    "comparison_resolution": [
+      1920,
+      1080
+    ],
+    "timing": "original speed, no motion retiming",
+    "simulation": "native OmniSim capture; fixed crop only"
+  },
+  "limits": [
+    "No physical hardware validation or trained-policy transfer.",
+    "Authored motion is not recorded-action replay.",
+    "Estimated scene, grip mapping, motor parameters and added visible contact pads.",
+    "17.96 mm relative movement fails the separate 10 mm strict grip-quality check.",
+    "Two matching runs are limited repeatability evidence, not a general reliability estimate."
+  ],
+  "launch_note": "The first repeat request retained the preceding controller. A structural world sync started the requested run. The CLI now uses a distinct world title and /world/sync for consecutive runs."
+}

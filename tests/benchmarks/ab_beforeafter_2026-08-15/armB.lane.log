@@ -1,0 +1,31 @@
+[gate2] 2026-08-12T12:09:14Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=0/120s waited=0m
+[gate2] 2026-08-12T12:09:45Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=31/120s waited=1m
+[gate2] 2026-08-12T12:10:15Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=61/120s waited=1m
+[gate2] 2026-08-12T12:10:45Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=91/120s waited=2m
+[gate2] 2026-08-12T12:11:16Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=122/120s waited=2m
+[gate2] machine safe (idle); starting armB
+=== 2026-08-12T12:11:17Z armB cell 1 starting (GPU 58, 11 %) ===
+=== 2026-08-12T12:23:20Z armB cell 1 done rc=0 (GPU 60, 0 %) ===
+containment guard: saw 61 tool call(s), denied 0
+
+=== A1_husky_swarm_10 / omnisim / claude_code ===
+outcome=PASS failed=None
+metrics={"t_agent_s": null, "t_total_s": 86.111, "turns": 118, "tool_calls": 61, "tokens_in": null, "tokens_out": null, "tokens_cache_read": null, "tokens_cache_write": null, "usd": null}
+rows -> O:\omnisim\tests\benchmarks\agentbench\results\cc_lane\20260812_ba_armB_c1\rows.jsonl
+=== 2026-08-12T12:23:22Z armB cell 2 starting (GPU 60, 0 %) ===
+=== 2026-08-12T12:35:09Z armB cell 2 done rc=0 (GPU 61, 11 %) ===
+containment guard: saw 91 tool call(s), denied 0
+
+=== A1_husky_swarm_10 / omnisim / claude_code ===
+outcome=FAIL failed=A1.8
+metrics={"t_agent_s": null, "t_total_s": 71.159, "turns": 123, "tool_calls": 31, "tokens_in": null, "tokens_out": null, "tokens_cache_read": null, "tokens_cache_write": null, "usd": null}
+rows -> O:\omnisim\tests\benchmarks\agentbench\results\cc_lane\20260812_ba_armB_c2\rows.jsonl
+=== 2026-08-12T12:35:11Z armB cell 3 starting (GPU 61, 6 %) ===
+=== 2026-08-12T13:45:44Z armB cell 3 done rc=1 (GPU 61, 0 %) ===
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1211, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1632, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['C:\\Users\\<user>\\AppData\\Local\\Programs\\Python\\Python312\\python.exe', 'O:\\omnisim-ab\\armB\\tests\\benchmarks\\agentbench\\run_agentbench.py', '--tasks', 'A1_husky_swarm_10', '--agent', 'external', '--repeats', '1', '--out', 'O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\cc_lane\\20260812_ba_armB_c3\\grade\\worlds']' timed out after 3600 seconds
+ARM armB COMPLETE

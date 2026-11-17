@@ -1,0 +1,203 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.5773502691896258 0.5773502691896257 0.5773502691896258 2.0943951023931953
+  position 0.03403387498495089 0.40499999999999703 4.818609101677204
+}
+Background {
+  skyColor [
+    0.4 0.7 1
+  ]
+  atmosphericSky "earth"
+}
+PointLight {
+  attenuation 0 0 1
+  intensity 0.13
+  location 0 0.3 0
+}
+DEF FLOOR Solid {
+  translation -1 0 1.1
+  children [
+    Pose {
+      rotation 1 0 0 -1.57079632679
+      children [
+        Shape {
+          geometry ElevationGrid {
+            xDimension 20
+            xSpacing 0.12
+            yDimension 20
+            ySpacing 0.12
+          }
+        }
+      ]
+    }
+  ]
+  boundingObject Pose {
+    translation 0.5 0 0.5
+    children [
+      Plane {
+      }
+    ]
+    rotation 1 0 0 -1.57079632679
+  }
+}
+DEF TEST Robot {
+  translation -0.39 0.005 0
+  children [
+    TestSuiteEmitter {
+    }
+    DistanceSensor {
+      translation -0.61 0.366 -0.4
+      name "slider sensor"
+      lookupTable [
+        0 0 0        0.2 1000 0
+      ]
+    }
+    DistanceSensor {
+      translation 0.87 0.3 -0.84
+      name "hinge sensor"
+      lookupTable [
+        0 0 0        0.2 1000 0
+      ]
+    }
+    DistanceSensor {
+      translation 0.69 0.29 1
+      name "hinge2 sensor"
+      lookupTable [
+        0 0 0        0.2 1000 0
+      ]
+    }
+    DistanceSensor {
+      translation -0.82 0.29 0.99
+      name "ball joint sensor"
+      lookupTable [
+        0 0 0        0.2 1000 0
+      ]
+    }
+  ]
+  name "test supervisor(1)"
+  controller "supervisor_node_set_joint_position"
+  supervisor TRUE
+}
+Robot {
+  translation -0.39 0.005 0
+  children [
+    DEF SLIDER_POSE Pose {
+      translation -0.5 0 -1
+      children [
+        DEF SLIDER_JOINT SliderJoint {
+          endPoint Solid {
+            translation 0 0.4 0
+            children [
+              DEF SHAPE Shape {
+                appearance PBRAppearance {
+                  baseColor 0.937255 0.160784 0.160784
+                }
+                geometry Sphere {
+                  radius 0.05
+                }
+              }
+            ]
+            name "slider solid"
+            boundingObject USE SHAPE
+            physics Physics {
+            }
+          }
+        }
+      ]
+    }
+    DEF HINGE_POSE Pose {
+      translation 1 0 -1
+      children [
+        DEF HINGE_JOINT HingeJoint {
+          jointParameters HingeJointParameters {
+            maxStop 0.4
+          }
+          endPoint Solid {
+            translation 0 0.4 0
+            children [
+              DEF SHAPE Shape {
+                appearance PBRAppearance {
+                  baseColor 0.937255 0.160784 0.160784
+                }
+                geometry Sphere {
+                  radius 0.05
+                }
+              }
+            ]
+            name "hinge solid"
+            boundingObject USE SHAPE
+            physics Physics {
+            }
+          }
+        }
+      ]
+    }
+    DEF HINGE2_POSE Pose {
+      translation 1 0 1
+      children [
+        DEF HINGE2_JOINT Hinge2Joint {
+          endPoint Solid {
+            translation 0 0.4 0
+            children [
+              DEF SHAPE Shape {
+                appearance PBRAppearance {
+                  baseColor 0.937255 0.160784 0.160784
+                }
+                geometry Sphere {
+                  radius 0.05
+                }
+              }
+            ]
+            name "hinge2 solid"
+            boundingObject USE SHAPE
+            physics Physics {
+            }
+          }
+        }
+      ]
+    }
+    DEF BALL_JOINT_POSE Pose {
+      translation -0.5 0 1
+      children [
+        DEF BALL_JOINT BallJoint {
+          jointParameters3 JointParameters {
+          }
+          endPoint Solid {
+            translation 0 0.4 0
+            children [
+              DEF SHAPE Shape {
+                appearance PBRAppearance {
+                  baseColor 0.937255 0.160784 0.160784
+                }
+                geometry Sphere {
+                  radius 0.05
+                }
+              }
+            ]
+            name "balljoint solid"
+            boundingObject USE SHAPE
+            physics Physics {
+            }
+          }
+        }
+      ]
+    }
+  ]
+  boundingObject Box {
+    size 2 0.001 2
+  }
+  physics Physics {
+    density -1
+    mass 100
+  }
+  controller "<none>"
+}
+TestSuiteSupervisor {
+}

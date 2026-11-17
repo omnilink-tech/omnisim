@@ -1,0 +1,186 @@
+{
+  "schema": "agenticsimbench/preregister/v1",
+  "suite": "agenticsimbench/v1",
+  "status": "preregistered_no_scored_rows",
+  "frozen_utc": "2026-08-13",
+  "claim": "Under AgenticSimBench v1, the two pinned coding-agent models build a larger physically verified robotics-simulation frontier in OmniSim than in every primary comparator, without a material cost penalty.",
+  "scope": "agentic robotics-simulation building from one instruction, without human intervention",
+  "comparators": {
+    "primary": [
+      "omnisim",
+      "isaac",
+      "gazebo",
+      "webots",
+      "genesis"
+    ],
+    "extended": [
+      "mujoco"
+    ],
+    "missing_primary_policy": "blocks_full_claim",
+    "unsupported_task_policy": "visible_capability_gap_stops_contiguous_frontier",
+    "post_result_removal": "forbidden"
+  },
+  "agents": [
+    {
+      "scaffold": "codex_cli",
+      "model": "gpt-5.6-sol"
+    },
+    {
+      "scaffold": "claude_code",
+      "model": "claude-opus-5"
+    }
+  ],
+  "agent_identity": {
+    "cli_version": "pin_once_in_campaign_manifest_before_first_cell",
+    "executable_sha256": "required_per_campaign",
+    "model_identity_from_cli_event": "required_per_row",
+    "mixed_versions_within_campaign": "forbidden"
+  },
+  "tracks": {
+    "scene_reasoning": [
+      "B1_overlap_audit",
+      "B3_measure_and_report",
+      "B2_subject_in_frame"
+    ],
+    "debug_loop": [
+      "C1_parse_error_fix",
+      "C2_fall_through_floor"
+    ],
+    "autonomy_scale": [
+      "R1_lidar_nav",
+      "A1_husky_swarm_10"
+    ],
+    "manipulation": [
+      "R2_arm_reach",
+      "R3_pick_and_place",
+      "R4_mobile_manipulation"
+    ]
+  },
+  "build_scale": {
+    "robots": [
+      10,
+      25,
+      50,
+      100,
+      250
+    ],
+    "independently_controlled": true,
+    "portable_artifact_required": true,
+    "physical_requirements": [
+      "no_initial_interpenetration",
+      "required_fraction_moves",
+      "no_runaway",
+      "collision_bound",
+      "no_teleport",
+      "replay_passes"
+    ]
+  },
+  "repetitions": {
+    "ordinary": 5,
+    "endpoint": 10,
+    "endpoint_tasks": [
+      "A1_husky_swarm_10",
+      "R4_mobile_manipulation",
+      "BuildScale_*"
+    ],
+    "solved_fraction": 0.8,
+    "invalid_retry_limit": 2,
+    "maximum_invalid_fraction": 0.2
+  },
+  "budgets": {
+    "task_timeout": "frozen_task_value",
+    "per_run_hard_ceiling_s": 2700,
+    "human_interventions": 0,
+    "network": "disabled",
+    "paired_seed": true,
+    "paired_simulator_order": "interleaved",
+    "paired_cells_concurrent_on_same_host": false
+  },
+  "surface": {
+    "primary_condition": "best_first_party_documented_workflow",
+    "same_prompt_across_simulators": true,
+    "operator_authored_bridge": "published_and_reviewed_before_scoring",
+    "omnisim_shell_ablation": "secondary_mechanism_study_not_part_of_primary_win"
+  },
+  "publication_gates": {
+    "red_evidence": "61/61 assertions validated end_to_end before first scored cell",
+    "per_task_simulator": [
+      "expressible_or_explicitly_unsupported",
+      "deliverable_convention",
+      "oracle_PASS",
+      "null_FAIL",
+      "no_task_scoped_bringup_blocker"
+    ],
+    "artifact_and_trace_preserved": true,
+    "answer_key_access": "forbidden",
+    "contamination": "invalidates_cell"
+  },
+  "metrics": {
+    "primary": [
+      "claimable_contiguous_frontier_by_track",
+      "total_claimable_frontier_levels",
+      "highest_solved_build_scale_level"
+    ],
+    "cost": [
+      "agent_wall_s",
+      "tokens_total",
+      "tool_calls",
+      "provider_reported_usd"
+    ],
+    "runtime": [
+      "startup_s",
+      "finalization_s",
+      "steady_state_real_time_factor",
+      "peak_ram_bytes",
+      "peak_vram_bytes"
+    ],
+    "evidence": [
+      "prompt",
+      "event_stream",
+      "workspace",
+      "portable_artifact",
+      "grader_record",
+      "simulator_log",
+      "video_or_frames",
+      "model_and_cli_identity",
+      "hardware_fingerprint"
+    ],
+    "missing_numeric_value": "null_never_zero"
+  },
+  "aggregation": {
+    "task_solved": "valid_passes / valid_repetitions >= 0.8",
+    "track_frontier": "longest_contiguous_prefix_of_solved_tasks",
+    "total_frontier": "sum_of_four_track_frontier_levels",
+    "normalized_cost": "for each matched task both systems solve, simulator task median divided by fastest simulator task median; aggregate is median of task ratios",
+    "failed_attempt_costs_included": true
+  },
+  "win_rule": {
+    "all_clauses_required": true,
+    "clauses": [
+      "for_each_model_omnisim_total_frontier_strictly_exceeds_every_primary_comparator",
+      "for_each_model_and_comparator_omnisim_not_worse_on_at_least_three_of_four_tracks",
+      "for_each_model_and_comparator_omnisim_strictly_better_on_at_least_two_of_four_tracks",
+      "for_both_models_omnisim_build_scale_is_not_lower_than_any_primary_comparator",
+      "for_at_least_one_model_omnisim_build_scale_strictly_exceeds_every_primary_comparator",
+      "median_normalized_agent_wall_s_le_1.25",
+      "median_normalized_tokens_total_le_1.25",
+      "median_normalized_tool_calls_le_1.25",
+      "median_normalized_provider_reported_usd_le_1.25_when_reported_for_all_matched_cells",
+      "all_publication_gates_green",
+      "independent_reproduction_passes"
+    ]
+  },
+  "independent_reproduction": {
+    "minimum_models": 1,
+    "same_total_frontier_winner": true,
+    "minimum_task_outcome_agreement": 0.8,
+    "build_scale_rank_may_not_reverse": true,
+    "operator_not_affiliated_with_omnilink": true
+  },
+  "withdrawal": {
+    "trigger": "any_win_clause_false_or_unevaluable",
+    "action": "forbid_best_claim_and_publish_narrower_measured_result",
+    "post_first_row_changes": "new_suite_id_required",
+    "failed_and_invalid_rows": "preserve_and_publish"
+  }
+}

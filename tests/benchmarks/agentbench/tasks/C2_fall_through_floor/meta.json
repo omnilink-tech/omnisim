@@ -1,0 +1,46 @@
+{
+  "id": "C2_fall_through_floor",
+  "tier": "debug",
+  "flagship": false,
+  "prompt_file": "prompt.txt",
+  "grader": "agentbench.graders.c2",
+  "par_s": 600,
+  "timeout_s": 1800,
+  "repeats_default": 1,
+  "stresses": "contact debugging; a verification loop; resisting the freeze-it cheat",
+  "initial_state": "a floor Solid authored with no boundingObject, so it has no collision surface",
+  "geometry_note": "The floor sits at z=0.5 (top surface 0.55) rather than z=0 ON PURPOSE. The engine carries an implicit ground plane at z=0, so a crate that never touches the authored floor still comes to rest at z=0.200 -- and with the floor at its original z=0 the expected rest was 0.250, i.e. the forged rest was inside C2.5's 0.15 m REST_TOL_M and the UNFIXED world PASSED 5/5 (measured 2026-08-08). The invariant is floor_top > REST_TOL_M; test_c2_discriminates.py enforces it on both arms.",
+  "initial_files": [
+    "fall_through.wbt"
+  ],
+  "phases": {
+    "harness": {
+      "enabled": false
+    },
+    "standalone": {
+      "settle_s": 0.0,
+      "duration_s": 5.0,
+      "contact_steps": 5,
+      "solids": [
+        "floor"
+      ],
+      "note": "settle 0 so the fall itself is inside the recorded window"
+    }
+  },
+  "constants": {
+    "MIN_Z_M": -0.1,
+    "MIN_DESCENT_M": 0.1,
+    "REST_BAND_M": 0.02,
+    "REST_WINDOW_S": 1.0,
+    "REST_TOL_M": 0.15
+  },
+  "budget": {
+    "rule": "timeout_s = min(3 x par_s, TASK_HARD_CEILING_S)",
+    "hard_ceiling_s": 2700,
+    "truncated_by_ceiling": false,
+    "ratio_to_par": 3.0,
+    "runs_per_cell": 1,
+    "variance_measured": false,
+    "note": "the full 3x-par rule applies under the 2700 s (45 min) ceiling. ONE run per (task, arm): a single observation is an OUTCOME, never a rate -- pass@1 and a confidence interval are undefined at n = 1 (SPEC 3.5)."
+  }
+}

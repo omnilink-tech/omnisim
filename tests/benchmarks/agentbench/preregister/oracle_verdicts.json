@@ -1,0 +1,563 @@
+{
+  "meta": {
+    "utc": "2026-08-09T11:36:38Z",
+    "machine": {
+      "id": "9722d23d12a3",
+      "engine_build": "00680caa3"
+    },
+    "generator": "preregister/run_oracles.py",
+    "n_per_cell": 1,
+    "status": "pre-freeze oracle instrument (plan 2.1/2.2); NOT campaign scores"
+  },
+  "cells": [
+    {
+      "task": "B1_overlap_audit",
+      "sim": "omnisim",
+      "condition": "shell",
+      "script": "oracle_b1_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B1_overlap_audit.shell",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\B1_overlap_audit.shell"
+    },
+    {
+      "task": "B1_overlap_audit",
+      "sim": "omnisim",
+      "condition": "shell+tools",
+      "script": "oracle_b1_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B1_overlap_audit.shell_tools",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\B1_overlap_audit.shell_tools"
+    },
+    {
+      "task": "B1_overlap_audit",
+      "sim": "webots",
+      "condition": "shell",
+      "script": "oracle_b1_webots.json",
+      "outcome": "PASS",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\B1_overlap_audit.shell"
+    },
+    {
+      "task": "B1_overlap_audit",
+      "sim": "webots",
+      "condition": "shell+tools",
+      "script": "oracle_b1_webots.json",
+      "outcome": "PASS",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B1_overlap_audit.shell_tools",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\B1_overlap_audit.shell_tools"
+    },
+    {
+      "task": "B2_subject_in_frame",
+      "sim": "omnisim",
+      "condition": "shell",
+      "script": "oracle_b2_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B2_subject_in_frame.shell",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\B2_subject_in_frame.shell"
+    },
+    {
+      "task": "B2_subject_in_frame",
+      "sim": "omnisim",
+      "condition": "shell+tools",
+      "script": "oracle_b2_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B2_subject_in_frame.shell_tools",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\B2_subject_in_frame.shell_tools"
+    },
+    {
+      "task": "B2_subject_in_frame",
+      "sim": "webots",
+      "condition": "shell",
+      "script": "oracle_b2_webots.json",
+      "outcome": "PASS",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\B2_subject_in_frame.shell"
+    },
+    {
+      "task": "B2_subject_in_frame",
+      "sim": "webots",
+      "condition": "shell+tools",
+      "script": "oracle_b2_webots.json",
+      "outcome": "PASS",
+      "tool_calls": 2,
+      "turns": 2,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell_tools",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\B2_subject_in_frame.shell_tools"
+    },
+    {
+      "task": "B3_measure_and_report",
+      "sim": "omnisim",
+      "condition": "shell",
+      "script": "oracle_b3_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 1,
+      "turns": 1,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B3_measure_and_report.shell",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\B3_measure_and_report.shell"
+    },
+    {
+      "task": "B3_measure_and_report",
+      "sim": "omnisim",
+      "condition": "shell+tools",
+      "script": "oracle_b3_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 1,
+      "turns": 1,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\B3_measure_and_report.shell_tools",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\B3_measure_and_report.shell_tools"
+    },
+    {
+      "task": "B3_measure_and_report",
+      "sim": "webots",
+      "condition": "shell",
+      "script": "oracle_b3_webots.json",
+      "outcome": "PASS",
+      "tool_calls": 1,
+      "turns": 1,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\B3_measure_and_report.shell"
+    },
+    {
+      "task": "B3_measure_and_report",
+      "sim": "webots",
+      "condition": "shell+tools",
+      "script": "oracle_b3_webots.json",
+      "outcome": "PASS",
+      "tool_calls": 1,
+      "turns": 1,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\B3_measure_and_report.shell_tools"
+    },
+    {
+      "task": "C1_parse_error_fix",
+      "sim": "omnisim",
+      "condition": "shell",
+      "script": "oracle_c1_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 3,
+      "turns": 3,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\C1_parse_error_fix.shell",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\C1_parse_error_fix.shell"
+    },
+    {
+      "task": "C1_parse_error_fix",
+      "sim": "omnisim",
+      "condition": "shell+tools",
+      "script": "oracle_c1_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 3,
+      "turns": 3,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\C1_parse_error_fix.shell_tools",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\C1_parse_error_fix.shell_tools"
+    },
+    {
+      "task": "C1_parse_error_fix",
+      "sim": "webots",
+      "condition": "shell",
+      "script": "oracle_c1_webots.json",
+      "outcome": "PASS",
+      "tool_calls": 3,
+      "turns": 3,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\C1_parse_error_fix.shell"
+    },
+    {
+      "task": "C1_parse_error_fix",
+      "sim": "webots",
+      "condition": "shell+tools",
+      "script": "oracle_c1_webots.json",
+      "outcome": "PASS",
+      "tool_calls": 3,
+      "turns": 3,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\C1_parse_error_fix.shell_tools"
+    },
+    {
+      "task": "C2_fall_through_floor",
+      "sim": "omnisim",
+      "condition": "shell",
+      "script": "oracle_c2_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 3,
+      "turns": 3,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\C2_fall_through_floor.shell",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\C2_fall_through_floor.shell"
+    },
+    {
+      "task": "C2_fall_through_floor",
+      "sim": "omnisim",
+      "condition": "shell+tools",
+      "script": "oracle_c2_omnisim.json",
+      "outcome": "PASS",
+      "tool_calls": 3,
+      "turns": 3,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\omnisim\\C2_fall_through_floor.shell_tools",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\omnisim\\C2_fall_through_floor.shell_tools"
+    },
+    {
+      "task": "C2_fall_through_floor",
+      "sim": "webots",
+      "condition": "shell",
+      "script": "oracle_c2_webots.json",
+      "outcome": "PASS",
+      "tool_calls": 5,
+      "turns": 5,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\C2_fall_through_floor.shell"
+    },
+    {
+      "task": "C2_fall_through_floor",
+      "sim": "webots",
+      "condition": "shell+tools",
+      "script": "oracle_c2_webots.json",
+      "outcome": "PASS",
+      "tool_calls": 5,
+      "turns": 5,
+      "stop_reason": "model_stopped",
+      "failed_assertion": null,
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools",
+      "evidence_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\evidence\\webots\\C2_fall_through_floor.shell_tools"
+    }
+  ],
+  "verdicts": {
+    "lane_test": {
+      "B1_overlap_audit": {
+        "omnisim_best": {
+          "condition": "shell",
+          "tool_calls": 2,
+          "outcome": "PASS"
+        },
+        "webots_best": {
+          "condition": "shell",
+          "tool_calls": 2,
+          "outcome": "PASS"
+        },
+        "completes_on_both": true,
+        "ratio_webots_over_omnisim": 1.0,
+        "ratio_max": 3.0,
+        "lane_b_membership": "CONFIRMED"
+      },
+      "B2_subject_in_frame": {
+        "omnisim_best": {
+          "condition": "shell",
+          "tool_calls": 2,
+          "outcome": "PASS"
+        },
+        "webots_best": {
+          "condition": "shell",
+          "tool_calls": 2,
+          "outcome": "PASS"
+        },
+        "completes_on_both": true,
+        "ratio_webots_over_omnisim": 1.0,
+        "ratio_max": 3.0,
+        "lane_b_membership": "CONFIRMED"
+      },
+      "B3_measure_and_report": {
+        "omnisim_best": {
+          "condition": "shell",
+          "tool_calls": 1,
+          "outcome": "PASS"
+        },
+        "webots_best": {
+          "condition": "shell",
+          "tool_calls": 1,
+          "outcome": "PASS"
+        },
+        "completes_on_both": true,
+        "ratio_webots_over_omnisim": 1.0,
+        "ratio_max": 3.0,
+        "lane_b_membership": "CONFIRMED"
+      },
+      "C1_parse_error_fix": {
+        "omnisim_best": {
+          "condition": "shell",
+          "tool_calls": 3,
+          "outcome": "PASS"
+        },
+        "webots_best": {
+          "condition": "shell",
+          "tool_calls": 3,
+          "outcome": "PASS"
+        },
+        "completes_on_both": true,
+        "ratio_webots_over_omnisim": 1.0,
+        "ratio_max": 3.0,
+        "lane_b_membership": "CONFIRMED"
+      },
+      "C2_fall_through_floor": {
+        "omnisim_best": {
+          "condition": "shell",
+          "tool_calls": 3,
+          "outcome": "PASS"
+        },
+        "webots_best": {
+          "condition": "shell",
+          "tool_calls": 5,
+          "outcome": "PASS"
+        },
+        "completes_on_both": true,
+        "ratio_webots_over_omnisim": 1.6667,
+        "ratio_max": 3.0,
+        "lane_b_membership": "CONFIRMED"
+      }
+    },
+    "granularity_guard": {
+      "B1_overlap_audit": {
+        "webots_shell_tool_calls": 2,
+        "webots_bridge_tool_calls": 2,
+        "bridge_le_shell": true,
+        "verdict": "HOLDS"
+      },
+      "B2_subject_in_frame": {
+        "webots_shell_tool_calls": 2,
+        "webots_bridge_tool_calls": 2,
+        "bridge_le_shell": true,
+        "verdict": "HOLDS"
+      },
+      "B3_measure_and_report": {
+        "webots_shell_tool_calls": 1,
+        "webots_bridge_tool_calls": 1,
+        "bridge_le_shell": true,
+        "verdict": "HOLDS"
+      },
+      "C1_parse_error_fix": {
+        "webots_shell_tool_calls": 3,
+        "webots_bridge_tool_calls": 3,
+        "bridge_le_shell": true,
+        "verdict": "HOLDS"
+      },
+      "C2_fall_through_floor": {
+        "webots_shell_tool_calls": 5,
+        "webots_bridge_tool_calls": 5,
+        "bridge_le_shell": true,
+        "verdict": "HOLDS"
+      }
+    },
+    "distinctness": {
+      "per_task": {
+        "B1_overlap_audit": {
+          "saving_fraction": 0.0,
+          "qualifies": false
+        },
+        "B2_subject_in_frame": {
+          "saving_fraction": 0.0,
+          "qualifies": false
+        },
+        "B3_measure_and_report": {
+          "saving_fraction": 0.0,
+          "qualifies": false
+        },
+        "C1_parse_error_fix": {
+          "saving_fraction": 0.0,
+          "qualifies": false
+        },
+        "C2_fall_through_floor": {
+          "saving_fraction": 0.0,
+          "qualifies": false
+        }
+      },
+      "min_saving": 0.15,
+      "distinct": false,
+      "qualifying_tasks": [],
+      "verdict": "NOT DISTINCT",
+      "status": "OPERATOR-MEASURED, AWAITING REVIEWER COUNTERSIGNATURE (the plan 6.2.4 non-OmniSim reviewer slot is open; this verdict is not final until a non-OmniSim reviewer renders it -- a human gate)",
+      "consequence_if_not_distinct": "plan 2.2 guard 3: the Webots within-sim shell+tools - shell delta is published as descriptive only; nothing is removed from F-comparative, both Webots conditions still run, and the plan-2.4 best-condition rule selects among them mechanically."
+    }
+  },
+  "notes": [
+    "Broken-world verification, measured on the WSL2 upstream install (BRINGUP.md): the C1 initial_webots world FAILS to load under upstream R2025a exactly as the task requires -- 2 ERROR lines ('92:1: error: Expected field name or }, found DEF' then 'Failed to load due to syntax error(s)'), after which upstream idles with no world until killed (rc=124 by timeout, no roster, recorder never starts, 2/2 attempts identical). Upstream's parser aborts at the unbalanced brace, so the 'Soild' defect is masked until the brace is fixed -- a different behaviour from OmniSim's engine, which SKIPS the unknown 'Soild' node with an error line and loads the rest (measured 2026-07-31, c1_core docstring). The C2 initial_webots world loads cleanly and its crate free-falls through the hologram floor to z = -121.6 m in 5 s (launcher-measured trajectory), matching the OmniSim arm's symptom.",
+    "Every cell above was produced by replaying the committed oracle script through the real runner loop (real tool sets, real Ledger) and grading the produced artifacts with the real graders on real simulator runs; cells.json cites each cell's run_dir and evidence copy.",
+    "The per-simulator oracle script is REPLAYED UNDER BOTH conditions because the minimal competent path for all five tasks is file-level (reads and writes of the scene, of the robot model's own geometry sources, and of the installed simulator's assets, plus shell-run verification) and the shell tool set is a subset of every shell+tools set; each script's `minimality` block enumerates the bridge/harness-idiomatic alternative paths and their strictly-larger call counts (arithmetic over the same tool surfaces, not measured runs). Consequence: no bridge verb sits on any oracle's minimal path, the granularity guard holds by construction, and the distinctness verdict is NOT DISTINCT unless a reviewer produces a cheaper bridge-idiomatic path.",
+    "B1 fixture disclosure -- RESOLVED 2026-08-01, pre-freeze: both B1 initial worlds' headers used to name the overlapping pair (and their titles said one existed), so the one-call oracle priced file-reading, not measurement. The disclosure was stripped from both arms (comments and titles only; every pose is untouched, so the committed grader ground truth is unchanged), and the B1 oracles were regenerated to MEASURE: read the scene for poses, read the robot model's own geometry source for the footprint (the Husky URDF; the cached Pioneer3at PROTO's boundingObject boxes), compute the pairwise clearances -- 2 calls per arm, lane ratio unchanged at 1.0.",
+    "Oracle cells are n=1 by design (the plan's lane test and bridge guards are defined over the scripted oracle, a deterministic instrument); they are pre-freeze instrument readings, not campaign scores, and are quotable only as such."
+  ],
+  "driver_gates": {
+    "what": "SPEC 7.1 oracle/null gates established by scripted DRIVERS (a controller/program driving the sim directly), not by a scripted-LLM replay through run_agentbench's Ledger. They have no tool_calls or turns -- those are null rather than 0, because a driver gate has none to count.",
+    "why_separate": "`cells` and `verdicts` are recomputed wholesale from runs/cells.json by run_oracles.py --verdicts-only. A driver gate recorded there would be dropped by the next regeneration without a test noticing.",
+    "cells": [
+      {
+        "task": "R1_lidar_nav",
+        "sim": "mujoco",
+        "condition": "driver:oracle",
+        "agent": "oracle",
+        "script": "adapters/mujoco/mujoco_lane/r1_oracle.{xml,py}",
+        "outcome": "PASS",
+        "tool_calls": null,
+        "turns": null,
+        "stop_reason": "driver_returned",
+        "failed_assertion": null,
+        "run_dir": null,
+        "evidence_dir": null,
+        "note": "mj_ray sensing navigator, map from an EMPTY grid: 14.272 m path, 0.094 m from goal, 0 contacts, max step 0.0022 m. Proven to SENSE rather than memorise: solved 20/20 unpublished layouts."
+      },
+      {
+        "task": "R1_lidar_nav",
+        "sim": "mujoco",
+        "condition": "driver:null",
+        "agent": "null",
+        "script": "adapters/mujoco/mujoco_lane/r1_null.py",
+        "outcome": "FAIL",
+        "tool_calls": null,
+        "turns": null,
+        "stop_reason": "duration",
+        "failed_assertion": "R1.4",
+        "run_dir": null,
+        "evidence_dir": null,
+        "note": "R1.1-R1.3 pass legitimately (clean run, drivable robot, intact obstacles); R1.4/R1.5/R1.6 fail. R1.5 is refused for 0.0025 m travelled -- the earned-motion floor doing its job."
+      },
+      {
+        "task": "R1_lidar_nav",
+        "sim": "webots",
+        "condition": "driver:oracle",
+        "agent": "oracle",
+        "script": "adapters/webots/webots_lane/{worlds/r1_lidar_nav.wbt,controllers/r1_oracle}",
+        "outcome": "PASS",
+        "tool_calls": null,
+        "turns": null,
+        "stop_reason": "driver_arrived",
+        "failed_assertion": null,
+        "run_dir": null,
+        "evidence_dir": null,
+        "note": "SickLms291 at upstream's own mount, 181 samples/180 deg, map from an EMPTY grid (390 scans / 70,590 beams / 329 cells): 14.13 m path, 0.119 m from goal, 0 contacts over 3,750 sampled steps, true clearance 0.273 m beyond the robot radius. Solved 17/17 unpublished layouts. REQUIRES contact_steps=-1 (at 0 the channel is unmeasured and R1.5 refuses to credit it -- 5/6)."
+      },
+      {
+        "task": "R1_lidar_nav",
+        "sim": "webots",
+        "condition": "driver:null",
+        "agent": "null",
+        "script": "adapters/webots/webots_lane/controllers/r1_null",
+        "outcome": "FAIL",
+        "tool_calls": null,
+        "turns": null,
+        "stop_reason": "recorder_window_end",
+        "failed_assertion": "R1.4",
+        "run_dir": null,
+        "evidence_dir": null,
+        "note": "Same profile as the mujoco null. Its R1.5 failure is EARNED: the contact channel was live (3,750 steps, 584 points) and it is refused for travelling 0.0 m."
+      },
+      {
+        "task": "R1_lidar_nav",
+        "sim": "omnisim",
+        "condition": "driver:null",
+        "agent": "null",
+        "script": "adapters/omnisim/omnisim_lane/controllers/r1_null",
+        "outcome": "FAIL",
+        "tool_calls": null,
+        "turns": null,
+        "stop_reason": "driver_completed",
+        "failed_assertion": "R1.4",
+        "run_dir": null,
+        "evidence_dir": null,
+        "note": "Final (-4.0,-4.0), 11.3137 m from goal; 0 contacts but 0.0 m travelled; path 0.0 m."
+      },
+      {
+        "task": "R1_lidar_nav",
+        "sim": "omnisim",
+        "condition": "driver:blind",
+        "agent": "blind",
+        "script": "adapters/omnisim/omnisim_lane/controllers/r1_blind",
+        "outcome": "FAIL",
+        "tool_calls": null,
+        "turns": null,
+        "stop_reason": "driver_completed",
+        "failed_assertion": "R1.4",
+        "run_dir": null,
+        "evidence_dir": null,
+        "note": "RE-MEASURED 2026-08-10 after the rover repair (freeze v3 Amendment 3): final (-1.8582,-1.8260), 8.2621 m from goal; 1 contact rover/OBSTACLE_2, 15.3061 m travelled. R1.4 and R1.5 still FAIL, which is what this cell is for; R1.6 now passes because the driver finally covers real ground. SUPERSEDED READING, measured on the SAME engine binary with the broken rover: final (-1.9575,-1.9997), 8.455 m from goal, same single rover/OBSTACLE_2 contact, 3.079 m travelled -- the rover SLID there on a chassis that could not turn its wheels. This cell is also what PROVED R1.5 was structurally unfailable on this arm: same run, contact watch OFF -> R1.5 PASS with 0 contacts; ON -> FAIL."
+      },
+      {
+        "task": "R1_lidar_nav",
+        "sim": "omnisim",
+        "condition": "driver:oracle",
+        "agent": "oracle",
+        "script": "adapters/omnisim/omnisim_lane/controllers/r1_oracle",
+        "outcome": "PASS",
+        "tool_calls": null,
+        "turns": null,
+        "stop_reason": "driver_parked_at_goal",
+        "failed_assertion": null,
+        "run_dir": null,
+        "evidence_dir": null,
+        "note": "RE-MEASURED 2026-08-11 after the navigator was rewritten (freeze v3 Amendment 4, commit dc9bf156f -- the CONTROLLER only, adapters/omnisim/omnisim_lane/controllers/r1_oracle/r1_oracle.py; the world r1_oracle.wbt was NOT touched, so this is a controlled comparison against the superseded reading below). PASS 6/6 on the fixtures test_r1_discriminates_omnisim.py uses: 60 s window, contact_steps=0, engine msys64/mingw64/bin/omnisim-bin.exe (sha256 82d5964335feaeaf), machine 9722d23d12a3. Final (3.8638,4.0641), 0.1506 m from the goal against a 0.30 m tolerance; ZERO contacts against 9 countable bodies; 14.2671 m of path against the graded layout's 10.769 m geometric floor; largest single-sample step 0.0084 m against a 0.25 m teleport bound; 227 occupied cells learned from an EMPTY grid; max tilt 0.033 rad; arrives t=33.9 s and then latches PARKED for the remainder of the window, which is why stop_reason is not 'duration'. Deterministic: 5 bit-identical runs with the fixing change, plus 2 further bit-identical replays made for this record on 2026-08-11. The null and blind halves are unchanged and still FAIL (pytest adapters/omnisim/test_r1_discriminates_omnisim.py: 11 passed). THE HONEST BOUND, recorded because R1 draws its layout AT GRADE TIME: this oracle is a NAVIGATOR, NOT A UNIVERSAL SOLVER. Measured over TWO independent five-layout generalisation probes against grade-time placed layouts it had never seen, both landing on 4 PASS / 1 FAIL: the probe run with the fixing change (dc9bf156f) failed its fifth on R1.5 only -- it reached the goal at 0.213 m and grazed a box -- and the probe run for THIS record on 2026-08-11 (seeds 'omnisim/gen/1'..'5') failed its fifth WORSE, on R1.4 AND R1.5, finishing at (-2.6595,-0.0734), 7.8065 m from the goal after 20.8522 m of path and one rover/OBSTACLE_1 contact. So the failure mode is not merely 'a graze near the goal': on some drawn layouts this navigator does not arrive at all. SPEC 7.1 asks only that the task be shown PASSABLE on this arm, which this cell establishes; it does not establish that every drawn layout is solved, and no reader should take it as that. Both probes are n=1 per layout and 10 layouts total is far too few to quote a rate -- '4 of 5, twice' is the whole claim. SUPERSEDED READING, measured 2026-08-10 (freeze v3 Amendment 3) on the SAME world and the SAME engine binary with the pre-dc9bf156f navigator: outcome FAIL, failed_assertion R1.4 (R1.5 also failed), stop_reason 'duration' -- final (-1.18,1.398), 5.7968 m from the goal, 2 contacts (rover/OBSTACLE_4 then rover/OBSTACLE_1), 23.5842 m of path. Three defects were behind it, each measured before it was fixed: it commanded 15.25 rad/s against maxVelocity 12 (122 of 2166 ticks at or over the cap) and at t=15.5 s the rover FLIPPED onto its back (max tilt 3.142 rad) and spun its wheels in the air for the remaining 36 s; its add-only occupancy set ended the run holding 1303 cells, ~70% of them phantom floor returns taken while the chassis was tilted, so A* found no route from t=7 s; and a wheel command CHANGE kicks the chassis to ~10x its rolling speed and the kicks accumulate, so both channels are now rationed (4 Hz publish under a 0.5 rad/s slew).",
+        "blocked_by": null,
+        "was_blocked_by": "HISTORY, resolved 2026-08-10. Recorded 2026-08-09 as: 'ENGINE DEFECT, not the task: a motor target set after Newton world-finalize has no effect (setVelocity / setPosition on a limited motor / setTorque alike). Four commanded wheel speeds (none/6.0/0.0/12.0 rad/s) -> 0.997/1.026/1.034/1.041 m/s: commanding ZERO does not stop the robot.' That was TWO stacked defects. (1) ENGINE, fixed in 3cf70f120: the batched-substep path decided whether to copy newton's control into mj_data.ctrl by re-reading the joint_targets dicts AFTER the same tick had consumed them, so the copy never ran and the ctrl latched at the batch transition drove the actuators for the rest of the run. (2) THIS ARM'S ROVER, fixed 2026-08-10: maxTorque 0.4 could not turn four 0.15 kg wheels under a 3 kg chassis, so the rover SLID instead of rolling. Measured on the drive probe with the fixed engine, before/after the world repair: commanded 6.0 rad/s (= 0.480 m/s on a 0.08 m wheel) read 1.026 -> 0.480 m/s, and commanded 0.0 read 0.796 m/s BACKWARD -> 0.000. Repro: adapters/omnisim/omnisim_lane/controllers/r1_drive_probe/ (8 s)."
+      }
+    ],
+    "verdicts": {
+      "R1_lidar_nav": {
+        "mujoco": {
+          "oracle": "PASS",
+          "null": "FAIL",
+          "discriminates": true
+        },
+        "webots": {
+          "oracle": "PASS",
+          "null": "FAIL",
+          "discriminates": true,
+          "requires": "tasks/R1_lidar_nav meta contact_steps=-1"
+        },
+        "omnisim": {
+          "oracle": "PASS",
+          "null": "FAIL",
+          "blind": "FAIL",
+          "discriminates": true,
+          "why": "BOTH halves are now established on this arm, measured 2026-08-11 (freeze v3 Amendment 4): the oracle PASSes 6/6 -- 0.1506 m from the goal, zero contacts, 14.2671 m of path over a 10.769 m floor, bit-identical across 7 runs -- while the null and blind drivers still FAIL R1.4/R1.5 on the identical 60 s / contact_steps=0 harness. The blind cell is what makes the zero credible rather than merely unmeasured: on that same setting it records a NAMED rover/OBSTACLE_2 contact, so the channel demonstrably fires. Three stacked defects had to go first, each measured before it was fixed: the ENGINE dropping a post-finalize motor target (3cf70f120), this arm's rover being unable to turn its own wheels at maxTorque 0.4 (Amendment 3), and the navigator itself commanding past the motor cap, silting up its occupancy map and dithering its wheel commands (dc9bf156f). BOUND ON THE CLAIM: the oracle is a navigator, not a universal solver -- 4 PASS / 1 FAIL over five unseen grade-time placed layouts, reproduced as 4 PASS / 1 FAIL over a second, independently seeded five, and R1 draws its layout at grade time. The second probe's failure was the worse of the two (7.8065 m from the goal, one contact), so the failure mode is 'does not arrive', not only 'grazes near the goal'. SPEC 7.1 requires the task to be shown PASSABLE on this arm, which this satisfies; it does not license reading the arm as solving every layout, and 10 layouts at n=1 is not a rate.",
+          "requires": "the fixture window this was measured on -- 60 s, contact_steps=0 -- differs from tasks/R1_lidar_nav meta's contact_steps=-1, which the webots arm needs. On this arm the run-long contact watch supplies the channel at 0 (the blind cell's named contact is the proof it is live), so R1.5 is earned rather than credited to an unmeasured channel; a graded campaign cell runs at the meta's -1 and is a strictly wider watch."
+        }
+      }
+    }
+  }
+}

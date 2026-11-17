@@ -1,0 +1,59 @@
+{
+  "final_message": "Fixed and proven. DEF FLOOR had no boundingObject, so it had no collision surface and the crate fell straight through. I added a boundingObject Box 20 x 20 x 0.1 matching the visible slab. Proof: the Z_TRACK line above is the crate's measured height over a 5 s re-run - it drops from z = 1.0 m, settles at about z = 0.25 m (floor top 0.05 m plus half the crate's 0.4 m height) and never goes lower, so it rests ON the floor instead of passing through it.",
+  "stop_reason": "model_stopped",
+  "stop_detail": "end_turn",
+  "self_verified": true,
+  "usd": null,
+  "tool_set": "shell",
+  "tools_sha256": "5edc977e1a20c458ac11f7d28099efcda57cbd7b0b16d9b866be948d0e25f586",
+  "manifest_sha256": "fcabed2cf4f746f1210cc07213727c8d02ac4aba1812f85a71a9baaed3d11508",
+  "system_prompt_sha": "19759dc6c55d0b1e16f5584911dbf05b81d51427ca3c3c681878e4071fb736ef",
+  "system_full_sha": "708b374679842eba9ae6d462ed86ebc5969d6812f8f46c4349f28775f61695b9",
+  "backend": {
+    "backend": "scripted",
+    "model": "scripted:oracle_c2_webots",
+    "temperature": null,
+    "script": "O:\\omnisim\\tests\\benchmarks\\agentbench\\runner\\scripts\\oracle_c2_webots.json",
+    "script_name": "oracle_c2_webots",
+    "script_turns": 6,
+    "usage_is_synthetic": true
+  },
+  "sandbox": {
+    "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell",
+    "scratch_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell\\scratch",
+    "repo": "O:\\omnisim",
+    "harness_port": 7100,
+    "supervisor_port": 7101,
+    "log_path": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell\\agent_engine.log",
+    "shell": [
+      "C:\\Program Files\\Git\\usr\\bin\\bash.EXE",
+      "-lc"
+    ],
+    "shell_source": "which:C:\\Program Files\\Git\\usr\\bin\\bash.EXE",
+    "read_deny": [],
+    "deviations": []
+  },
+  "deviations": [],
+  "artifacts": {
+    "trace": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell\\trace.jsonl",
+    "tool_set_manifest": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell\\tool_set.shell.json",
+    "leak_suspect_tool_calls": 0,
+    "tokens_cache_write": null,
+    "system_prompt": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell\\system_prompt.txt"
+  },
+  "error": null,
+  "port_survivors": [],
+  "metrics": {
+    "turns": 5,
+    "model_calls": 6,
+    "tool_calls": 5,
+    "tokens_in": 24000,
+    "tokens_out": 4660,
+    "tokens_cache_read": null,
+    "tokens_cache_write": null,
+    "elapsed_s": 6.751,
+    "stop_reason": "model_stopped",
+    "stop_detail": "end_turn"
+  },
+  "hit_budget": false
+}

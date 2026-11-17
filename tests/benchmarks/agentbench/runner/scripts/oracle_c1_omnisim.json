@@ -1,0 +1,66 @@
+{
+  "schema": "agentbench/script/v1",
+  "name": "oracle_c1_omnisim",
+  "description": "C1 parse_error_fix oracle (omnisim): read the broken world, repair BOTH defects in place (the unbalanced brace on pallet_a and the undefined 'Soild' node type on pallet_b) without deleting any node, then verify the repaired world loads.",
+  "minimality": [
+    "read + write + one verification load = 3 calls. The read and write are irreducible (the deliverable is the repaired file); the verification load is the competence floor for 'fix it' - a fix never loaded is a guess.",
+    "Bridge alternative (webots): the world does not load, so no supervisor - and therefore no bridge - can run against it; the file repair must happen at file level on every surface. OmniSim shell+tools alternative: load_world via harness instead of run-headless = same call count, needs the harness started first (+1). This path is minimal on every surface."
+  ],
+  "turns": [
+    {
+      "text": "Reading the broken world to find what the parser chokes on.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 300
+      },
+      "tool_calls": [
+        {
+          "name": "read_file",
+          "arguments": {
+            "path": "parse_error.wbt"
+          }
+        }
+      ]
+    },
+    {
+      "text": "Two defects: DEF PALLET_A Solid is missing its closing brace, and DEF PALLET_B's node type is misspelled 'Soild'. Repairing both in place - no nodes deleted.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 2000
+      },
+      "tool_calls": [
+        {
+          "name": "write_file",
+          "arguments": {
+            "path": "parse_error.wbt",
+            "content": "#VRML_SIM R2025a utf8\n\n# AgentBench C1 parse_error_fix -- initial state (deliberately broken).\n#\n# Symptom: this world will not load.\n#\n# NOTHING ELSE IS DOCUMENTED HERE ON PURPOSE. C2's header used to name its\n# root cause and thereby handed the agent the answer (fixed in 4e5cbdc4);\n# this task was authored after that lesson. The answer lives only in the\n# grader, which the agent under test may not read.\n\nEXTERNPROTO \"omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto\"\nEXTERNPROTO \"omnisim://projects/objects/lights/protos/OmniSimSun.proto\"\nEXTERNPROTO \"omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto\"\n\nWorldInfo {\n  basicTimeStep 16\n  title \"AgentBench C1 - this world will not load\"\n  # Pinned to ODE so the run is backend-attributable without an env var\n  # (SPEC A1.10's ODE branch). Do not change the pin: the task is to fix the\n  # world on this backend, not to swap solvers until the symptom hides.\n  defaultPhysicsBackend \"newton\"\n}\nViewpoint {\n  orientation -0.35740674 0.35740674 0.86285621 1.7177716\n  position 7.000 -7.000 4.500\n}\nOmniSimSky { }\nDEF SUN OmniSimSun { }\nDEF SUN_MARKER OmniSimSunMarker { }\n\nDEF FLOOR Solid {\n  translation 0 0 0\n  name \"floor\"\n  children [\n    Shape {\n      appearance PBRAppearance {\n        baseColor 0.45 0.47 0.50\n        roughness 0.95\n        metalness 0\n      }\n      geometry Box {\n        size 20 20 0.1\n      }\n    }\n  ]\n  boundingObject Box {\n    size 20 20 0.1\n  }\n}\n\nDEF PROBE_BOT Robot {\n  translation 0 0 0.5\n  name \"probe_bot\"\n  controller \"<none>\"\n  children [\n    Shape {\n      appearance PBRAppearance {\n        baseColor 0.85 0.55 0.15\n        roughness 0.6\n        metalness 0\n      }\n      geometry Box {\n        size 0.4 0.4 0.4\n      }\n    }\n  ]\n  boundingObject Box {\n    size 0.4 0.4 0.4\n  }\n  physics Physics {\n    density -1\n    mass 5\n  }\n}\n\nDEF PALLET_A Solid {\n  translation 2.5 1.5 0.11\n  name \"pallet_a\"\n  children [\n    Shape {\n      appearance PBRAppearance {\n        baseColor 0.55 0.40 0.22\n        roughness 0.85\n        metalness 0\n      }\n      geometry Box {\n        size 1.2 0.8 0.12\n      }\n    }\n  ]\n}\n\nDEF PALLET_B Solid {\n  translation -2.5 1.5 0.11\n  name \"pallet_b\"\n  children [\n    Shape {\n      appearance PBRAppearance {\n        baseColor 0.30 0.45 0.60\n        roughness 0.85\n        metalness 0\n      }\n      geometry Box {\n        size 0.8 1.2 0.12\n      }\n    }\n  ]\n}\n"
+          }
+        }
+      ]
+    },
+    {
+      "text": "Verifying the repaired world actually loads and steps, headless.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 300
+      },
+      "tool_calls": [
+        {
+          "name": "run_shell",
+          "arguments": {
+            "command": "python -m omnisim run-headless \"{{SCRATCH}}/parse_error.wbt\" --duration 5",
+            "cwd": "{{REPO}}",
+            "timeout_s": 170
+          }
+        }
+      ]
+    },
+    {
+      "text": "Fixed. The world had two defects: pallet_a's Solid block was never closed (missing brace), and pallet_b was declared with the undefined node type 'Soild' instead of Solid. Both repaired in place; the verification run above loads the full scene - floor, probe_bot, pallet_a, pallet_b - with no parse errors.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 220
+      }
+    }
+  ]
+}

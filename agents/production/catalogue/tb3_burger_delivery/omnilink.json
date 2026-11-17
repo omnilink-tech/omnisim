@@ -1,0 +1,15 @@
+{
+  "name": "tb3_burger_delivery",
+  "display_name": "Tb3 Burger Delivery",
+  "world": "projects/samples/demos/worlds/chat/omnilink_tb3_burger.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/tb3_burger_delivery/run.py",
+  "description": "tb3_burger \u2014 run to a coordinate and come home. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "mobile",
+    "delivery",
+    "tb3_burger",
+    "catalogue",
+    "generated"
+  ]
+}

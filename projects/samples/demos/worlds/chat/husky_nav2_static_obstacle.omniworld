@@ -1,0 +1,52 @@
+#OMNISIM R2025a utf8
+
+# Husky Nav2 static-obstacle benchmark fixture -- NOT a chat demo.
+# Driven by tests/benchmarks/husky_nav2_static_obstacle/run_trial.py, which
+# starts the engine, the ROS sidecar and Nav2 itself (see its README).
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husky Nav2 — single static obstacle"
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 3.964 -4.219 4.158
+  follow "husky"
+  followType "Tracking Shot"
+  followSmoothness 0.3
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 12 12
+  wallHeight 0.1
+}
+
+DEF HUSKY URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 0 0.2
+  name "husky"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8765" ]
+  window "omnilink_chat"
+}
+
+# Matching visual and collision geometry; static, resting on the arena floor.
+DEF NAV_OBSTACLE Solid {
+  translation 2 0 0.6
+  name "nav_obstacle"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.8 0.25 0.1 roughness 1 metalness 0 }
+      geometry DEF NAV_OBSTACLE_BOX Box { size 0.6 1 1.2 }
+    }
+  ]
+  boundingObject USE NAV_OBSTACLE_BOX
+}

@@ -1,0 +1,37 @@
+#OMNISIM R2025a utf8
+# X30 locomotion probe: flat floor, the plant world's physics recipe, the
+# x30_probe controller driving _crawl_motion verbs. Edit controllerArgs
+# (--gait, --vx, --freq, --wz, --seq, --out) per run; see ../../README.md.
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+WorldInfo {
+  basicTimeStep 8
+  newtonGroundMu 2
+  newtonSubsteps 8
+  newtonCompoundColliders TRUE
+}
+Viewpoint {
+  orientation -0.2 0.2 0.96 2.3
+  position 3 -4 3
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF FLOOR Solid {
+  translation 0 0 -0.5
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.4 0.4 0.4 roughness 0.9 metalness 0 }
+      geometry Box { size 30 30 1 }
+    }
+  ]
+  name "floor"
+  boundingObject Box { size 30 30 1 }
+}
+DEF X30 URDFRobot {
+  url "../../../../../../projects/robots/deep_robotics/x30/urdf/x30.urdf"
+  translation 0 0 0.43
+  name "x30"
+  supervisor TRUE
+  controller "x30_probe"
+  controllerArgs [ "--gait" "trot" "--seq" "walk:3,turn:120,goto:0:0:0,turn:-270,walk:-1.5,goto:4:-3:90,goto:-2:2:180,turn:360,goto:1:1:-90" ]
+}

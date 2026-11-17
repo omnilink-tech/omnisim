@@ -1,0 +1,198 @@
+{
+  "act_revision": "742c753c0d4a5d87076c8f69e5628c79a8cc5488",
+  "dataset_revision": "06dc3da83c4fd3d1889b00f1dfd3780da8421f64",
+  "files": [
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/LICENSE",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\LICENSE",
+      "bytes": 1069,
+      "sha256": "4666c312da313e6c46929f6695d06cf98a2e7359b9c7dcbb0ea232d01b32cd42"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/README.md",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\README.md",
+      "bytes": 3500,
+      "sha256": "5059f601c1f0409556fd467150b99e93208de5d5594e9049f87ca92b24a5e7a2"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/bimanual_viperx_ee_insertion.xml",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\bimanual_viperx_ee_insertion.xml",
+      "bytes": 3589,
+      "sha256": "4b06ed8281af253229db966d869729a3087245d555bce62755b23f62891f873b"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/bimanual_viperx_ee_transfer_cube.xml",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\bimanual_viperx_ee_transfer_cube.xml",
+      "bytes": 2313,
+      "sha256": "f206b36e128975685add6d73f7ae0d73b90e923d1c7f8a9f7b20fd996bd7d890"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/bimanual_viperx_insertion.xml",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\bimanual_viperx_insertion.xml",
+      "bytes": 4261,
+      "sha256": "5da2b62720aff42dbc741c76b810f22fbfd12a38c7a15f8f0a376fe235b8c31c"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/bimanual_viperx_transfer_cube.xml",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\bimanual_viperx_transfer_cube.xml",
+      "bytes": 2985,
+      "sha256": "ff520a803d0de93661d84d0bdf20289401a63e57443b53bdb5b7ac41b27588f8"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/scene.xml",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\scene.xml",
+      "bytes": 1694,
+      "sha256": "7928fe2c986159493c71cc74d5ab4606fafa8b651805f98df40a26ef141afd9b"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/tabletop.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\tabletop.stl",
+      "bytes": 684,
+      "sha256": "76a1571d1aa36520f2bd81c268991b99816c2a7819464d718e0fd9976fe30dce"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_10_custom_finger_left.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_10_custom_finger_left.stl",
+      "bytes": 83384,
+      "sha256": "df73ae5b9058e5d50a6409ac2ab687dade75053a86591bb5e23ab051dbf2d659"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_10_custom_finger_right.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_10_custom_finger_right.stl",
+      "bytes": 83384,
+      "sha256": "56fb3cc1236d4193106038adf8e457c7252ae9e86c7cee6dabf0578c53666358"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_10_gripper_finger.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_10_gripper_finger.stl",
+      "bytes": 42884,
+      "sha256": "a4baacd9a64df1be60ea5e98f50f3c660e1b7a1fe9684aace6004c5058c09483"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_11_ar_tag.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_11_ar_tag.stl",
+      "bytes": 3884,
+      "sha256": "a18a1601074d29ed1d546ead70cd18fbb063f1db7b5b96b9f0365be714f3136a"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_1_base.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_1_base.stl",
+      "bytes": 99984,
+      "sha256": "d100cafe656671ca8fde98fb6a4cf2d1b746995c51c61c25ad9ea2715635d146"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_2_shoulder.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_2_shoulder.stl",
+      "bytes": 63884,
+      "sha256": "139745a74055cb0b23430bb5bc032bf68cf7bea5e4975c8f4c04107ae005f7f0"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_3_upper_arm.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_3_upper_arm.stl",
+      "bytes": 102984,
+      "sha256": "900f236320dd3d500870c5fde763b2d47502d51e043a5c377875e70237108729"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_4_upper_forearm.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_4_upper_forearm.stl",
+      "bytes": 49584,
+      "sha256": "4104fc54bbfb8a9b533029f1e7e3ade3d54d638372b3195daa0c98f57e0295b5"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_5_lower_forearm.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_5_lower_forearm.stl",
+      "bytes": 99884,
+      "sha256": "66814e27fa728056416e25e02e89eb7d34c51d51c51e7c3df873829037ddc6b8"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_6_wrist.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_6_wrist.stl",
+      "bytes": 70784,
+      "sha256": "90eb145c85627968c3776ae6de23ccff7e112c9dd713c46bc9acdfdaa859a048"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_7_gripper.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_7_gripper.stl",
+      "bytes": 450084,
+      "sha256": "786c1077bfd226f14219581b11d5f19464ca95b17132e0bb7532503568f5af90"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_8_gripper_prop.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_8_gripper_prop.stl",
+      "bytes": 31684,
+      "sha256": "d1275a93fe2157c83dbc095617fb7e672888bdd48ec070a35ef4ab9ebd9755b0"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_9_gripper_bar.stl",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_9_gripper_bar.stl",
+      "bytes": 379484,
+      "sha256": "a4de62c9a2ed2c78433010e4c05530a1254b1774a7651967f406120c9bf8973e"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_dependencies.xml",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_dependencies.xml",
+      "bytes": 1271,
+      "sha256": "7d1000c9206e654ce76fe04eb131edab33efbafb5e74c8011e8e2ae758089274"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_left.xml",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_left.xml",
+      "bytes": 6500,
+      "sha256": "335b72f4bdd0e166e72de303c8ea0d987b54766960fba980aca8daed06a04086"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/assets/vx300s_right.xml",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\assets\\vx300s_right.xml",
+      "bytes": 6555,
+      "sha256": "1977f05fcc800b8071b2e353202c3fec1ec58ef29d86f3982607b52b6235fb23"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/tonyzhaozh/act/742c753c0d4a5d87076c8f69e5628c79a8cc5488/constants.py",
+      "path": "projects\\robots\\trossen\\aloha\\source\\act\\constants.py",
+      "bytes": 4021,
+      "sha256": "2e27d4412e2b7e1f2e4148105fdf514d8c52ec6c8f1c86ef0549c475e8b91d86"
+    },
+    {
+      "url": "https://huggingface.co/datasets/lerobot/aloha_static_battery/resolve/06dc3da83c4fd3d1889b00f1dfd3780da8421f64/README.md",
+      "path": ".tmp\\aloha-battery\\dataset\\README.md",
+      "bytes": 5868,
+      "sha256": "601ce8d5f3ef4a6e13517bbde920bc2b9d5e106d72ca6c1e46ea14c15f5b9128"
+    },
+    {
+      "url": "https://huggingface.co/datasets/lerobot/aloha_static_battery/resolve/06dc3da83c4fd3d1889b00f1dfd3780da8421f64/meta/info.json",
+      "path": ".tmp\\aloha-battery\\dataset\\meta\\info.json",
+      "bytes": 4986,
+      "sha256": "7731c3266c8167657303e6d25e824b5a20076ddc800c2f7d9a4eb8704a142a42"
+    },
+    {
+      "url": "https://huggingface.co/datasets/lerobot/aloha_static_battery/resolve/06dc3da83c4fd3d1889b00f1dfd3780da8421f64/meta/tasks.parquet",
+      "path": ".tmp\\aloha-battery\\dataset\\meta\\tasks.parquet",
+      "bytes": 2271,
+      "sha256": "918ee9a9eb40af91a0a97951fc370c6db50e88d513946d24cd42c0c85934e27d"
+    },
+    {
+      "url": "https://huggingface.co/datasets/lerobot/aloha_static_battery/resolve/06dc3da83c4fd3d1889b00f1dfd3780da8421f64/meta/episodes/chunk-000/file-000.parquet",
+      "path": ".tmp\\aloha-battery\\dataset\\meta\\episodes\\chunk-000\\file-000.parquet",
+      "bytes": 146292,
+      "sha256": "b7f0aec971cd4ee4937c9778f05e8a99ff316f82fe32e448ad96b849d040747c"
+    },
+    {
+      "url": "https://huggingface.co/datasets/lerobot/aloha_static_battery/resolve/06dc3da83c4fd3d1889b00f1dfd3780da8421f64/data/chunk-000/file-000.parquet",
+      "path": ".tmp\\aloha-battery\\dataset\\data\\chunk-000\\file-000.parquet",
+      "bytes": 1115160,
+      "sha256": "0e3bd584b8f4f442d84458f3a4f27ed8c6b1fc6557911bcedf55c345ff3a17d4"
+    },
+    {
+      "url": "https://huggingface.co/datasets/lerobot/aloha_static_battery/resolve/06dc3da83c4fd3d1889b00f1dfd3780da8421f64/videos/observation.images.cam_high/chunk-000/file-000.mp4",
+      "path": ".tmp\\aloha-battery\\dataset\\videos\\observation.images.cam_high\\chunk-000\\file-000.mp4",
+      "bytes": 209203336,
+      "sha256": "d3e6f500bb739ff9fcca72562705d352463cec936347bc05cb914ff635584018"
+    },
+    {
+      "url": "https://huggingface.co/datasets/lerobot/aloha_static_battery/resolve/06dc3da83c4fd3d1889b00f1dfd3780da8421f64/videos/observation.images.cam_low/chunk-000/file-000.mp4",
+      "path": ".tmp\\aloha-battery\\dataset\\videos\\observation.images.cam_low\\chunk-000\\file-000.mp4",
+      "bytes": 182004182,
+      "sha256": "09875fa05d3c27355b086392a11b90df1430c21c79821b8140825ed012a308d5"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/balls/protos/SoccerBall.proto
+# keywords: household/toy
+# A plain white soccer ball: a single sphere with a matte white shell, a tight spherical bounding object and a physics node driven by the `mass` field. The origin sits at the centre of the ball.
+
+PROTO SoccerBall [
+  field SFVec3f    translation 0 0 0.11
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "soccer ball"
+  field SFFloat    radius      0.113          # Defines the radius of the ball.
+  field SFFloat    mass        0.6            # Defines the mass of the ball.
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      Shape {
+        appearance PBRAppearance {
+          baseColor 0.94 0.94 0.94
+          roughness 0.6
+          metalness 0
+        }
+        geometry DEF SOCCER_BALL_SPHERE Sphere {
+          radius IS radius
+          subdivision 3
+        }
+      }
+    ]
+    name IS name
+    model "soccer ball"
+    recognitionColors [
+      0.94 0.94 0.94
+    ]
+    boundingObject USE SOCCER_BALL_SPHERE
+    physics Physics {
+      density -1
+      mass IS mass
+    }
+  }
+}

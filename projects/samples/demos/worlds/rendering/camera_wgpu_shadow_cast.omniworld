@@ -1,0 +1,80 @@
+#OMNISIM R2025a utf8
+
+# T1.2 CSM sub-step 3d — cross-object cast-shadow test fixture (framing UNVERIFIED).
+#
+# The WbCamera OMNISIM_CAMERA_SHADOW caller supplies a FIXED straight-down ortho
+# light from (1,0,5) looking -Z, footprint x in [-1,3], y in [-2,2] (half 2.0).
+# That light is the one verified by OMNISIM_CAMERA_LIGHTDEPTH (center 0.4673), so
+# we keep it and instead make the CAMERA oblique:
+#   - FLOOR receiver: flat cyan box, top face at z=0, centered (1,0), 4x4 wide.
+#   - CASTER: small orange box at (1,0,1.0) (1 m above floor), inside the light
+#     footprint -> casts a ~0.6x0.6 shadow straight down onto the floor at ~(1,0).
+#   - CAMERA: at (1,-3,2). Robot rotation (axis 0 0.447 0.894, angle pi/2) maps
+#     the camera's local +X (forward) to world (0, 0.894, -0.447), i.e. it looks
+#     toward ~(1,0,0.5), ~26 deg below horizontal. From there the elevated caster
+#     appears HIGHER in the frame than the shadow patch on the floor, so both the
+#     lit floor and the shadowed patch are visible and don't fully overlap.
+#
+# A/B with OMNISIM_CAMERA_SHADOW=1 vs 2 (+ OMNISIM_CAMERA_SHADOW_GRID=1): at
+# strength 0.6 the floor patch under the caster should darken while the rest of
+# the floor stays lit. UNVERIFIED until a clean run; framing may need iteration.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+
+WorldInfo {
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 1 0 0 -0.46
+  position 1 -3 2
+}
+TexturedBackground {
+}
+Solid {
+  translation 1 0 -0.1
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 0.55 0.55
+        metalness 0
+        roughness 0.8
+      }
+      geometry Box {
+        size 4 4 0.2
+      }
+    }
+  ]
+  name "floor_receiver"
+}
+Solid {
+  translation 1 0 1.0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.4 0
+        metalness 0
+        roughness 0.8
+      }
+      geometry Box {
+        size 0.6 0.6 0.6
+      }
+    }
+  ]
+  name "caster"
+}
+Robot {
+  translation 1 -3 2
+  rotation 0 0.4472 0.8944 1.5708
+  children [
+    Camera {
+      name "cam_wgpu"
+      width 80
+      height 60
+      fieldOfView 0.9
+      near 0.05
+      far 20.0
+      renderBackend "wgpu"
+    }
+  ]
+  controller "camera_wgpu_smoke"
+}

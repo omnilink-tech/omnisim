@@ -1,0 +1,12 @@
+[stage] rebuilding the omnisim template: the repo's tracked-file selection has changed since it was built at 2026-08-12T11:27:46Z (aec66d874443640b8027aa5419fa74bb4a6f2fb29cf3e218e7d06d5f6a36b658 != 269d31f6c305139e30e3d9a56c3f467f2cacdf181175a0b400a1069a55a65f38)
+search visibility: {"controller_dirs": {"visible_to_search": 253, "present_on_disk": 476, "hidden_behind_links": 223}, "worlds": {"visible_to_search": 375, "present_on_disk": 745, "hidden_behind_links": 370}}
+repo artifact sweep (post_session): preserved_and_deleted projects/samples/demos/controllers/husky_random_walk/Makefile
+repo artifact sweep (post_session): preserved_and_deleted projects/samples/demos/controllers/husky_random_walk/husky_random_walk.py
+repo artifact sweep (post_session): preserved_and_deleted projects/samples/demos/worlds/physics/newton_husky_swarm_random.wbt
+repo artifact sweep (post_session): removed_empty_dir O:\omnisim\projects\samples\demos\controllers\husky_random_walk
+containment guard: saw 53 tool call(s), denied 2
+
+=== A1_husky_swarm_10 / omnisim / claude_code ===
+outcome=FAIL failed=A1.9
+metrics={"t_agent_s": null, "t_total_s": 71.848, "turns": 88, "tool_calls": 53, "tokens_in": null, "tokens_out": null, "tokens_cache_read": null, "tokens_cache_write": null, "usd": null}
+rows -> O:\omnisim\tests\benchmarks\agentbench\results\cc_lane\20260812_ba_armA_c2\rows.jsonl

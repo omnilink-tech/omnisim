@@ -1,0 +1,299 @@
+{
+ "tag": "auto12",
+ "world": "O:\\omnisim\\_scratch\\wheelscale\\worlds\\auto12.wbt",
+ "rc": 0,
+ "killed": false,
+ "wall_s": 16.6,
+ "log": "O:\\omnisim\\_scratch\\wheelscale\\out\\auto12.log",
+ "nlog": "O:\\omnisim\\_scratch\\wheelscale\\out\\auto12.newton.log",
+ "probe": "O:\\omnisim\\_scratch\\wheelscale\\out\\auto12.probe.json",
+ "sim_time_s": 12.0,
+ "robots": [
+  {
+   "name": "bot_0",
+   "n_wheels": 4,
+   "dx": 2.363,
+   "dy": 0.105,
+   "disp": 2.366,
+   "z0": 0.3,
+   "z1": 0.179,
+   "zmin": -0.0118,
+   "zmax": 2.1678,
+   "mean_speed": 0.1971,
+   "speed_sd": 0.1687,
+   "wheel_w": [
+    3.022,
+    3.012,
+    3.021,
+    3.012
+   ],
+   "wheel_w_min": 3.012,
+   "nan": false
+  },
+  {
+   "name": "bot_1",
+   "n_wheels": 4,
+   "dx": 5.609,
+   "dy": 1.035,
+   "disp": 5.703,
+   "z0": 0.3,
+   "z1": 0.1857,
+   "zmin": 0.1575,
+   "zmax": 3.5747,
+   "mean_speed": 0.4753,
+   "speed_sd": 0.5911,
+   "wheel_w": [
+    4.358,
+    4.358,
+    4.353,
+    4.364
+   ],
+   "wheel_w_min": 4.353,
+   "nan": false
+  },
+  {
+   "name": "bot_2",
+   "n_wheels": 4,
+   "dx": 3.87,
+   "dy": 0.407,
+   "disp": 3.891,
+   "z0": 0.3,
+   "z1": 0.3331,
+   "zmin": 0.0205,
+   "zmax": 0.7527,
+   "mean_speed": 0.3242,
+   "speed_sd": 0.6101,
+   "wheel_w": [
+    3.841,
+    3.841,
+    3.839,
+    3.841
+   ],
+   "wheel_w_min": 3.839,
+   "nan": false
+  },
+  {
+   "name": "bot_3",
+   "n_wheels": 4,
+   "dx": 3.841,
+   "dy": -1.028,
+   "disp": 3.976,
+   "z0": 0.3,
+   "z1": 0.2,
+   "zmin": 0.0415,
+   "zmax": 0.5775,
+   "mean_speed": 0.3313,
+   "speed_sd": 0.0751,
+   "wheel_w": [
+    2.79,
+    2.791,
+    2.79,
+    2.79
+   ],
+   "wheel_w_min": 2.79,
+   "nan": false
+  },
+  {
+   "name": "bot_4",
+   "n_wheels": 4,
+   "dx": 4.031,
+   "dy": -1.662,
+   "disp": 4.36,
+   "z0": 0.3,
+   "z1": 0.132,
+   "zmin": -0.0025,
+   "zmax": 0.4663,
+   "mean_speed": 0.3633,
+   "speed_sd": 0.0758,
+   "wheel_w": [
+    2.686,
+    2.687,
+    2.686,
+    2.687
+   ],
+   "wheel_w_min": 2.686,
+   "nan": false
+  },
+  {
+   "name": "bot_5",
+   "n_wheels": 4,
+   "dx": 4.247,
+   "dy": -1.43,
+   "disp": 4.481,
+   "z0": 0.3,
+   "z1": 0.132,
+   "zmin": 0.0176,
+   "zmax": 0.4663,
+   "mean_speed": 0.3734,
+   "speed_sd": 0.1146,
+   "wheel_w": [
+    3.046,
+    3.046,
+    3.046,
+    3.047
+   ],
+   "wheel_w_min": 3.046,
+   "nan": false
+  },
+  {
+   "name": "bot_6",
+   "n_wheels": 4,
+   "dx": 2.975,
+   "dy": 4.337,
+   "disp": 5.259,
+   "z0": 0.3,
+   "z1": 0.132,
+   "zmin": -0.1675,
+   "zmax": 6.6817,
+   "mean_speed": 0.4383,
+   "speed_sd": 0.6697,
+   "wheel_w": [
+    7.792,
+    7.792,
+    7.776,
+    7.741
+   ],
+   "wheel_w_min": 7.741,
+   "nan": false
+  },
+  {
+   "name": "bot_7",
+   "n_wheels": 4,
+   "dx": 0.985,
+   "dy": 4.252,
+   "disp": 4.364,
+   "z0": 0.3,
+   "z1": 0.1961,
+   "zmin": 0.177,
+   "zmax": 1.2748,
+   "mean_speed": 0.3637,
+   "speed_sd": 0.1609,
+   "wheel_w": [
+    2.396,
+    2.402,
+    2.396,
+    2.396
+   ],
+   "wheel_w_min": 2.396,
+   "nan": false
+  },
+  {
+   "name": "bot_8",
+   "n_wheels": 4,
+   "dx": 3.42,
+   "dy": -1.547,
+   "disp": 3.753,
+   "z0": 0.3,
+   "z1": 0.1126,
+   "zmin": 0.1124,
+   "zmax": 1.8333,
+   "mean_speed": 0.3128,
+   "speed_sd": 0.1261,
+   "wheel_w": [
+    2.778,
+    2.778,
+    2.779,
+    2.779
+   ],
+   "wheel_w_min": 2.778,
+   "nan": false
+  },
+  {
+   "name": "bot_9",
+   "n_wheels": 4,
+   "dx": 2.173,
+   "dy": -2.039,
+   "disp": 2.98,
+   "z0": 0.3,
+   "z1": 0.8005,
+   "zmin": 0.1159,
+   "zmax": 1.8333,
+   "mean_speed": 0.2483,
+   "speed_sd": 0.7333,
+   "wheel_w": [
+    5.091,
+    5.091,
+    5.091,
+    5.089
+   ],
+   "wheel_w_min": 5.089,
+   "nan": false
+  },
+  {
+   "name": "bot_10",
+   "n_wheels": 4,
+   "dx": -0.495,
+   "dy": 3.913,
+   "disp": 3.944,
+   "z0": 0.3,
+   "z1": 6.0367,
+   "zmin": 0.1233,
+   "zmax": 6.0367,
+   "mean_speed": 0.3287,
+   "speed_sd": 0.4734,
+   "wheel_w": [
+    3.394,
+    3.395,
+    3.394,
+    3.394
+   ],
+   "wheel_w_min": 3.394,
+   "nan": false
+  },
+  {
+   "name": "bot_11",
+   "n_wheels": 4,
+   "dx": -0.352,
+   "dy": -0.379,
+   "disp": 0.517,
+   "z0": 0.3,
+   "z1": 0.2131,
+   "zmin": -0.0328,
+   "zmax": 2.2933,
+   "mean_speed": 0.0431,
+   "speed_sd": 0.4883,
+   "wheel_w": [
+    5.102,
+    5.103,
+    5.103,
+    5.102
+   ],
+   "wheel_w_min": 5.102,
+   "nan": false
+  }
+ ],
+ "disp_min": 0.517,
+ "disp_max": 5.703,
+ "disp_mean": 3.8,
+ "disp_spread": 5.186,
+ "wheel_w_min": 2.396,
+ "z_range": [
+  -0.1675,
+  6.6817
+ ],
+ "any_nan": false,
+ "newton": {
+  "buffers": [
+   "20:48:54 constraint buffers: njmax=0 nconmax=0 (0=newton auto) initial nefc=0 ncon=0 nv=120"
+  ],
+  "peak_first": "20:48:56 constraint peak: nefc=192/64 ncon=56/48 tick=20  *** OVERFLOW: raise WorldInfo.newtonNjmax / newtonNconmax ***",
+  "peak_last": "20:48:58 constraint peak: nefc=192/64 ncon=84/48 tick=500  *** OVERFLOW: raise WorldInfo.newtonNjmax / newtonNconmax ***",
+  "n_peaks": 6,
+  "overflow_lines": 6
+ },
+ "log_hits": [
+  "WARNING: [OmNewtonBackend] WorldInfo.newtonNjmax/newtonNconmax -1 (\"auto\") requests newton's own estimate, which is sized from the CONTACT COUNT AT t=0 ONLY and floors at 64. For any scene that ACCUMULATES contacts (a se",
+  "WARNING: [OmNewtonBackend] CONSTRAINT BUFFER OVERFLOW at tick 20: peak nefc=192 vs njmax=64, peak ncon=56 vs nconmax=48. mujoco_warp SILENTLY DROPS every constraint row past njmax (and every contact past nconmax), so con"
+ ],
+ "cfg": {
+  "n": 12,
+  "solver": "mujoco_warp",
+  "njmax": -1,
+  "nconmax": -1,
+  "substeps": 2,
+  "z": 0.3,
+  "spacing": 12.0,
+  "duration_ms": 12000,
+  "env": {}
+ }
+}

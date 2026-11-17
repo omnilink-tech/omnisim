@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>OmniSim — Demo launcher</title>
+    <link rel="stylesheet" href="omnilink_launcher.css">
+  </head>
+  <body>
+    <aside id="launcher">
+      <header id="lr-header">
+        <div id="lr-brand">
+          <span class="lr-orb" aria-hidden="true"></span>
+          <span class="lr-brand-text">OmniSim</span>
+          <span class="lr-brand-sub">Demos</span>
+        </div>
+        <div id="lr-status">
+          <span id="lr-status-dot" class="lr-dot lr-dot--idle" aria-hidden="true"></span>
+          <span id="lr-status-text">connecting…</span>
+        </div>
+      </header>
+
+      <div id="lr-search-row">
+        <input id="lr-search" type="search" placeholder="Search demos…" aria-label="Search demos">
+      </div>
+
+      <nav id="lr-tabs" aria-label="Categories"></nav>
+
+      <main id="lr-gallery" aria-live="polite"></main>
+
+      <footer id="lr-footer">
+        <span class="lr-foot-text">
+          One demo per card. Click <b>Launch</b> to switch worlds.
+        </span>
+      </footer>
+    </aside>
+
+    <script type="module" src="omnilink_launcher.js"></script>
+  </body>
+</html>

@@ -1,0 +1,796 @@
+{
+  "date": "2026-09-13",
+  "scope": "Measured physical immobilization in a full Foundry match; internal numerical checks, not real-world damage validation.",
+  "machine_fingerprint": [
+    "[envfp] ===== OmniSim environment fingerprint =====",
+    "[envfp] physics : newton/MuJoCo (cpu/mj_step, default) (CPU)   solver='MuJoCo (cpu/mj_step, default)'",
+    "[envfp] machine : id=9722d23d12a3  host=hc385771a14  cpu=AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD  cores=16",
+    "[envfp] load    : UNKNOWN   warmup_token=False",
+    "[envfp] gpu     : NVIDIA GeForce RTX 3060 Laptop GPU (driver 596.36)",
+    "[envfp] build   : e85b672da  os=Windows-11  py=3.12.14  numpy=2.3.5  ort=None",
+    "[envfp] binary  : msys64/mingw64/bin/omnisim-bin.exe  sha256=d25c20b7b44fb050  mtime=1789261466  nonce=yes",
+    "[envfp] libctrl : lib/controller/Controller.dll  sha256=0bd8db2b5018d7fe  mtime=1788455211  nonce=yes",
+    "[envfp] stack   : (bundle+pth) newton=1.5.0  warp_lang=1.16.0  mujoco=3.11.0  mujoco_warp=3.11.0  torch=?  onnxruntime=1.26.0",
+    "[envfp] knobs   : (defaults)",
+    "[envfp] intent  : (none)",
+    "[envfp] home    : O:\\omnisim  (source=OMNISIM_HOME)",
+    "[envfp] log     : O:\\omnisim\\omnisim_log.txt",
+    "[envfp] WARN    : libController (lib/controller/Controller.dll) is >24h OLDER than the engine binary -- possible ABI/IPC drift. If controllers hang in Robot(), rebuild the controller lib; run 'python -m omnisim doctor'.",
+    "[envfp] verdict : OK",
+    "[envfp] ===========================================",
+    "oneline: OmniSim  physics=newton/MuJoCo  gpu=RTX 3060  load=UNKNOWN  build=e85b672da  machine=9722d23d12a3"
+  ],
+  "build_note": "Working-tree build on parent e85b672da; binary and native source hashes identify the tested build.",
+  "native_sha256": {
+    "src/omnisim/nodes/OmSolid.cpp": "9e009a76615b580e64ffcefb695642ebf368c633b441a1cd80672b0a2bd57ec4",
+    "src/omnisim/physics/OmNewtonBackend.cpp": "c7713ddee00aac0c95b7b2b5e6c95231f2a14484292ea7b20cdb1612e1887a71",
+    "src/omnisim/physics/OmNewtonBackend.hpp": "6d764046eea5ba28a47a7db38fde745625b9e73f852eed60d565ea828359d784",
+    "src/omnisim/physics/omnisim_newton_runtime.py": "8991a173fb5c98c3d9fc1516f8457f96fbbc9048a7125db2bf09df701995445d",
+    "msys64/mingw64/bin/omnisim-bin.exe": "d25c20b7b44fb0501d20013f117b7640aed79d7d8a4d99b4eff2a32cb36a6e63",
+    "msys64/mingw64/bin/newton-runtime/site-packages/omnisim_newton_runtime.py": "8991a173fb5c98c3d9fc1516f8457f96fbbc9048a7125db2bf09df701995445d",
+    "tests/test_newton_compound_mesh_contacts.py": "7526fbebc073cb9854bfdd13c561e211dd3a30107bbd4cd05e65c787ae1de6f0",
+    "tests/test_orc_foundry.py": "45ce57b423fba920822571c1bebe3f1094e086a1ae02d012b5173ee526f15c76"
+  },
+  "headless_match_and_final_geometry_probes": {
+    "directory": "_scratch/foundry_realism/20260913_042035_024789",
+    "reports": [
+      {
+        "case": "drive",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "drives": true,
+          "rolling": true,
+          "brakes": true
+        },
+        "metrics": {
+          "speed_m_s": 4.125866056087632,
+          "rim_speed_m_s": 4.181675498396812,
+          "stopping_distance_m": 0.8603935115136654
+        }
+      },
+      {
+        "case": "detach",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "energy_retained": true,
+          "momentum_retained": true,
+          "angular_momentum_retained": true,
+          "no_release_energy_gain": true
+        },
+        "metrics": {
+          "energy_relative_change": 1.060116986779195e-06,
+          "momentum_change_ns": 3.1911649934654577e-06,
+          "angular_momentum_change_nms": 0.00036890422234697
+        }
+      },
+      {
+        "case": "match",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "single_physical_knockout": true,
+          "no_controller_errors": true,
+          "mass_conserved": true,
+          "no_chassis_floor_penetration": true,
+          "full_powered_observation": true,
+          "no_opponent_pin": true,
+          "combat_disablement_precedes_countout": true,
+          "ten_second_count": true,
+          "independent_motion_check": true,
+          "winner_demonstrated_mobility": true,
+          "plastic_work_within_loss_budget": true
+        },
+        "metrics": {
+          "detachments": [
+            {
+              "t": 16.488,
+              "robot": "RAZOR",
+              "part": "fl_wheel"
+            },
+            {
+              "t": 26.400000000000002,
+              "robot": "RAZOR",
+              "part": "rl_wheel"
+            },
+            {
+              "t": 114.11200000000001,
+              "robot": "ANVIL",
+              "part": "fr_wheel"
+            },
+            {
+              "t": 127.928,
+              "robot": "ANVIL",
+              "part": "weapon"
+            }
+          ],
+          "minimum_chassis_floor_bound_m": {
+            "ANVIL": -0.012062241148652397,
+            "RAZOR": -0.006308568439127776
+          },
+          "loser": "ANVIL",
+          "cause": "overturned",
+          "knockout_time_s": 144.728,
+          "mobility": {
+            "stationary_s": 10.0,
+            "immobilized": true,
+            "translation_m": 0.08300935277360257,
+            "rotation_rad": 0.14314854885595715,
+            "drive_attempted": true,
+            "opponent_contact": false
+          },
+          "translation_span_m": 0.08148135350392491,
+          "rotation_span_rad": 0.07064607860543115,
+          "winner_translation_span_m": 3.819685605680795
+        }
+      }
+    ],
+    "run_logs": {
+      "drive": {
+        "gpu_peak_c": 64,
+        "runner_results": [
+          "[headless] Results: 0 errors, 0 warnings"
+        ]
+      },
+      "detach": {
+        "gpu_peak_c": 64,
+        "runner_results": [
+          "[headless] Results: 0 errors, 0 warnings"
+        ]
+      },
+      "match": {
+        "gpu_peak_c": 64,
+        "runner_results": [
+          "[headless] Results: 0 errors, 0 warnings"
+        ],
+        "outcomes": [
+          {
+            "t": 144.728,
+            "result": "ANVIL DISABLED"
+          }
+        ]
+      }
+    },
+    "reassessed_with_current_verifier": [
+      {
+        "case": "drive",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "drives": true,
+          "rolling": true,
+          "brakes": true
+        },
+        "metrics": {
+          "speed_m_s": 4.125866056087632,
+          "rim_speed_m_s": 4.181675498396812,
+          "stopping_distance_m": 0.8603935115136654
+        }
+      },
+      {
+        "case": "detach",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "energy_retained": true,
+          "momentum_retained": true,
+          "angular_momentum_retained": true,
+          "no_release_energy_gain": true
+        },
+        "metrics": {
+          "energy_relative_change": 1.060116986779195e-06,
+          "momentum_change_ns": 3.1911649934654577e-06,
+          "angular_momentum_change_nms": 0.00036890422234697
+        }
+      },
+      {
+        "case": "match",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "single_physical_knockout": true,
+          "no_controller_errors": true,
+          "mass_conserved": true,
+          "no_chassis_floor_penetration": true,
+          "full_powered_observation": true,
+          "fresh_drive_telemetry": true,
+          "no_opponent_pin": true,
+          "combat_disablement_precedes_countout": true,
+          "ten_second_count": true,
+          "independent_motion_check": true,
+          "winner_demonstrated_mobility": true,
+          "plastic_work_within_loss_budget": true
+        },
+        "metrics": {
+          "detachments": [
+            {
+              "t": 16.488,
+              "robot": "RAZOR",
+              "part": "fl_wheel"
+            },
+            {
+              "t": 26.400000000000002,
+              "robot": "RAZOR",
+              "part": "rl_wheel"
+            },
+            {
+              "t": 114.11200000000001,
+              "robot": "ANVIL",
+              "part": "fr_wheel"
+            },
+            {
+              "t": 127.928,
+              "robot": "ANVIL",
+              "part": "weapon"
+            }
+          ],
+          "minimum_chassis_floor_bound_m": {
+            "ANVIL": -0.012062241148652397,
+            "RAZOR": -0.006308568439127776
+          },
+          "loser": "ANVIL",
+          "cause": "overturned",
+          "knockout_time_s": 144.728,
+          "mobility": {
+            "stationary_s": 10.0,
+            "immobilized": true,
+            "translation_m": 0.08300935277360257,
+            "rotation_rad": 0.14314854885595715,
+            "drive_attempted": true,
+            "opponent_contact": false
+          },
+          "translation_span_m": 0.08148135350392491,
+          "rotation_span_rad": 0.07064607860543115,
+          "winner_translation_span_m": 3.819685605680795
+        }
+      }
+    ],
+    "current_verifier_sha256": "057b2aede01f1bd3ae02786f5821627a6e097ea30e2902902e361b18a54d9292",
+    "source_sha256": {
+      "projects\\robot_combat\\orc\\build_foundry.py": "64b623a58a1d91d3a7759a3e7df20dcb2471f128211af3f68e0b95c7c58d4bc4",
+      "projects\\robot_combat\\orc\\shared\\foundry_logic.py": "0f568b38ade496b4a6203fa0d0ce48d2bf20f55e33984f7587126d184aded5ca",
+      "projects\\robot_combat\\orc\\shared\\foundry_physics.py": "d01fb4a478356b648c8990345dd801039df9b0216af8ba12a702a7a90dfae2a2",
+      "projects\\robot_combat\\orc\\controllers\\orc_foundry_director\\orc_foundry_director.py": "4c146d9fc58ef68b02dc42543e610e2c06f2cb9a9f7b98f42d12dd4f12fe3284",
+      "projects\\robot_combat\\orc\\controllers\\orc_foundry_pilot\\orc_foundry_pilot.py": "7d30b8b630bdce0a3782d9487131d2c1d50369422f56a53bf6bad4e5c3fd4fb4",
+      "projects\\robot_combat\\orc\\controllers\\orc_foundry_probe\\orc_foundry_probe.py": "b2aa9590321358b56bff11308969a28cc388f2e59f0a76cd99a2a095079f0b2c",
+      "projects\\robot_combat\\orc\\verify_foundry.py": "2dbb5dd2b668b46cf5372c357c67e26c58889260259726cecc4e432344ee8e58"
+    },
+    "raw_artifact_sha256": {
+      "_scratch/foundry_realism/20260913_042035_024789/drive.json": "0fcdae474f76759bba498c40db93c6cc4ace49cac32faba646372d0267b4f835",
+      "_scratch/foundry_realism/20260913_042035_024789/drive.events.jsonl": "eafbd112579382824a714eca4bec6226ef8952bdbecbae0fcc5edeac7677b2ff",
+      "_scratch/foundry_realism/20260913_042035_024789/drive.run.log": "e0a612b10cbccab6c9e234bf4cab62f46541048c602bb702730130e7b5cb9ca8",
+      "_scratch/foundry_realism/20260913_042035_024789/detach.json": "8e1c3900e4599d8e6c254033d979495b11f77996fb403451e0e159590d19b281",
+      "_scratch/foundry_realism/20260913_042035_024789/detach.events.jsonl": "a0f0d48ac6440d5a77d6caa127bc5dd0cb7cd8cb73f94c943781c99241d8b3f7",
+      "_scratch/foundry_realism/20260913_042035_024789/detach.run.log": "b23bbb19775e8afa246b0503dfb2e599636f2943112c67668c12ae58304df0e6",
+      "_scratch/foundry_realism/20260913_042035_024789/match.json": "5c624fe587ba74f7cb2cd4e9ead65ef08cdc8338bf5635c70e1c4f28f6de2f3e",
+      "_scratch/foundry_realism/20260913_042035_024789/match.events.jsonl": "debb5bc14bdb00d0764a18d652ab78315f0fa59c975d2a5e079ea7e825459965",
+      "_scratch/foundry_realism/20260913_042035_024789/match.run.log": "b860263b9523e9b69fb647a4e8af18ea3b67c01fd907cfd4209096fa82518712",
+      "_scratch/foundry_realism/20260913_042035_024789/match.aftermath.omniworld": "962cf9ced95a54f6990eb2b7143350004a4db8fb2f9257cc83e1d7d7f7764d79"
+    }
+  },
+  "earlier_corrected_mesh_probes": {
+    "directory": "_scratch/foundry_realism/20260913_040956_940810",
+    "reports": [
+      {
+        "case": "spin",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "work_energy": true,
+          "weapon_spun": true,
+          "reaction_momentum": true,
+          "reaction_angular_momentum": true,
+          "coast_dissipates": true
+        },
+        "metrics": {
+          "motor_work_j": 1911.0184984276889,
+          "kinetic_j": 1911.0163191608954,
+          "work_energy_relative_error": 1.1403692823024889e-06,
+          "weapon_rpm": 734.2048590337498
+        }
+      },
+      {
+        "case": "drum",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "drum_spins_clear_of_floor": true
+        },
+        "metrics": {
+          "weapon_rpm": -1387.9745533947698
+        }
+      },
+      {
+        "case": "drive",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "drives": true,
+          "rolling": true,
+          "brakes": true
+        },
+        "metrics": {
+          "speed_m_s": 4.125866056087632,
+          "rim_speed_m_s": 4.181675498396812,
+          "stopping_distance_m": 0.8603935115136654
+        }
+      },
+      {
+        "case": "rebuild",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "energy_retained": true,
+          "momentum_retained": true,
+          "angular_momentum_retained": true
+        },
+        "metrics": {
+          "energy_relative_change": 6.156074621595366e-07,
+          "momentum_change_ns": 0.0006019114862482908,
+          "angular_momentum_change_nms": 0.003780733053919538
+        }
+      },
+      {
+        "case": "detach",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "energy_retained": true,
+          "momentum_retained": true,
+          "angular_momentum_retained": true,
+          "no_release_energy_gain": true
+        },
+        "metrics": {
+          "energy_relative_change": 1.060116986779195e-06,
+          "momentum_change_ns": 3.1911649934654577e-06,
+          "angular_momentum_change_nms": 0.00036890422234697
+        }
+      }
+    ],
+    "run_logs": {
+      "spin": {
+        "gpu_peak_c": 64,
+        "runner_results": [
+          "[headless] Results: 0 errors, 0 warnings"
+        ]
+      },
+      "drum": {
+        "gpu_peak_c": 65,
+        "runner_results": [
+          "[headless] Results: 0 errors, 0 warnings"
+        ]
+      },
+      "drive": {
+        "gpu_peak_c": 65,
+        "runner_results": [
+          "[headless] Results: 0 errors, 0 warnings"
+        ]
+      },
+      "rebuild": {
+        "gpu_peak_c": 65,
+        "runner_results": [
+          "[headless] Results: 0 errors, 0 warnings"
+        ]
+      },
+      "detach": {
+        "gpu_peak_c": 65,
+        "runner_results": [
+          "[headless] Results: 0 errors, 0 warnings"
+        ]
+      }
+    },
+    "reassessed_with_current_verifier": [
+      {
+        "case": "spin",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "work_energy": true,
+          "weapon_spun": true,
+          "reaction_momentum": true,
+          "reaction_angular_momentum": true,
+          "coast_dissipates": true
+        },
+        "metrics": {
+          "motor_work_j": 1911.0184984276889,
+          "kinetic_j": 1911.0163191608954,
+          "work_energy_relative_error": 1.1403692823024889e-06,
+          "weapon_rpm": 734.2048590337498
+        }
+      },
+      {
+        "case": "drum",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "drum_spins_clear_of_floor": true
+        },
+        "metrics": {
+          "weapon_rpm": -1387.9745533947698
+        }
+      },
+      {
+        "case": "drive",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "drives": true,
+          "rolling": true,
+          "brakes": true
+        },
+        "metrics": {
+          "speed_m_s": 4.125866056087632,
+          "rim_speed_m_s": 4.181675498396812,
+          "stopping_distance_m": 0.8603935115136654
+        }
+      },
+      {
+        "case": "rebuild",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "energy_retained": true,
+          "momentum_retained": true,
+          "angular_momentum_retained": true
+        },
+        "metrics": {
+          "energy_relative_change": 6.156074621595366e-07,
+          "momentum_change_ns": 0.0006019114862482908,
+          "angular_momentum_change_nms": 0.003780733053919538
+        }
+      },
+      {
+        "case": "detach",
+        "passed": true,
+        "checks": {
+          "completed": true,
+          "mass_constant": true,
+          "energy_retained": true,
+          "momentum_retained": true,
+          "angular_momentum_retained": true,
+          "no_release_energy_gain": true
+        },
+        "metrics": {
+          "energy_relative_change": 1.060116986779195e-06,
+          "momentum_change_ns": 3.1911649934654577e-06,
+          "angular_momentum_change_nms": 0.00036890422234697
+        }
+      }
+    ],
+    "current_verifier_sha256": "057b2aede01f1bd3ae02786f5821627a6e097ea30e2902902e361b18a54d9292",
+    "source_sha256": {
+      "projects\\robot_combat\\orc\\build_foundry.py": "e8718e21b6c5a8357806f155cf049e000c1c01f26d374c23dfb1bc2a31b2aabd",
+      "projects\\robot_combat\\orc\\shared\\foundry_logic.py": "608c3b9e9b7428842bbfec27b0bd4d7a9055cbd84f58a59174e082ca59cfa819",
+      "projects\\robot_combat\\orc\\shared\\foundry_physics.py": "d01fb4a478356b648c8990345dd801039df9b0216af8ba12a702a7a90dfae2a2",
+      "projects\\robot_combat\\orc\\controllers\\orc_foundry_director\\orc_foundry_director.py": "20a9ebcb30162068c4f35d518fb3f1a5fc4423ef7920959dafbf390b78728338",
+      "projects\\robot_combat\\orc\\controllers\\orc_foundry_pilot\\orc_foundry_pilot.py": "13b1fcb8cd8ada989d6c5d8eef183a211481d8023585108846d387d290043054",
+      "projects\\robot_combat\\orc\\controllers\\orc_foundry_probe\\orc_foundry_probe.py": "b2aa9590321358b56bff11308969a28cc388f2e59f0a76cd99a2a095079f0b2c",
+      "projects\\robot_combat\\orc\\verify_foundry.py": "6fc95130ccd388b1826a21fa140790cb47bff3055da01b5443833108c10d9e30"
+    },
+    "raw_artifact_sha256": {
+      "_scratch/foundry_realism/20260913_040956_940810/spin.json": "50d1584a8988d8e051aff442851f47c14c95f4fef65e468ae5d4451b47c00e2b",
+      "_scratch/foundry_realism/20260913_040956_940810/spin.events.jsonl": "eafbd112579382824a714eca4bec6226ef8952bdbecbae0fcc5edeac7677b2ff",
+      "_scratch/foundry_realism/20260913_040956_940810/spin.run.log": "8bd184e8b37e60938e22b10993d88c62b486bfa17e0fa7e2696dc8f02d54d5ff",
+      "_scratch/foundry_realism/20260913_040956_940810/drum.json": "cf06669b12488abbddbb912f6bd8b7172e35b1cf456668e110a02312cc4182a0",
+      "_scratch/foundry_realism/20260913_040956_940810/drum.events.jsonl": "eafbd112579382824a714eca4bec6226ef8952bdbecbae0fcc5edeac7677b2ff",
+      "_scratch/foundry_realism/20260913_040956_940810/drum.run.log": "1f8d627d7448411e65795c3c3681c4f8244b61de8b8eceb9c16829c37baa8ed1",
+      "_scratch/foundry_realism/20260913_040956_940810/drive.json": "0fcdae474f76759bba498c40db93c6cc4ace49cac32faba646372d0267b4f835",
+      "_scratch/foundry_realism/20260913_040956_940810/drive.events.jsonl": "eafbd112579382824a714eca4bec6226ef8952bdbecbae0fcc5edeac7677b2ff",
+      "_scratch/foundry_realism/20260913_040956_940810/drive.run.log": "b45ea92766b1618a011287a1bae3f587002620ed668401b416f2e47e94647097",
+      "_scratch/foundry_realism/20260913_040956_940810/rebuild.json": "a2d2ef63be956883cdb86599f52e5868a6e1f8526856ef052d6ca0ddeb8437dd",
+      "_scratch/foundry_realism/20260913_040956_940810/rebuild.events.jsonl": "eafbd112579382824a714eca4bec6226ef8952bdbecbae0fcc5edeac7677b2ff",
+      "_scratch/foundry_realism/20260913_040956_940810/rebuild.run.log": "fe946f23be936a50e37c57e4c98597490fc16ca0443f7eac3d99100a99e78c7a",
+      "_scratch/foundry_realism/20260913_040956_940810/detach.json": "8e1c3900e4599d8e6c254033d979495b11f77996fb403451e0e159590d19b281",
+      "_scratch/foundry_realism/20260913_040956_940810/detach.events.jsonl": "a0f0d48ac6440d5a77d6caa127bc5dd0cb7cd8cb73f94c943781c99241d8b3f7",
+      "_scratch/foundry_realism/20260913_040956_940810/detach.run.log": "6b5d8e0eef83c9d6e84659dbaf2a8d9ef8380a1bc3cf3f46f9f30b6b9a340426"
+    }
+  },
+  "probe_geometry_note": "The earlier probes used the corrected blade and wheel/drum meshes, before final top-armor colliders. Drive and release were repeated with final geometry.",
+  "regressions": {
+    "foundry_unit": {
+      "passed": 33
+    },
+    "broad_unit": {
+      "passed": 1329,
+      "skipped": 11,
+      "deselected": 40,
+      "warnings": 46,
+      "subtests_passed": 24,
+      "seconds": 59.33,
+      "gpu_peak_c": 64,
+      "log": "_scratch/foundry_realism/final_regressions/unit.log",
+      "log_sha256": "47774ecd82732b00cf7e7f8b25d6a8085d3459ea13f2d6aedbd8177713c02c36"
+    },
+    "native_compound_mesh": {
+      "passed": 2,
+      "seconds": 5.56,
+      "gpu_peak_c": 64,
+      "raw_output": "_scratch/foundry_realism/compound_final/compound_mesh0/compound_mesh/probe_out.txt",
+      "values": {
+        "flat_z_m": 0.099933617,
+        "posed_z_m": 0.499986112,
+        "flat_rebuilt_z_m": 0.099933617,
+        "posed_rebuilt_z_m": 0.499980479,
+        "low_friction_speed_m_s": 0.607812941,
+        "high_friction_speed_m_s": 0.000329153
+      }
+    },
+    "existing_compound_warning_tests": {
+      "passed": 3
+    }
+  },
+  "rendered_runs": [
+    {
+      "directory": "_scratch/foundry_realism/20260913_042937_917616",
+      "reports": [
+        {
+          "case": "match",
+          "passed": false,
+          "checks": {
+            "completed": true,
+            "single_physical_knockout": false,
+            "no_controller_errors": true,
+            "mass_conserved": true,
+            "no_chassis_floor_penetration": true,
+            "plastic_work_within_loss_budget": true
+          },
+          "metrics": {
+            "detachments": [
+              {
+                "t": 23.168,
+                "robot": "RAZOR",
+                "part": "fl_wheel"
+              }
+            ],
+            "minimum_chassis_floor_bound_m": {
+              "ANVIL": 0.001099974905732659,
+              "RAZOR": -0.005171584236470184
+            }
+          }
+        }
+      ],
+      "run_logs": {
+        "match": {
+          "gpu_peak_c": 67,
+          "runner_results": [
+            "[headless] Results: 0 errors, 0 warnings"
+          ],
+          "outcomes": [
+            {
+              "t": 183.008,
+              "result": "TIME LIMIT / CONTRACT EXPIRED"
+            }
+          ],
+          "movie": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 1280,
+                "height": 720,
+                "r_frame_rate": "25/1",
+                "nb_frames": "4625"
+              }
+            ],
+            "format": {
+              "duration": "185.000000",
+              "size": "176863111"
+            }
+          }
+        }
+      },
+      "reassessed_with_current_verifier": [
+        {
+          "case": "match",
+          "passed": false,
+          "checks": {
+            "completed": true,
+            "single_physical_knockout": false,
+            "no_controller_errors": true,
+            "mass_conserved": true,
+            "no_chassis_floor_penetration": true,
+            "plastic_work_within_loss_budget": true
+          },
+          "metrics": {
+            "detachments": [
+              {
+                "t": 23.168,
+                "robot": "RAZOR",
+                "part": "fl_wheel"
+              }
+            ],
+            "minimum_chassis_floor_bound_m": {
+              "ANVIL": 0.001099974905732659,
+              "RAZOR": -0.005171584236470184
+            }
+          }
+        }
+      ],
+      "current_verifier_sha256": "057b2aede01f1bd3ae02786f5821627a6e097ea30e2902902e361b18a54d9292",
+      "source_sha256": {
+        "projects\\robot_combat\\orc\\build_foundry.py": "64b623a58a1d91d3a7759a3e7df20dcb2471f128211af3f68e0b95c7c58d4bc4",
+        "projects\\robot_combat\\orc\\shared\\foundry_logic.py": "0f568b38ade496b4a6203fa0d0ce48d2bf20f55e33984f7587126d184aded5ca",
+        "projects\\robot_combat\\orc\\shared\\foundry_physics.py": "d01fb4a478356b648c8990345dd801039df9b0216af8ba12a702a7a90dfae2a2",
+        "projects\\robot_combat\\orc\\controllers\\orc_foundry_director\\orc_foundry_director.py": "4c146d9fc58ef68b02dc42543e610e2c06f2cb9a9f7b98f42d12dd4f12fe3284",
+        "projects\\robot_combat\\orc\\controllers\\orc_foundry_pilot\\orc_foundry_pilot.py": "7d30b8b630bdce0a3782d9487131d2c1d50369422f56a53bf6bad4e5c3fd4fb4",
+        "projects\\robot_combat\\orc\\controllers\\orc_foundry_probe\\orc_foundry_probe.py": "b2aa9590321358b56bff11308969a28cc388f2e59f0a76cd99a2a095079f0b2c",
+        "projects\\robot_combat\\orc\\verify_foundry.py": "2dbb5dd2b668b46cf5372c357c67e26c58889260259726cecc4e432344ee8e58"
+      },
+      "raw_artifact_sha256": {
+        "_scratch/foundry_realism/20260913_042937_917616/match.json": "9f323957448b53a06df65b040b598ed36ee826f47990d4946a2661da6f717716",
+        "_scratch/foundry_realism/20260913_042937_917616/match.events.jsonl": "4190c69f66e26a936427857fa20399956d812d31339e67c53ee402cc4c0a4da6",
+        "_scratch/foundry_realism/20260913_042937_917616/match.run.log": "82385bd8b37ab40cbbc86016d63c66de3535270d693d611d2e72088245cf3150",
+        "_scratch/foundry_realism/20260913_042937_917616/match.mp4": "81830f00e944788493e92cf45219c17b2e617e2af6a7f74f467d70551354bad1",
+        "_scratch/foundry_realism/20260913_042937_917616/match.aftermath.jpg": "b9c083acd99e5a5f34e335fbbfea57b19444ad47e50160101355825e2b8e6ebe",
+        "_scratch/foundry_realism/20260913_042937_917616/match.aftermath.omniworld": "49aa0e3f88b45483bf598927376b7be9ba470e83bbbfc6750e50e9dee9cf099c"
+      }
+    },
+    {
+      "directory": "_scratch/foundry_realism/20260913_044127_287511",
+      "reports": [
+        {
+          "case": "match",
+          "passed": false,
+          "checks": {
+            "completed": true,
+            "single_physical_knockout": false,
+            "no_controller_errors": true,
+            "mass_conserved": true,
+            "no_chassis_floor_penetration": true,
+            "plastic_work_within_loss_budget": true
+          },
+          "metrics": {
+            "detachments": [
+              {
+                "t": 16.488,
+                "robot": "RAZOR",
+                "part": "fl_wheel"
+              },
+              {
+                "t": 26.400000000000002,
+                "robot": "RAZOR",
+                "part": "rl_wheel"
+              },
+              {
+                "t": 80.272,
+                "robot": "ANVIL",
+                "part": "fr_wheel"
+              },
+              {
+                "t": 102.232,
+                "robot": "RAZOR",
+                "part": "rr_wheel"
+              }
+            ],
+            "minimum_chassis_floor_bound_m": {
+              "ANVIL": -0.012062241148652397,
+              "RAZOR": -0.004933142391646134
+            }
+          }
+        }
+      ],
+      "run_logs": {
+        "match": {
+          "gpu_peak_c": 64,
+          "runner_results": [
+            "[headless] Results: 0 errors, 0 warnings"
+          ],
+          "outcomes": [
+            {
+              "t": 183.008,
+              "result": "TIME LIMIT / CONTRACT EXPIRED"
+            }
+          ],
+          "movie": {
+            "programs": [],
+            "stream_groups": [],
+            "streams": [
+              {
+                "codec_name": "h264",
+                "width": 1280,
+                "height": 720,
+                "r_frame_rate": "25/1",
+                "nb_frames": "4625"
+              }
+            ],
+            "format": {
+              "duration": "185.000000",
+              "size": "177014957"
+            }
+          }
+        }
+      },
+      "reassessed_with_current_verifier": [
+        {
+          "case": "match",
+          "passed": false,
+          "checks": {
+            "completed": true,
+            "single_physical_knockout": false,
+            "no_controller_errors": true,
+            "mass_conserved": true,
+            "no_chassis_floor_penetration": true,
+            "plastic_work_within_loss_budget": true
+          },
+          "metrics": {
+            "detachments": [
+              {
+                "t": 16.488,
+                "robot": "RAZOR",
+                "part": "fl_wheel"
+              },
+              {
+                "t": 26.400000000000002,
+                "robot": "RAZOR",
+                "part": "rl_wheel"
+              },
+              {
+                "t": 80.272,
+                "robot": "ANVIL",
+                "part": "fr_wheel"
+              },
+              {
+                "t": 102.232,
+                "robot": "RAZOR",
+                "part": "rr_wheel"
+              }
+            ],
+            "minimum_chassis_floor_bound_m": {
+              "ANVIL": -0.012062241148652397,
+              "RAZOR": -0.004933142391646134
+            }
+          }
+        }
+      ],
+      "current_verifier_sha256": "057b2aede01f1bd3ae02786f5821627a6e097ea30e2902902e361b18a54d9292",
+      "source_sha256": {
+        "projects\\robot_combat\\orc\\build_foundry.py": "64b623a58a1d91d3a7759a3e7df20dcb2471f128211af3f68e0b95c7c58d4bc4",
+        "projects\\robot_combat\\orc\\shared\\foundry_logic.py": "0f568b38ade496b4a6203fa0d0ce48d2bf20f55e33984f7587126d184aded5ca",
+        "projects\\robot_combat\\orc\\shared\\foundry_physics.py": "d01fb4a478356b648c8990345dd801039df9b0216af8ba12a702a7a90dfae2a2",
+        "projects\\robot_combat\\orc\\controllers\\orc_foundry_director\\orc_foundry_director.py": "4c146d9fc58ef68b02dc42543e610e2c06f2cb9a9f7b98f42d12dd4f12fe3284",
+        "projects\\robot_combat\\orc\\controllers\\orc_foundry_pilot\\orc_foundry_pilot.py": "7d30b8b630bdce0a3782d9487131d2c1d50369422f56a53bf6bad4e5c3fd4fb4",
+        "projects\\robot_combat\\orc\\controllers\\orc_foundry_probe\\orc_foundry_probe.py": "b2aa9590321358b56bff11308969a28cc388f2e59f0a76cd99a2a095079f0b2c",
+        "projects\\robot_combat\\orc\\verify_foundry.py": "2dbb5dd2b668b46cf5372c357c67e26c58889260259726cecc4e432344ee8e58"
+      },
+      "raw_artifact_sha256": {
+        "_scratch/foundry_realism/20260913_044127_287511/match.json": "739021d0ed0530ac931a29a686775d77eb148426848e26d55da2453b5d9d18fa",
+        "_scratch/foundry_realism/20260913_044127_287511/match.events.jsonl": "d09ca9626b90fa8e39c31502522548a9631de83bf44a1903dc15ffdd4eb6f673",
+        "_scratch/foundry_realism/20260913_044127_287511/match.run.log": "1083a86bb068155dd9b8fd92a04455d4519ea1c22f3cb6277a96c985e0609f99",
+        "_scratch/foundry_realism/20260913_044127_287511/match.mp4": "e2e6e100ebfc9ba80f37a02794cfd4c9949f3679da9ac5bc4b44e5ac0d9a765b",
+        "_scratch/foundry_realism/20260913_044127_287511/match.aftermath.jpg": "d3a308ebced3d196d576a35165bdad683909dcebcf0449d6a2b3d9fa4577a684",
+        "_scratch/foundry_realism/20260913_044127_287511/match.aftermath.omniworld": "a78e1e0a01bcd6fbf6406a3c6bc1b1ee316cbc7fa91f71c9f447a601c612fc5b"
+      }
+    }
+  ],
+  "knockout_aftermath_still": {
+    "description": "Visualization of the successful run saved world with its existing poses frozen by removing Physics fields; only the camera is reframed. Not a new simulated outcome.",
+    "source_world": "_scratch/foundry_realism/20260913_042035_024789/match.aftermath.omniworld",
+    "image": "_scratch/foundry_realism/knockout_snapshot/verified_aftermath.jpg",
+    "image_sha256": "6fa66df2523a8efcbc8c51755ff490d9b6445113b335ffe6e29794e0b4c122e4",
+    "render_world_sha256": "07b19d0ccd924dadd7292054804dcfc30cb14d253f3de3da22245ce578ade12c",
+    "gpu_peak_c": 62
+  },
+  "limitations": [
+    "Count-out permits small motion: ten seconds within 0.15 m translation and 0.25 rad rotation, with fresh drive requests and no paired opponent contact.",
+    "Successful individual match; no guarantee every AI encounter ends in a knockout or repeats identically.",
+    "Estimated normals and impact loads, not solver contact forces; uncalibrated mount strength, stiffness and plastic work.",
+    "Rigid-body mount detachment; no deformable hull, finite-element fracture or damage from the floor, walls and loose debris.",
+    "Authored mass/inertia and friction; no measured real-robot validation.",
+    "GPU sampled every 0.5 seconds with a 75 C stop and 65 C precool; CPU temperature is not monitored."
+  ]
+}

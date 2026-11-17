@@ -1,0 +1,24 @@
+{
+  "name": "go2",
+  "_note": "Parity-probe spec for the Unitree Go2 quadruped. Pose = go2_trot_gait.standing_pose(body_height=0.30) planted stance (hip 0, thigh 0.7895, calf -1.5789); gains/substeps/mu = run_go2_walk_deploy.ps1 (KE 250/KD 6). All 12 joints are legs -> sweep all. Foot = sphere r=0.022 on each calf.",
+  "urdf": "projects/robots/unitree/go2/urdf/go2.urdf",
+  "spawn_z": 0.33,
+  "deploy_ke": 250,
+  "deploy_kd": 6,
+  "ground_mu": 2.0,
+  "probe_substeps": 8,
+  "joint_order": [
+    "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
+    "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
+    "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
+    "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"
+  ],
+  "nominal": {
+    "FL_thigh_joint": 0.7895, "FL_calf_joint": -1.5789,
+    "FR_thigh_joint": 0.7895, "FR_calf_joint": -1.5789,
+    "RL_thigh_joint": 0.7895, "RL_calf_joint": -1.5789,
+    "RR_thigh_joint": 0.7895, "RR_calf_joint": -1.5789
+  },
+  "ankle_pitch_joints": [],
+  "arm_hold": []
+}

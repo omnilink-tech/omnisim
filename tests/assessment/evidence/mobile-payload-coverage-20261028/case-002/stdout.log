@@ -1,0 +1,41 @@
+[OmniSim] log: O:\omnisim\tests\assessment\evidence\mobile-payload-coverage-20261028\case-002\engine.log
+WARNING: Could not listen to extern controllers and robot windows on port 1234. Port 1234 is already in use. Using port 1235 instead. This could be caused by another running instance of OmniSim. You should use the '--port' option to start several instances of OmniSim.
+INFO: headless load: eager texture decode skipped (no Camera/IR-sensor/Pen in world). OMNISIM_EAGER_TEXTURE_DECODE=1 reverts.
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: husky_braking: Starting controller: python.exe -u husky_braking.py
+[sun_marker] ready — marker HIDDEN, press V to show
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=0.4 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 5 dynamic + 1 static Newton bodies (1 of the statics on the world body) (+6 this pass) (statics: solid)
+INFO: [OmNewtonBackend] fixed-child colliders: 1 boundingObject(s) of fixed child links attached to 1 dynamic body(ies); OMNISIM_NEWTON_FIXED_CHILD_COLLIDERS=0 reverts
+INFO: [OmNewtonBackend] composite inertia: 1 body(ies) carry the mass, COM and inertia of their fixed child links; OMNISIM_NEWTON_COMPOSITE_INERTIA=0 reverts
+INFO: [OmNewtonBackend] inertia provenance: 5 declared, 0 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=0.4 ke=0 kd=0 iters=0 ls_iters=0
+WARNING: Joint motor 'fl_wheel_joint_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)
+INFO: [OmNewtonBackend] joint 0 '"fl_wheel_link"': declares damping 0.001, Coulomb friction 0.001 -- NOT applied (OMNISIM_NEWTON_JOINT_DYNAMICS=1 applies them)
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(0, 1, 0) anchor=(0.053, 0.096, 0.0425) effort=1.5 velLim=24 lim=[0, 0] [motorized: kd=500]
+WARNING: Joint motor 'fr_wheel_joint_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)
+INFO: [OmNewtonBackend] joint 1 '"fr_wheel_link"': declares damping 0.001, Coulomb friction 0.001 -- NOT applied (OMNISIM_NEWTON_JOINT_DYNAMICS=1 applies them)
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 0, child=body 2) axis=(0, 1, 0) anchor=(0.053, -0.096, 0.0425) effort=1.5 velLim=24 lim=[0, 0] [motorized: kd=500]
+WARNING: Joint motor 'rl_wheel_joint_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)
+INFO: [OmNewtonBackend] joint 2 '"rl_wheel_link"': declares damping 0.001, Coulomb friction 0.001 -- NOT applied (OMNISIM_NEWTON_JOINT_DYNAMICS=1 applies them)
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 0, child=body 3) axis=(0, 1, 0) anchor=(-0.053, 0.096, 0.0425) effort=1.5 velLim=24 lim=[0, 0] [motorized: kd=500]
+WARNING: Joint motor 'rr_wheel_joint_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)
+INFO: [OmNewtonBackend] joint 3 '"rr_wheel_link"': declares damping 0.001, Coulomb friction 0.001 -- NOT applied (OMNISIM_NEWTON_JOINT_DYNAMICS=1 applies them)
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 0, child=body 4) axis=(0, 1, 0) anchor=(-0.053, -0.096, 0.0425) effort=1.5 velLim=24 lim=[0, 0] [motorized: kd=500]
+INFO: [OmNewtonBackend] 1 Robot root collider(s) registered from the robot's own boundingObject (lowest point vs its wheels: +22.5 mm). Before 2026-10-17 they were left out unless WorldInfo.newtonRobotColliders TRUE. OMNISIM_NEWTON_ROBOT_ROOT_COLLIDER=0 restores the old placeholder.
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver))
+INFO: [OmNewtonBackend] step 1 dt=0.016s b0=(0.000,0.000,0.036) b1=(0.053,0.096,0.079) b2=(0.053,-0.096,0.079) b3=(-0.053,0.096,0.079) b4=(-0.053,-0.096,0.079)
+INFO: [OmNewtonBackend] step 30 dt=0.016s b0=(0.000,0.000,-0.000) b1=(0.053,0.096,0.042) b2=(0.053,-0.096,0.042) b3=(-0.053,0.096,0.042) b4=(-0.053,-0.096,0.042)
+INFO: [OmNewtonBackend] step 60 dt=0.016s b0=(0.000,0.000,-0.000) b1=(0.053,0.096,0.042) b2=(0.053,-0.096,0.042) b3=(-0.053,0.096,0.042) b4=(-0.053,-0.096,0.042)
+INFO: [OmNewtonBackend] motor target_vel reached joint 0: 8.4 rad/s (controller -> OmRotationalMotor -> backend chain verified)
+INFO: [OmNewtonBackend] motor target_vel reached joint 1: 8.4 rad/s (controller -> OmRotationalMotor -> backend chain verified)
+INFO: [OmNewtonBackend] motor target_vel reached joint 2: 8.4 rad/s (controller -> OmRotationalMotor -> backend chain verified)
+INFO: [OmNewtonBackend] motor target_vel reached joint 3: 8.4 rad/s (controller -> OmRotationalMotor -> backend chain verified)
+INFO: [OmNewtonBackend] step 120 dt=0.016s b0=(0.309,0.000,-0.000) b1=(0.362,0.096,0.042) b2=(0.362,-0.096,0.042) b3=(0.256,0.096,0.042) b4=(0.256,-0.096,0.042)
+INFO: [OmNewtonBackend] step 240 dt=0.016s b0=(0.320,0.000,-0.000) b1=(0.373,0.096,0.042) b2=(0.373,-0.096,0.042) b3=(0.267,0.096,0.042) b4=(0.267,-0.096,0.042)
+INFO: sun_marker: Terminating.
+INFO: husky_braking: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: omnisim exited normally (code 0)

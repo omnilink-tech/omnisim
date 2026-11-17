@@ -1,0 +1,25 @@
+[
+  {
+    "arm": "d",
+    "world": "maze",
+    "trial": 1,
+    "utc": "2026-09-19T13:27:07+00:00",
+    "load_seconds": 7.98,
+    "seconds": 1.76,
+    "rc": 1,
+    "timed_out": false,
+    "trace_sha": "73843c6277d7e684",
+    "mission_complete": false,
+    "visited_cells": 1,
+    "pose": null,
+    "error": " state: 'NoneType' object does not support item assignment",
+    "mission_log": [],
+    "visited": [
+      [
+        0,
+        10
+      ]
+    ],
+    "ports_closed": true
+  }
+]

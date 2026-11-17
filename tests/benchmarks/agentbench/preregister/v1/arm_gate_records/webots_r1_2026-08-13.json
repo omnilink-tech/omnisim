@@ -1,0 +1,35 @@
+{
+  "schema": "agenticsimbench/live-arm-gate/v1",
+  "suite": "agenticsimbench/v1",
+  "task": "R1_lidar_nav",
+  "sim": "webots",
+  "measured_utc": "2026-08-13",
+  "outcomes": {
+    "oracle": "PASS",
+    "null": "FAIL",
+    "blind": "FAIL"
+  },
+  "result": {
+    "combined_command_tests_passed": 22,
+    "combined_command_tests_failed": 0,
+    "combined_command_wall_s": 201.03,
+    "this_file_tests": 12,
+    "command": "python -m pytest agentbench/adapters/webots/test_r1_discriminates_webots.py agentbench/adapters/webots/test_r4_discriminates_webots.py --agentbench-live -q -rs"
+  },
+  "environment": {
+    "machine": "LAPTOP-H61DJILS",
+    "host_os": "Windows",
+    "guest": "WSL2 Ubuntu-22.04",
+    "pytest": "8.3.5",
+    "webots_version": "R2025a",
+    "webots_home": "/opt/upstream-webots/R2025a",
+    "webots_launcher_sha256": "d5a846c134dfdf9ff5984b4cf8a30c0aed8c943f022bf83f754ecb325cef86e6",
+    "webots_engine_sha256": "c12c65e8680b579d0f33c34be452f100a302bdecc6d9344becf356db4a675a1a"
+  },
+  "source_commit": "e8d045c09d06671aa1f738afa5d5d19345e6b510",
+  "source_sha256": {
+    "adapters/webots/test_r1_discriminates_webots.py": "f1790187b355cde80e6a7b5ac9c580c76c18069e0dc08bf0ba441fa0b896b813",
+    "adapters/webots/launcher.py": "9accfeebbab4f1bf418133f497c5d39367c2ddcf22e478c735ba0e7106bcc7fe"
+  },
+  "claim_scope": "Live discriminator evidence only; not a scored model result. The oracle passes and the null and blind controls fail on the real upstream engine."
+}

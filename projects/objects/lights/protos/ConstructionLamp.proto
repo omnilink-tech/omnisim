@@ -1,0 +1,187 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/lights/protos/ConstructionLamp.proto
+# keywords: industrial/light
+# A portable site floodlight: a three-legged steel tripod carrying a tilted lamp head whose
+# reflector emits a configurable SpotLight. The feet rest on the ground plane of the local frame.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/MetalPipePaint.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/RustyMetal.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/ReflectiveSurface.proto"
+
+PROTO ConstructionLamp [
+  field SFVec3f    translation               0 0 0.07
+  field SFRotation rotation                  0 0 1 0
+  field SFString   name                      "construction lamp"
+  field SFNode     supportAppearance         MetalPipePaint { }  # Defines the appearance of the light support.
+  field SFColor    spotLightColor            1 1 1               # Defines the color of the spot light.
+  field SFFloat    spotLightIntensity        2                   # Defines the intensity of the spot light.
+  field SFFloat    spotLightRadius           100                 # Defines the radius of the spot light.
+  field SFBool     spotLightCastShadows      FALSE               # Defines whether the spot light should cast shadows.
+]
+{
+  %<
+    // tripod: three legs from the ground up to a central hub
+    const footRadius = 0.20;      // horizontal distance from the axis to each foot
+    const hubHeight = 0.42;       // height of the leg hub
+    const legLength = Math.sqrt(footRadius * footRadius + hubHeight * hubHeight);
+    const legTilt = -Math.asin(footRadius / legLength);   // rotation about +y tipping +z outwards
+
+    const columnTop = hubHeight + 0.12;
+    const headZ = columnTop + 0.11;
+    const headPitch = 0.25;       // nose-down tilt of the head, radians about +y
+
+    // lamp head, expressed in the (tilted) head frame
+    const headDepth = 0.13;       // along +x, i.e. the beam axis
+    const lensX = 0.5 * headDepth + 0.006;
+
+    // beam origin and direction in the Solid frame (the head is pitched about +y by headPitch)
+    const beamX = lensX * Math.cos(headPitch);
+    const beamZ = headZ - lensX * Math.sin(headPitch);
+    const dirX = Math.cos(headPitch);
+    const dirZ = -Math.sin(headPitch);
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "construction lamp"
+    children [
+      # ---- three splayed legs ----
+      %< for (let i = 0; i < 3; ++i) {
+           const yaw = 2.0 * Math.PI * i / 3.0;
+      >%
+      Pose {
+        rotation 0 0 1 %<= yaw >%
+        children [
+          Pose {
+            translation %<= 0.5 * footRadius >% 0 %<= 0.5 * hubHeight >%
+            rotation 0 1 0 %<= legTilt >%
+            children [
+              %< if (i === 0) { >%
+              DEF CL_LEG Shape {
+                appearance IS supportAppearance
+                geometry Cylinder {
+                  radius 0.012
+                  height %<= legLength >%
+                  subdivision 12
+                }
+              }
+              %< } else { >%
+              USE CL_LEG
+              %< } >%
+            ]
+          }
+        ]
+      }
+      %< } >%
+      # ---- hub and mast ----
+      Pose {
+        translation 0 0 %<= hubHeight + 0.5 * (columnTop - hubHeight) >%
+        children [
+          DEF CL_MAST Shape {
+            appearance RustyMetal {
+              rustLevel 1
+              colorOverride 0.72 0.66 0.6
+            }
+            geometry Cylinder {
+              radius 0.02
+              height %<= columnTop - hubHeight >%
+              subdivision 12
+            }
+          }
+        ]
+      }
+      # ---- lamp head: housing, reflector face and a bright lens ----
+      Pose {
+        translation 0 0 %<= headZ >%
+        rotation 0 1 0 %<= headPitch >%
+        children [
+          Shape {
+            appearance RustyMetal {
+              rustLevel 2
+              colorOverride 0.9 0.62 0.15
+            }
+            geometry Box {
+              size %<= headDepth >% 0.3 0.19
+            }
+          }
+          Pose {
+            translation %<= lensX >% 0 0
+            rotation 0 1 0 1.5708
+            children [
+              Shape {
+                appearance ReflectiveSurface {
+                  metalness 0.9
+                  emissiveColor 1 0.97 0.88
+                  emissiveIntensity IS spotLightIntensity
+                }
+                geometry Box {
+                  size 0.17 0.27 0.012
+                }
+              }
+            ]
+          }
+          # yoke bolts
+          Pose {
+            translation 0 0.155 0
+            rotation 1 0 0 1.5708
+            children [
+              DEF CL_BOLT Shape {
+                appearance IS supportAppearance
+                geometry Cylinder {
+                  radius 0.012
+                  height 0.02
+                  subdivision 8
+                }
+              }
+            ]
+          }
+          Pose {
+            translation 0 -0.155 0
+            rotation 1 0 0 1.5708
+            children [
+              USE CL_BOLT
+            ]
+          }
+        ]
+      }
+      # ---- the beam ----
+      SpotLight {
+        attenuation 0 0 1
+        beamWidth 0.55
+        cutOffAngle 0.95
+        color IS spotLightColor
+        intensity IS spotLightIntensity
+        radius IS spotLightRadius
+        castShadows IS spotLightCastShadows
+        location %<= beamX >% 0 %<= beamZ >%
+        direction %<= dirX >% 0 %<= dirZ >%
+      }
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 %<= 0.5 * columnTop >%
+          children [
+            Cylinder {
+              radius %<= footRadius + 0.02 >%
+              height %<= columnTop >%
+              subdivision 12
+            }
+          ]
+        }
+        Pose {
+          translation 0 0 %<= headZ >%
+          children [
+            Box {
+              size 0.2 0.3 0.2
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

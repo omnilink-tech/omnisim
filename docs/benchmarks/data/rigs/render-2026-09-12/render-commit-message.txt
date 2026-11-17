@@ -1,0 +1,18 @@
+render: add photo mode and improve reflections, glass and lighting
+
+Add bounded, cancellable CPU photo capture from the File menu and an automated
+capture path. Trace owned scene geometry and material textures, importance
+sample emissive surfaces and the environment, adapt sampling per pixel, and
+optionally denoise with Open Image Denoise. Solid glass supports Fresnel
+reflection, Snell refraction, internal reflection and thickness absorption.
+
+Improve live rendering with local reflection captures, complete GGX mip chains,
+shadowed moving point/spot lights and a reusable rectangular area light. Correct
+roughness-map overrides and include the optional realism house, fixed camera
+comparisons, runtime packaging guidance and regression coverage.
+
+Validation: Windows candidate build; 1,288 engine-free tests and 16 documentation
+checks passed. Native checks cover sampling error, dielectric transport, energy,
+denoising, cancellation and reflection mips. Engine checks cover photo output,
+area emission, moving-light shadows and robot-camera roughness maps. Final
+staged-source/license/reference checks passed without launching the simulator.

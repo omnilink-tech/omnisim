@@ -1,0 +1,129 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/computers/protos/Keyboard.proto
+# keywords: interior/office
+# A slim desktop keyboard: a chassis box carrying a procedurally generated grid of key caps. The keys are real geometry, not a texture, and are tinted a lighter shade of the chassis `color`. The origin sits under the chassis.
+# template language: javascript
+
+PROTO Keyboard [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "keyboard"
+  field SFColor    color       0.1 0.1 0.1  # Defines the color of the keyboard.
+  field SFFloat    mass        0            # Defines the mass of the keyboard in kg. A value smaller or equal to 0 removes the physics of the keyboard.
+]
+{
+%<
+  const c = fields.color.value;
+  // key caps read as a lighter shade of the chassis colour
+  const key = [
+    Math.min(1.0, c.r * 1.5 + 0.07),
+    Math.min(1.0, c.g * 1.5 + 0.07),
+    Math.min(1.0, c.b * 1.5 + 0.07)
+  ];
+
+  const width = 0.44;   // x -- across the key rows
+  const depth = 0.15;   // y
+  const base = 0.012;   // chassis thickness
+  const keyZ = 0.006;   // key cap height above the chassis
+
+  const cols = 15;
+  const rows = 5;
+  const margin = 0.014;
+  const pitchX = (width - 2 * margin) / cols;
+  const pitchY = (depth - 2 * margin) / rows;
+  const capX = pitchX * 0.8;
+  const capY = pitchY * 0.75;
+
+  const mass = fields.mass.value;
+>%
+Solid {
+  translation IS translation
+  rotation IS rotation
+  children [
+    # chassis
+    Pose {
+      translation 0 0 %<= 0.5 * base >%
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor IS color
+            roughness 0.55
+            metalness 0
+          }
+          geometry Box {
+            size %<= width >% %<= depth >% %<= base >%
+          }
+        }
+      ]
+    }
+    # key grid
+%<
+  for (let j = 0; j < rows; ++j) {
+    for (let i = 0; i < cols; ++i) {
+      const x = -0.5 * width + margin + (i + 0.5) * pitchX;
+      const y = -0.5 * depth + margin + (j + 0.5) * pitchY;
+      // the space bar replaces the middle keys of the front row
+      const isSpace = (j === 0 && i === 5);
+      if (j === 0 && i > 5 && i < 10)
+        continue;
+      const sx = isSpace ? capX + 4 * pitchX : capX;
+      const cx = isSpace ? x + 2 * pitchX : x;
+>%
+    Pose {
+      translation %<= cx >% %<= y >% %<= base + 0.5 * keyZ >%
+      children [
+%<     if (i === 0 && j === 0) { >%
+        DEF KEY Shape {
+          appearance PBRAppearance {
+            baseColor %<= key[0] >% %<= key[1] >% %<= key[2] >%
+            roughness 0.7
+            metalness 0
+          }
+          geometry Box {
+            size %<= capX >% %<= capY >% %<= keyZ >%
+          }
+        }
+%<     } else if (isSpace) { >%
+        Shape {
+          appearance PBRAppearance {
+            baseColor %<= key[0] >% %<= key[1] >% %<= key[2] >%
+            roughness 0.7
+            metalness 0
+          }
+          geometry Box {
+            size %<= sx >% %<= capY >% %<= keyZ >%
+          }
+        }
+%<     } else { >%
+        USE KEY
+%<     } >%
+      ]
+    }
+%<
+    }
+  }
+>%
+  ]
+  name IS name
+  model "keyboard"
+  recognitionColors [
+    %<= c.r >% %<= c.g >% %<= c.b >%
+  ]
+  boundingObject Pose {
+    translation 0 0 %<= 0.5 * (base + keyZ) >%
+    children [
+      Box {
+        size %<= width >% %<= depth >% %<= base + keyZ >%
+      }
+    ]
+  }
+%< if (mass > 0) { >%
+  physics Physics {
+    density -1
+    mass IS mass
+  }
+%< } >%
+}
+}

@@ -1,0 +1,59 @@
+{
+  "final_message": "Done - the camera now points at the red cylinder and it is in frame, dead centre: off-axis 0.0 deg from the camera axis, at a range of 12.14 m, angular diameter about 6.6 deg, well inside the 45 deg field of view with margin on every side.",
+  "stop_reason": "model_stopped",
+  "stop_detail": "end_turn",
+  "self_verified": false,
+  "usd": null,
+  "tool_set": "shell_plus_tools",
+  "tools_sha256": "a624c7f4a42205322f54b1574cddecdd9022f2888aae99c1b1c69d794c2895ca",
+  "manifest_sha256": "00219b2bd161f880595e9b0e65668cba7152c0d4c3ea597f242c1160c5dae1f1",
+  "system_prompt_sha": "19759dc6c55d0b1e16f5584911dbf05b81d51427ca3c3c681878e4071fb736ef",
+  "system_full_sha": "a8d27f487f30a19030af25d6f5c98607f2acb54a7598d7cfed849e97ea16a139",
+  "backend": {
+    "backend": "scripted",
+    "model": "scripted:oracle_b2_webots",
+    "temperature": null,
+    "script": "O:\\omnisim\\tests\\benchmarks\\agentbench\\runner\\scripts\\oracle_b2_webots.json",
+    "script_name": "oracle_b2_webots",
+    "script_turns": 3,
+    "usage_is_synthetic": true
+  },
+  "sandbox": {
+    "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell_tools",
+    "scratch_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell_tools\\scratch",
+    "repo": "O:\\omnisim",
+    "harness_port": 7100,
+    "supervisor_port": 7101,
+    "log_path": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell_tools\\agent_engine.log",
+    "shell": [
+      "C:\\Program Files\\Git\\usr\\bin\\bash.EXE",
+      "-lc"
+    ],
+    "shell_source": "which:C:\\Program Files\\Git\\usr\\bin\\bash.EXE",
+    "read_deny": [],
+    "deviations": []
+  },
+  "deviations": [],
+  "artifacts": {
+    "trace": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell_tools\\trace.jsonl",
+    "tool_set_manifest": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell_tools\\tool_set.shell_plus_tools.json",
+    "leak_suspect_tool_calls": 0,
+    "tokens_cache_write": null,
+    "system_prompt": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B2_subject_in_frame.shell_tools\\system_prompt.txt"
+  },
+  "error": null,
+  "port_survivors": [],
+  "metrics": {
+    "turns": 2,
+    "model_calls": 3,
+    "tool_calls": 2,
+    "tokens_in": 12000,
+    "tokens_out": 2700,
+    "tokens_cache_read": null,
+    "tokens_cache_write": null,
+    "elapsed_s": 0.53,
+    "stop_reason": "model_stopped",
+    "stop_detail": "end_turn"
+  },
+  "hit_budget": false
+}

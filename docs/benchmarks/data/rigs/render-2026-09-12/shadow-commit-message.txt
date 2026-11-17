@@ -1,0 +1,7 @@
+render: reuse stationary local shadows and cull light-face casters
+
+Reuse the local-light shadow atlas when exact light, geometry and transform inputs remain unchanged. Cull shadow casters conservatively per cubemap face when a redraw is needed. Keep the shared main-view and sensor draw caches current across geometry/material edits and completed subtree insertion, with Qt connection ownership hidden behind the shared interface.
+
+Add CPU phase/shadow-work telemetry and reproducible house, warehouse and city comparisons with both optimization switches independently reversible. Preserve the measured binary/world/image hashes and timing limitations. Stationary house and warehouse captures match the reference exactly while eliminating repeated local-shadow draws; the city control does not establish an FPS or timing gain.
+
+Validation: 1,289 engine-free tests, 16 documentation checks, two source-license checks, five focused rendering/profile tests, and 119,155 native frustum witnesses. Thirteen edit states match in both the main view and camera sensor. The probe waits for queued screenshot completion before applying subsequent edits.

@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "assets": [
+    {
+      "name": "Oak",
+      "url": "omnisim://projects/objects/trees/protos/Oak.proto",
+      "tags": ["tree", "outdoor", "forest", "temperate"],
+      "settle": true
+    },
+    {
+      "name": "Pine",
+      "url": "omnisim://projects/objects/trees/protos/Pine.proto",
+      "tags": ["tree", "outdoor", "forest", "temperate", "boreal"],
+      "settle": true
+    },
+    {
+      "name": "Sassafras",
+      "url": "omnisim://projects/objects/trees/protos/Sassafras.proto",
+      "tags": ["tree", "outdoor", "forest", "temperate"],
+      "settle": true
+    },
+    {
+      "name": "BigSassafras",
+      "url": "omnisim://projects/objects/trees/protos/BigSassafras.proto",
+      "tags": ["tree", "outdoor", "forest", "temperate", "large"],
+      "settle": true
+    },
+    {
+      "name": "Cypress",
+      "url": "omnisim://projects/objects/trees/protos/Cypress.proto",
+      "tags": ["tree", "outdoor", "forest", "temperate"],
+      "settle": true
+    },
+    {
+      "name": "SimpleTree",
+      "url": "omnisim://projects/objects/trees/protos/SimpleTree.proto",
+      "tags": ["tree", "outdoor", "forest", "generic"],
+      "settle": true
+    },
+    {
+      "name": "PalmTree",
+      "url": "omnisim://projects/objects/trees/protos/PalmTree.proto",
+      "tags": ["tree", "outdoor", "tropical"],
+      "settle": true
+    },
+    {
+      "name": "Rock",
+      "url": "omnisim://projects/objects/rocks/protos/Rock.proto",
+      "tags": ["rock", "outdoor", "forest", "desert"],
+      "settle": true
+    },
+    {
+      "name": "WoodenPallet",
+      "url": "omnisim://projects/objects/factory/pallet/protos/WoodenPallet.proto",
+      "tags": ["pallet", "indoor", "warehouse", "industrial"],
+      "settle": false
+    },
+    {
+      "name": "WoodenPalletStack",
+      "url": "omnisim://projects/objects/factory/pallet/protos/WoodenPalletStack.proto",
+      "tags": ["pallet", "rack", "indoor", "warehouse", "industrial"],
+      "settle": false,
+      "surfaces": {
+        "top": {
+          "z_offset": 1.4,
+          "half_extents": [0.55, 0.35]
+        }
+      }
+    },
+    {
+      "name": "CardboardBox",
+      "url": "omnisim://projects/objects/factory/containers/protos/CardboardBox.proto",
+      "tags": ["box", "container", "indoor", "warehouse"],
+      "settle": true
+    },
+    {
+      "name": "PlasticCrate",
+      "url": "omnisim://projects/objects/factory/containers/protos/PlasticCrate.proto",
+      "tags": ["crate", "container", "indoor", "warehouse"],
+      "settle": true
+    },
+    {
+      "name": "WoodenBox",
+      "url": "omnisim://projects/objects/factory/containers/protos/WoodenBox.proto",
+      "tags": ["box", "container", "indoor", "warehouse"],
+      "settle": true
+    },
+    {
+      "name": "ConstructionFrameBuilding",
+      "url": "omnisim://projects/samples/demos/protos/ConstructionFrameBuilding.proto",
+      "tags": ["building", "outdoor", "urban", "construction"],
+      "settle": false
+    },
+
+    {
+      "name": "ControlledStreetLight",
+      "url": "omnisim://projects/objects/traffic/protos/ControlledStreetLight.proto",
+      "tags": ["streetlight", "outdoor", "urban", "lighting"],
+      "settle": false
+    },
+    {
+      "name": "Bench",
+      "url": "omnisim://projects/objects/street_furniture/protos/Bench.proto",
+      "tags": ["bench", "outdoor", "urban", "furniture"],
+      "settle": true
+    },
+    {
+      "name": "BusStop",
+      "url": "omnisim://projects/objects/street_furniture/protos/BusStop.proto",
+      "tags": ["busstop", "outdoor", "urban", "furniture"],
+      "settle": false
+    },
+    {
+      "name": "Wall",
+      "url": "omnisim://projects/objects/apartment_structure/protos/Wall.proto",
+      "tags": ["wall", "indoor", "apartment", "structure"],
+      "settle": false
+    },
+    {
+      "name": "Door",
+      "url": "omnisim://projects/objects/apartment_structure/protos/Door.proto",
+      "tags": ["door", "indoor", "apartment", "structure"],
+      "settle": false
+    },
+    {
+      "name": "Window",
+      "url": "omnisim://projects/objects/apartment_structure/protos/Window.proto",
+      "tags": ["window", "indoor", "apartment", "structure"],
+      "settle": false
+    },
+    {
+      "name": "Bed",
+      "url": "omnisim://projects/objects/bedroom/protos/Bed.proto",
+      "tags": ["bed", "indoor", "apartment", "bedroom", "furniture"],
+      "settle": true
+    },
+    {
+      "name": "Table",
+      "url": "omnisim://projects/objects/tables/protos/Table.proto",
+      "tags": ["table", "indoor", "apartment", "furniture"],
+      "settle": true
+    },
+    {
+      "name": "Desk",
+      "url": "omnisim://projects/objects/tables/protos/Desk.proto",
+      "tags": ["desk", "indoor", "office", "furniture"],
+      "settle": true
+    },
+    {
+      "name": "Toilet",
+      "url": "omnisim://projects/objects/bathroom/protos/Toilet.proto",
+      "tags": ["toilet", "indoor", "apartment", "bathroom", "furniture"],
+      "settle": false
+    },
+    {
+      "name": "BathroomSink",
+      "url": "omnisim://projects/objects/bathroom/protos/BathroomSink.proto",
+      "tags": ["sink", "indoor", "apartment", "bathroom", "furniture"],
+      "settle": false
+    }
+  ]
+}

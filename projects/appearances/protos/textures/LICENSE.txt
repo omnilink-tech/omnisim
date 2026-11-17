@@ -1,0 +1,146 @@
+OmniSim PBR appearance texture library.
+
+Contents
+--------
+333 image files (327 .jpg, 6 .png) in 63 material-set subdirectories, from
+`asphalt` to `worn_burlap`. Each set is the map stack of one PBR material --
+typically `*_base_color`, `*_normal`, `*_roughness`, `*_occlusion` and
+`*_metalness`.
+
+Every file here is a constituent part of one of the 68 PROTOs in the parent
+directory, `projects/appearances/protos/`, referenced by a relative `url`
+from that PROTO's `PBRAppearance` node.
+
+License
+-------
+Apache License, Version 2.0 -- Copyright 1996-2024 Cyberbotics Ltd.
+https://www.apache.org/licenses/LICENSE-2.0
+
+All 333 files, without exception. There is no per-set variation.
+
+Evidence for that election
+--------------------------
+1. All 68 owning PROTOs declare it, and always have. Each carries
+
+       # license: Apache License 2.0
+       # license url: https://www.apache.org/licenses/LICENSE-2.0
+
+   -- 68 of 68 in this tree today, and 68 of 68 as received in the upstream
+   import commit 0db6a18a74ba16fa2c10f744423405d153b87c7a ("Initial commit:
+   OmniSim robotics simulator", 2026-04-11). Upstream's live copy still
+   declares it; re-verified 2026-08-22 against
+   https://raw.githubusercontent.com/cyberbotics/webots/master/projects/appearances/protos/Asphalt.proto
+
+2. Upstream states what that header means. Cyberbotics' own PROTO design
+   guidelines say, verbatim:
+
+       "If a PROTO is meant to be distributed, it is important to specify the
+        license under which it can be used. For that purpose, the name of the
+        license should be specified in the `license:` comment and the URL to
+        the license file should be given in the `license url:` comment."
+
+   (https://github.com/cyberbotics/webots/blob/master/docs/reference/proto-design-guidelines.md)
+
+   A texture in this directory is not a file that merely shares a folder with
+   a PROTO -- it is loaded by that PROTO through a relative url and is part of
+   the work being distributed. The header covers it.
+
+3. THE DECISIVE POINT: Cyberbotics does NOT apply a blanket header. They sort
+   their assets, and they put this library on the permissive side of the line
+   THEY drew. In the same upstream tree, at the same moment:
+
+       projects/appearances/protos/Asphalt.proto
+           # license: Apache License 2.0
+       projects/objects/buildings/protos/Church.proto
+           # license: Creative Commons Attribution 4.0 International License.
+       projects/objects/school_furniture/protos/Book.proto
+           # license: Copyright Cyberbotics Ltd. Licensed for use only with Webots.
+
+   That third form is a product-scoped, non-open grant, and 238 object PROTOs
+   arrived under it. NONE of them was an appearance PROTO. A vendor that
+   carves out its restricted assets that carefully, and leaves an entire
+   material library outside the carve-out, is asserting that the library is
+   theirs to license this way.
+
+4. The binaries carry no third-party marker. Every JPEG marker segment and
+   PNG ancillary chunk in this directory was walked -- APP0-APP15, COM, and
+   PNG tEXt / iTXt / zTXt / eXIf / iCCP -- and the Exif IFD plus the Photoshop
+   IRB IPTC block were parsed for Artist, Copyright, ImageDescription,
+   UserComment, XPAuthor, and IPTC By-line / Credit / Source /
+   CopyrightNotice. What is present:
+
+       Software = GIMP 2.9.9                        138 files
+       Software = GIMP 2.10.8                        17 files
+       Software = GIMP 2.10.4                         3 files
+       Software = Adobe Photoshop CC 2015 (Windows)   3 files
+       xmp:CreatorTool = Substance Designer           4 files (metal_pipe_paint)
+       COM = "Created by fCoder Graphic Processor"    2 files (rough_pine)
+       DateTime / IPTC DateCreated                  331 files, clustered
+                                                    2019-02-20 .. 2020-01-10
+
+   What is absent, in all 333: any populated Artist, Copyright,
+   ImageDescription, UserComment or XPAuthor tag; any populated IPTC By-line,
+   Credit, Source or CopyrightNotice; any dc:rights or dc:creator; and any
+   occurrence of textures.com, ambientCG, cc0textures, Poly Haven, hdrihaven,
+   sharetextures, freepbr, 3dtextures, opengameart, creativecommons or CC0.
+
+   (The strings "Copyright (c) 1998 Hewlett-Packard Company" and "Copyright
+   (c) 2004 Microsoft Corporation" DO appear, 49 and 31 times. They are sRGB
+   ICC profile boilerplate, not image copyrights. Do not misread them.)
+
+   `Substance Designer` is a procedural material-AUTHORING tool: a file it
+   exported was made, not photographed. The 2019-02 .. 2020-01 date cluster
+   matches Webots' R2019b/R2020a PBR appearance-library development window.
+
+5. Nothing here has been touched since the import. All 333 blobs are
+   byte-identical to their state in commit 0db6a18a7, so no local edit can
+   have changed what is being licensed.
+
+Limits of that evidence
+-----------------------
+Point 4 is the weakest link and is stated plainly: ABSENCE of a credit field
+is not PROOF of authorship. Re-exporting a downloaded image through GIMP
+strips the original metadata exactly as effectively as authoring it there
+does, and 138 files carry that GIMP signature. What point 4 establishes is
+narrower and still worth having -- nothing in any binary CONTRADICTS the
+declared licence, and nothing traces to a source whose terms would forbid
+redistribution. The outcome that would actually be fatal (a textures.com
+origin, which is licensed per-account and may not be redistributed as a
+texture file) has no positive support anywhere in this tree.
+
+The election therefore rests on points 1-3: an explicit, consistent,
+per-file declaration by the upstream copyright holder, made against a
+backdrop that proves the holder was discriminating rather than rubber-
+stamping. That is a licence GRANT from the party entitled to make it, and it
+is what we are entitled to rely on.
+
+What would settle it beyond doubt: written confirmation from Cyberbotics Ltd.
+that this texture set is their own work, licensed Apache-2.0 as declared.
+
+Related: one upstream commit looks alarming and is not
+--------------------------------------------------------
+https://github.com/cyberbotics/webots/commit/a30519cad5e06de8348f3dbb826446f0ce0a1b70
+is titled "clean problematic exif data." (2020-04-24). Read cold, that is
+what a provenance scrub looks like. It is not one: it touched 45 files rather
+than the library, spanned ROBOT textures (Spot, Robotino3, TiaGo) as well as
+appearance ones, and upstream issue #1520 records EXIF actually breaking
+texture LOADING in Webots. It is a rendering fix. Decisively, 331 of the 333
+files here still carry an Exif segment today -- had it been a scrub, it
+failed.
+
+Usage -- DO NOT DELETE
+----------------------
+All 333 are live. Each is loaded by an Apache-2.0 PROTO in the parent
+directory, and those PROTOs are the canonical material library the whole tree
+builds on: the re-authored `projects/objects/` PROTOs were deliberately
+rebuilt to source their materials from HERE rather than bundle their own, so
+deleting a set breaks objects far outside this directory.
+
+Note that many sets are addressed by TEMPLATE-CONSTRUCTED filenames -- e.g.
+Cardboard.proto builds "textures/cardboard/cardboard_%<=type>%_base_color.jpg"
+in JavaScript. A grep for a literal basename will NOT find those references
+and will make ~127 live files look orphaned. Resolve the directory, not the
+name.
+
+Full audit, per-directory table and the open questions:
+docs/developer/texture-provenance.md

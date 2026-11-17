@@ -1,0 +1,33 @@
+{
+  "complete": true,
+  "frames": 630,
+  "episode_duration_s": 21.0,
+  "initial_cube_position": [
+    0.2241462595058276,
+    -0.15932843267874947,
+    0.02
+  ],
+  "final_cube_position": [
+    0.20951513946056366,
+    -0.08106950670480728,
+    0.023892244324088097
+  ],
+  "box_position": [
+    0.2,
+    -0.08,
+    0.0
+  ],
+  "max_cube_height_m": 0.09964832663536072,
+  "max_cube_speed_m_s": 1.044379214078162,
+  "fast_cube_steps": [],
+  "lifted": true,
+  "bilateral_airborne_s": 4.133333333333334,
+  "max_carry_slip_m": 0.006607701863385708,
+  "carried": true,
+  "inside_box": true,
+  "released": true,
+  "settled": true,
+  "success": true,
+  "actuation": "Motor.setPosition",
+  "timed_episode_pose_writes": 0
+}

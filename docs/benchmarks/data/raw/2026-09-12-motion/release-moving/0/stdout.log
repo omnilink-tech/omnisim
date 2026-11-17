@@ -1,0 +1,12 @@
+[OmniSim] log: O:\omnisim\.local-runs\motion-pipeline\release-moving\0\engine.log
+WARNING: DEF BLOCK Solid: 'name' field value should be unique: 'solid' already used by a sibling Solid node.
+INFO: [OmWgpuBackend] wgpu-native init OK (instance + adapter + device + queue)
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmWgpuSurface] on-screen surface created + configured (source=windows-hwnd)
+INFO: [OmView3D] wgpu main view tonemap: HDR linear-light + AgX (exposure 1)
+INFO: object_motion_probe: Starting controller: python.exe -u object_motion_probe.py O:/omnisim/.local-runs/motion-pipeline/release-moving/0
+INFO: [OmCamera] 'probe' declares far=0.000 (means infinite); the wgpu sensor projection substitutes 10000.0 m, matching WREN's wren::Camera::setFar
+INFO: [OmCamera] 'probe' rendered through wgpu (320x200, 2 draws) [W3 scene: sun=world extraLights=0 sky=Background skyColor fog=off exposure=1.00 center BGRA=(86,86,86)]
+INFO: object_motion_probe: Terminating.
+Warning: QProcess: Destroyed while process ("python.exe") is still running.
+INFO: omnisim exited normally (code 0)

@@ -1,0 +1,268 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/animals/protos/Sheep.proto
+# keywords: animal/farm
+# A static sheep, assembled from primitive shapes: a woolly barrel of overlapping spheres on four short legs, with a small dark head and drooping ears (about 1.2 m long, 1.0 m tall).
+# The `color` field sets the fleece colour.
+# template language: javascript
+
+PROTO Sheep [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFFloat    scale       1      # Defines the global scaling factor.
+  field SFString   name        "sheep"
+  field SFColor    color       1 1 1  # Defines the color of the sheep.
+]
+{
+  %<
+    let s = fields.scale.value;
+    if (s <= 0) {
+      s = fields.scale.defaultValue;
+      console.error("'scale' must be strictly positive, value reset to " + s + ".");
+    }
+    const co = fields.color.value;
+    // Every dimension below is expressed in metres and driven through the scale factor.
+    function d(v) { return (v * s).toFixed(5); }
+    function v3(x, y, z) { return d(x) + " " + d(y) + " " + d(z); }
+    // The bare skin of the head and legs is a dark shade of the fleece colour.
+    function mix(r, g, b) {
+      return (co.r * r).toFixed(4) + " " + (co.g * g).toFixed(4) + " " + (co.b * b).toFixed(4);
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "sheep"
+    children [
+      DEF SHEEP_FLEECE_BODY Group {
+        children [
+          Pose {
+            translation %<= v3(0.24, 0, 0.60) >%
+            children [
+              DEF SHEEP_FLEECE_BIG Shape {
+                appearance DEF SHEEP_FLEECE PBRAppearance {
+                  baseColor IS color
+                  roughness 1
+                  metalness 0
+                }
+                geometry Sphere {
+                  radius %<= d(0.24) >%
+                  subdivision 3
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0, 0, 0.62) >%
+            children [
+              USE SHEEP_FLEECE_BIG
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.26, 0, 0.60) >%
+            children [
+              USE SHEEP_FLEECE_BIG
+            ]
+          }
+          Pose {
+            translation %<= v3(0.13, 0, 0.76) >%
+            children [
+              DEF SHEEP_FLEECE_SMALL Shape {
+                appearance USE SHEEP_FLEECE
+                geometry Sphere {
+                  radius %<= d(0.15) >%
+                  subdivision 3
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.13, 0, 0.76) >%
+            children [
+              USE SHEEP_FLEECE_SMALL
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.46, 0, 0.70) >%
+            children [
+              Shape {
+                appearance USE SHEEP_FLEECE
+                geometry Sphere {
+                  radius %<= d(0.06) >%
+                  subdivision 2
+                }
+              }
+            ]
+          }
+        ]
+      }
+      DEF SHEEP_LEGS Group {
+        children [
+          Pose {
+            translation %<= v3(0.26, 0.12, 0.20) >%
+            children [
+              DEF SHEEP_LEG Shape {
+                appearance DEF SHEEP_SKIN PBRAppearance {
+                  baseColor %<= mix(0.20, 0.18, 0.17) >%
+                  roughness 0.9
+                  metalness 0
+                }
+                geometry Cylinder {
+                  height %<= d(0.40) >%
+                  radius %<= d(0.032) >%
+                  subdivision 12
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.26, -0.12, 0.20) >%
+            children [
+              USE SHEEP_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.26, 0.12, 0.20) >%
+            children [
+              USE SHEEP_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.26, -0.12, 0.20) >%
+            children [
+              USE SHEEP_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(0.26, 0.12, 0.025) >%
+            children [
+              DEF SHEEP_HOOF Shape {
+                appearance USE SHEEP_SKIN
+                geometry Cylinder {
+                  height %<= d(0.05) >%
+                  radius %<= d(0.038) >%
+                  subdivision 10
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.26, -0.12, 0.025) >%
+            children [
+              USE SHEEP_HOOF
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.26, 0.12, 0.025) >%
+            children [
+              USE SHEEP_HOOF
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.26, -0.12, 0.025) >%
+            children [
+              USE SHEEP_HOOF
+            ]
+          }
+        ]
+      }
+      DEF SHEEP_HEAD Group {
+        children [
+          Pose {
+            translation %<= v3(0.38, 0, 0.76) >%
+            rotation 0 1 0 0.7
+            children [
+              Pose {
+                children [
+                  Shape {
+                    appearance USE SHEEP_SKIN
+                    geometry Cylinder {
+                      height %<= d(0.20) >%
+                      radius %<= d(0.060) >%
+                      subdivision 12
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.50, 0, 0.85) >%
+            rotation 0 1 0 0.25
+            children [
+              Shape {
+                appearance USE SHEEP_SKIN
+                geometry Box {
+                  size %<= v3(0.20, 0.12, 0.14) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.61, 0, 0.815) >%
+            rotation 0 1 0 0.25
+            children [
+              Shape {
+                appearance USE SHEEP_SKIN
+                geometry Box {
+                  size %<= v3(0.07, 0.08, 0.08) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.55, 0.055, 0.89) >%
+            children [
+              DEF SHEEP_EYE Shape {
+                appearance PBRAppearance {
+                  baseColor 0.05 0.04 0.04
+                  roughness 0.4
+                  metalness 0
+                }
+                geometry Sphere {
+                  radius %<= d(0.013) >%
+                  subdivision 2
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.55, -0.055, 0.89) >%
+            children [
+              USE SHEEP_EYE
+            ]
+          }
+          Pose {
+            translation %<= v3(0.44, 0.10, 0.885) >%
+            rotation 1 0 0 -0.45
+            children [
+              DEF SHEEP_EAR Shape {
+                appearance USE SHEEP_SKIN
+                geometry Box {
+                  size %<= v3(0.06, 0.13, 0.025) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.44, -0.10, 0.885) >%
+            rotation 1 0 0 0.45
+            children [
+              USE SHEEP_EAR
+            ]
+          }
+        ]
+      }
+    ]
+    boundingObject Pose {
+      translation %<= v3(0, 0, 0.62) >%
+      children [
+        Box {
+          size %<= v3(0.94, 0.46, 0.50) >%
+        }
+      ]
+    }
+  }
+}

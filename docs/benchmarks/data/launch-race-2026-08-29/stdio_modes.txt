@@ -1,0 +1,9 @@
+SUMMARY launches=8 finalised=8 raced=0 (qt_teardown=0 silent_exit=0) shared_port_rounds=0 failed_other=0 binary=a053df24f40cd303 machine=LAPTOP-H61DJILS
+  [pipe]
+      8 INFO: [main] stdio: stdout is a pipe; stdio left as inherited
+SUMMARY launches=8 finalised=8 raced=0 (qt_teardown=0 silent_exit=0) shared_port_rounds=0 failed_other=0 binary=a053df24f40cd303 machine=LAPTOP-H61DJILS
+  [file]
+      8 INFO: [main] stdio: attached to the parent console (stdout handle type 1); stdout=CONOUT$ stderr=CONOUT$ stdin=CONIN$
+      3 WARNING: [OmNewtonBackend] the embedded interpreter's sys.stderr had no usable descriptor (os.fstat refused it); pointed
+      2 WARNING: [OmNewtonBackend] the embedded interpreter's sys.stdout had no usable descriptor (os.fstat refused it); pointed
+done

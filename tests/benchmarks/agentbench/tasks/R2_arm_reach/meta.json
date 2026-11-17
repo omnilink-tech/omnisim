@@ -1,0 +1,76 @@
+{
+  "id": "R2_arm_reach",
+  "tier": "robotics",
+  "flagship": false,
+  "prompt_file": "prompt.txt",
+  "grader": "agentbench.graders.r2",
+  "par_s": 600,
+  "timeout_s": 1800,
+  "repeats_default": 1,
+  "stresses": "articulated manipulation: build or import a fixed-base arm with at least six joints, actuate it through the simulator's own joint interface, and put its end effector on three Cartesian targets in order -- inverse kinematics plus joint control plus dwell, the canonical manipulation primitive",
+  "initial_state": "an EMPTY project on both arms. The prompt says 'create OR import', so neither simulator is handed a head start and neither is handed a scaffold; whatever arm exists at grading time is the agent's own work",
+  "initial_files": [],
+  "deliverable": "the authored world (graded standalone, cold)",
+  "phases": {
+    "harness": {
+      "enabled": false
+    },
+    "standalone": {
+      "settle_s": 0.0,
+      "duration_s": 35.0,
+      "contact_steps": 0,
+      "note": "the whole reach sequence is recorded and the trajectory IS the evidence. duration_s must exceed DEADLINE_S or 'did it finish inside 30 s' is unanswerable: a recording that stops at 30.0 s cannot tell a run that finished at 30.1 s from one that never finished. The 5 s margin is that headroom and nothing else -- R2.6 still fails anything completing after 30.0 s.",
+      "links": 12
+    }
+  },
+  "constants": {
+    "TARGETS_BASE_FRAME": [
+      [
+        0.45,
+        0.0,
+        0.45
+      ],
+      [
+        0.35,
+        0.25,
+        0.35
+      ],
+      [
+        0.35,
+        -0.25,
+        0.5
+      ]
+    ],
+    "POSITION_TOL_M": 0.05,
+    "DWELL_S": 0.5,
+    "DEADLINE_S": 30.0,
+    "RECORD_DURATION_S": 35.0,
+    "MIN_ARM_JOINTS": 6,
+    "MAX_EE_SPEED_MPS": 2.5,
+    "MAX_SAMPLE_DT_S": 0.05,
+    "MAX_EE_STEP_M": 0.125,
+    "MIN_EE_TRAVEL_M": 0.2,
+    "MAX_BASE_DRIFT_M": 0.02,
+    "MAX_REACH_M": 1.5,
+    "GROUND_CLEARANCE_TOL_M": 0.02
+  },
+  "budget": {
+    "rule": "timeout_s = min(3 x par_s, TASK_HARD_CEILING_S)",
+    "hard_ceiling_s": 2700,
+    "truncated_by_ceiling": false,
+    "ratio_to_par": 3.0,
+    "runs_per_cell": 1,
+    "variance_measured": false,
+    "note": "the full 3x-par rule applies under the 2700 s (45 min) ceiling. ONE run per (task, arm): a single observation is an OUTCOME, never a rate -- pass@1 and a confidence interval are undefined at n = 1 (SPEC 3.5)."
+  },
+  "why_this_is_standard_robotics": "Driving an actuated arm's end effector through a sequence of Cartesian targets is the canonical manipulation primitive -- inverse kinematics plus joint control plus dwell -- and it is the first thing anyone is taught about a manipulator in any simulator. Every primary comparator (OmniSim, Webots, Isaac, Gazebo, CoppeliaSim, Genesis, MuJoCo) documents articulated arms and joint actuators. A simulator that cannot express it is making a statement about itself rather than about the task.",
+  "end_effector_identification": "GEOMETRIC, never by name. R1 shipped a grader that keyed the obstacles on the published OBSTACLE_n names; the first real agent called them 'crate A'..'crate E' and a correct world scored zero obstacles. The same rule applies here and harder, because nothing in the prompt suggests a name for a tool. R2 identifies the arm as the single robot-class body carrying at least MIN_ARM_JOINTS joints, and the end effector as the tracked body -- other than that base -- that stays within MAX_REACH_M of the base for the whole run and travels the furthest. The base is fixed and links nearer the base sweep smaller arcs, so 'within reach and moves the most' IS the tip, in any simulator, under any naming.",
+  "teleport_witness": "The three targets are far enough apart that a jump between any two of them cannot be mistaken for actuation at any sample period the grader accepts. The closest pair is target 1 to target 3, 0.2739 m apart; allowing the jump to start and end at the near EDGE of each 0.05 m tolerance ball leaves 0.1739 m, which still exceeds MAX_EE_STEP_M (0.125 m = MAX_EE_SPEED_MPS x MAX_SAMPLE_DT_S) and, divided by MAX_SAMPLE_DT_S, still exceeds MAX_EE_SPEED_MPS (3.48 m/s against 2.5). MAX_SAMPLE_DT_S exists for exactly this reason: a metre-per-sample bound silently changes meaning with the basic timestep, so the grader refuses to certify 'not teleported' from a recording sampled more coarsely than 50 ms rather than pretending the bound still holds.",
+  "not_expressible": {
+    "self_collision": "NOT ASSERTED, deliberately. The neutral contact channel carries only contacts whose two participants resolve to DIFFERENT robot subtrees -- a self-collision is one robot touching itself, so both participants resolve to the same subtree and the pair is dropped before the grader ever sees it, on both arms. Rather than fake it from geometry the task states the gap: the prompt asks for it, the grader does not score it.",
+    "ground_contact": "not asserted from CONTACTS, for the same reason -- a floor is not a robot, so a robot/floor pair is filtered out of the neutral contact channel on both arms. R2.5 asserts it GEOMETRICALLY instead, against the arm's own mounting datum, and says so.",
+    "actuated_and_revolute": "the neutral evidence carries a JOINT COUNT and nothing finer. Both recorders count HingeJoint/SliderJoint/Hinge2Joint/BallJoint in the robot's subtree without distinguishing motorised from passive, or revolute from prismatic. R2.2 therefore asserts 'at least six joints', not 'at least six actuated revolute joints', and the difference is stated in the assertion's own detail rather than buried here.",
+    "base_orientation": "the neutral evidence carries positions, never orientations. 'In the robot base frame' is therefore read as world axes translated to the base origin -- exact for an axis-aligned mounting (the natural authoring, and the one an agent given base-frame coordinates will choose) and rotated otherwise. An arm deliberately mounted with a yaw would be graded against the wrong axes; that is a real failure mode and it is declared, not hidden."
+  },
+  "status": "RECORDER GAP CLOSED (2026-08-09): both arms now record per-step tracks for robot LINKS, so the end effector is observable and R2.3-R2.6 measure the agent rather than our instrument. phases.standalone.links caps link sampling at 12 per robot; truncation is reported, never silent. The cap is forwarded to the webots launcher too, so neither arm is blind while the other can see."
+}

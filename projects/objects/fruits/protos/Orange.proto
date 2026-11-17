@@ -1,0 +1,60 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/fruits/protos/Orange.proto
+# keywords: household/kitchen
+# A 10 cm orange: a matte orange sphere topped with a short green stalk. The origin sits at the centre of the fruit, so a world places it at z = radius.
+
+PROTO Orange [
+  field SFVec3f    translation 0 0 0.05
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "orange"
+  field SFFloat    mass        0.15      # Defines the mass of the orange in kg.
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      Shape {
+        appearance PBRAppearance {
+          baseColor 0.988235 0.686275 0.243137
+          roughness 0.75
+          metalness 0
+        }
+        geometry DEF ORANGE_SPHERE Sphere {
+          radius 0.05
+          subdivision 3
+        }
+      }
+      # a short woody stalk on the crown of the fruit
+      Pose {
+        translation 0 0 0.052
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.24 0.35 0.14
+              roughness 1
+              metalness 0
+            }
+            geometry Cylinder {
+              radius 0.0035
+              height 0.012
+              subdivision 8
+            }
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "orange"
+    recognitionColors [
+      0.988235 0.686275 0.243137
+    ]
+    boundingObject USE ORANGE_SPHERE
+    physics Physics {
+      density -1
+      mass IS mass
+    }
+  }
+}

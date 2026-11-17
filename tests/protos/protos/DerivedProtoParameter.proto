@@ -1,0 +1,14 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/DerivedSlotContainer.proto"
+
+PROTO DerivedProtoParameter [
+  field MFNode children [
+    DerivedSlotContainer { }
+  ]
+]
+{
+  Solid {
+    children IS children
+  }
+}

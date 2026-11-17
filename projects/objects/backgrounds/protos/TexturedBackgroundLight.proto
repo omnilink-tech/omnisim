@@ -1,0 +1,142 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto
+# tags: no3dView
+# keywords: primitive/background
+# The sun that belongs to a TexturedBackground preset: one DirectionalLight placed by time of day, weather and sky tint.
+#
+# Use the same `texture` value on both PROTOs. OmniSim's procedural sky scatters
+# THIS light's direction and colour through the atmosphere to produce the
+# skybox and the image-based lighting, so the two always agree: move the sun and
+# the sky follows it.
+#
+# Supported values for the `texture` field:
+#
+# - dusk
+# - empty_office
+# - entrance_hall
+# - factory
+# - mars
+# - noon_building_overcast
+# - noon_cloudy_countryside
+# - noon_park_empty
+# - mountains
+# - music_hall
+# - stadium
+# - stadium_dry
+#
+# Deprecated backgrounds:
+#
+# - dawn_cloudy_empty
+# - morning_cloudy_empty
+# - noon_cloudy_empty
+# - noon_cloudy_mountains
+# - noon_stormy_empty
+# - noon_sunny_empty
+# - noon_sunny_garden
+# - twilight_cloudy_empty
+# template language: javascript
+
+PROTO TexturedBackgroundLight [
+  field SFString{"dawn_cloudy_empty", "dusk", "empty_office", "entrance_hall", "factory", "mars", "morning_cloudy_empty", "mountains", "music_hall", "noon_building_overcast", "noon_cloudy_countryside", "noon_cloudy_empty", "noon_cloudy_mountains", "noon_park_empty", "noon_stormy_empty", "noon_sunny_empty", "noon_sunny_garden", "stadium", "stadium_dry", "twilight_cloudy_empty"}
+                 texture        "mountains"  # Should be equivalent to the 'texture' field of the TexturedBackground.
+  field SFFloat  luminosity     1            # Multiplies the `Light.intensity` field.
+  field SFBool   castShadows    TRUE         # Defines whether the light should cast shadows.
+]
+{
+  %<
+    // A sun is fully described by WHERE it is and WHAT COLOUR it is, so that is
+    // how the presets are written here -- as a position on the sky dome plus a
+    // tint -- instead of as a hand-rolled direction vector. `azimuth` is degrees
+    // counter-clockwise from east in the horizontal plane and `elevation` is
+    // degrees above the horizon, which is the same way an almanac quotes a sun
+    // position, and it keeps the table readable: "low and warm" is obvious from
+    // (8 deg, orange) in a way that (-1.2, -0.3, -0.6) never is.
+    //
+    // `intensity` is in the engine's DirectionalLight units. `on: false` marks
+    // the interior and fully-overcast presets, where there is no direct sun to
+    // speak of and the scene is lit by the sky's baked irradiance alone.
+    //
+    // Tints follow the physics of a longer atmospheric path: the lower the sun,
+    // the more blue is scattered out of it and the warmer what is left. Overcast
+    // and stormy skies go the other way -- their light is sky-blue, not sun-white.
+    const SUN = {
+      // Clear, high-altitude daylight. The default preset.
+      'mountains':               {azimuth: 133, elevation: 51, color: [1.0, 1.0, 1.0],       intensity: 2.7},
+      // Floodlit pitch: a hard, near-horizontal key with a faintly cool cast.
+      'stadium':                 {azimuth: 135, elevation: 10, color: [0.95, 0.95, 1.0],     intensity: 2.9},
+      'stadium_dry':             {azimuth: 135, elevation: 10, color: [0.95, 0.95, 1.0],     intensity: 2.9},
+      // Sun on the way down: low, dim, and warmed by the long path through air.
+      'dusk':                    {azimuth: 63,  elevation: 13, color: [1.0, 0.95, 0.80],     intensity: 0.5},
+      // Sun on the way up, behind cloud: lower and more strongly reddened still.
+      'dawn_cloudy_empty':       {azimuth: 359, elevation: 7,  color: [1.0, 0.75, 0.50],     intensity: 0.8},
+      // Last of the light -- almost grazing, deeply warm.
+      'twilight_cloudy_empty':   {azimuth: 305, elevation: 9,  color: [1.0, 0.75, 0.50],     intensity: 1.8},
+      // Mid-morning, softened by cloud but still warm-toned.
+      'morning_cloudy_empty':    {azimuth: 276, elevation: 39, color: [1.0, 0.75, 0.50],     intensity: 0.9},
+      // Midday variants: the sun is high; weather decides colour and strength.
+      'noon_park_empty':         {azimuth: 16,  elevation: 85, color: [0.996, 1.0, 0.92],    intensity: 3.5},
+      'noon_cloudy_countryside': {azimuth: 72,  elevation: 73, color: [0.95, 0.95, 1.0],     intensity: 3.0},
+      'noon_cloudy_empty':       {azimuth: 225, elevation: 74, color: [0.90, 0.90, 1.0],     intensity: 1.0},
+      'noon_cloudy_mountains':   {azimuth: 0,   elevation: 63, color: [0.90, 0.90, 1.0],     intensity: 0.9},
+      'noon_stormy_empty':       {azimuth: 207, elevation: 77, color: [0.90, 0.90, 1.0],     intensity: 0.8},
+      'noon_sunny_empty':        {azimuth: 253, elevation: 32, color: [1.0, 1.0, 1.0],       intensity: 1.0},
+      'noon_sunny_garden':       {azimuth: 162, elevation: 44, color: [0.90, 0.90, 1.0],     intensity: 1.0},
+      // A hall lit through windows: weak, oblique, and off to one side.
+      'music_hall':              {azimuth: 78,  elevation: 37, color: [0.90, 0.90, 1.0],     intensity: 0.5},
+      'empty_office':            {azimuth: 13,  elevation: 29, color: [1.0, 1.0, 1.0],       intensity: 0.05},
+      // Mars: thin, dusty air. Sun overhead, and the light it leaves is ochre.
+      'mars':                    {azimuth: 180, elevation: 90, color: [0.83, 0.83, 0.75],    intensity: 1.0},
+      // No direct sun at all: interiors and a blanket overcast. The sky's own
+      // irradiance does the lighting, so a direct light here would only add a
+      // shadow that the real scene would not have.
+      'noon_building_overcast':  {on: false},
+      'factory':                 {on: false},
+      'entrance_hall':           {on: false}
+    };
+
+    let sun = SUN[fields.texture.value];
+    if (typeof sun === 'undefined') {
+      console.error('TexturedBackgroundLight: unknown texture \'' + fields.texture.value +
+                    '\'. Falling back to \'' + fields.texture.defaultValue + '\'.');
+      sun = SUN[fields.texture.defaultValue];
+    }
+
+    const on = sun.on !== false;
+    const color = on ? sun.color : [1.0, 1.0, 1.0];
+
+    // Negative luminosity would flip the light into a darkness emitter, so clamp.
+    const luminosity = fields.luminosity.value > 0.0 ? fields.luminosity.value : 0.0;
+    const intensity = on ? luminosity * sun.intensity : 0.0;
+
+    // Place the sun on the dome, then point the light the way its rays TRAVEL --
+    // that is, from the sun towards the scene, which is the negation of the
+    // direction you would look to see it.
+    let direction = [0.0, 0.0, -1.0];
+    if (on) {
+      const az = sun.azimuth * Math.PI / 180.0;
+      const el = sun.elevation * Math.PI / 180.0;
+      // East-North-Up, OmniSim's native frame.
+      const toSun = [Math.cos(el) * Math.cos(az), Math.cos(el) * Math.sin(az), Math.sin(el)];
+      direction = [-toSun[0], -toSun[1], -toSun[2]];
+    }
+
+    // Worlds may declare a different axis convention. Re-order the ENU vector
+    // into whichever one this world uses; the sun stays in the same place in
+    // the sky either way.
+    const cs = context.coordinate_system;
+    if (cs === 'NUE')       // north, up, east
+      direction = [direction[1], direction[2], direction[0]];
+    else if (cs === 'EUN')  // east, up, north
+      direction = [direction[0], direction[2], direction[1]];
+  >%
+  DirectionalLight {
+    ambientIntensity 1
+    direction %<= direction[0] >% %<= direction[1] >% %<= direction[2] >%
+    color %<= color[0] >% %<= color[1] >% %<= color[2] >%
+    intensity %<= intensity >%
+    on %<= on ? 'TRUE' : 'FALSE' >%
+    castShadows IS castShadows
+  }
+}

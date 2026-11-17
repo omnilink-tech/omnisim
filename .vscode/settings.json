@@ -1,0 +1,90 @@
+{
+    // --- C/C++ (cpptools): parse the real sources only, at low priority ---
+    // The default includePath/browse.path is "${workspaceFolder}/**", which walks
+    // msys64/, the release worktree, run evidence and social/ (5 CPU-hours on 2026-09-25).
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/include",
+        "${workspaceFolder}/include/controller/c",
+        "${workspaceFolder}/include/controller/cpp",
+        "${workspaceFolder}/src/omnisim/**",
+        "${workspaceFolder}/src/controller/**",
+        "${workspaceFolder}/src/glad/**",
+        "${workspaceFolder}/src/glm",
+        "${workspaceFolder}/src/stb"
+    ],
+    "C_Cpp.default.browse.path": [
+        "${workspaceFolder}/include",
+        "${workspaceFolder}/src/omnisim",
+        "${workspaceFolder}/src/controller",
+        "${workspaceFolder}/lib/controller",
+        "${workspaceFolder}/resources/projects"
+    ],
+    "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
+    "C_Cpp.workspaceParsingPriority": "low",
+    "C_Cpp.maxConcurrentThreads": 2,
+    "C_Cpp.maxCachedProcesses": 2,
+    "C_Cpp.intelliSenseMemoryLimit": 2048,
+    "C_Cpp.files.exclude": {
+        "**/.git": true,
+        "**/msys64": true,
+        "**/node_modules": true,
+        "**/.pnpm-store": true,
+        "**/.claude/worktrees": true,
+        "**/.public-release-worktree": true,
+        "**/.tmp": true,
+        "**/.tmp-*": true,
+        "**/.build_tmp": true,
+        "**/.cache": true,
+        "**/.benchmarks": true,
+        "**/.local-*": true,
+        "**/_scratch": true,
+        "**/tmp": true,
+        "**/outputs": true,
+        "**/social": true,
+        "**/youtube_videos": true,
+        "**/3d_models": true,
+        "**/NVIDIA": true,
+        "**/dependencies": true,
+        "**/distribution": true,
+        "**/Contents": true,
+        "**/omnilink-docs": true,
+        "**/omnilink-reports": true,
+        "**/external_docs": true,
+        "**/tests/benchmarks/**/evidence": true,
+        "**/src/glm": true,
+        "**/src/stb": true
+    },
+
+    // --- VS Code's own file watcher and search: same heavy trees ---
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/msys64/**": true,
+        "**/node_modules/**": true,
+        "**/.pnpm-store/**": true,
+        "**/.claude/worktrees/**": true,
+        "**/.public-release-worktree/**": true,
+        "**/.tmp/**": true,
+        "**/.tmp-*/**": true,
+        "**/.build_tmp/**": true,
+        "**/.cache/**": true,
+        "**/.local-*/**": true,
+        "**/_scratch/**": true,
+        "**/tmp/**": true,
+        "**/outputs/**": true,
+        "**/social/**": true,
+        "**/youtube_videos/**": true,
+        "**/tests/benchmarks/**/evidence/**": true
+    },
+    "search.exclude": {
+        "**/msys64": true,
+        "**/.claude/worktrees": true,
+        "**/.public-release-worktree": true,
+        "**/.tmp": true,
+        "**/.build_tmp": true,
+        "**/_scratch": true,
+        "**/social": true,
+        "**/tests/benchmarks/**/evidence": true,
+        "**/src/glm": true,
+        "**/src/stb": true
+    }
+}

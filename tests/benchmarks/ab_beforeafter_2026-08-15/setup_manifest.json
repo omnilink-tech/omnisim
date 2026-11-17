@@ -1,0 +1,62 @@
+{
+ "utc": "2026-08-12T13:47:08Z",
+ "task": "A1_husky_swarm_10",
+ "model": "claude-opus-5",
+ "cells_per_arm": 3,
+ "session_budget_s": 600,
+ "machine": "NVIDIA GeForce RTX 3060 Laptop GPU",
+ "arms": {
+  "A_before": {
+   "worktree": "o:\\omnisim-ab\\armA",
+   "commit": "fc98988675bd7cd72712846f777db7a51bf92a74",
+   "engine_sha256": "8a6f8bc54194dd582d65744ebb58a732142c269ae768c677ad2bddac2f6455df",
+   "libcontroller_sha256": "296300cdaa09be84dcd8e325ace3cb226d09a954d337daa39e755a5902d1bf47",
+   "product": {
+    "scripts/harness": {
+     "tree_sha256": "35597b11073727ea69d67bea1b84ab144e1f045f01e96b935d403b7f4c39d17a",
+     "files": 4
+    },
+    "scripts/capture": {
+     "tree_sha256": "7328fa6d6a3c55fb54e9089668e8b1160e4322c2831601de31a21e38037016cd",
+     "files": 26
+    },
+    "docs/reference": {
+     "tree_sha256": "8097f5267871b19ac219a1d55c1bb17a3d9734256626f132c5cdc3a6b68fd337",
+     "files": 213
+    },
+    "resources/nodes/WorldInfo.wrl": "7240c382de670b2a1bb61703b2124057d842c1e312d304bffbd70aa8eebb09fd",
+    "scripts/dev/set_viewpoint.py": "e6a9677ec006f3de56a62ab3de51ad338d4a276d8069e562aa2e1622d62a6699",
+    "AGENTS.md": "400fa28e86b37a43215b2205640a5490ecd427132c679794ce0cbc933879e18b"
+   },
+   "instrument_cc_lane_sha256": "049faa38bd7cb17b966c5ef4f99261a6808aa4de6184cf5d28105046807c7be3",
+   "instrument_cc_lane_files": 14
+  },
+  "B_after": {
+   "worktree": "o:\\omnisim-ab\\armB",
+   "commit": "5ca03b4a853c187c4874b357e063efd13407e8e6",
+   "engine_sha256": "80f84007b162be58722e0210323bcf6697fe06cb815b44328319da04c678514b",
+   "libcontroller_sha256": "296300cdaa09be84dcd8e325ace3cb226d09a954d337daa39e755a5902d1bf47",
+   "product": {
+    "scripts/harness": {
+     "tree_sha256": "30a7dccc8a2d0068a62df68ebce6a3ccee3105b80eb6592c0f77d4d37c7f0c98",
+     "files": 4
+    },
+    "scripts/capture": {
+     "tree_sha256": "8514ed7df66eb2db14494851dfffd595656d723e1a4b3c493c66383dd28f9bdd",
+     "files": 26
+    },
+    "docs/reference": {
+     "tree_sha256": "c12e20512e02a25fb934379c3a0a170163f7d6c8cca09d899e13db7bbf1d224f",
+     "files": 213
+    },
+    "resources/nodes/WorldInfo.wrl": "680d357492242ff1e92203c6fb5100fcbba15f6b972ab4485115f9632c2cf144",
+    "scripts/dev/set_viewpoint.py": "73137682bafe29358e73558194e04361cad89ad741cc26aa04812066f62893dc",
+    "AGENTS.md": "400fa28e86b37a43215b2205640a5490ecd427132c679794ce0cbc933879e18b"
+   },
+   "instrument_cc_lane_sha256": "049faa38bd7cb17b966c5ef4f99261a6808aa4de6184cf5d28105046807c7be3",
+   "instrument_cc_lane_files": 14
+  }
+ },
+ "instrument_identical": true,
+ "instrument_source": "HEAD (8976b86d1), overlaid into both worktrees"
+}

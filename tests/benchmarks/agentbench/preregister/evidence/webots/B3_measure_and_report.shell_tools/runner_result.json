@@ -1,0 +1,59 @@
+{
+  "final_message": "The two robots are 6.78 m apart centre to centre (planar offset (6.4, 2.2) plus 0.4 m of height). The taller one is husky_plinth, which stands on the 0.4 m plinth.",
+  "stop_reason": "model_stopped",
+  "stop_detail": "end_turn",
+  "self_verified": true,
+  "usd": null,
+  "tool_set": "shell_plus_tools",
+  "tools_sha256": "a624c7f4a42205322f54b1574cddecdd9022f2888aae99c1b1c69d794c2895ca",
+  "manifest_sha256": "00219b2bd161f880595e9b0e65668cba7152c0d4c3ea597f242c1160c5dae1f1",
+  "system_prompt_sha": "19759dc6c55d0b1e16f5584911dbf05b81d51427ca3c3c681878e4071fb736ef",
+  "system_full_sha": "7ef6bb2ac204a0bac295ea1481a2601fe18a3c7ea8707db62172952584732ae6",
+  "backend": {
+    "backend": "scripted",
+    "model": "scripted:oracle_b3_webots",
+    "temperature": null,
+    "script": "O:\\omnisim\\tests\\benchmarks\\agentbench\\runner\\scripts\\oracle_b3_webots.json",
+    "script_name": "oracle_b3_webots",
+    "script_turns": 2,
+    "usage_is_synthetic": true
+  },
+  "sandbox": {
+    "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools",
+    "scratch_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools\\scratch",
+    "repo": "O:\\omnisim",
+    "harness_port": 7100,
+    "supervisor_port": 7101,
+    "log_path": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools\\agent_engine.log",
+    "shell": [
+      "C:\\Program Files\\Git\\usr\\bin\\bash.EXE",
+      "-lc"
+    ],
+    "shell_source": "which:C:\\Program Files\\Git\\usr\\bin\\bash.EXE",
+    "read_deny": [],
+    "deviations": []
+  },
+  "deviations": [],
+  "artifacts": {
+    "trace": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools\\trace.jsonl",
+    "tool_set_manifest": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools\\tool_set.shell_plus_tools.json",
+    "leak_suspect_tool_calls": 0,
+    "tokens_cache_write": null,
+    "system_prompt": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools\\system_prompt.txt"
+  },
+  "error": null,
+  "port_survivors": [],
+  "metrics": {
+    "turns": 1,
+    "model_calls": 2,
+    "tool_calls": 1,
+    "tokens_in": 8000,
+    "tokens_out": 460,
+    "tokens_cache_read": null,
+    "tokens_cache_write": null,
+    "elapsed_s": 0.533,
+    "stop_reason": "model_stopped",
+    "stop_detail": "end_turn"
+  },
+  "hit_budget": false
+}

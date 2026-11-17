@@ -1,0 +1,176 @@
+#OMNISIM R2025a utf8
+
+# Agent Build Film challenge: one Husky, one continuous extreme-terrain course.
+# The adaptive controller knows the frozen centreline; it does not write pose.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/DryMud.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Roughcast.proto"
+EXTERNPROTO "omnisim://projects/objects/rocks/protos/RockHD.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husky Extreme Terrain — Agent Build"
+  info [
+    "A fixed-throttle baseline and an attitude-aware controller face the same physical course."
+    "The adaptive controller receives pose, attitude, and a frozen course centreline."
+    "No pose writes, teleportation, or kinematic goal snap are used."
+  ]
+  newtonSolver "mujoco"
+  newtonStatics TRUE
+  newtonRobotColliders TRUE
+  newtonCompoundColliders TRUE
+  newtonSubsteps 4
+  # Preserve forward traction while allowing the lateral scrub a four-wheel
+  # skid-steer needs to turn on dry terrain.
+  newtonGroundMu 0.42
+}
+
+Viewpoint {
+  position -9.536 -4.219 4.178
+  orientation -0.278945 0.120681 0.952694 2.359689
+  fieldOfView 0.88
+  near 0.1
+  far 300
+  exposure 0.68
+  ambientOcclusionRadius 2.4
+  bloomThreshold 10
+}
+
+OmniSimSky { luminosity 1.12 }
+DEF SUN OmniSimSun {
+  color 1.0 0.90 0.78
+  intensity 2.30
+  ambientIntensity 0.08
+  castShadows TRUE
+}
+DEF SUN_MARKER OmniSimSunMarker { translation -28 -32 34 }
+
+Floor {
+  name "extreme terrain course"
+  size 34 12
+  tileSize 6 6
+  appearance DryMud {
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 8 3 }
+  }
+}
+
+# Low perimeter berms define the course without hiding the robot from the
+# locked regional cameras.
+DEF NORTH_BERM Solid {
+  translation 0 5.35 0.20
+  children [ Shape {
+    appearance PBRAppearance { baseColor 0.10 0.12 0.14 roughness 0.86 metalness 0.04 }
+    geometry DEF NORTH_BERM_GEOM Box { size 33.4 0.42 0.40 }
+  } ]
+  boundingObject USE NORTH_BERM_GEOM
+}
+DEF SOUTH_BERM Solid {
+  translation 0 -5.35 0.20
+  children [ Shape {
+    appearance PBRAppearance { baseColor 0.10 0.12 0.14 roughness 0.86 metalness 0.04 }
+    geometry DEF SOUTH_BERM_GEOM Box { size 33.4 0.42 0.40 }
+  } ]
+  boundingObject USE SOUTH_BERM_GEOM
+}
+
+# ACT I is the failed terrain-mesh experiment documented in the film's evidence
+# bundle.  The final course keeps the drivable surface inspectable and moves
+# difficulty into explicit convex obstacles instead of a hidden mesh trap.
+
+# ACT II — the gates create a real alternating chicane. Their openings are
+# deliberately wider than the Husky; hitting one is a control failure, not an
+# impossible geometry trick.
+DEF GATE_1 Solid {
+  translation -6.35 -2.55 0.48
+  children [ Shape {
+    appearance Roughcast { colorOverride 0.42 0.16 0.08 IBLStrength 1.20 textureTransform TextureTransform { scale 1.2 4 } }
+    geometry DEF GATE_1_GEOM Box { size 0.38 4.4 0.96 }
+  } ]
+  boundingObject USE GATE_1_GEOM
+}
+DEF GATE_2 Solid {
+  translation 0 2.55 0.48
+  children [ Shape {
+    appearance Roughcast { colorOverride 0.48 0.19 0.08 IBLStrength 1.20 textureTransform TextureTransform { scale 1.2 4 } }
+    geometry DEF GATE_2_GEOM Box { size 0.38 4.4 0.96 }
+  } ]
+  boundingObject USE GATE_2_GEOM
+}
+DEF GATE_3 Solid {
+  translation 6.0 -2.55 0.48
+  children [ Shape {
+    appearance Roughcast { colorOverride 0.55 0.22 0.07 IBLStrength 1.20 textureTransform TextureTransform { scale 1.2 4 } }
+    geometry DEF GATE_3_GEOM Box { size 0.38 4.4 0.96 }
+  } ]
+  boundingObject USE GATE_3_GEOM
+}
+
+# Sparse real rock contacts crowd the exit line without turning the course
+# into the physically impossible solid rock carpet used in the first failed
+# prototype.
+RockHD { name "rock_n1" translation -11.0 3.95 0.68 rotation 0 0 1 0.40 scale 14.0 }
+RockHD { name "rock_s1" translation -8.4 -3.95 0.58 rotation 0 0 1 2.10 scale 12.0 }
+RockHD { name "rock_n2" translation -6.6 3.90 0.82 rotation 0 0 1 1.10 scale 17.0 }
+RockHD { name "rock_s2" translation -4.2 -4.00 0.68 rotation 0 0 1 4.30 scale 14.0 }
+RockHD { name "rock_n3" translation -1.8 3.95 0.73 rotation 0 0 1 5.20 scale 15.0 }
+RockHD { name "rock_s3" translation 0.7 -3.95 0.63 rotation 0 0 1 2.80 scale 13.0 }
+RockHD { name "rock_mid_l" translation 3.0 3.90 0.78 rotation 0 0 1 0.25 scale 16.0 }
+RockHD { name "rock_mid_r" translation 4.6 -4.00 0.73 rotation 0 0 1 2.25 scale 15.0 }
+RockHD { name "rock_exit_l" translation 6.5 3.90 0.87 rotation 0 0 1 0.80 scale 18.0 }
+RockHD { name "rock_exit_r" translation 8.0 -3.90 0.78 rotation 0 0 1 3.70 scale 16.0 }
+RockHD { name "rock_final_l" translation 10.2 3.85 0.68 rotation 0 0 1 1.70 scale 14.0 }
+RockHD { name "rock_final_r" translation 11.8 -3.90 0.73 rotation 0 0 1 4.80 scale 15.0 }
+
+# ACT III narrows the rolling surface into a visually legible final corridor.
+# The rails are visual guides outside the robot's line, not hidden colliders.
+Solid {
+  translation 9.75 1.34 0.24
+  children [ Shape {
+    appearance PBRAppearance { baseColor 0.03 0.70 0.82 emissiveColor 0.00 0.20 0.28 roughness 0.32 metalness 0.22 }
+    geometry Box { size 6.2 0.08 0.10 }
+  } ]
+}
+Solid {
+  translation 9.75 -1.34 0.24
+  children [ Shape {
+    appearance PBRAppearance { baseColor 0.03 0.70 0.82 emissiveColor 0.00 0.20 0.28 roughness 0.32 metalness 0.22 }
+    geometry Box { size 6.2 0.08 0.10 }
+  } ]
+}
+
+DEF GOAL_BEACON Solid {
+  translation 13.65 0 0
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.03 0.82 0.52 emissiveColor 0.00 0.24 0.10 roughness 0.28 metalness 0.16 }
+      geometry Cylinder { height 0.06 radius 0.92 }
+    }
+    Transform {
+      translation 0 0 1.10
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.02 0.95 0.58 emissiveColor 0.00 0.40 0.16 roughness 0.24 metalness 0.14 }
+        geometry Cylinder { height 2.0 radius 0.045 }
+      } ]
+    }
+    Transform {
+      translation 0 0 2.12
+      children [ Shape {
+        appearance PBRAppearance { baseColor 0.02 0.95 0.58 emissiveColor 0.00 0.40 0.16 roughness 0.24 metalness 0.14 }
+        geometry Sphere { radius 0.18 subdivision 3 }
+      } ]
+    }
+  ]
+}
+
+DEF HUSKY URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -13.5 0 0.22
+  name "husky_extreme_terrain"
+  supervisor TRUE
+  controller "husky_extreme_terrain"
+}

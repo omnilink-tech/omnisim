@@ -1,0 +1,46 @@
+[solve] bridge: http://127.0.0.1:6070
+[solve] world_title = 'Husky Maze'  map_available = True
+[solve] max_linear = 0.99 m/s, max_angular = 3.47 rad/s, lidar = 16 rays @ 8.0 m
+[solve] strategy: BFS over known map
+[solve] plan: 73 cells from (0, 10) to (10, 0)
+[solve] step  1/72: turn   -90Â° to face (0,9)
+Traceback (most recent call last):
+  File "O:\omnisim\agents\production\husky_maze\solve.py", line 82, in _http
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\urllib\request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\urllib\request.py", line 521, in open
+    response = meth(req, response)
+               ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\urllib\request.py", line 630, in http_response
+    response = self.parent.error(
+               ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\urllib\request.py", line 559, in error
+    return self._call_chain(*args)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\urllib\request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\urllib\request.py", line 639, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 410: Gone
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "O:\omnisim\agents\production\husky_maze\solve.py", line 449, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "O:\omnisim\agents\production\husky_maze\solve.py", line 444, in main
+    return solve_known_map(caps)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "O:\omnisim\agents\production\husky_maze\solve.py", line 161, in solve_known_map
+    return _drive_path(path)
+           ^^^^^^^^^^^^^^^^^
+  File "O:\omnisim\agents\production\husky_maze\solve.py", line 365, in _drive_path
+    _http("POST", "action", {
+  File "O:\omnisim\agents\production\husky_maze\solve.py", line 85, in _http
+    raise RuntimeError(
+RuntimeError: bridge unreachable at http://127.0.0.1:6070/action: Gone

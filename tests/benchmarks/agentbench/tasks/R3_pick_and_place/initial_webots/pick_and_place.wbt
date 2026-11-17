@@ -1,0 +1,334 @@
+#VRML_SIM R2025a utf8
+
+# AgentBench R3 pick_and_place -- initial state: the SCENE, and only the scene.
+# UPSTREAM WEBOTS R2025a arm.
+#
+# Floor, table, cube and bin, at the coordinates benchmark_assets/scene.json
+# declares. The manipulator is the agent's work (benchmark_assets/arm.json says
+# where its base must sit and what it must reach).
+#
+# GEOMETRY IS LOAD-BEARING and is BYTE-IDENTICAL to the OmniSim arm's copy of
+# this world from the first body onwards -- graders/test_r3_core.py compares
+# the two files' geometry text directly, because a cross-simulator comparison
+# is only like-for-like if the scene is. Do not edit one arm alone.
+#
+# NOTHING ELSE IS DOCUMENTED HERE ON PURPOSE. This world carries the engine's
+# ORDINARY defaults; no contact, friction or solver parameter is tuned for
+# grasping on either arm. (This header mirrors the OmniSim arm's initial world,
+# which carries the same non-disclosure.)
+
+WorldInfo {
+  basicTimeStep 16
+  title "AgentBench R3 - pick and place"
+}
+Viewpoint {
+  orientation 0 0.32598 0.94538 2.2258
+  position 1.6 -1.3 1.3
+}
+Background {
+  skyColor [
+    0.55 0.65 0.8
+  ]
+}
+DirectionalLight {
+  direction 0.3 -0.5 -0.8
+  intensity 2.5
+  castShadows FALSE
+}
+
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  name "floor"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.47 0.50
+        roughness 0.95
+        metalness 0
+      }
+      geometry Box {
+        size 6 6 0.1
+      }
+    }
+  ]
+  boundingObject Box {
+    size 6 6 0.1
+  }
+}
+
+DEF TABLE Solid {
+  translation 0.5 0.15 0
+  name "table"
+  children [
+    Pose {
+      translation 0 0 0.725
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.72 0.60 0.42
+            roughness 0.8
+            metalness 0
+          }
+          geometry Box {
+            size 0.7 0.9 0.05
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0.3 0.4 0.35
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.35 0.32 0.30
+            roughness 0.7
+            metalness 0
+          }
+          geometry Box {
+            size 0.05 0.05 0.7
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0.3 -0.4 0.35
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.35 0.32 0.30
+            roughness 0.7
+            metalness 0
+          }
+          geometry Box {
+            size 0.05 0.05 0.7
+          }
+        }
+      ]
+    }
+    Pose {
+      translation -0.3 0.4 0.35
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.35 0.32 0.30
+            roughness 0.7
+            metalness 0
+          }
+          geometry Box {
+            size 0.05 0.05 0.7
+          }
+        }
+      ]
+    }
+    Pose {
+      translation -0.3 -0.4 0.35
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.35 0.32 0.30
+            roughness 0.7
+            metalness 0
+          }
+          geometry Box {
+            size 0.05 0.05 0.7
+          }
+        }
+      ]
+    }
+  ]
+  boundingObject Group {
+    children [
+      Pose {
+        translation 0 0 0.725
+        children [
+          Box {
+            size 0.7 0.9 0.05
+          }
+        ]
+      }
+      Pose {
+        translation 0.3 0.4 0.35
+        children [
+          Box {
+            size 0.05 0.05 0.7
+          }
+        ]
+      }
+      Pose {
+        translation 0.3 -0.4 0.35
+        children [
+          Box {
+            size 0.05 0.05 0.7
+          }
+        ]
+      }
+      Pose {
+        translation -0.3 0.4 0.35
+        children [
+          Box {
+            size 0.05 0.05 0.7
+          }
+        ]
+      }
+      Pose {
+        translation -0.3 -0.4 0.35
+        children [
+          Box {
+            size 0.05 0.05 0.7
+          }
+        ]
+      }
+    ]
+  }
+}
+
+DEF BIN Solid {
+  translation 0.3 0.35 0.8
+  name "bin"
+  children [
+    Pose {
+      translation 0 0 -0.045
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.25 0.45 0.65
+            roughness 0.6
+            metalness 0
+          }
+          geometry Box {
+            size 0.16 0.16 0.01
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0.075 0 0.005
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.25 0.45 0.65
+            roughness 0.6
+            metalness 0
+          }
+          geometry Box {
+            size 0.01 0.16 0.09
+          }
+        }
+      ]
+    }
+    Pose {
+      translation -0.075 0 0.005
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.25 0.45 0.65
+            roughness 0.6
+            metalness 0
+          }
+          geometry Box {
+            size 0.01 0.16 0.09
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0.075 0.005
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.25 0.45 0.65
+            roughness 0.6
+            metalness 0
+          }
+          geometry Box {
+            size 0.14 0.01 0.09
+          }
+        }
+      ]
+    }
+    Pose {
+      translation 0 -0.075 0.005
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.25 0.45 0.65
+            roughness 0.6
+            metalness 0
+          }
+          geometry Box {
+            size 0.14 0.01 0.09
+          }
+        }
+      ]
+    }
+  ]
+  boundingObject Group {
+    children [
+      Pose {
+        translation 0 0 -0.045
+        children [
+          Box {
+            size 0.16 0.16 0.01
+          }
+        ]
+      }
+      Pose {
+        translation 0.075 0 0.005
+        children [
+          Box {
+            size 0.01 0.16 0.09
+          }
+        ]
+      }
+      Pose {
+        translation -0.075 0 0.005
+        children [
+          Box {
+            size 0.01 0.16 0.09
+          }
+        ]
+      }
+      Pose {
+        translation 0 0.075 0.005
+        children [
+          Box {
+            size 0.14 0.01 0.09
+          }
+        ]
+      }
+      Pose {
+        translation 0 -0.075 0.005
+        children [
+          Box {
+            size 0.14 0.01 0.09
+          }
+        ]
+      }
+    ]
+  }
+}
+
+DEF CUBE Robot {
+  translation 0.45 0 0.8
+  name "cube"
+  controller "<none>"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.55 0.15
+        roughness 0.6
+        metalness 0
+      }
+      geometry Box {
+        size 0.05 0.05 0.05
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.05 0.05 0.05
+  }
+  physics Physics {
+    density -1
+    mass 0.1
+  }
+}

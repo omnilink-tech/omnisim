@@ -1,0 +1,65 @@
+Licence notice for ansi_up.js
+=============================
+
+`ansi_up.js` in this directory declares its licence in its own banner but
+carries NO copyright line:
+
+    /*  ansi_up.js
+     *  author : Dru Nelson
+     *  license : MIT
+     *  http://github.com/drudru/ansi_up
+     */
+
+The MIT licence requires that "the above copyright notice and this permission
+notice shall be included in all copies or substantial portions of the
+Software". The file supplies neither, so this notice supplies both beside it.
+The .js file itself is byte-unmodified.
+
+
+-------------------------------------------------------------------------
+The MIT Licence
+-------------------------------------------------------------------------
+
+Copyright (c) Dru Nelson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-------------------------------------------------------------------------
+
+
+Provenance and sourcing
+-----------------------
+
+Upstream project   ansi_up -- http://github.com/drudru/ansi_up
+Author             Dru Nelson (from the file's own banner)
+Licence            MIT (from the file's own banner)
+Version vendored   5.1.0 (from the file's own `VERSION = "5.1.0"`)
+
+The holder, the licence name and the version are all read out of the vendored
+file. The MIT text above is the standard, unmodified form of that licence.
+
+
+Unresolved
+----------
+
+  * THE COPYRIGHT YEAR IS NOT STATED ANYWHERE IN THE FILE, and no year has
+    been inferred here -- the copyright line above deliberately names the
+    holder without a year rather than assert one that cannot be sourced. A
+    copyright without a stated year is still a valid copyright; the omission
+    is upstream's, not this repository's.

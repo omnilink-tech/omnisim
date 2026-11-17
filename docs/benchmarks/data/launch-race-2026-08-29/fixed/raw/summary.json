@@ -1,0 +1,137 @@
+{
+ "summary": {
+  "provenance": {
+   "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+   "binary_sha256_16": "1c81f13df0d311c1",
+   "binary_mtime": "2026-08-29 20:13:40",
+   "machine": "LAPTOP-H61DJILS",
+   "platform": "Windows-11-10.0.26200-SP0",
+   "mode": "raw",
+   "gap_s": 0.0,
+   "stdio": "devnull",
+   "worlds": [
+    "projects\\samples\\demos\\worlds\\physics\\newton_smoke_test.omniworld"
+   ]
+  },
+  "launches": 10,
+  "finalised": 10,
+  "raced": 0,
+  "raced_qt_teardown": 0,
+  "raced_silent_exit": 0,
+  "shared_port_rounds": 0,
+  "failed_other": 0,
+  "race_rate": 0.0
+ },
+ "rows": [
+  {
+   "rc": null,
+   "finalised": true,
+   "secs": 5.91,
+   "i": 0,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 23
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "secs": 5.87,
+   "i": 1,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 23
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "secs": 5.95,
+   "i": 2,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 20
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "secs": 5.46,
+   "i": 3,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 20
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "secs": 6.51,
+   "i": 4,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 19
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "secs": 8.04,
+   "i": 5,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 20
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "secs": 6.9,
+   "i": 6,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 23
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "secs": 5.82,
+   "i": 7,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 19
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "secs": 5.88,
+   "i": 8,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 18
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "secs": 5.99,
+   "i": 9,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 22
+  }
+ ]
+}

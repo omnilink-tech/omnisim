@@ -1,0 +1,15 @@
+{
+  "name": "m20_piper_patrol",
+  "display_name": "M20 Piper Patrol",
+  "world": "projects/samples/demos/worlds/chat/omnilink_m20_piper.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/m20_piper_patrol/run.py",
+  "description": "m20_piper \u2014 stand, cover ground, and settle. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "quadruped",
+    "patrol",
+    "m20_piper",
+    "catalogue",
+    "generated"
+  ]
+}

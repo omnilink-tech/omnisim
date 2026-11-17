@@ -1,0 +1,17 @@
+Calibration feedback 04 -- 2026-09-26, from evidence/shift-calibration-holdout-04 (4 oracle + 3
+oracle_bad, one process of 7) and evidence/shift-calibration-dev-04.
+
+shift_holdout_v1 (sha256 03b8c8a5...)
+  oracle: passed every check (35/35) in 4 of 4 runs.
+  oracle_bad did NOT fail: 5:reached, 10:prop_still (3 of 3 runs)
+
+shift_dev_v1 (sha256 f9c9a8aa...)
+  oracle: 35/35.
+  oracle_bad did NOT fail: 0:reached, 6:reached, 11:prop_still
+
+Why, and it is not the author's doing: the robot's bridge now plans drive_to routes around
+keep-out zones and learned obstacles, REFUSES a drive_to whose target lies inside a zone, and
+stops any drive the moment it starts pushing something. A wrong behaviour scripted with drive_to
+is therefore corrected by the bridge before it can happen. A calibration_bad that must push the
+pallet or enter a zone has to use raw motion the bridge does not plan: turn toward the target,
+then set_velocity {"v": 0.5, "w": 0}, _wait the seconds needed, then stop_robot.

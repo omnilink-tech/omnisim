@@ -1,0 +1,14 @@
+# GranularGroup — M2 skeleton of the GPU-resident granular particle group.
+# Particles live in a CUDA buffer when OMNISIM_WITH_CUDA is on; on builds
+# without CUDA, the node parses, occupies the scene tree, and stays inert
+# (one-time CUDA_NOT_AVAILABLE warning). See
+# docs/developer/cuda-compute-infrastructure-plan.md.
+
+GranularGroup {
+  field SFFloat radius            0.05      # uniform sphere radius (m)
+  field SFInt32 count             1000      # particle count (>= 0)
+  field MFVec3f initialPositions  []        # optional per-particle seed
+  field SFNode  contactMaterial   NULL      # ContactProperties, deferred
+  field SFFloat boundsHalfWidth   1.0       # half-extent (m) of the bounding box on the two non-up axes
+  field SFFloat mass              0.005     # uniform per-particle mass (kg); larger = heavier pile, robot slows down more
+}

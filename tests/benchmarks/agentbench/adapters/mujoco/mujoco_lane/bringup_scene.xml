@@ -1,0 +1,79 @@
+<!--
+  AgentBench MuJoCo lane - bring-up scene.
+
+  NOT a task fixture and not a benchmark world: this is the smallest scene that
+  exercises every channel of the neutral evidence bundle at once, so the arm can
+  be proven end to end without any other simulator on the machine.
+
+    * a ground PLANE          -> the world-geom inventory path, and the
+                                 documented "a MuJoCo plane is infinite for
+                                 collision" AABB caveat
+    * two named WALL geoms    -> static scenery written the way MJCF actually
+                                 writes it (bare geoms on <worldbody>), which is
+                                 what makes "did it hit a wall" answerable
+    * a free BOX above them   -> a body that falls, lands, and produces a
+                                 contact naming two distinct participants
+    * a 2-joint wheeled BODY  -> the robot predicate: a top-level body whose
+                                 subtree an <actuator> can drive, with its two
+                                 wheels as LINKS of it
+    * an unactuated CRATE     -> the control case: a free body is not a robot
+
+  Deliberately unnamed: nothing here is called "husky". MuJoCo ships no Husky
+  and this scene does not pretend otherwise.
+-->
+<mujoco model="agentbench_bringup">
+  <option timestep="0.002" integrator="implicitfast"/>
+  <compiler autolimits="true"/>
+
+  <default>
+    <geom friction="1.0 0.005 0.0001"/>
+  </default>
+
+  <worldbody>
+    <light pos="0 0 3" dir="0 0 -1"/>
+    <camera name="overview" pos="-3 -3 2.5" xyaxes="0.707 -0.707 0 0.3 0.3 0.9"
+            fovy="55" resolution="1280 720"/>
+
+    <geom name="floor" type="plane" size="6 6 0.1" rgba="0.4 0.45 0.5 1"/>
+    <geom name="wall_north" type="box" pos="0 3 0.4" size="3 0.1 0.4"
+          rgba="0.7 0.7 0.7 1"/>
+    <geom name="wall_east" type="box" pos="3 0 0.4" size="0.1 3 0.4"
+          rgba="0.7 0.7 0.7 1"/>
+
+    <body name="rover" pos="0 0 0.15">
+      <freejoint name="rover_free"/>
+      <geom name="chassis" type="box" size="0.25 0.16 0.06" mass="6"/>
+      <geom name="caster" type="sphere" pos="0.22 0 -0.09" size="0.055"
+            mass="0.2" friction="0.02 0.005 0.0001"/>
+      <body name="wheel_left" pos="-0.1 0.19 -0.02">
+        <joint name="wheel_left_joint" type="hinge" axis="0 1 0"/>
+        <geom name="wheel_left_tyre" type="cylinder" size="0.13 0.04"
+              quat="0.7071068 0.7071068 0 0" mass="0.8"/>
+      </body>
+      <body name="wheel_right" pos="-0.1 -0.19 -0.02">
+        <joint name="wheel_right_joint" type="hinge" axis="0 1 0"/>
+        <geom name="wheel_right_tyre" type="cylinder" size="0.13 0.04"
+              quat="0.7071068 0.7071068 0 0" mass="0.8"/>
+      </body>
+    </body>
+
+    <body name="dropped_box" pos="1.5 1.2 0.9">
+      <freejoint name="dropped_box_free"/>
+      <geom name="dropped_box_geom" type="box" size="0.15 0.15 0.15"
+            mass="2" rgba="0.85 0.55 0.2 1"/>
+    </body>
+
+    <body name="parked_crate" pos="-1.6 1.4 0.2">
+      <freejoint name="parked_crate_free"/>
+      <geom name="parked_crate_geom" type="box" size="0.2 0.2 0.2" mass="3"
+            rgba="0.3 0.6 0.35 1"/>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <velocity name="wheel_left_motor" joint="wheel_left_joint" kv="18"
+              ctrlrange="-25 25"/>
+    <velocity name="wheel_right_motor" joint="wheel_right_joint" kv="18"
+              ctrlrange="-25 25"/>
+  </actuator>
+</mujoco>

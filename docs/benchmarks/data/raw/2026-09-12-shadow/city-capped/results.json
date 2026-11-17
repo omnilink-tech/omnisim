@@ -1,0 +1,234 @@
+[
+  {
+    "scene": "city",
+    "description": "Control without local shadows; traffic controller disabled for repeatability",
+    "source_world": "projects/samples/demos/worlds/showcase/city_traffic.omniworld",
+    "source_sha256": "5fffc4e7ec3f023e831010c63ce11c2110228587fe5c0a00e533c31bec8d3e81",
+    "repeat": 0,
+    "draw_fps_cap": 5,
+    "capture_frame": 90,
+    "before": {
+      "dumped": true,
+      "errors": 0,
+      "warnings": 19,
+      "render_ms": 8,
+      "profile": {
+        "samples": 44,
+        "warmup_frames": 60,
+        "timing_scope": "CPU collect/render calls and local-shadow encoding; not GPU timestamps or FPS",
+        "collectUs": {
+          "p50": 1124.7,
+          "p95": 1637.1
+        },
+        "renderUs": {
+          "p50": 8108.1,
+          "p95": 11820.3
+        },
+        "localShadowUs": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localCandidates": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localDraws": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localFaces": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "local_cache_hit_fraction": 0.0
+      },
+      "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+      "binary_sha256": "85f9f1920022787e69056ee5cbe48c9d99c679f85f35689b7e0fb7c362b7e139",
+      "world_sha256": "6030d11b709e095385ed3dc8045b4c130d75bd2398aad2823fb1cea42d138e94",
+      "environment": {
+        "OMNISIM_BINARY": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+        "OMNISIM_WGPU_TAA": "0",
+        "OMNISIM_WGPU_CAMFX": "0",
+        "OMNISIM_WGPU_AUTOEXP": "0",
+        "OMNISIM_WGPU_REPORT_EVERY": "1",
+        "OMNILIGHT": "0",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CACHE": "0",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CULL": "0"
+      }
+    },
+    "after": {
+      "dumped": true,
+      "errors": 0,
+      "warnings": 19,
+      "render_ms": 9,
+      "profile": {
+        "samples": 45,
+        "warmup_frames": 60,
+        "timing_scope": "CPU collect/render calls and local-shadow encoding; not GPU timestamps or FPS",
+        "collectUs": {
+          "p50": 1159.0,
+          "p95": 1680.4
+        },
+        "renderUs": {
+          "p50": 8971.0,
+          "p95": 12111.8
+        },
+        "localShadowUs": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localCandidates": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localDraws": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localFaces": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "local_cache_hit_fraction": 0.0
+      },
+      "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+      "binary_sha256": "85f9f1920022787e69056ee5cbe48c9d99c679f85f35689b7e0fb7c362b7e139",
+      "world_sha256": "6030d11b709e095385ed3dc8045b4c130d75bd2398aad2823fb1cea42d138e94",
+      "environment": {
+        "OMNISIM_BINARY": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+        "OMNISIM_WGPU_TAA": "0",
+        "OMNISIM_WGPU_CAMFX": "0",
+        "OMNISIM_WGPU_AUTOEXP": "0",
+        "OMNISIM_WGPU_REPORT_EVERY": "1",
+        "OMNILIGHT": "0",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CACHE": "1",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CULL": "1"
+      }
+    },
+    "diff": {
+      "same_size": true,
+      "mean_abs": 0.0,
+      "max_abs": 0,
+      "pixels_over_threshold": 0,
+      "threshold": 3,
+      "total_pixels": 2110248
+    },
+    "verdict": "MATCH"
+  },
+  {
+    "scene": "city",
+    "description": "Control without local shadows; traffic controller disabled for repeatability",
+    "source_world": "projects/samples/demos/worlds/showcase/city_traffic.omniworld",
+    "source_sha256": "5fffc4e7ec3f023e831010c63ce11c2110228587fe5c0a00e533c31bec8d3e81",
+    "repeat": 1,
+    "draw_fps_cap": 5,
+    "capture_frame": 90,
+    "after": {
+      "dumped": true,
+      "errors": 0,
+      "warnings": 19,
+      "render_ms": 7,
+      "profile": {
+        "samples": 42,
+        "warmup_frames": 60,
+        "timing_scope": "CPU collect/render calls and local-shadow encoding; not GPU timestamps or FPS",
+        "collectUs": {
+          "p50": 1250.8,
+          "p95": 1679.5
+        },
+        "renderUs": {
+          "p50": 10056.2,
+          "p95": 12035.9
+        },
+        "localShadowUs": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localCandidates": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localDraws": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localFaces": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "local_cache_hit_fraction": 0.0
+      },
+      "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+      "binary_sha256": "85f9f1920022787e69056ee5cbe48c9d99c679f85f35689b7e0fb7c362b7e139",
+      "world_sha256": "6030d11b709e095385ed3dc8045b4c130d75bd2398aad2823fb1cea42d138e94",
+      "environment": {
+        "OMNISIM_BINARY": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+        "OMNISIM_WGPU_TAA": "0",
+        "OMNISIM_WGPU_CAMFX": "0",
+        "OMNISIM_WGPU_AUTOEXP": "0",
+        "OMNISIM_WGPU_REPORT_EVERY": "1",
+        "OMNILIGHT": "0",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CACHE": "1",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CULL": "1"
+      }
+    },
+    "before": {
+      "dumped": true,
+      "errors": 0,
+      "warnings": 19,
+      "render_ms": 7,
+      "profile": {
+        "samples": 42,
+        "warmup_frames": 60,
+        "timing_scope": "CPU collect/render calls and local-shadow encoding; not GPU timestamps or FPS",
+        "collectUs": {
+          "p50": 1226.1,
+          "p95": 1576.4
+        },
+        "renderUs": {
+          "p50": 8699.4,
+          "p95": 11878.4
+        },
+        "localShadowUs": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localCandidates": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localDraws": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localFaces": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "local_cache_hit_fraction": 0.0
+      },
+      "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+      "binary_sha256": "85f9f1920022787e69056ee5cbe48c9d99c679f85f35689b7e0fb7c362b7e139",
+      "world_sha256": "6030d11b709e095385ed3dc8045b4c130d75bd2398aad2823fb1cea42d138e94",
+      "environment": {
+        "OMNISIM_BINARY": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+        "OMNISIM_WGPU_TAA": "0",
+        "OMNISIM_WGPU_CAMFX": "0",
+        "OMNISIM_WGPU_AUTOEXP": "0",
+        "OMNISIM_WGPU_REPORT_EVERY": "1",
+        "OMNILIGHT": "0",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CACHE": "0",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CULL": "0"
+      }
+    },
+    "diff": {
+      "same_size": true,
+      "mean_abs": 0.0,
+      "max_abs": 0,
+      "pixels_over_threshold": 0,
+      "threshold": 3,
+      "total_pixels": 2110248
+    },
+    "verdict": "MATCH"
+  }
+]

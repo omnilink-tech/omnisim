@@ -1,0 +1,15 @@
+SUMMARY launches=8 finalised=8 raced=0 (qt_teardown=0 silent_exit=0) shared_port_rounds=0 failed_other=0 binary=1c81f13df0d311c1 machine=LAPTOP-H61DJILS
+  [stagger devnull]
+      8 INFO: [main] stdio: stdout inherited from the launcher (handle type 2: 1=file 2=char/null 3=pipe); stdio left as given, 
+  stdout bytes: 0
+SUMMARY launches=8 finalised=8 raced=0 (qt_teardown=0 silent_exit=0) shared_port_rounds=0 failed_other=0 binary=1c81f13df0d311c1 machine=LAPTOP-H61DJILS
+  [stagger file]
+      8 INFO: [main] stdio: stdout inherited from the launcher (handle type 1: 1=file 2=char/null 3=pipe); stdio left as given, 
+  stdout bytes: 195297
+SUMMARY launches=8 finalised=8 raced=0 (qt_teardown=0 silent_exit=0) shared_port_rounds=0 failed_other=0 binary=1c81f13df0d311c1 machine=LAPTOP-H61DJILS
+  [stagger pipe]
+      8 INFO: [main] stdio: stdout inherited from the launcher (handle type 3: 1=file 2=char/null 3=pipe); stdio left as given, 
+  stdout bytes: 0
+SUMMARY launches=10 finalised=10 raced=0 (qt_teardown=0 silent_exit=0) shared_port_rounds=0 failed_other=0 binary=1c81f13df0d311c1 machine=LAPTOP-H61DJILS
+SUMMARY launches=10 finalised=10 raced=0 (qt_teardown=0 silent_exit=0) shared_port_rounds=0 failed_other=0 binary=1c81f13df0d311c1 machine=LAPTOP-H61DJILS
+done

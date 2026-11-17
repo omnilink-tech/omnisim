@@ -1,0 +1,6 @@
+# Raw per-cell run directories are regeneratable local state (run_oracles.py
+# re-produces them); the tracked record is cells.json here plus the evidence
+# copies under ../evidence/ that the WSL-free grader-replay tests consume.
+*
+!.gitignore
+!cells.json

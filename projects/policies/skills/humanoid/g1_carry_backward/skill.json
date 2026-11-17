@@ -1,0 +1,58 @@
+{
+  "schema": 2,
+  "name": "g1_carry_backward",
+  "title": "Carry backward (suction-held payload retreat)",
+  "class": "humanoid",
+  "robots": ["g1"],
+  "kind": "rl",
+  "method": "shadowing",
+  "status": "experimental",
+  "motion_class": "cyclic",
+  "summary": "Payload-aware counterpart to g1_walk_backward. The same short reverse footholds are solved with the exact suction hold pose, then the residual policy is adapted with the real 1 kg payload folded into the in-engine plant.",
+  "ghost": {
+    "lut": "projects/policies/ghosts/g1/ghost_carry_backward64_lut.json",
+    "provenance": "constructed-feasible",
+    "validator": "WARN (all hard gates pass; conservative ankle-roll boundary warning and no recorded baseline)",
+    "notes": "64 bins, -0.083 m/s, exact stance closure, 0/64 infeasible dynamics frames, peak torque 0.46 of limit, exact box-demo cup pose."
+  },
+  "policy": {
+    "checkpoint": "projects/policies/training/runs/wr_carry_backward.pt",
+    "arch": "lstm",
+    "hidden": 256,
+    "obs": {"family": "whole_body", "ref_obs_k": 3, "ref_obs_wb": false, "dim": 120},
+    "action": {"dim": 23, "space": "whole_body", "decode": "ghost(phase) + residual*0.22"}
+  },
+  "baton": {
+    "blend": "cyclic",
+    "mode": "carryback",
+    "nb": 64,
+    "vx": "-0.0833333333",
+    "attractor": "locomotion",
+    "handover_in": "cold",
+    "gate": "double_support",
+    "notes": "Course keyword: carrybackto."
+  },
+  "train": {
+    "trainer": "projects.policies.training.g1_walk_recipe:g1_walk_recipe_step",
+    "launcher": "projects/policies/training/run_walk_rl.sh",
+    "recipe_env": {
+      "GHOST_LUT_JSON": "projects/policies/ghosts/g1/ghost_carry_backward64_lut.json",
+      "GHOST_RESIDUAL": "0.22",
+      "VX_START": "-0.0833333333",
+      "VX_MAX": "-0.0833333333",
+      "CARRY_PAYLOAD_KG": "1.0"
+    },
+    "status": "trained",
+    "notes": "Trained in-engine with a 1 kg payload on a RunPod RTX A4500 (cloud venue; the shipped champion runs anywhere)."
+  },
+  "deploy": {
+    "specialist": {"note": "Register as carryback in BATON_SPECIALISTS."},
+    "primary_env": {"GHOST_RESIDUAL": "0.22"}
+  },
+  "verification": {
+    "date": "2026-07-18",
+    "engine": "Newton/mujoco_warp on RunPod RTX A4500",
+    "result": "Update-free 1 kg payload evaluation: 100% survival, zero falls, forward-frame velocity -0.629 m/s, ghost match 0.940, 0.10 m path error, and 0.06 m lateral drift. Full box-demo handover certification remains pending. Runs on the lambda=0.9 weight-bearing balance harness, not free-standing."
+  },
+  "related": ["g1_walk_backward", "g1_carry_box"]
+}

@@ -1,0 +1,24 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/road/protos/RoadLine.proto
+# keywords: traffic/road
+# tags: no3dView
+# One painted lane marking, described but not drawn: colour, width, and whether it is dashed, continuous, doubled, or absent.
+# Put one of these in the `lines` field of a Road for each boundary between two lanes. The Road
+# reads these three properties and extrudes the paint itself, along the same banked cross-section
+# it sweeps the tarmac from -- which is the only way a marking can stay glued to a road that
+# climbs and rolls. So this node carries the description and draws nothing: it is a record, and
+# `no3dView` says so.
+
+PROTO RoadLine [
+  unconnectedField SFColor                                            color 1 1 1     # Defines the color of the line.
+  unconnectedField SFString{"dashed", "continuous", "double", "none"} type  "dashed"  # Defines the type of the road, should be `dashed`, `continuous`, `double` or `none`.
+  unconnectedField SFFloat                                            width 0.15      # Defines the with of the line.
+]
+{
+  # Deliberately empty: the paint belongs to the Road that reads these fields, and a strip drawn
+  # here as well would be a second, unbanked copy of every marking, sitting at the origin.
+  Group {
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "ur3e_greet",
+  "display_name": "Ur3E Greet",
+  "world": "projects/samples/demos/worlds/chat/omnilink_ur3e.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/ur3e_greet/run.py",
+  "description": "ur3e \u2014 acknowledge an operator at the cell. Catalogue brief, 3 checked steps.",
+  "tags": [
+    "arm",
+    "greet",
+    "ur3e",
+    "catalogue",
+    "generated"
+  ]
+}

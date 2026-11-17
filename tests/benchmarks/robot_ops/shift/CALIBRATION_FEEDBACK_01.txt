@@ -1,0 +1,19 @@
+Calibration feedback 01 -- 2026-09-26, from evidence/shift-calibration-holdout-01 (10 oracle + 10
+oracle_bad runs) and evidence/shift-calibration-dev-01 (1 + 1). Check ids and names only.
+
+shift_holdout_v1
+  oracle (must pass every check):
+    13:path_length  insufficient_travel        failed in 10 of 10 runs
+    14:halt         window_step_never_fired     failed in 10 of 10 runs
+    35:answered     unanswered_or_unfired       failed in 10 of 10 runs (a step never fired)
+    11:prop_still   prop_pushed                 failed in 3 of 10 runs
+  oracle_bad (must fail every check except `answered`) did NOT fail:
+    0:reached, 2:reached, 8:path_length, 11:prop_still, 18:avoid_zone, 19:avoid_zone
+
+shift_dev_v1
+  oracle: passed every check.
+  oracle_bad did NOT fail:
+    0:reached, 2:reached, 6:path_length, 12:prop_still, 19:avoid_zone, 20:avoid_zone
+
+Note: the 20 holdout runs ran in one process and the simulator dipped to 0.7x real time at
+times; a check that fails only some of the time may be timing-sensitive, so leave margin.

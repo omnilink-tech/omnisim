@@ -1,0 +1,228 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/buildings/protos/Museum.proto
+# keywords: building/public
+# template language: javascript
+# A neo-classical museum: a stepped stylobate, a marble block with pilasters and tall
+# recessed windows, an eight-column portico with an entablature and a triangular pediment.
+# All geometry is primitive (columns are cylinders); no facade textures.
+# The base sits at z = 0 and the portico faces +y.
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Marble.proto"
+
+PROTO Museum [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "museum"
+]
+{
+  %<
+    const width = 30.0;        // main block along x
+    const depth = 20.0;        // main block along y
+    const blockHeight = 12.0;
+    const steps = 3;
+    const stepRise = 0.35;
+    const baseZ = steps * stepRise;          // 1.05 -- stylobate top
+    const hx = width / 2.0;
+    const hy = depth / 2.0;
+    const columns = 8;
+    const columnY = 13.0;
+    const columnRadius = 0.65;
+    const columnTop = baseZ + 10.4;
+    const entablatureZ = columnTop + 0.8;    // centre of the 1.6 m entablature
+    const porticoTop = columnTop + 1.6;
+
+    // a solid triangular prism (the pediment), written with both face windings so it
+    // is visible from either side
+    function pediment(cx, cy, cz, w, d, h) {
+      const p = [];
+      p.push([-w, -d, 0], [w, -d, 0], [0, -d, h], [-w, d, 0], [w, d, 0], [0, d, h]);
+      let pts = '';
+      for (let i = 0; i < p.length; ++i)
+        pts += (i ? ', ' : '') + p[i][0].toFixed(2) + ' ' + p[i][1].toFixed(2) + ' ' + p[i][2].toFixed(2);
+      const idx = '0 1 2 -1, 2 1 0 -1, 3 4 5 -1, 5 4 3 -1, 0 2 5 3 -1, 3 5 2 0 -1, ' +
+                  '1 4 5 2 -1, 2 5 4 1 -1, 0 3 4 1 -1, 1 4 3 0 -1';
+      let s = '      Pose {\n        translation ' + cx.toFixed(2) + ' ' + cy.toFixed(2) + ' ' + cz.toFixed(2) + '\n';
+      s += '        children [\n          Shape {\n            appearance USE STONE_APP\n';
+      s += '            geometry IndexedFaceSet {\n';
+      s += '              coord Coordinate { point [ ' + pts + ' ] }\n';
+      s += '              coordIndex [ ' + idx + ' ]\n';
+      s += '              creaseAngle 0.6\n';
+      s += '            }\n          }\n        ]\n      }\n';
+      return s;
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "museum"
+    children [
+      # ---- stylobate --------------------------------------------------------
+      %< for (let s = 0; s < steps; ++s) { >%
+      Pose {
+        translation 0 2 %<= (s + 0.5) * stepRise >%
+        children [
+          %< if (s === 0) { >%
+          Shape {
+            appearance DEF STONE_APP Marble {
+              colorOverride 0.86 0.84 0.79
+              textureTransform TextureTransform { scale 8 8 }
+            }
+            geometry Box { size %<= 34 - s >% %<= 28 - s >% %<= stepRise >% }
+          }
+          %< } else { >%
+          Shape {
+            appearance USE STONE_APP
+            geometry Box { size %<= 34 - s >% %<= 28 - s >% %<= stepRise >% }
+          }
+          %< } >%
+        ]
+      }
+      %< } >%
+
+      # ---- main block -------------------------------------------------------
+      Pose {
+        translation 0 0 %<= baseZ + blockHeight / 2.0 >%
+        children [
+          Shape {
+            appearance USE STONE_APP
+            geometry Box { size %<= width >% %<= depth >% %<= blockHeight >% }
+          }
+        ]
+      }
+      # cornice
+      Pose {
+        translation 0 0 %<= baseZ + blockHeight + 0.4 >%
+        children [
+          Shape {
+            appearance USE STONE_APP
+            geometry Box { size %<= width + 1.4 >% %<= depth + 1.4 >% 0.8 }
+          }
+        ]
+      }
+
+      # ---- tall recessed windows and pilasters on the side facades ----------
+      %< for (let i = 0; i < 5; ++i) {
+           const py = -hy + 3.0 + i * 3.5; >%
+      Pose {
+        translation %<= hx + 0.08 >% %<= py >% %<= baseZ + 6.0 >%
+        children [
+          %< if (i === 0) { >%
+          DEF SIDE_WINDOW Shape {
+            appearance DEF GLASS_APP PBRAppearance {
+              baseColor 0.13 0.15 0.17
+              roughness 0.2
+              metalness 0.6
+            }
+            geometry Box { size 0.16 1.8 6.5 }
+          }
+          %< } else { >%
+          USE SIDE_WINDOW
+          %< } >%
+        ]
+      }
+      Pose { translation %<= -hx - 0.08 >% %<= py >% %<= baseZ + 6.0 >% children [ USE SIDE_WINDOW ] }
+      Pose {
+        translation %<= hx + 0.2 >% %<= py + 1.75 >% %<= baseZ + blockHeight / 2.0 >%
+        children [
+          %< if (i === 0) { >%
+          DEF PILASTER Shape {
+            appearance USE STONE_APP
+            geometry Box { size 0.5 0.9 %<= blockHeight >% }
+          }
+          %< } else { >%
+          USE PILASTER
+          %< } >%
+        ]
+      }
+      Pose { translation %<= -hx - 0.2 >% %<= py + 1.75 >% %<= baseZ + blockHeight / 2.0 >% children [ USE PILASTER ] }
+      %< } >%
+
+      # ---- portico colonnade (+y) -------------------------------------------
+      %< for (let c = 0; c < columns; ++c) {
+           const cx = -12.6 + c * (25.2 / (columns - 1)); >%
+      Pose {
+        translation %<= cx.toFixed(2) >% %<= columnY >% %<= (baseZ + columnTop) / 2.0 >%
+        children [
+          %< if (c === 0) { >%
+          DEF COLUMN Shape {
+            appearance USE STONE_APP
+            geometry Cylinder { radius %<= columnRadius >% height %<= columnTop - baseZ >% subdivision 16 }
+          }
+          %< } else { >%
+          USE COLUMN
+          %< } >%
+        ]
+      }
+      Pose {
+        translation %<= cx.toFixed(2) >% %<= columnY >% %<= columnTop - 0.2 >%
+        children [
+          %< if (c === 0) { >%
+          DEF CAPITAL Shape {
+            appearance USE STONE_APP
+            geometry Box { size 1.8 1.8 0.4 }
+          }
+          %< } else { >%
+          USE CAPITAL
+          %< } >%
+        ]
+      }
+      Pose { translation %<= cx.toFixed(2) >% %<= columnY >% %<= baseZ + 0.2 >% children [ USE CAPITAL ] }
+      %< } >%
+
+      # ---- entablature over the portico -------------------------------------
+      Pose {
+        translation 0 %<= columnY - 0.5 >% %<= entablatureZ >%
+        children [
+          Shape {
+            appearance USE STONE_APP
+            geometry Box { size 28 6.0 1.6 }
+          }
+        ]
+      }
+
+      # ---- pediment ---------------------------------------------------------
+      %<= pediment(0, columnY - 0.5, porticoTop, 14.0, 3.0, 3.2) >%
+
+      # ---- bronze doors -----------------------------------------------------
+      Pose {
+        translation 0 %<= hy - 0.1 >% %<= baseZ + 3.2 >%
+        children [
+          Shape {
+            appearance DEF DOOR_APP PBRAppearance {
+              baseColor 0.32 0.24 0.12
+              roughness 0.5
+              metalness 0.75
+            }
+            geometry Box { size 6 0.5 6.4 }
+          }
+        ]
+      }
+      # a glazed lantern on the roof
+      Pose {
+        translation 0 -2 %<= baseZ + blockHeight + 1.8 >%
+        children [
+          Shape {
+            appearance USE GLASS_APP
+            geometry Box { size 12 8 2.0 }
+          }
+        ]
+      }
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 %<= (baseZ + blockHeight) / 2.0 >%
+          children [ Box { size %<= width >% %<= depth >% %<= baseZ + blockHeight >% } ]
+        }
+        Pose {
+          translation 0 %<= columnY >% %<= porticoTop / 2.0 >%
+          children [ Box { size 28 6 %<= porticoTop >% } ]
+        }
+      ]
+    }
+    locked TRUE
+  }
+}

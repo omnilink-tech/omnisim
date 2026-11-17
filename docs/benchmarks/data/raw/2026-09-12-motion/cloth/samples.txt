@@ -1,0 +1,4 @@
+info device=cloth_cam w=96 h=72 timestep=8 steps=[8, 64]
+step=8 t=0.064 mean=140.559,151.780,171.232 checksum=995362113 ppm=sample_0008.ppm
+step=64 t=0.512 mean=143.035,151.989,170.714 checksum=1003583231 ppm=sample_0064.ppm
+done last_sample_step=64

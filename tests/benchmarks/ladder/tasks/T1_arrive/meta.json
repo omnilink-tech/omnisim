@@ -1,0 +1,103 @@
+{
+  "id": "T1_arrive",
+  "rung": "T1",
+  "tier": "capability_ladder",
+  "outcome": "a wheeled robot arrives at a point on the floor",
+  "prompt_file": "prompt.txt",
+  "grader": "ladder.graders.t1",
+  "status": "PRE-FREEZE. Nothing here is a result and nothing here is frozen. The freeze is capability-ladder-plan.md section 6 step 0 and it has not happened.",
+
+  "repeats_default": 3,
+  "scoring_class": "exploratory",
+  "achieved_rule": "reached at least once in 3 (solved_at_least_once); never quotable as a pass rate",
+  "par_s": 900,
+  "timeout_s": 2700,
+
+  "container": {
+    "description_dir": "container/husky_description",
+    "files": [
+      "husky_description/urdf/husky.urdf",
+      "husky_description/meshes/base_link.dae",
+      "husky_description/meshes/bumper.dae",
+      "husky_description/meshes/top_chassis.dae",
+      "husky_description/meshes/top_plate.dae",
+      "husky_description/meshes/top_plate.stl",
+      "husky_description/meshes/user_rail.dae",
+      "husky_description/meshes/wheel.dae",
+      "husky_description/LICENSE.upstream"
+    ],
+    "ships": "the robot description and its meshes, and nothing else, on every column",
+    "why": "capability-ladder-plan.md section 2 T1: the conversion IS part of the capability under test here, which is legitimate because this programme is not a cost comparison. This is a deliberate deviation from Phase W, which supplied the robot pre-converted on both arms so the conversion could not decide a cost comparison.",
+    "layout": "A ROS package directory, unmodified. The URDF's mesh references are left EXACTLY as upstream wrote them -- 'package://husky_description/meshes/<name>' -- and resolve against container/ as the package root. Rewriting them into relative paths would quietly do the resolution step for every column, which is one of the steps under measurement.",
+    "meshes_shipped": "only the seven files the URDF actually references. The upstream package carries thirty-odd; shipping the unreferenced ones would not be 'the robot as a URDF plus its meshes', it would be a parts bin.",
+    "no_ground_shipped": "No floor, no scene, no launch script, on any column. A ground plane is one line in every roster member's own idiom and shipping one in any one of them would be a per-simulator head start.",
+    "decided_Q4_T1_SHIPS_THE_MESHES": {
+      "decision": "DECIDED 2026-08-02, before the freeze. T1 ships the meshed robot description exactly as upstream wrote it, COLLADA and all. capability-ladder-plan.md section 9 Q4 is closed in that direction and the plan's section 2 T1 text states it.",
+      "why": "Ingesting a real, unmodified, third-party robot description IS part of what T1 measures -- the tier's own words are 'the conversion IS part of the capability under test here'. A robot rebuilt out of boxes and cylinders would measure something else, and every roster member documents a URDF import path, so this is the format their own docs promise to read.",
+      "why_the_risk_is_acceptable_now": "The mesh risk was live and is now bounded rather than hypothetical: the MuJoCo bring-up (adapters/mujoco/BRINGUP.md) brought this exact description in with its COLLADA meshes navigable through that simulator's own first-party settings -- no re-authoring, no format conversion, no benchmark-side special case. That is one column, not a proof about all of them, and it is the reason the risk reads as a per-column importer finding rather than as a defect in the asset.",
+      "what_is_still_true_about_the_risk": "A column whose loader cannot decode COLLADA will read not_achieved(no_importer) here, and that verdict names the format in its blocker so a maintainer can refute it in the correction window with one working recipe. The plan's countermeasure -- separately-labelled re-run with a primitive-geometry description -- remains available and is NOT pre-emptively applied, because applying it everywhere would remove the measurement.",
+      "the_divergence_from_T2_IS_DELIBERATE": "T2's container ships primitive geometry only and not one mesh. That is not an inconsistency, it is the same reasoning applied to two different tiers: T1 is decided by whether a real robot description can be brought in at all, so the meshes belong; T2 is decided by collision geometry and grasp physics, so a mesh-decoding failure there would fail the tier for a reason with nothing to do with manipulation. Recorded in both task files (see tasks/T2_transfer/meta.json container.primitives_only.divergence_from_T1_IS_DELIBERATE) and in the plan, so a reviewer reads a decision rather than an accident."
+    }
+  },
+
+  "robot": {
+    "declared_name": "husky",
+    "note": "The name the robot description itself declares (<robot name=...>). The grader prefers the body carrying this name and falls back to the single robot-class body; it never picks the luckiest of several.",
+    "drive": "four continuous wheel joints (front_left_wheel, front_right_wheel, rear_left_wheel, rear_right_wheel), skid steer; no controller, no bridge and no policy ships with it",
+    "wheel_radius_m": 0.1651
+  },
+
+  "waypoint": {
+    "frame": "start_relative",
+    "offset_m": [0.0, 5.0],
+    "resolution_rule": "goal_xy = the graded body's horizontal position at the FIRST recorded sample + offset_m. The first recorded sample is taken after the settle window below, so 'where it starts' is where the robot rests, not where it was dropped.",
+    "north": "+y in the world's horizontal plane (the east-north-up convention every roster member documents). Recorded here rather than in the prompt because a sentence a roboticist reads should say 'north', and a grader should not have to guess which axis that is.",
+    "why_not_in_the_container": "The goal is task data. It reaches the agent through the one sentence and the grader through this file; no adapter may supply it, because an adapter that could report the goal could report the goal it observed the robot at."
+  },
+
+  "phases": {
+    "harness": {
+      "enabled": false,
+      "why": "T1 is graded entirely from the standalone cold re-run. A live session observing the agent's own scene answers nothing T1 asks that the re-run does not answer better."
+    },
+    "standalone": {
+      "settle_s": 0.5,
+      "duration_s": 60.0,
+      "contact_stride": 10,
+      "surfaces": ["ground", "floor", "terrain"],
+      "note": "Phase B, per SPEC 2.3: the deliverable is re-run cold, standalone, with the grader's own sampler injected and no agent present. duration_s is the recorded window; the tier's 2.0 s dwell must fit inside it with room to arrive first."
+    }
+  },
+
+  "constants": {
+    "ARRIVE_TOL_M": 0.25,
+    "HOLD_TOL_M": 0.35,
+    "DWELL_S": 2.0,
+    "MAX_ABS_DZ_M": 0.30,
+    "MIN_Z_M": -0.10,
+    "MIN_PATH_RATIO": 0.9,
+    "MAX_PATH_RATIO": 5.0,
+    "MAX_STEP_JUMP_M": 0.5,
+    "MAX_SAMPLE_DT_S": 0.05,
+    "MOVING_SPEED_EPS_MPS": 0.05,
+    "MIN_GOAL_DISTANCE_M": 0.25
+  },
+  "constants_note": "The first eight are capability-ladder-plan.md section 2 T1's own numbers. The last three are witness bounds the tier's wording implies rather than states: a jump bound is not a teleport test unless the samples are per-step (MAX_SAMPLE_DT_S), 'during motion' needs a speed floor (MOVING_SPEED_EPS_MPS), and a path-length ratio is unstable when the goal is nearly under the robot (MIN_GOAL_DISTANCE_M). They are declared here so a reviewer can attack them.",
+
+  "expectation": {
+    "omnisim": "genuinely uncertain -- would not bet on 3/3",
+    "reasoning": "The capability is unambiguously present (native URDF import, an offline converter, a headless physics verdict). What is uncertain is agent reachability: Phase W's authoring control scored 0/5 on the OmniSim arm and the failures were relative asset paths, not physics. Path plumbing is the most likely blocker.",
+    "pre_registered": "capability-ladder-plan.md section 6.4 -- written before any cell runs, printed beside the outcome in the published report."
+  },
+
+  "cost_class": "CPU minutes. No GPU. Tokens only.",
+
+  "grading_readings": {
+    "T1.1": "maximal TRAILING run of samples with horizontal error <= HOLD_TOL_M must be >= DWELL_S long, and the BEST error inside that window must be <= ARRIVE_TOL_M.",
+    "T1.3": "the inter-sample bound is measured on the full 3-D displacement and is VACUOUS unless the sampler reports an interval <= MAX_SAMPLE_DT_S.",
+    "T1.4": "'the ground' is read as a distinct body the adapter attests is not a robot, contacted while the graded body is moving at >= MOVING_SPEED_EPS_MPS. An adapter that cannot say whether the other side is a robot supplies null and the clause reports itself vacuous.",
+    "T1.4_LABEL_FIXED_2026-08-02": "DECIDED before the freeze: the ROW WAS RENAMED, the CHECK WAS NOT TOUCHED. The row used to be called 'under its own actuation' and it measures 'a contact naming the robot and a distinct non-robot body, seen while the robot was moving' -- which a robot riding a moving pallet or a conveyor satisfies. Demonstrated in the pre-freeze audit: T1 graded PASS 5/5 on a robot whose only support contact was with a body named 'pallet'. It is now called 'touched the surface while moving', in t1_core, here, and in capability-ladder-plan.md section 2 T1's own table. NOT ONE MEASURED VALUE CHANGED: same contacts, same MOVING_SPEED_EPS_MPS floor, same vacuity counters, same fixtures, same reds.",
+    "T1.4_stronger_reading_CONSIDERED_AND_DECLINED": "The stronger reading -- actually detect that the robot drove itself -- was considered and DECLINED, and this is the reason so a reviewer can attack it. Nothing in any evidence channel distinguishes 'drove' from 'was carried'; establishing it needs wheel torque, motor command or joint velocity, and NO COLUMN IN THE ROSTER SUPPLIES ANY OF THEM TODAY. Adding the clause would (a) impose a new capability requirement on every column for a failure mode nobody has observed outside a synthetic fixture, (b) redden cells for a channel WE never built, which capability-ladder-plan.md section 4 forbids publishing as somebody else's product failure, and (c) most likely be satisfied only by our own column, which is exactly the shape of task-rigging section 5a exists to stop. The honest response to a label that over-claims is to fix the label. The physical question -- did it drive, or was it carried -- stays visibly unanswered rather than silently answered. If a reviewer wants it graded, the channel has to exist on more than one column first.",
+    "T1.5": "a missing engine attribution makes the cell INVALID, not FAIL -- an unattributed physics result is not a result."
+  }
+}

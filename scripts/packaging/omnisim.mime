@@ -1,0 +1,6 @@
+# MIME types for OmniSim.
+# `.omniworld` is the OmniSim world extension; `.wbt` is the legacy Webots one,
+# still registered because OmniSim reads it forever (dual-read, single-write).
+
+application/x-omnisim
+	ext: omniworld OMNIWORLD wbt WBT

@@ -1,0 +1,131 @@
+{
+  "passed": true,
+  "run": {
+    "passed": true,
+    "placement": {
+      "bilateral_airborne_s": 4.3,
+      "max_carry_slip_m": 0.0005782261312335263,
+      "bilateral_transport_m": 0.09991399934615289,
+      "strict_grip_stability_passed": true,
+      "left_brace_contact_s": 18.48,
+      "carried": true,
+      "inside_slot": true,
+      "settled": true,
+      "released": true,
+      "task_success": true
+    },
+    "mechanics": {
+      "placement_success": true,
+      "spring_compression_peak_m": 0.009482329711318016,
+      "spring_compressed_while_held": true,
+      "seated_before_release": false,
+      "pressed_to_seat": true,
+      "tool_press_lowering_m": 0.005829023893733638,
+      "both_terminals_after_release": true,
+      "negative_contact_peak_depth_m": 0.00046030727248025697,
+      "contact_depth_measured": true,
+      "housing_contact_peak_depth_m": 0.00043747292555480614,
+      "contact_depth_passed": true,
+      "task_success": true,
+      "success_scope": "Mechanically compressed and seated; electrical conductivity is not simulated"
+    },
+    "physics_step_audit": {
+      "complete": true,
+      "sampling_hz": 1000.0,
+      "samples": 29001,
+      "negative_contact_peak_depth_m": 0.0004999465594189383,
+      "housing_contact_peak_depth_m": 0.0004386913722694202,
+      "spring_compression_peak_m": 0.009924805723130703,
+      "housing_peak_time_s": 11.049999999999999,
+      "negative_peak_time_s": 21.089,
+      "contact_depth_passed": true
+    },
+    "verified_source_hashes": 10
+  },
+  "repeat": {
+    "passed": true,
+    "placement": {
+      "bilateral_airborne_s": 4.3,
+      "max_carry_slip_m": 0.0005782261312335263,
+      "bilateral_transport_m": 0.09991399934615289,
+      "strict_grip_stability_passed": true,
+      "left_brace_contact_s": 18.48,
+      "carried": true,
+      "inside_slot": true,
+      "settled": true,
+      "released": true,
+      "task_success": true
+    },
+    "mechanics": {
+      "placement_success": true,
+      "spring_compression_peak_m": 0.009482329711318016,
+      "spring_compressed_while_held": true,
+      "seated_before_release": false,
+      "pressed_to_seat": true,
+      "tool_press_lowering_m": 0.005829023893733638,
+      "both_terminals_after_release": true,
+      "negative_contact_peak_depth_m": 0.00046030727248025697,
+      "contact_depth_measured": true,
+      "housing_contact_peak_depth_m": 0.00043747292555480614,
+      "contact_depth_passed": true,
+      "task_success": true,
+      "success_scope": "Mechanically compressed and seated; electrical conductivity is not simulated"
+    },
+    "physics_step_audit": {
+      "complete": true,
+      "sampling_hz": 1000.0,
+      "samples": 29001,
+      "negative_contact_peak_depth_m": 0.0004999465594189383,
+      "housing_contact_peak_depth_m": 0.0004386913722694202,
+      "spring_compression_peak_m": 0.009924805723130703,
+      "housing_peak_time_s": 11.049999999999999,
+      "negative_peak_time_s": 21.089,
+      "contact_depth_passed": true
+    },
+    "verified_source_hashes": 10
+  },
+  "no_grip": {
+    "passed": false,
+    "placement": {
+      "bilateral_airborne_s": 0.0,
+      "max_carry_slip_m": 0.0,
+      "bilateral_transport_m": 0.0,
+      "strict_grip_stability_passed": false,
+      "left_brace_contact_s": 18.46,
+      "carried": false,
+      "inside_slot": false,
+      "settled": true,
+      "released": true,
+      "task_success": false
+    },
+    "mechanics": {
+      "placement_success": false,
+      "spring_compression_peak_m": -0.0,
+      "spring_compressed_while_held": false,
+      "seated_before_release": false,
+      "pressed_to_seat": false,
+      "tool_press_lowering_m": 0,
+      "both_terminals_after_release": false,
+      "negative_contact_peak_depth_m": 0,
+      "contact_depth_measured": true,
+      "housing_contact_peak_depth_m": 0,
+      "contact_depth_passed": true,
+      "task_success": false,
+      "success_scope": "Mechanically compressed and seated; electrical conductivity is not simulated"
+    },
+    "physics_step_audit": {
+      "complete": true,
+      "sampling_hz": 1000.0,
+      "samples": 29001,
+      "negative_contact_peak_depth_m": 0.0,
+      "housing_contact_peak_depth_m": 0.0,
+      "spring_compression_peak_m": 0.0,
+      "contact_depth_passed": true
+    },
+    "verified_source_hashes": 10
+  },
+  "repeat_trace_identical": true,
+  "no_grip_same_arm_commands": true,
+  "sampled_frames": 1400,
+  "scope": "Two deterministic simulation runs and one negative control; not a general success rate or hardware validation"
+}

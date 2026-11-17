@@ -1,0 +1,707 @@
+{
+  "date": "2026-09-12",
+  "machine": {
+    "id": "9722d23d12a3",
+    "cpu": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+    "logical_cores": 16,
+    "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "driver": "596.36",
+    "os": "Windows 11"
+  },
+  "baseline_binary_sha256": "5f9d17723ed2e35fae5a9de78bea3b2a4477c200c0682837f9d60afa0b92b309",
+  "candidate_binary_sha256": "a484486d5ae58db1d83a3bdf9c7e2f14c3e2d6e8054bc30e76df48bd12b0a8cb",
+  "tested_behavior_binary_sha256": "7a9d6ce11a561911ea92c88577a06ef5611d6b3b0e7c42455af50fe2fd1c85f0",
+  "final_rebuild_note": "The final rebuild adds only the environment-variable description comment required by the generated reference check; runtime source behavior is unchanged.",
+  "quality": {
+    "metric": "mean absolute 8-bit channel error against correctly aligned history",
+    "fixture": "16x16 checker, one-pixel horizontal translation, 0.02 stable history offset, central 12x12 ROI",
+    "result": {
+      "camera_only": 33.5,
+      "object_motion": 0.0
+    }
+  },
+  "validation": {
+    "gpu_shader_tests": 13,
+    "cpp_history_test": "PASS",
+    "engine_and_renderer_tests": 8,
+    "unit_tests": 1290,
+    "unit_skipped": 11,
+    "unit_deselected": 40,
+    "docs_tests": 16,
+    "license_tests": 2,
+    "sensor_comparison_frames": 12,
+    "sensor_changed_pixels": 0
+  },
+  "taa_off_controls": [
+    {
+      "scene": "house",
+      "image_comparison": {
+        "same_size": true,
+        "mean_abs": 0.0,
+        "max_abs": 0,
+        "pixels_over_threshold": 0,
+        "threshold": 0,
+        "total_pixels": 2110248
+      },
+      "candidate_binary_sha256": "7a9d6ce11a561911ea92c88577a06ef5611d6b3b0e7c42455af50fe2fd1c85f0"
+    },
+    {
+      "scene": "warehouse",
+      "image_comparison": {
+        "same_size": true,
+        "mean_abs": 0.0,
+        "max_abs": 0,
+        "pixels_over_threshold": 0,
+        "threshold": 0,
+        "total_pixels": 2110248
+      },
+      "candidate_binary_sha256": "7a9d6ce11a561911ea92c88577a06ef5611d6b3b0e7c42455af50fe2fd1c85f0"
+    },
+    {
+      "scene": "city",
+      "image_comparison": {
+        "same_size": true,
+        "mean_abs": 0.0,
+        "max_abs": 0,
+        "pixels_over_threshold": 0,
+        "threshold": 0,
+        "total_pixels": 2110248
+      },
+      "candidate_binary_sha256": "7a9d6ce11a561911ea92c88577a06ef5611d6b3b0e7c42455af50fe2fd1c85f0"
+    }
+  ],
+  "final_moving_scene_gpu_profiles": {
+    "0": [
+      {
+        "target": 1,
+        "samples": 45,
+        "warmup_frames": 0,
+        "status": "available",
+        "dimensions": [
+          [
+            1896,
+            1113
+          ]
+        ],
+        "aoUs": {
+          "samples": 45,
+          "p50": 621.568,
+          "p95": 628.736
+        },
+        "bloomUs": {
+          "samples": 45,
+          "p50": 116.736,
+          "p95": 118.784
+        },
+        "cpuIntervalUs": {
+          "samples": 44,
+          "p50": 62077.7,
+          "p95": 108527.5
+        },
+        "gpuSpanUs": {
+          "samples": 45,
+          "p50": 3289.088,
+          "p95": 3579.904
+        },
+        "sceneUs": {
+          "samples": 45,
+          "p50": 1723.392,
+          "p95": 1804.288
+        },
+        "ssrUs": {
+          "samples": 45,
+          "p50": 69.632,
+          "p95": 70.656
+        },
+        "sunShadowUs": {
+          "samples": 45,
+          "p50": 195.584,
+          "p95": 198.656
+        },
+        "taaUs": {
+          "samples": 45,
+          "p50": 359.424,
+          "p95": 362.496
+        },
+        "tonemapUs": {
+          "samples": 45,
+          "p50": 54.272,
+          "p95": 54.272
+        }
+      },
+      {
+        "target": 2,
+        "samples": 56,
+        "warmup_frames": 0,
+        "status": "available",
+        "dimensions": [
+          [
+            320,
+            200
+          ]
+        ],
+        "cpuIntervalUs": {
+          "samples": 55,
+          "p50": 31218.9,
+          "p95": 69823.2
+        },
+        "gpuSpanUs": {
+          "samples": 56,
+          "p50": 99.328,
+          "p95": 103.424
+        },
+        "sceneUs": {
+          "samples": 56,
+          "p50": 54.272,
+          "p95": 57.344
+        },
+        "sunShadowUs": {
+          "samples": 56,
+          "p50": 18.432,
+          "p95": 19.456
+        },
+        "tonemapUs": {
+          "samples": 56,
+          "p50": 4.096,
+          "p95": 5.12
+        }
+      }
+    ],
+    "1": [
+      {
+        "target": 1,
+        "samples": 47,
+        "warmup_frames": 0,
+        "status": "available",
+        "dimensions": [
+          [
+            1896,
+            1113
+          ]
+        ],
+        "aoUs": {
+          "samples": 47,
+          "p50": 622.592,
+          "p95": 1408.0
+        },
+        "bloomUs": {
+          "samples": 47,
+          "p50": 117.76,
+          "p95": 425.984
+        },
+        "cpuIntervalUs": {
+          "samples": 46,
+          "p50": 62859.3,
+          "p95": 94357.8
+        },
+        "gpuSpanUs": {
+          "samples": 47,
+          "p50": 3343.36,
+          "p95": 17047.552
+        },
+        "motionUs": {
+          "samples": 12,
+          "p50": 40.96,
+          "p95": 174.08
+        },
+        "sceneUs": {
+          "samples": 47,
+          "p50": 1723.392,
+          "p95": 8709.12
+        },
+        "ssrUs": {
+          "samples": 47,
+          "p50": 69.632,
+          "p95": 874.496
+        },
+        "sunShadowUs": {
+          "samples": 47,
+          "p50": 196.608,
+          "p95": 522.24
+        },
+        "taaUs": {
+          "samples": 47,
+          "p50": 366.592,
+          "p95": 1757.184
+        },
+        "tonemapUs": {
+          "samples": 47,
+          "p50": 54.272,
+          "p95": 345.088
+        }
+      },
+      {
+        "target": 2,
+        "samples": 56,
+        "warmup_frames": 0,
+        "status": "available",
+        "dimensions": [
+          [
+            320,
+            200
+          ]
+        ],
+        "cpuIntervalUs": {
+          "samples": 55,
+          "p50": 31588.2,
+          "p95": 89306.9
+        },
+        "gpuSpanUs": {
+          "samples": 56,
+          "p50": 101.376,
+          "p95": 548.864
+        },
+        "sceneUs": {
+          "samples": 56,
+          "p50": 55.296,
+          "p95": 136.192
+        },
+        "sunShadowUs": {
+          "samples": 56,
+          "p50": 18.432,
+          "p95": 62.464
+        },
+        "tonemapUs": {
+          "samples": 56,
+          "p50": 5.12,
+          "p95": 13.312
+        }
+      }
+    ]
+  },
+  "static_diagnostics": {
+    "scope": "Earlier motion candidate before the invariant-position vertex variant. Capped at 5 FPS. Sequential runs, GPU clocks/load not locked; do not infer an FPS change or a speedup from these spans.",
+    "candidate_binary_sha256": "d6161663fe7ca0cd94210ef66a441b9830d12970b46f0d3e0c3255735366b59e",
+    "scenes": [
+      {
+        "scene": "house",
+        "image_difference": {
+          "same_size": true,
+          "mean_abs": 0.5018,
+          "max_abs": 73,
+          "pixels_over_threshold": 115061,
+          "threshold": 0,
+          "total_pixels": 2110248
+        },
+        "profiles": {
+          "0": [
+            {
+              "target": 1,
+              "samples": 49,
+              "warmup_frames": 60,
+              "status": "available",
+              "dimensions": [
+                [
+                  1896,
+                  1113
+                ]
+              ],
+              "aoUs": {
+                "samples": 49,
+                "p50": 2130.944,
+                "p95": 3981.312
+              },
+              "bloomUs": {
+                "samples": 49,
+                "p50": 854.016,
+                "p95": 1781.76
+              },
+              "cpuIntervalUs": {
+                "samples": 49,
+                "p50": 203580.1,
+                "p95": 206917.7
+              },
+              "gpuSpanUs": {
+                "samples": 49,
+                "p50": 36599.808,
+                "p95": 68127.744
+              },
+              "sceneUs": {
+                "samples": 49,
+                "p50": 28866.56,
+                "p95": 53293.056
+              },
+              "ssrUs": {
+                "samples": 49,
+                "p50": 1323.008,
+                "p95": 3898.368
+              },
+              "sunShadowUs": {
+                "samples": 49,
+                "p50": 1085.44,
+                "p95": 3104.768
+              },
+              "taaUs": {
+                "samples": 49,
+                "p50": 1266.688,
+                "p95": 3517.44
+              },
+              "tonemapUs": {
+                "samples": 49,
+                "p50": 498.688,
+                "p95": 2065.408
+              }
+            }
+          ],
+          "1": [
+            {
+              "target": 1,
+              "samples": 48,
+              "warmup_frames": 60,
+              "status": "available",
+              "dimensions": [
+                [
+                  1896,
+                  1113
+                ]
+              ],
+              "aoUs": {
+                "samples": 48,
+                "p50": 2017.28,
+                "p95": 4009.984
+              },
+              "bloomUs": {
+                "samples": 48,
+                "p50": 816.128,
+                "p95": 2762.752
+              },
+              "cpuIntervalUs": {
+                "samples": 48,
+                "p50": 203129.4,
+                "p95": 218905.1
+              },
+              "gpuSpanUs": {
+                "samples": 48,
+                "p50": 34025.472,
+                "p95": 66488.32
+              },
+              "motionUs": {
+                "samples": 48,
+                "p50": 91.136,
+                "p95": 287.744
+              },
+              "sceneUs": {
+                "samples": 48,
+                "p50": 26380.288,
+                "p95": 50351.104
+              },
+              "ssrUs": {
+                "samples": 48,
+                "p50": 1292.288,
+                "p95": 3911.68
+              },
+              "sunShadowUs": {
+                "samples": 48,
+                "p50": 1037.312,
+                "p95": 3186.688
+              },
+              "taaUs": {
+                "samples": 48,
+                "p50": 1183.744,
+                "p95": 3550.208
+              },
+              "tonemapUs": {
+                "samples": 48,
+                "p50": 495.616,
+                "p95": 2249.728
+              }
+            }
+          ]
+        }
+      },
+      {
+        "scene": "warehouse",
+        "image_difference": {
+          "same_size": true,
+          "mean_abs": 0.0002,
+          "max_abs": 3,
+          "pixels_over_threshold": 443,
+          "threshold": 0,
+          "total_pixels": 2110248
+        },
+        "profiles": {
+          "0": [
+            {
+              "target": 1,
+              "samples": 51,
+              "warmup_frames": 60,
+              "status": "available",
+              "dimensions": [
+                [
+                  1896,
+                  1113
+                ]
+              ],
+              "aoUs": {
+                "samples": 51,
+                "p50": 844.8,
+                "p95": 2097.152
+              },
+              "bloomUs": {
+                "samples": 51,
+                "p50": 537.6,
+                "p95": 1022.976
+              },
+              "cpuIntervalUs": {
+                "samples": 51,
+                "p50": 200783.9,
+                "p95": 209999.3
+              },
+              "gpuSpanUs": {
+                "samples": 51,
+                "p50": 15095.808,
+                "p95": 37768.192
+              },
+              "sceneUs": {
+                "samples": 51,
+                "p50": 10738.688,
+                "p95": 29164.544
+              },
+              "ssrUs": {
+                "samples": 51,
+                "p50": 684.032,
+                "p95": 2478.08
+              },
+              "sunShadowUs": {
+                "samples": 51,
+                "p50": 467.968,
+                "p95": 789.504
+              },
+              "taaUs": {
+                "samples": 51,
+                "p50": 670.72,
+                "p95": 1869.824
+              },
+              "tonemapUs": {
+                "samples": 51,
+                "p50": 239.616,
+                "p95": 570.368
+              }
+            }
+          ],
+          "1": [
+            {
+              "target": 1,
+              "samples": 48,
+              "warmup_frames": 60,
+              "status": "available",
+              "dimensions": [
+                [
+                  1896,
+                  1113
+                ]
+              ],
+              "aoUs": {
+                "samples": 48,
+                "p50": 1161.216,
+                "p95": 2974.72
+              },
+              "bloomUs": {
+                "samples": 48,
+                "p50": 770.048,
+                "p95": 1817.6
+              },
+              "cpuIntervalUs": {
+                "samples": 48,
+                "p50": 205425.0,
+                "p95": 209747.4
+              },
+              "gpuSpanUs": {
+                "samples": 48,
+                "p50": 20087.808,
+                "p95": 35559.424
+              },
+              "sceneUs": {
+                "samples": 48,
+                "p50": 15009.792,
+                "p95": 26218.496
+              },
+              "ssrUs": {
+                "samples": 48,
+                "p50": 760.832,
+                "p95": 2647.04
+              },
+              "sunShadowUs": {
+                "samples": 48,
+                "p50": 637.952,
+                "p95": 1395.712
+              },
+              "taaUs": {
+                "samples": 48,
+                "p50": 1069.056,
+                "p95": 2561.024
+              },
+              "tonemapUs": {
+                "samples": 48,
+                "p50": 346.112,
+                "p95": 1118.208
+              }
+            }
+          ]
+        }
+      },
+      {
+        "scene": "city",
+        "image_difference": {
+          "same_size": true,
+          "mean_abs": 0.002,
+          "max_abs": 47,
+          "pixels_over_threshold": 1023,
+          "threshold": 0,
+          "total_pixels": 2110248
+        },
+        "profiles": {
+          "0": [
+            {
+              "target": 1,
+              "samples": 48,
+              "warmup_frames": 60,
+              "status": "available",
+              "dimensions": [
+                [
+                  1896,
+                  1113
+                ]
+              ],
+              "aoUs": {
+                "samples": 48,
+                "p50": 875.52,
+                "p95": 3977.216
+              },
+              "bloomUs": {
+                "samples": 48,
+                "p50": 177.152,
+                "p95": 1169.408
+              },
+              "cpuIntervalUs": {
+                "samples": 48,
+                "p50": 199600.6,
+                "p95": 221509.4
+              },
+              "gpuSpanUs": {
+                "samples": 48,
+                "p50": 6717.44,
+                "p95": 33929.216
+              },
+              "sceneUs": {
+                "samples": 48,
+                "p50": 3582.976,
+                "p95": 17697.792
+              },
+              "ssrUs": {
+                "samples": 48,
+                "p50": 1080.32,
+                "p95": 5549.056
+              },
+              "sunShadowUs": {
+                "samples": 48,
+                "p50": 68.608,
+                "p95": 348.16
+              },
+              "taaUs": {
+                "samples": 48,
+                "p50": 571.392,
+                "p95": 3221.504
+              },
+              "tonemapUs": {
+                "samples": 48,
+                "p50": 88.064,
+                "p95": 641.024
+              }
+            }
+          ],
+          "1": [
+            {
+              "target": 1,
+              "samples": 49,
+              "warmup_frames": 60,
+              "status": "available",
+              "dimensions": [
+                [
+                  1896,
+                  1113
+                ]
+              ],
+              "aoUs": {
+                "samples": 49,
+                "p50": 943.104,
+                "p95": 3001.344
+              },
+              "bloomUs": {
+                "samples": 49,
+                "p50": 460.8,
+                "p95": 839.68
+              },
+              "cpuIntervalUs": {
+                "samples": 49,
+                "p50": 190697.9,
+                "p95": 230778.2
+              },
+              "gpuSpanUs": {
+                "samples": 49,
+                "p50": 10185.728,
+                "p95": 27821.056
+              },
+              "motionUs": {
+                "samples": 49,
+                "p50": 51.2,
+                "p95": 112.64
+              },
+              "sceneUs": {
+                "samples": 49,
+                "p50": 5085.184,
+                "p95": 13932.544
+              },
+              "ssrUs": {
+                "samples": 49,
+                "p50": 1573.888,
+                "p95": 3890.176
+              },
+              "sunShadowUs": {
+                "samples": 49,
+                "p50": 103.424,
+                "p95": 244.736
+              },
+              "taaUs": {
+                "samples": 49,
+                "p50": 996.352,
+                "p95": 2770.944
+              },
+              "tonemapUs": {
+                "samples": 49,
+                "p50": 257.024,
+                "p95": 751.616
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "live_cloth": {
+    "source_world": "projects/samples/demos/worlds/rendering/camera_cloth_wgpu_smoke.omniworld",
+    "viewport": "Matched to the proven sensor pose: position -1.6 0 .85, orientation 0 0 1 0, fieldOfView .9",
+    "sensor_steps": [
+      8,
+      64
+    ],
+    "verified_by": "tests/test_object_motion_scene.py::ObjectMotionScene::test_live_cloth_uses_deformation_motion"
+  },
+  "limitations": [
+    "Viewport snapshots are not synchronized to the same jitter phase; use the controlled shader fixture for numerical history-alignment comparisons.",
+    "Glass and particle/Track instances without persistent correspondence reject history. Animated textures and changing screen-space lighting use color rejection.",
+    "Motion targets consume 32 additional bytes per viewport pixel once needed; TAA-off and sensor images do not allocate them.",
+    "GPU timestamps exclude presentation, physics and readback and are not FPS."
+  ],
+  "source_hashes": {
+    "src/omnisim/render/OmMotionHistory.hpp": "c018ce1ddb0dd8a341c8c02c0d85153a5a2277a88fb84f4cfd92748ecdd2f3c8",
+    "src/omnisim/render/OmMotionVectors.hpp": "7e39dab54a6485fbd40493558bf41fd05ce0f96f20461c53c041588be6b47411",
+    "src/omnisim/render/OmWgpuShaders.cpp": "0cef6b12282316b3fcd2fd40f2847cff438f0af47f927c502fd0cf95355be02a",
+    "src/omnisim/render/OmWgpuRenderTarget.cpp": "c5caf1a4777d8e81942d9d2b5e334206d9bb26c2ddbf80f89a199b6693abfbc9"
+  },
+  "control_reference": {
+    "binary_sha256": "280d7b1cd46a30dc43d23c877d071057a69e70f63fc54962db02c483a692a4cc",
+    "equivalence_evidence": "docs/benchmarks/data/temporal-rendering-2026-09-12.json",
+    "note": "Reuses the prior phase baseline images; the cited evidence established exact TAA-off equality with the installed 5f9d1772 baseline too."
+  }
+}

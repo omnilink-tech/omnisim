@@ -1,0 +1,222 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/solids/protos/SolidBox.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  info [
+    "Example world demonstrating the use of a simple Motor device."
+  ]
+  title "Motor"
+  basicTimeStep 8
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 0.583 -0.621 0.565
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+}
+DEF ROBOT Robot {
+  children [
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        position 1.5708
+        axis 0 0 1
+        dampingConstant 1
+      }
+      device [
+        RotationalMotor {
+          name "motor"
+          consumptionFactor 100
+          maxVelocity 2
+          maxTorque 20
+        }
+      ]
+      endPoint Solid {
+        children [
+          Pose {
+            translation 0 0 0.063
+            children [
+              Shape {
+                appearance DEF METAL_APPEARANCE PBRAppearance {
+                  baseColor 0.5 0.5 0.5
+                  roughness 1
+                  metalness 0
+                }
+                geometry Cylinder {
+                  bottom FALSE
+                  height 0.005
+                  radius 0.04
+                }
+              }
+            ]
+          }
+          Pose {
+            translation 0 0 0.063
+            rotation 0 0 1 0.523599
+            children [
+              Shape {
+                appearance DEF METAL_APPEARANCE PBRAppearance {
+                  baseColor 0.666667 0.666667 0.498039
+                  roughness 1
+                  metalness 0
+                }
+                geometry Cylinder {
+                  bottom FALSE
+                  height 0.008
+                  radius 0.03
+                  subdivision 6
+                }
+              }
+            ]
+          }
+          Pose {
+            translation 0.05 0 0.063
+            rotation 0 1 0 1.570796
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 1 0.333333 0.498039
+                  roughness 1
+                  metalness 0
+                }
+                geometry Cylinder {
+                  bottom FALSE
+                  height 0.02
+                  radius 0.001
+                }
+              }
+            ]
+          }
+        ]
+        boundingObject Group {
+          children [
+            Pose {
+              translation 0 0 0.063
+              children [
+                Shape {
+                  geometry Cylinder {
+                    bottom FALSE
+                    height 0.008
+                    radius 0.03
+                    subdivision 16
+                  }
+                }
+              ]
+            }
+            Pose {
+              translation 0.05 0 0.063
+              rotation 0 1 0 1.5708
+              children [
+                Shape {
+                  geometry Cylinder {
+                    bottom FALSE
+                    height 0.02
+                    radius 0.001
+                  }
+                }
+              ]
+            }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 1
+        }
+      }
+    }
+    DEF BASIS_GROUP Group {
+      children [
+        Pose {
+          translation 0 0 0.019
+          children [
+            Shape {
+              appearance USE METAL_APPEARANCE
+              geometry Cylinder {
+                bottom FALSE
+                height 0.04
+                radius 0.1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+  boundingObject USE BASIS_GROUP
+  physics Physics {
+    density -1
+    mass 10
+  }
+  controller "motor"
+  battery [
+    3600, 36000, 5
+  ]
+  cpuConsumption 5
+}
+Solid {
+  translation 0 0 0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColorMap ImageTexture {
+          url [
+            "omnisim://projects/samples/devices/worlds/textures/compass.jpg"
+          ]
+        }
+        roughness 1
+        metalness 0
+        textureTransform TextureTransform {
+          rotation 1.5708
+        }
+      }
+      geometry Cylinder {
+        bottom FALSE
+        height 0.02
+        radius 0.07
+        side FALSE
+      }
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 0.866667 0
+        roughness 1
+        metalness 0
+      }
+      geometry Cylinder {
+        bottom FALSE
+        height 0.02
+        radius 0.07
+        top FALSE
+      }
+    }
+  ]
+  boundingObject Cylinder {
+    height 0.02
+    radius 0.07
+  }
+}
+SolidBox {
+  translation 0.0474 0.0197 0.0646
+  rotation 0 0 -1 1.308995
+  size 0.01 0.01 0.01
+  appearance PBRAppearance {
+    baseColorMap ImageTexture {
+      url [
+        "omnisim://projects/default/worlds/textures/wood.jpg"
+      ]
+    }
+    roughness 1
+    metalness 0
+  }
+  physics Physics {
+    density -1
+    mass 1
+  }
+}

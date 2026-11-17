@@ -1,0 +1,78 @@
+#OMNISIM R2025a utf8
+
+# OmniQuad WALK + GHOST demo -- the G1 ghost recipe ported to OmniQuad:
+#   - DEF OMNIQUAD_REAL: the real, physics-simulated, RL-stabilised robot
+#     (Newton/mjwarp), driven by omniquad_walk_deploy (trot model + residual);
+#   - DEF OMNIQUAD_GHOST: a SECOND OmniQuad from a VISUAL-ONLY URDF (no inertial,
+#     no collision -> the importer emits zero Physics -> Newton skips it)
+#     playing the PURE trot model -- no RL, no physics. The omniquad_ghost
+#     controller holds it beside the real robot, phase-locked to its
+#     forward progress. The gap between them IS the RL correction.
+#
+# Launch: scripts/dev/run_omniquad_walk_ghost_demo.ps1  (GUI, real-time paced).
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "OmniQuad walk + gait-model ghost"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 6.937 -6.684 7.504
+  follow "omniquad"
+  followType "Tracking Shot"
+  followSmoothness 0.3
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 60 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+Solid { translation 3 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m3" }
+Solid { translation 6 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0.6 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m6" }
+Solid { translation 9 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 1 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m9" }
+Solid { translation 12 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0 1 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m12" }
+Solid { translation 15 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0 0.6 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m15" }
+Solid { translation 18 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.5 0 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m18" }
+Solid { translation 21 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m21" }
+
+DEF OMNIQUAD_REAL URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad.urdf"
+  translation 0 0 0.58
+  name "omniquad"
+  supervisor TRUE
+  controller "omniquad_walk_deploy"
+  physicsBackend "newton"
+}
+
+DEF OMNIQUAD_GHOST URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad_ghost.urdf"
+  translation 0 1.4 0.55
+  name "omniquad_ghost"
+  supervisor TRUE
+  controller "omniquad_ghost"
+  staticBase TRUE
+}

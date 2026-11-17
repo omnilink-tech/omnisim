@@ -1,0 +1,6 @@
+[{"tag":"h32","n":32,"njmax":4096,"nconmax":4096,"duration_ms":4000,"timeout":240},
+ {"tag":"h40","n":40,"njmax":4096,"nconmax":4096,"duration_ms":4000,"timeout":240},
+ {"tag":"h48","n":48,"njmax":4096,"nconmax":4096,"duration_ms":4000,"timeout":300},
+ {"tag":"h48b","n":48,"njmax":4096,"nconmax":4096,"duration_ms":4000,"timeout":300},
+ {"tag":"h56","n":56,"njmax":4096,"nconmax":4096,"duration_ms":4000,"timeout":360},
+ {"tag":"hc48","n":48,"solver":"mujoco","duration_ms":4000,"timeout":300}]

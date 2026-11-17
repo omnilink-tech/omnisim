@@ -1,0 +1,62 @@
+{
+  "date": "2026-07-18",
+  "machine_id": "9722d23d12a3",
+  "baseline_commit": "8c1bf7b1",
+  "baseline": {
+    "robots": 50,
+    "steps": 300,
+    "physics_ms_per_step": 12.7075,
+    "effective_ms_per_tick": 120.552,
+    "effective_steps_per_second": 8.295,
+    "acceptance_target_steps_per_second": 16.59
+  },
+  "benchmark_discovery": {
+    "requested_controller": "omnibot_random",
+    "actual_controller": "<generic>",
+    "reason": "controller is outside the benchmark project's controller search path and falls back to OmniSim's native empty controller"
+  },
+  "trials": [
+    {
+      "name": "coalesced retry signal",
+      "result": "rejected",
+      "effective_steps_per_second": 4.92,
+      "notes": "isolated build was also missing the baseline CUDA feature flag, so this absolute result is confounded; the change was reverted"
+    },
+    {
+      "name": "event-driven FAST controller wakeup",
+      "result": "rejected",
+      "paired_original_steps_per_second": 6.05,
+      "candidate_steps_per_second": 5.772,
+      "speedup": 0.954,
+      "final_state_sha256": "96ffaad92aa45e11442342d90fc1e1f46b32b9f8403521327db6011f808b9bb7"
+    },
+    {
+      "name": "event-driven FAST wakeup without thread yield",
+      "result": "rejected",
+      "paired_original_steps_per_second": 6.05,
+      "candidate_steps_per_second": 5.954,
+      "speedup": 0.984,
+      "final_state_sha256": "96ffaad92aa45e11442342d90fc1e1f46b32b9f8403521327db6011f808b9bb7"
+    },
+    {
+      "name": "batch empty generic-controller requests over 64 basic steps",
+      "result": "rejected",
+      "paired_original_steps_per_second": 1.334,
+      "candidate_steps_per_second": 1.399,
+      "speedup": 1.049,
+      "paired_original_physics_ms": 55.585,
+      "candidate_physics_ms": 25.725,
+      "final_state_sha256": "6886f7add7847cd00f84cfb24082f75965f17ad57d8d97431c507f46d07ca700",
+      "notes": "severe concurrent machine contention; not an acceptance-quality throughput result"
+    }
+  ],
+  "diagnostic_lead": {
+    "name": "Newton base-divergence guard host readback",
+    "guard_must_remain_enabled": true,
+    "baseline_physics_ms": 12.7075,
+    "guard_off_diagnostic_physics_ms": 9.222,
+    "physics_bucket_speedup": 1.378,
+    "status": "unimplemented; move validation onto the GPU without changing guard behavior"
+  },
+  "retained_simulator_changes": false
+}

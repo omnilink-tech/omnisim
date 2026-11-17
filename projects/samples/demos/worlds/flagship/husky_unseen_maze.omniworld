@@ -1,0 +1,2744 @@
+#OMNISIM R2025a utf8
+
+# Agent Build Film challenge: unseen 17x17 maze.
+# Planner-visible at runtime: pose, goal, dimensions, 360-degree ray ranges.
+# Planner-hidden at runtime: seed, wall list, adjacency graph, optimal path.
+# layout_sha256: b1aa122b974b3fd5f5080a0cca2743c7c6897b6c9f1cdbc9508aae8480f32e77
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Roughcast.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husky Unseen Maze — b1aa122b97"
+  info [
+    "A frozen sensor-only planner must reach the southeast beacon."
+    "The planner receives robot pose, maze dimensions, goal coordinates, and 360-degree ray ranges."
+    "It does not receive this world's wall nodes, seed, adjacency graph, or optimal path."
+  ]
+  newtonSolver "mujoco"
+  newtonStatics TRUE
+  newtonRobotColliders TRUE
+  newtonCompoundColliders TRUE
+  newtonSubsteps 4
+  # Skid-steer tires need controlled lateral scrub during a turn; 0.72 keeps
+  # forward traction while avoiding the unrealistically locked 1.15 surface.
+  newtonGroundMu 0.42
+}
+
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position -15.236 14.981 4.078
+  fieldOfView 0.92
+  near 0.1
+  far 500
+  exposure 0.76
+  ambientOcclusionRadius 2
+  bloomThreshold 12
+}
+
+OmniSimSky { luminosity 1.12 }
+DEF SUN OmniSimSun {
+  color 1.0 0.91 0.78
+  intensity 2.45
+  ambientIntensity 0.08
+  castShadows TRUE
+}
+DEF SUN_MARKER OmniSimSunMarker { translation -28 -32 34 }
+
+Floor {
+  size 48.8 48.8
+  tileSize 7 7
+  appearance Asphalt {
+    colorOverride 0.21 0.23 0.25
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 7 7 }
+  }
+}
+
+Wall {
+  name "wall_perim_n"
+  translation 0 20.4 0
+  size 40.98 0.18 1.65
+  appearance Roughcast {
+    colorOverride 0.27 0.30 0.34
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "wall_perim_s"
+  translation 0 -20.4 0
+  size 40.98 0.18 1.65
+  appearance Roughcast {
+    colorOverride 0.27 0.30 0.34
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "wall_perim_e"
+  translation 20.4 0 0
+  size 0.18 40.98 1.65
+  appearance Roughcast {
+    colorOverride 0.27 0.30 0.34
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "wall_perim_w"
+  translation -20.4 0 0
+  size 0.18 40.98 1.65
+  appearance Roughcast {
+    colorOverride 0.27 0.30 0.34
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_000"
+  translation -18 -16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_000"
+  translation -19.2 -10.8 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_001"
+  translation -18 -4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_001"
+  translation -19.2 -3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_002"
+  translation -18 0 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_003"
+  translation -18 4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_004"
+  translation -18 7.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_002"
+  translation -19.2 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_003"
+  translation -19.2 13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_005"
+  translation -18 16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_006"
+  translation -18 19.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_004"
+  translation -16.8 -18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_007"
+  translation -15.6 -14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_005"
+  translation -16.8 -13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_008"
+  translation -15.6 -12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_006"
+  translation -16.8 -10.8 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_007"
+  translation -16.8 -8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_009"
+  translation -15.6 -7.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_008"
+  translation -16.8 -3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_010"
+  translation -15.6 -2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_009"
+  translation -16.8 1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_011"
+  translation -15.6 2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_012"
+  translation -15.6 4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_010"
+  translation -16.8 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_011"
+  translation -16.8 10.8 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_013"
+  translation -15.6 12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_014"
+  translation -15.6 14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_012"
+  translation -16.8 15.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_013"
+  translation -14.4 -18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_015"
+  translation -13.2 -16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_016"
+  translation -13.2 -14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_017"
+  translation -13.2 -12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_018"
+  translation -13.2 -9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_014"
+  translation -14.4 -8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_015"
+  translation -14.4 -6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_019"
+  translation -13.2 -4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_016"
+  translation -14.4 -1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_020"
+  translation -13.2 0 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_021"
+  translation -13.2 2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_017"
+  translation -14.4 6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_018"
+  translation -14.4 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_022"
+  translation -13.2 9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_019"
+  translation -14.4 13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_023"
+  translation -13.2 14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_020"
+  translation -14.4 18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_021"
+  translation -12 -18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_024"
+  translation -10.8 -16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_022"
+  translation -12 -10.8 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_025"
+  translation -10.8 -9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_026"
+  translation -10.8 -7.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_023"
+  translation -12 -3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_027"
+  translation -10.8 -2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_028"
+  translation -10.8 2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_024"
+  translation -12 3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_025"
+  translation -12 6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_029"
+  translation -10.8 7.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_026"
+  translation -12 10.8 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_030"
+  translation -10.8 12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_031"
+  translation -10.8 14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_032"
+  translation -10.8 16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_027"
+  translation -12 18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_033"
+  translation -8.4 -19.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_034"
+  translation -8.4 -16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_035"
+  translation -8.4 -14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_028"
+  translation -9.6 -13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_036"
+  translation -8.4 -12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_037"
+  translation -8.4 -9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_038"
+  translation -8.4 -7.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_029"
+  translation -9.6 -3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_039"
+  translation -8.4 0 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_030"
+  translation -9.6 1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_040"
+  translation -8.4 4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_031"
+  translation -9.6 6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_032"
+  translation -9.6 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_041"
+  translation -8.4 9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_033"
+  translation -9.6 13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_042"
+  translation -8.4 16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_043"
+  translation -8.4 19.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_044"
+  translation -6 -16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_045"
+  translation -6 -14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_034"
+  translation -7.2 -10.8 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_035"
+  translation -7.2 -6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_036"
+  translation -7.2 -3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_046"
+  translation -6 -2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_037"
+  translation -7.2 1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_047"
+  translation -6 2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_038"
+  translation -7.2 6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_039"
+  translation -7.2 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_048"
+  translation -6 12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_040"
+  translation -7.2 13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_041"
+  translation -7.2 15.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_049"
+  translation -6 16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_050"
+  translation -3.6 -19.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_042"
+  translation -4.8 -15.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_043"
+  translation -4.8 -13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_051"
+  translation -3.6 -12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_052"
+  translation -3.6 -9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_044"
+  translation -4.8 -8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_053"
+  translation -3.6 -7.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_054"
+  translation -3.6 -4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_045"
+  translation -4.8 -3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_046"
+  translation -4.8 -1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_055"
+  translation -3.6 0 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_047"
+  translation -4.8 3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_056"
+  translation -3.6 4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_048"
+  translation -4.8 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_057"
+  translation -3.6 9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_049"
+  translation -4.8 13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_058"
+  translation -3.6 14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_059"
+  translation -3.6 16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_050"
+  translation -2.4 -18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_051"
+  translation -2.4 -15.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_060"
+  translation -1.2 -9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_052"
+  translation -2.4 -6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_061"
+  translation -1.2 -2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_053"
+  translation -2.4 1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_062"
+  translation -1.2 4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_054"
+  translation -2.4 6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_055"
+  translation -2.4 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_056"
+  translation -2.4 13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_063"
+  translation -1.2 16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_064"
+  translation -1.2 19.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_057"
+  translation 0 -18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_058"
+  translation 0 -15.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_065"
+  translation 1.2 -14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_059"
+  translation 0 -13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_060"
+  translation 0 -10.8 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_061"
+  translation 0 -8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_062"
+  translation 0 -6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_066"
+  translation 1.2 -4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_063"
+  translation 0 -1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_064"
+  translation 0 1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_067"
+  translation 1.2 2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_068"
+  translation 1.2 4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_069"
+  translation 1.2 7.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_065"
+  translation 0 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_066"
+  translation 0 10.8 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_067"
+  translation 0 13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_070"
+  translation 1.2 14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_071"
+  translation 1.2 16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_068"
+  translation 2.4 -18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_072"
+  translation 3.6 -16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_069"
+  translation 2.4 -13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_070"
+  translation 2.4 -10.8 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_073"
+  translation 3.6 -9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_074"
+  translation 3.6 -7.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_075"
+  translation 3.6 -4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_076"
+  translation 3.6 -2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_071"
+  translation 2.4 -1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_077"
+  translation 3.6 0 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_078"
+  translation 3.6 2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_072"
+  translation 2.4 6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_079"
+  translation 3.6 9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_073"
+  translation 2.4 10.8 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_080"
+  translation 3.6 12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_081"
+  translation 3.6 14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_082"
+  translation 3.6 16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_074"
+  translation 2.4 18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_083"
+  translation 6 -19.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_075"
+  translation 4.8 -15.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_076"
+  translation 4.8 -13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_084"
+  translation 6 -12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_077"
+  translation 4.8 -8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_085"
+  translation 6 -4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_078"
+  translation 4.8 -1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_079"
+  translation 4.8 3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_080"
+  translation 4.8 6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_081"
+  translation 4.8 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_082"
+  translation 4.8 13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_083"
+  translation 4.8 18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_086"
+  translation 8.4 -16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_084"
+  translation 7.2 -15.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_085"
+  translation 7.2 -13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_087"
+  translation 8.4 -9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_086"
+  translation 7.2 -8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_087"
+  translation 7.2 -6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_088"
+  translation 7.2 -3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_088"
+  translation 8.4 -2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_089"
+  translation 8.4 0 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_089"
+  translation 7.2 1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_090"
+  translation 8.4 2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_091"
+  translation 8.4 4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_090"
+  translation 7.2 6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_091"
+  translation 7.2 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_092"
+  translation 7.2 10.8 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_092"
+  translation 8.4 12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_093"
+  translation 8.4 14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_093"
+  translation 7.2 15.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_094"
+  translation 7.2 18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_094"
+  translation 10.8 -16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_095"
+  translation 10.8 -14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_095"
+  translation 9.6 -13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_096"
+  translation 10.8 -12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_096"
+  translation 9.6 -8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_097"
+  translation 10.8 -7.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_097"
+  translation 9.6 -3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_098"
+  translation 10.8 2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_099"
+  translation 10.8 4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_098"
+  translation 9.6 6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_099"
+  translation 9.6 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_100"
+  translation 9.6 10.8 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_100"
+  translation 10.8 12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_101"
+  translation 9.6 15.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_101"
+  translation 10.8 16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_102"
+  translation 10.8 19.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_102"
+  translation 12 -18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_103"
+  translation 13.2 -14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_104"
+  translation 13.2 -12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_105"
+  translation 13.2 -9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_103"
+  translation 12 -8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_106"
+  translation 13.2 -4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_104"
+  translation 12 -3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_105"
+  translation 12 -1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_106"
+  translation 12 1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_107"
+  translation 13.2 4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_107"
+  translation 12 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_108"
+  translation 13.2 9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_109"
+  translation 13.2 12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_108"
+  translation 12 15.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_110"
+  translation 13.2 16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_109"
+  translation 14.4 -18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_111"
+  translation 15.6 -16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_110"
+  translation 14.4 -13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_112"
+  translation 15.6 -12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_111"
+  translation 14.4 -8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_113"
+  translation 15.6 -7.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_112"
+  translation 14.4 -3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_113"
+  translation 14.4 -1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_114"
+  translation 14.4 1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_115"
+  translation 14.4 3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_116"
+  translation 14.4 6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_117"
+  translation 14.4 8.4 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_114"
+  translation 15.6 9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_118"
+  translation 14.4 13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_119"
+  translation 14.4 15.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_115"
+  translation 18 -19.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_116"
+  translation 18 -16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_117"
+  translation 18 -14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_120"
+  translation 16.8 -13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_118"
+  translation 18 -9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_119"
+  translation 18 -7.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_121"
+  translation 16.8 -6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_120"
+  translation 18 -4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_121"
+  translation 18 -2.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_122"
+  translation 16.8 -1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_123"
+  translation 16.8 1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_124"
+  translation 16.8 3.6 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_122"
+  translation 18 4.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_123"
+  translation 18 7.2 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_124"
+  translation 18 9.6 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_125"
+  translation 18 12 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_125"
+  translation 16.8 13.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_126"
+  translation 18 14.4 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "V_127"
+  translation 18 16.8 0
+  size 0.18 2.4 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_126"
+  translation 16.8 18 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+Wall {
+  name "H_127"
+  translation 19.2 1.2 0
+  size 2.4 0.18 1.35
+  appearance Roughcast {
+    colorOverride 0.40 0.43 0.47
+    IBLStrength 1.35
+    textureTransform TextureTransform { scale 2.4 1.2 }
+  }
+}
+DEF START_PAD Solid {
+  translation -19.2 19.2 0.035
+  name "start_pad"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.08 0.40 0.72
+        roughness 0.42
+        metalness 0.15
+        emissiveColor 0.01 0.08 0.18
+      }
+      geometry Cylinder { radius 0.72 height 0.07 subdivision 48 }
+    }
+  ]
+}
+DEF GOAL_PAD Solid {
+  translation 19.2 -19.2 0.035
+  name "goal_pad"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.08 0.68 0.42
+        roughness 0.42
+        metalness 0.15
+        emissiveColor 0.01 0.16 0.08
+      }
+      geometry Cylinder { radius 0.72 height 0.07 subdivision 48 }
+    }
+  ]
+}
+DEF GOAL_BEACON Solid {
+  translation 19.2 -19.2 0
+  name "goal_beacon"
+  children [
+    Pose {
+      translation 0 0 0.75
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.10 0.82 0.58
+            roughness 0.24
+            metalness 0.48
+            emissiveColor 0.035 0.42 0.23
+          }
+          geometry Cylinder { radius 0.11 height 1.5 subdivision 40 }
+        }
+      ]
+    }
+    Pose {
+      translation 0 0 1.62
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.75 1.0 0.88
+            roughness 0.18
+            metalness 0.1
+            emissiveColor 0.18 0.88 0.52
+          }
+          geometry Sphere { radius 0.24 subdivision 4 }
+        }
+      ]
+    }
+  ]
+}
+
+# Four neutral fill lights lift the robot without flattening the sun shadows.
+PointLight { location -20.4 -20.4 7 color 0.72 0.84 1 intensity 1.2 radius 18 attenuation 0 0 0.035 castShadows FALSE }
+PointLight { location 20.4 20.4 7 color 1 0.78 0.58 intensity 1.0 radius 18 attenuation 0 0 0.035 castShadows FALSE }
+
+DEF HUSKY URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -19.2 19.2 0.12
+  # Face the only opening in the start cell. This is an authored start pose,
+  # not planner knowledge; subsequent junctions still require sensed turns.
+  rotation 0 0 1 -1.570796
+  name "husky_unseen_maze"
+  supervisor TRUE
+  synchronization TRUE
+  controller "husky_unseen_maze"
+  controllerArgs ["--size" "17" "--cell-size" "2.4" "--origin" "-19.2" "--goal" "16,0"]
+}

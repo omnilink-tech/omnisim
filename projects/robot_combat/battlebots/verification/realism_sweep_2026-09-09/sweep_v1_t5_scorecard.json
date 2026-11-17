@@ -1,0 +1,39 @@
+{
+  "match_t_s": 25.0,
+  "winner": "draw",
+  "win_reason": "timeout_tie",
+  "fighters": [
+    {
+      "name": "hydra",
+      "immobile": false,
+      "disqualify_reason": null,
+      "broken_parts": [],
+      "wheels_remaining": 4,
+      "weapon_intact": true,
+      "part_hp": {
+        "chassis": 250.0,
+        "fl_wheel": 13.9,
+        "fr_wheel": 14.0,
+        "rl_wheel": 14.0,
+        "rr_wheel": 14.0,
+        "weapon": 31.6
+      }
+    },
+    {
+      "name": "gravedigger",
+      "immobile": false,
+      "disqualify_reason": null,
+      "broken_parts": [],
+      "wheels_remaining": 4,
+      "weapon_intact": true,
+      "part_hp": {
+        "chassis": 236.9,
+        "fl_wheel": 14.0,
+        "fr_wheel": 14.0,
+        "rl_wheel": 14.0,
+        "rr_wheel": 13.3,
+        "weapon": 35.0
+      }
+    }
+  ]
+}

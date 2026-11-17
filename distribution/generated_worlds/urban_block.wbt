@@ -1,0 +1,174 @@
+#OMNISIM R2025a utf8
+
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/samples/demos/protos/ConstructionFrameBuilding.proto"
+EXTERNPROTO "omnisim://projects/objects/traffic/protos/ControlledStreetLight.proto"
+EXTERNPROTO "omnisim://projects/objects/street_furniture/protos/Bench.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "urban_block (omniworld)"
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 132.122 -140.645 123.598
+  bloomThreshold -1.0
+  ambientOcclusionRadius 0
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+  luminosity 0.95
+  castShadows FALSE
+}
+RectangleArena {
+  floorSize 80 80
+  wallHeight 0.05
+}
+
+ConstructionFrameBuilding {
+  translation 18 18 0
+  rotation 0 0 1 0
+  floors 5
+  floorHeight 3
+  baysX 3
+  baysY 3
+  bay 4.037
+  wrapFloors 3
+  name "building_lot_sw"
+}
+
+ConstructionFrameBuilding {
+  translation 62 18 0
+  rotation 0 0 1 0
+  floors 2
+  floorHeight 3
+  baysX 3
+  baysY 3
+  bay 4.862
+  wrapFloors 0
+  name "building_lot_se"
+}
+
+ConstructionFrameBuilding {
+  translation 18 62 0
+  rotation 0 0 1 0
+  floors 5
+  floorHeight 3
+  baysX 3
+  baysY 3
+  bay 4.625
+  wrapFloors 3
+  name "building_lot_nw"
+}
+
+ConstructionFrameBuilding {
+  translation 62 62 0
+  rotation 0 0 1 0
+  floors 2
+  floorHeight 3
+  baysX 3
+  baysY 3
+  bay 5.118
+  wrapFloors 0
+  name "building_lot_ne"
+}
+
+ControlledStreetLight {
+  translation 6.25 44.5 0
+  rotation 0 0 1 5.67346
+  name "ControlledStreetLight_4"
+  controller "<none>"
+}
+
+ControlledStreetLight {
+  translation 18.75 35.5 0
+  rotation 0 0 1 1.5007
+  name "ControlledStreetLight_5"
+  controller "<none>"
+}
+
+ControlledStreetLight {
+  translation 31.25 44.5 0
+  rotation 0 0 1 0.0913919
+  name "ControlledStreetLight_6"
+  controller "<none>"
+}
+
+ControlledStreetLight {
+  translation 43.75 35.5 0
+  rotation 0 0 1 4.51966
+  name "ControlledStreetLight_7"
+  controller "<none>"
+}
+
+ControlledStreetLight {
+  translation 56.25 44.5 0
+  rotation 0 0 1 5.78917
+  name "ControlledStreetLight_8"
+  controller "<none>"
+}
+
+ControlledStreetLight {
+  translation 68.75 35.5 0
+  rotation 0 0 1 5.93152
+  name "ControlledStreetLight_9"
+  controller "<none>"
+}
+
+ControlledStreetLight {
+  translation 35.5 6.25 0
+  rotation 0 0 1 0.0680549
+  name "ControlledStreetLight_10"
+  controller "<none>"
+}
+
+ControlledStreetLight {
+  translation 44.5 18.75 0
+  rotation 0 0 1 0.249009
+  name "ControlledStreetLight_11"
+  controller "<none>"
+}
+
+ControlledStreetLight {
+  translation 35.5 31.25 0
+  rotation 0 0 1 1.5743
+  name "ControlledStreetLight_12"
+  controller "<none>"
+}
+
+ControlledStreetLight {
+  translation 44.5 43.75 0
+  rotation 0 0 1 3.57749
+  name "ControlledStreetLight_13"
+  controller "<none>"
+}
+
+ControlledStreetLight {
+  translation 35.5 56.25 0
+  rotation 0 0 1 1.36161
+  name "ControlledStreetLight_14"
+  controller "<none>"
+}
+
+ControlledStreetLight {
+  translation 44.5 68.75 0
+  rotation 0 0 1 6.04315
+  name "ControlledStreetLight_15"
+  controller "<none>"
+}
+
+Bench {
+  translation 20 43 0
+  rotation 0 0 1 2.68686
+  name "Bench_16"
+}
+
+Bench {
+  translation 60 37 0
+  rotation 0 0 1 3.54833
+  name "Bench_17"
+}

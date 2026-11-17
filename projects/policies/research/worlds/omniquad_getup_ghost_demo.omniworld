@@ -1,0 +1,65 @@
+#OMNISIM R2025a utf8
+
+# OmniQuad GET-UP + GHOST demo. DEF OMNIQUAD_REAL gets up from belly-flat under the RL
+# policy (omniquad_getup_mimic, teleport start), beside DEF OMNIQUAD_GHOST -- a translucent
+# physics-free OmniQuad (omniquad_ghost.urdf) that REPLAYS the ideal MPPI get-up reference
+# (omniquad_getup_ghost). The gap between them is the tracking error.
+# Launch: scripts/dev/run_omniquad_getup_ghost_demo.ps1
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "OmniQuad get-up + ghost"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 6.937 -6.684 7.069
+  follow "omniquad"
+  followType "Tracking Shot"
+  followSmoothness 0.3
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 8 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF OMNIQUAD_REAL URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad.urdf"
+  translation 0 0 0.14
+  name "omniquad"
+  supervisor TRUE
+  controller "omniquad_getup_mimic"
+  physicsBackend "newton"
+}
+
+DEF OMNIQUAD_GHOST URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad_ghost.urdf"
+  translation 0 1.4 0.12
+  name "omniquad_ghost"
+  supervisor TRUE
+  controller "omniquad_getup_ghost"
+  staticBase TRUE
+}

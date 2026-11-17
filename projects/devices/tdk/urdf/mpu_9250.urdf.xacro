@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<!--
+TDK MPU-9250 — 9-axis IMU (accelerometer + gyroscope + magnetometer).
+Emits Accelerometer + Gyro + InertialUnit via the <sensor type="imu">
+extension; the URDF importer materialises one of each with names
+${prefix}, ${prefix}_gyro, ${prefix}_accel.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="mpu_9250" params="parent_link prefix:=mpu_9250 *origin">
+    <link name="${prefix}_link">
+      <visual>
+        <origin xyz="0 0 0.0015" rpy="0 0 0"/>
+        <geometry><box size="0.030 0.015 0.003"/></geometry>
+        <material name="${prefix}_green"><color rgba="0.10 0.40 0.20 1.0"/></material>
+      </visual>
+      <inertial>
+        <origin xyz="0 0 0.0015" rpy="0 0 0"/>
+        <mass value="0.005"/>
+        <inertia ixx="1e-8" ixy="0" ixz="0" iyy="1e-8" iyz="0" izz="1e-8"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}_link"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+    <gazebo reference="${prefix}_link">
+      <sensor name="${prefix}" type="imu">
+        <update_rate>100</update_rate>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>

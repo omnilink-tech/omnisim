@@ -1,0 +1,58 @@
+#OMNISIM R2025a utf8
+
+# Lane E1 (P5+P6) smoke world: the R5e Lidar rig + `resolution 0.25` (range quantization,
+# depth_resolution.frag: floor(r / resolution + 0.5) * resolution -- round-half-up in
+# metres). Same geometry as lidar_wgpu_smoke: front face 0.7 m, fov 0.8, every ray hits.
+#
+# The controller asserts every returned range is a multiple of 0.25 (within float eps) and
+# that the centre column reads exactly 0.75 (0.70 rounds UP at the half).
+# RED-CAPABLE: with the port absent (or OMNISIM_WGPU_SENSOR_POSTFX=0) the wgpu floats are
+# the smooth 0.70/cos(theta) profile -- centre 0.7000 is not a multiple of 0.25 -> FAIL.
+
+WorldInfo {
+  info [
+    "Lane E1 smoke -- wgpu Lidar applies the authored range quantization"
+  ]
+  title "Lane E1 wgpu Lidar resolution smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Lidar {
+      name "lidar_wgpu"
+      horizontalResolution 64
+      fieldOfView 0.8
+      verticalFieldOfView 0.1
+      numberOfLayers 1
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+      type "fixed"
+      resolution 0.25
+    }
+    DEF CYAN_BOX Solid {
+      translation 1.0 0 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "lidar_wgpu_resolution_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

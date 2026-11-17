@@ -1,0 +1,23 @@
+{
+  "_comment": [
+    "FROZEN obstacle specification for AgentBench R4_mobile_manipulation.",
+    "The COUNT and the SIZES are the published contract and are honoured by",
+    "every layout the grader ever scores. The POSITIONS here are the REFERENCE",
+    "layout the agent authors against; see meta.json anti_hardcode for the",
+    "grade-time placement mechanism that may redraw them.",
+    "This reference layout IS r4_core.sample_layout('published'), so it",
+    "satisfies every legality constraint by construction rather than by",
+    "inspection: inside the arena, spaced, clear of the start point and of both",
+    "fixtures, it leaves an inflated route from the start to within reach of",
+    "the table and of the pad, and it blocks 1.014 m of the straight",
+    "start->table line (the sensing argument).",
+    "Frame: metres, world frame, z up. position is the box CENTRE."
+  ],
+  "obstacles": [
+    {"name": "OBSTACLE_1", "position": [0.3694, 1.2508, 0.25], "size": [1.6, 1.6, 0.5]},
+    {"name": "OBSTACLE_2", "position": [-0.152, -1.8888, 0.25], "size": [1.2, 0.8, 0.5]},
+    {"name": "OBSTACLE_3", "position": [-0.7663, 3.8953, 0.25], "size": [0.8, 2.0, 0.5]},
+    {"name": "OBSTACLE_4", "position": [2.2527, -4.455, 0.25], "size": [2.0, 0.8, 0.5]},
+    {"name": "OBSTACLE_5", "position": [4.1758, -0.8524, 0.25], "size": [1.0, 1.0, 0.5]}
+  ]
+}

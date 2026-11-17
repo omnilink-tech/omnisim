@@ -1,0 +1,338 @@
+[
+  {
+    "scene": "house",
+    "result": {
+      "dumped": true,
+      "errors": 0,
+      "warnings": 0,
+      "render_ms": 4,
+      "profile": {
+        "samples": 50,
+        "warmup_frames": 60,
+        "timing_scope": "CPU collect/render calls and local-shadow encoding; not GPU timestamps or FPS",
+        "collectUs": {
+          "p50": 76.5,
+          "p95": 128.3
+        },
+        "renderUs": {
+          "p50": 4026.5,
+          "p95": 6234.3
+        },
+        "localShadowUs": {
+          "p50": 12.2,
+          "p95": 19.1
+        },
+        "localCandidates": {
+          "p50": 4860.0,
+          "p95": 4860.0
+        },
+        "localDraws": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localFaces": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "local_cache_hit_fraction": 1.0
+      },
+      "gpu_profile": [
+        {
+          "target": 1,
+          "samples": 50,
+          "warmup_frames": 60,
+          "status": "available",
+          "dimensions": [
+            [
+              1896,
+              1113
+            ]
+          ],
+          "aoUs": {
+            "samples": 50,
+            "p50": 1874.944,
+            "p95": 4248.576
+          },
+          "bloomUs": {
+            "samples": 50,
+            "p50": 821.248,
+            "p95": 2801.664
+          },
+          "cpuIntervalUs": {
+            "samples": 50,
+            "p50": 201879.8,
+            "p95": 219933.4
+          },
+          "gpuSpanUs": {
+            "samples": 50,
+            "p50": 33479.68,
+            "p95": 73036.8
+          },
+          "sceneUs": {
+            "samples": 50,
+            "p50": 26799.104,
+            "p95": 58949.632
+          },
+          "ssrUs": {
+            "samples": 50,
+            "p50": 1319.936,
+            "p95": 3845.12
+          },
+          "sunShadowUs": {
+            "samples": 50,
+            "p50": 1026.048,
+            "p95": 3061.76
+          },
+          "tonemapUs": {
+            "samples": 50,
+            "p50": 496.64,
+            "p95": 2131.968
+          }
+        }
+      ],
+      "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-motion.exe",
+      "binary_sha256": "93056bb36643d39afa7c5fdda8809980c65f06fb69e7093092a04aed22345436",
+      "world_sha256": "d22f48c20f388abcdc7174fc0a3730cdf25dc3077915af8b6c0db5e449988af3",
+      "environment": {
+        "OMNISIM_BINARY": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-motion.exe",
+        "OMNILIGHT": "0",
+        "OMNISIM_WGPU_TAA": "0",
+        "OMNISIM_WGPU_CAMFX": "0",
+        "OMNISIM_WGPU_AUTOEXP": "0",
+        "OMNISIM_WGPU_GPU_TIMING": "O:\\omnisim\\.local-runs\\motion-pipeline\\controls\\house.gpu"
+      }
+    },
+    "baseline_image_check": {
+      "same_size": true,
+      "mean_abs": 0.0,
+      "max_abs": 0,
+      "pixels_over_threshold": 0,
+      "threshold": 0,
+      "total_pixels": 2110248
+    }
+  },
+  {
+    "scene": "warehouse",
+    "result": {
+      "dumped": true,
+      "errors": 0,
+      "warnings": 2,
+      "render_ms": 5,
+      "profile": {
+        "samples": 51,
+        "warmup_frames": 60,
+        "timing_scope": "CPU collect/render calls and local-shadow encoding; not GPU timestamps or FPS",
+        "collectUs": {
+          "p50": 550.5,
+          "p95": 896.7
+        },
+        "renderUs": {
+          "p50": 4704.1,
+          "p95": 7431.4
+        },
+        "localShadowUs": {
+          "p50": 66.1,
+          "p95": 121.8
+        },
+        "localCandidates": {
+          "p50": 76650.0,
+          "p95": 76650.0
+        },
+        "localDraws": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localFaces": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "local_cache_hit_fraction": 1.0
+      },
+      "gpu_profile": [
+        {
+          "target": 1,
+          "samples": 51,
+          "warmup_frames": 60,
+          "status": "available",
+          "dimensions": [
+            [
+              1896,
+              1113
+            ]
+          ],
+          "aoUs": {
+            "samples": 51,
+            "p50": 1090.56,
+            "p95": 2976.768
+          },
+          "bloomUs": {
+            "samples": 51,
+            "p50": 721.92,
+            "p95": 1258.496
+          },
+          "cpuIntervalUs": {
+            "samples": 51,
+            "p50": 202093.4,
+            "p95": 211018.0
+          },
+          "gpuSpanUs": {
+            "samples": 51,
+            "p50": 28384.256,
+            "p95": 37453.824
+          },
+          "sceneUs": {
+            "samples": 51,
+            "p50": 20032.512,
+            "p95": 29815.808
+          },
+          "ssrUs": {
+            "samples": 51,
+            "p50": 1545.216,
+            "p95": 2572.288
+          },
+          "sunShadowUs": {
+            "samples": 51,
+            "p50": 724.992,
+            "p95": 1409.024
+          },
+          "tonemapUs": {
+            "samples": 51,
+            "p50": 552.96,
+            "p95": 1631.232
+          }
+        }
+      ],
+      "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-motion.exe",
+      "binary_sha256": "93056bb36643d39afa7c5fdda8809980c65f06fb69e7093092a04aed22345436",
+      "world_sha256": "ea98b5d64de08a5014ecf812f66fcc0daa9c4d4949b3beda274c074e59f87b33",
+      "environment": {
+        "OMNISIM_BINARY": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-motion.exe",
+        "OMNILIGHT": "0",
+        "OMNISIM_WGPU_TAA": "0",
+        "OMNISIM_WGPU_CAMFX": "0",
+        "OMNISIM_WGPU_AUTOEXP": "0",
+        "OMNISIM_WGPU_GPU_TIMING": "O:\\omnisim\\.local-runs\\motion-pipeline\\controls\\warehouse.gpu"
+      }
+    },
+    "baseline_image_check": {
+      "same_size": true,
+      "mean_abs": 0.0,
+      "max_abs": 0,
+      "pixels_over_threshold": 0,
+      "threshold": 0,
+      "total_pixels": 2110248
+    }
+  },
+  {
+    "scene": "city",
+    "result": {
+      "dumped": true,
+      "errors": 0,
+      "warnings": 19,
+      "render_ms": 7,
+      "profile": {
+        "samples": 49,
+        "warmup_frames": 60,
+        "timing_scope": "CPU collect/render calls and local-shadow encoding; not GPU timestamps or FPS",
+        "collectUs": {
+          "p50": 1030.6,
+          "p95": 1579.6
+        },
+        "renderUs": {
+          "p50": 6984.6,
+          "p95": 9432.3
+        },
+        "localShadowUs": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localCandidates": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localDraws": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localFaces": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "local_cache_hit_fraction": 0.0
+      },
+      "gpu_profile": [
+        {
+          "target": 1,
+          "samples": 49,
+          "warmup_frames": 60,
+          "status": "available",
+          "dimensions": [
+            [
+              1896,
+              1113
+            ]
+          ],
+          "aoUs": {
+            "samples": 49,
+            "p50": 3685.376,
+            "p95": 3725.312
+          },
+          "bloomUs": {
+            "samples": 49,
+            "p50": 1393.664,
+            "p95": 1582.08
+          },
+          "cpuIntervalUs": {
+            "samples": 49,
+            "p50": 200746.2,
+            "p95": 220473.0
+          },
+          "gpuSpanUs": {
+            "samples": 49,
+            "p50": 28627.968,
+            "p95": 30644.224
+          },
+          "sceneUs": {
+            "samples": 49,
+            "p50": 16903.168,
+            "p95": 18814.976
+          },
+          "ssrUs": {
+            "samples": 49,
+            "p50": 5050.368,
+            "p95": 5220.352
+          },
+          "sunShadowUs": {
+            "samples": 49,
+            "p50": 309.248,
+            "p95": 327.68
+          },
+          "tonemapUs": {
+            "samples": 49,
+            "p50": 801.792,
+            "p95": 995.328
+          }
+        }
+      ],
+      "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-motion.exe",
+      "binary_sha256": "93056bb36643d39afa7c5fdda8809980c65f06fb69e7093092a04aed22345436",
+      "world_sha256": "6030d11b709e095385ed3dc8045b4c130d75bd2398aad2823fb1cea42d138e94",
+      "environment": {
+        "OMNISIM_BINARY": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-motion.exe",
+        "OMNILIGHT": "0",
+        "OMNISIM_WGPU_TAA": "0",
+        "OMNISIM_WGPU_CAMFX": "0",
+        "OMNISIM_WGPU_AUTOEXP": "0",
+        "OMNISIM_WGPU_GPU_TIMING": "O:\\omnisim\\.local-runs\\motion-pipeline\\controls\\city.gpu"
+      }
+    },
+    "baseline_image_check": {
+      "same_size": true,
+      "mean_abs": 0.0,
+      "max_abs": 0,
+      "pixels_over_threshold": 0,
+      "threshold": 0,
+      "total_pixels": 2110248
+    }
+  }
+]

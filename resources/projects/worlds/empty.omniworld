@@ -1,0 +1,10 @@
+#OMNISIM R2025a utf8
+
+# Empty world template. Robots and solids simulate on Newton by default --
+# leave `physicsBackend` unset ("auto") unless a node needs a specific
+# backend. See docs/guide/newton-physics-backend.md.
+
+WorldInfo {
+}
+Viewpoint {
+}

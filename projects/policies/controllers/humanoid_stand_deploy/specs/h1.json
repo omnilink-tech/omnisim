@@ -1,0 +1,49 @@
+{
+  "name": "h1",
+  "urdf": "projects/robots/unitree/h1/urdf/h1.urdf",
+  "spawn_z": 1.01,
+  "_solved": "Stands deterministically (pure pose, no policy, no ankle PD): KE=800/KD=70, flat-foot squat hip -0.30 / knee 0.60 / ankle -0.30, ank_bias -0.06. bz ~0.98, 0 falls. The thigh-forward squat puts the CoM slightly forward, so a small backward ankle bias centres it; stable basin ~[-0.05,-0.08] (bias 0 tips forward, -0.09 tips back). H1 is light enough to occasionally hold at bias 0 but -0.06 is the robust centre.",
+  "deploy_ke": 800,
+  "deploy_kd": 70,
+  "ank_bias": -0.06,
+  "hip_pitch_joints": ["left_hip_pitch_joint", "right_hip_pitch_joint"],
+  "joint_order": [
+    "left_hip_yaw_joint", "left_hip_roll_joint", "left_hip_pitch_joint",
+    "left_knee_joint", "left_ankle_joint",
+    "right_hip_yaw_joint", "right_hip_roll_joint", "right_hip_pitch_joint",
+    "right_knee_joint", "right_ankle_joint",
+    "torso_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint"
+  ],
+  "nominal": {
+    "left_hip_pitch_joint": -0.30, "left_knee_joint": 0.60, "left_ankle_joint": -0.30,
+    "right_hip_pitch_joint": -0.30, "right_knee_joint": 0.60, "right_ankle_joint": -0.30,
+    "left_shoulder_pitch_joint": 0.0, "left_elbow_joint": 0.0,
+    "right_shoulder_pitch_joint": 0.0, "right_elbow_joint": 0.0
+  },
+  "ankle_pitch_joints": ["left_ankle_joint", "right_ankle_joint"],
+  "ankle_roll_joints": [],
+  "arm_hold": [
+    "torso_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint"
+  ],
+  "upright": {"bz_min": 0.70, "roll_max": 0.7, "pitch_max": 0.7},
+  "settle_s": 0.2,
+  "wave": {
+    "enabled": false,
+    "ramp_s": 1.5,
+    "pose": {
+      "right_shoulder_pitch_joint": 0.0,
+      "right_shoulder_roll_joint": -1.55,
+      "right_shoulder_yaw_joint": 0.3,
+      "right_elbow_joint": 1.2
+    },
+    "osc": {"joint": "right_shoulder_yaw_joint", "amp": 0.5, "freq_hz": 0.9}
+  }
+}

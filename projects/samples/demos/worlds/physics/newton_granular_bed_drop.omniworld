@@ -1,0 +1,287 @@
+#OMNISIM R2025a utf8
+
+# The first GRANULAR world in OmniSim: a rigid cube dropped onto a bed of sand
+# simulated by newton's SolverImplicitMPM (the material-point method) and TWO-WAY
+# COUPLED to the rigid SolverMuJoCo scene over ONE Model by SolverCoupledProxy.
+#
+# ⚠ READ THIS WORLD TOGETHER WITH ITS CONTROL ARM. It is not decoration:
+#
+#     newton_granular_bed_drop_control.omniworld
+#
+# is byte-for-byte this file MINUS the GranularBed node, and it exists because
+# the whole failure mode of this feature is a bed that PARSES, REGISTERS,
+# RENDERS AND DOES NOTHING. The runtime's batched-substep branch drives mj_step
+# directly and never calls solver.step(), so an MPM solver that fails to reach
+# the runtime's `solver_mpm` slot is silently skipped on EVERY tick -- no
+# exception, no warning, nothing in the log. When that happens the cube falls
+# straight through the sand and lands on the FLOOR, i.e. at the control's rest
+# height. Comparing one number against one number is the whole test.
+#
+#   THE DISCRIMINATOR:  CUBE rest z in THIS world  vs  in the control.
+#     control  ->  z = 0.08 exactly (half of the 0.16 cube, resting on the floor
+#                  whose top is z = 0)
+#     this     ->  clearly ABOVE the bed's top surface at z = 0.20, minus
+#                  whatever the cube sinks into the sand
+#   A cube that agrees with the control to within a millimetre HAS NOT TOUCHED
+#   THE SAND, whatever the picture shows.
+#
+# ⚠ THE TWO ARMS DO NOT RUN THE IDENTICAL RIGID SOLVER, and pretending otherwise
+# would be the sort of hidden variable this tree keeps getting bitten by. Any
+# particle source forces the model onto CUDA, and the runtime then moves the
+# MuJoCo entry from CPU mj_step to mujoco_warp (measured 28.4 -> 2.35 ms/step on
+# the cloth drape; it also forfeits bitwise determinism). The control has no
+# particles, so it stays on CPU mj_step. That is worth millimetres, not
+# centimetres, so it cannot manufacture the 0.12 m discriminator above -- but if
+# you want a strict same-solver comparison, run BOTH arms with
+# OMNISIM_NEWTON_CLOTH_CPU_MJ=1, which pins this world's MuJoCo entry back to
+# CPU mj_step. (Expect it to be slow; see the CUDA note below.)
+#
+# ⛔ THIS WORLD REQUIRES CUDA AND WILL REFUSE TO LOAD WITHOUT IT, by design. The
+# runtime raises a named error at finalize rather than degrading, because the
+# CPU MPM path is not slow but unusable: MEASURED 42-67 ms/step at ~3k particles
+# (0.15-0.25x realtime) and 351 ms/step at 8192, against a CUDA path that is
+# nearly FLAT in N (30.9 ms at 2197, 67.4 ms at 405224). OMNISIM_MPM_ALLOW_CPU=1
+# builds it anyway, at those numbers.
+#
+# THE BED'S NUMBERS, derived rather than authored. `count` is a BUDGET, not a
+# target: the particle count comes from voxelSize and particlesPerCell as
+#     n = PRODUCT over i of ( ceil(particlesPerCell * size_i / voxelSize) + 1 )
+# and `count` only caps it, the runtime coarsening voxelSize by bisection until
+# it fits. For the 0.8 x 0.8 x 0.2 m bed below at voxelSize 0.05 and
+# particlesPerCell 3 that is a 49 x 49 x 13 cell lattice = 50 * 50 * 14 =
+# 35000 particles, which fits the 40000 budget, so NO coarsening happens and the
+# authored voxelSize is used exactly. Lower `count` to 8000 and the runtime
+# coarsens instead -- and LOGS the voxel size it settled on, which is the line to
+# read before concluding that a bed "came out wrong".
+#
+# (An aside on that 49: 3 * 0.8 / 0.05 is 48.00000000000001 in binary floating
+# point, so the ceil is 49 rather than 48. The lattice spacing is then
+# size/res = 0.01633 m rather than 0.01667, and the derived particle radius half
+# of that. It is a real wart and it is stated here so a reader who recomputes
+# the numbers by hand does not conclude the formula is wrong.)
+#
+# ⚠ THE BED IS INVISIBLE AT t = 0, ON PURPOSE. Its particle positions are read
+# back from the solver and the readback needs a RUNNING world; before the first
+# physics step there is nothing to read, and the node declines to draw rather
+# than inventing a rest pose (the same choice OmGranularGroup makes on a
+# CUDA-less box). Step once and the sand appears. An empty-looking first frame
+# is this, not a missing node.
+#
+# ⚠ rigidSubsteps 4 IS LOAD-BEARING. At 1, MEASURED, a rigid cube RESTING on the
+# bed GAINS energy and climbs, 0.27 -> 0.99 m. Treat anything below 4 as a
+# diagnostic setting.
+#
+# ⚠ gridType is "sparse" here rather than upstream's faster "fixed", because a
+# "fixed" grid is allocated ONCE from the particle bounds at construction and
+# material that leaves that box produces NaN positions with no error, no warning
+# and no exception of any kind. If you switch this world to "fixed", give it a
+# gridPadding (upstream's coupled example uses 50) -- and know that an
+# all-NaN-positions bed that draws nothing is that trap, not a broken node.
+#
+# ⚠ EXPECTED-BUT-UNVERIFIED. Every number in this header that is marked MEASURED
+# was measured; the cube's final rest height in THIS world is NOT among them and
+# is deliberately not asserted here. Fill it in from a run.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  # ⚠ newtonSolver is deliberately NOT declared. The coupling is selected by the
+  # NODES this world carries, never by that string -- and its schema enum has no
+  # "mujoco+mpm" value to declare, so writing one would be a parse warning and a
+  # second source of truth that can disagree with the nodes. Leaving it unset is
+  # also what keeps this file and the control arm identical apart from the bed.
+  newtonSubsteps 2
+  newtonStatics TRUE
+  newtonGroundMu 1
+}
+Viewpoint {
+  position 3.303 -3.516 3.240
+  orientation -0.278945 0.120681 0.952694 2.359689
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.36 0.40
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 2 2 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 2 2 0.1
+  }
+}
+# The four retaining walls. Sand at these settings is COHESIONLESS (yieldStress
+# 0 = newton's default), so without them the bed spreads across the floor over
+# the first few seconds and the cube ends up on bare ground -- which would then
+# look exactly like the "MPM was skipped" failure this world is built to detect.
+# The walls are ordinary static Solids and the bed collides with them through
+# the same proxy the cube uses.
+#
+# Each wall carries its OWN inline Shape and its own inline boundingObject Box
+# rather than sharing one through DEF/USE. Sharing a Shape between a child list
+# and a second Solid's boundingObject is legal VRML and is exactly the kind of
+# aliasing that is fine until it is not; four short blocks cost nothing and
+# cannot surprise anyone.
+DEF WALL_XN Solid {
+  translation -0.45 0 0.15
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.31 0.34
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 0.02 0.92 0.3
+      }
+    }
+  ]
+  name "wall_xn"
+  boundingObject Box {
+    size 0.02 0.92 0.3
+  }
+}
+DEF WALL_XP Solid {
+  translation 0.45 0 0.15
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.31 0.34
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 0.02 0.92 0.3
+      }
+    }
+  ]
+  name "wall_xp"
+  boundingObject Box {
+    size 0.02 0.92 0.3
+  }
+}
+DEF WALL_YN Solid {
+  translation 0 -0.45 0.15
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.31 0.34
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 0.92 0.02 0.3
+      }
+    }
+  ]
+  name "wall_yn"
+  boundingObject Box {
+    size 0.92 0.02 0.3
+  }
+}
+DEF WALL_YP Solid {
+  translation 0 0.45 0.15
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.31 0.34
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 0.92 0.02 0.3
+      }
+    }
+  ]
+  name "wall_yp"
+  boundingObject Box {
+    size 0.92 0.02 0.3
+  }
+}
+# ⚠ THE MEASUREMENT, and the ONE number both arms are read on. Released from
+# z = 0.60 with nothing holding it, directly above the middle of the bed. With
+# no sand it rests at z = 0.08 exactly -- half of the 0.16 cube, on a floor whose
+# top is z = 0. With sand it must come to rest clearly higher, held up by the
+# bed. That DIFFERENCE is the proof of two-way coupling -- the bed pushing back
+# on a MuJoCo body -- and no screenshot substitutes for it.
+#
+# (This comment is identical in both arms on purpose: the two files share one
+# scene, byte for byte, and differ only by the presence of the bed.)
+DEF CUBE Solid {
+  translation 0 0 0.6
+  children [
+    DEF CUBE_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.42 0.28
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 0.16 0.16 0.16
+      }
+    }
+  ]
+  name "cube"
+  boundingObject USE CUBE_SHAPE
+  physics Physics {
+    density -1
+    mass 2
+  }
+}
+# ⚠ THE NODE UNDER TEST. `translation` is the bed's MINIMUM CORNER, not its
+# centre -- newton's convention, the OPPOSITE of Solid/Box -- so this bed spans
+# x = -0.4 .. 0.4, y = -0.4 .. 0.4, z = 0 .. 0.2. Its top surface is at z = 0.20
+# and that is the number the cube's rest height is read against.
+#
+# The material fields left at 0 are not "off": 0 means UNSET on this node and
+# the runtime omits the corresponding per-particle attribute so newton's own
+# default applies (yieldPressure 1e15, yieldStress 0 = cohesionless,
+# youngModulus 1e15 = rigid grains, poissonRatio 0.3, viscosity 0). density and
+# friction are stated because dry sand is what this world means, and they are
+# the values newton's own sand example uses.
+#
+# `appearance` is a PBRAppearance rather than the bare `diffuseColor` for the
+# same reason every other node in this tree carries one: the canonical recipe
+# declares ambientIntensity 0 (OmniSimSun.proto), so ALL fill light is
+# image-based and reaches a surface only through a PBR material. A Phong bed
+# renders exactly (0,0,0) wherever the sun does not strike it directly.
+# ⚠ Texture MAPS would do nothing here -- a particle is drawn as a unit sphere
+# and the bed has no UV parameterisation at all, so `appearance` contributes
+# colour, roughness, emission and transparency and nothing else.
+DEF BED GranularBed {
+  translation -0.4 -0.4 0
+  size 0.8 0.8 0.2
+  voxelSize 0.05
+  particlesPerCell 3
+  count 40000
+  density 2500
+  friction 0.75
+  rigidSubsteps 4
+  proxyIterations 1
+  gridType "sparse"
+  diffuseColor 0.85 0.7 0.4
+  appearance PBRAppearance {
+    baseColor 0.80 0.66 0.38
+    roughness 0.95
+    metalness 0
+    IBLStrength 1.4
+  }
+}

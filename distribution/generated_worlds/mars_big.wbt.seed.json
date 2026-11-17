@@ -1,0 +1,23 @@
+{
+  "extra": {
+    "boulder_count": 19,
+    "crater_count": 7,
+    "debris_count": 250,
+    "prop_count": 377,
+    "recipe": "mars",
+    "rock_count": 108,
+    "world_age": 0.45
+  },
+  "library_version": "0.1.0",
+  "params": {
+    "boulder_count": 20,
+    "debris_count": 280,
+    "husky_count": 2,
+    "rock_count": 120
+  },
+  "recipe": "mars",
+  "schema_version": 1,
+  "seed": 42,
+  "world_filename": "mars_big.wbt",
+  "world_sha256": "5474685edfc5a0f1054eb1df6f65f7cabb352fcda1000ac34b51c7858396d895"
+}

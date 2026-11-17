@@ -1,0 +1,75 @@
+Vendored third-party component: SipHash (from google/highwayhash)
+=================================================================
+
+Copyright 2015-2017 Google Inc. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use these files except in compliance with the License. A verbatim copy of the
+License is distributed alongside this notice as ./LICENSE. You may also obtain
+a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations under
+the License.
+
+
+Provenance
+----------
+
+Upstream project   google/highwayhash -- https://github.com/google/highwayhash
+Upstream authors   Jan Wassenberg <jan.wassenberg@gmail.com>
+                   Jyrki Alakuijala <jyrki.alakuijala@gmail.com>
+Copyright holder   Google Inc.
+Version vendored   github master as of 2017-04-24 (per ./Readme.md)
+Licence            Apache License, Version 2.0
+
+Vendored files and the copyright year each one declares in its own header:
+
+    compiler_specific.hpp     Copyright 2015 Google Inc. All Rights Reserved.
+    sip_hash.hpp              Copyright 2016 Google Inc. All Rights Reserved.
+    arch_specific.cpp         Copyright 2017 Google Inc. All Rights Reserved.
+    arch_specific.hpp         Copyright 2017 Google Inc. All Rights Reserved.
+    endianess.hpp             Copyright 2017 Google Inc. All Rights Reserved.
+    state_helpers.hpp         Copyright 2017 Google Inc. All Rights Reserved.
+
+The 2015-2017 range above is the span of those six declarations. It is read
+off the files in this directory; no year or holder has been inferred from
+anything outside it.
+
+
+Modifications (Apache-2.0 section 4(b))
+---------------------------------------
+
+The sources are functionally unmodified. Two packaging changes were applied
+when the component was vendored:
+
+  * file extensions were changed from the upstream .h / .cc to .hpp / .cpp, to
+    match this tree's build rules;
+  * the upstream "highwayhash/" include prefix was dropped, so the files
+    include each other by bare name (e.g. #include "arch_specific.hpp"
+    rather than #include "highwayhash/arch_specific.h").
+
+No OmniSim- or Webots-specific code was introduced into any of these files.
+
+
+Unresolved
+----------
+
+  * The exact upstream commit is not recorded anywhere in this directory.
+    ./Readme.md pins only "github master as of 2017.04.24", so the vendored
+    revision cannot be identified to a SHA from the evidence on hand.
+  * The vendoring predates this repository's history for this path: the only
+    commit touching it here is 7692944e7, the src/webots -> src/omnisim
+    directory rename. The component was inherited from upstream Webots.
+  * ./LICENSE is the verbatim Apache-2.0 text, and its closing "APPENDIX: How
+    to apply the Apache License to your work" section still reads
+    "Copyright [yyyy] [name of copyright owner]". That is deliberate and must
+    stay: the appendix is part of the licence's own canonical wording -- it is
+    a template telling a licensor what to put in their source headers, not a
+    blank for a redistributor to fill in. Editing it would corrupt the
+    verbatim licence text. The attribution it refers to is carried by the
+    per-file headers listed above and restated at the top of this file.

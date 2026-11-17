@@ -1,0 +1,2240 @@
+[
+ {
+  "variant": "n8_warp",
+  "rung": 11,
+  "why": "N=8 on the GPU path, fleet spawned IN CONTACT with the contract's generous 4096 budget -- the control",
+  "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\_variant_n8_warp_rung11.wbt",
+  "fault": "none",
+  "run": {
+   "n": 8
+  },
+  "declared": {
+   "newtonSolver": "\"mujoco_warp\""
+  },
+  "checks": [
+   {
+    "name": "distance_worst",
+    "measured": 0.0008765161037445068,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.0008765161037445068,
+    "margin": 0.049123483896255496,
+    "ok": true,
+    "why": "worst relative error, over every robot of every fleet size (1, 4, 8, 16), of d_i against omega_i r t -- the distance that robot would travel ALONE.  The tolerance is rung 4's and is NOT widened with N: the failure this rung exists to catch is a silently truncated constraint vector, documented at 9% displacement error, so a tolerance that grew with N would be pre-authorised to miss it",
+    "key": "distance_worst"
+   },
+   {
+    "name": "wheel_omega_worst",
+    "measured": 2.2892966447685125e-05,
+    "expected": 0.0,
+    "tol": 0.01,
+    "unit": "-",
+    "rel": false,
+    "error": 2.2892966447685125e-05,
+    "margin": 0.009977107033552314,
+    "ok": true,
+    "why": "worst relative error of any robot's mean wheel rate against ITS OWN command.  The commands cycle, so an engine that simulates one robot and copies it lands every clone on one target and reds here",
+    "key": "wheel_omega_worst"
+   },
+   {
+    "name": "roll_overrun_worst",
+    "measured": 0.02981364045671242,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.02981364045671242,
+    "margin": 0.020186359543287583,
+    "ok": true,
+    "why": "rung 4's one-sided kinematic invariant over the whole fleet and the whole run: no body may outrun its own wheels, at any N",
+    "key": "roll_overrun_worst"
+   },
+   {
+    "name": "ride_worst",
+    "measured": 0.0001718163490295188,
+    "expected": 0.0,
+    "tol": 0.02,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0001718163490295188,
+    "margin": 0.01982818365097048,
+    "ok": true,
+    "why": "worst axle deviation from floor_top + wheel_radius over every robot, every fleet and every sample after the initial settle",
+    "key": "ride_worst"
+   },
+   {
+    "name": "lateral_worst",
+    "measured": 0.0,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0,
+    "margin": 0.1,
+    "ok": true,
+    "why": "worst |y - y_0| over every robot and every sample: each robot stays in its own lane at every fleet size",
+    "key": "lateral_worst"
+   },
+   {
+    "name": "separation_shortfall",
+    "measured": 0.0,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0,
+    "margin": 0.1,
+    "ok": true,
+    "why": "max over every fleet of max(0, 1.5 - min pairwise centre distance over the whole run).  All robots start abreast one lane apart and travel at different speeds, so they can only separate.  Asserted GEOMETRICALLY from the poses rather than as a contact count, because this tree has shipped a contact read that returned an empty set for a scene containing 1008 contacts",
+    "key": "separation_shortfall"
+   },
+   {
+    "name": "robots_seen",
+    "measured": 8.0,
+    "expected": 29.0,
+    "tol": 0.0,
+    "unit": "robots",
+    "rel": false,
+    "error": -21.0,
+    "margin": -21.0,
+    "ok": false,
+    "why": "every robot of every fleet was found and measured.  An engine that silently DROPS robots otherwise reports a well-behaved smaller fleet, and every other number in this rung would look fine",
+    "key": "robots_seen"
+   }
+  ],
+  "error": null,
+  "binary": "o:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "cbd80861c9f0d314",
+  "newton": {
+   "backend": "newton",
+   "degraded": false,
+   "finalised": true,
+   "runtime": {
+    "device": "cuda:0",
+    "mujoco": "3.8.1",
+    "mujoco_warp": "3.8.0.3",
+    "newton": "1.2.0",
+    "warp": "1.13.0"
+   },
+   "solver": "MuJoCo (mujoco_warp, WorldInfo.newtonSolver)",
+   "present": true
+  },
+  "single_run_of_multi": true,
+  "measurement": {
+   "steps": null,
+   "sim_time_end": null,
+   "exit_code": 0.0,
+   "n_samples": 0,
+   "distance_worst": 0.0008765161037445068,
+   "wheel_omega_worst": 2.2892966447685125e-05,
+   "lateral_worst": 0.0,
+   "ride_worst": 0.0001718163490295188,
+   "roll_overrun_worst": 0.02981364045671242,
+   "separation_shortfall": 0.0,
+   "robots_seen": 8.0,
+   "solo_deviation_max": null
+  },
+  "per_n": {
+   "n8": {
+    "n": 8,
+    "robots_measured": 8,
+    "min_separation": 1.5000000002497575,
+    "worst": {
+     "distance_worst": 0.0008765161037445068,
+     "wheel_omega_worst": 2.2892966447685125e-05,
+     "lateral_worst": 0.0,
+     "ride_worst": 0.0001718163490295188,
+     "roll_overrun_worst": 0.02981364045671242
+    },
+    "per_robot": {
+     "r00": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993011176586151,
+      "distance_rel_err": -0.0008736029267311651,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017145872116086647,
+      "omega_meas": 2.000023229573454,
+      "roll_overrun": 0.029563876687610957
+     },
+     "r01": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989865899085999,
+      "distance_rel_err": -0.00084450840950027,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712799072265403,
+      "omega_meas": 2.999983159846738,
+      "roll_overrun": 0.02962324160941021
+     },
+     "r02": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986045598983765,
+      "distance_rel_err": -0.000872150063514765,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712203025817649,
+      "omega_meas": 4.000065513334417,
+      "roll_overrun": 0.02981364045671242
+     },
+     "r03": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.998246967792511,
+      "distance_rel_err": -0.0008765161037445068,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001718163490295188,
+      "omega_meas": 5.000114464832238,
+      "roll_overrun": 0.02520396040284778
+     },
+     "r04": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.3979742527008057,
+      "distance_rel_err": -0.0008440613746644545,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017098188400266334,
+      "omega_meas": 5.9999663392133895,
+      "roll_overrun": 0.02352638060914458
+     },
+     "r05": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993023097515106,
+      "distance_rel_err": -0.0008721128106117804,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017145872116086647,
+      "omega_meas": 2.0000330005227056,
+      "roll_overrun": 0.0295639025510257
+     },
+     "r06": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989865899085999,
+      "distance_rel_err": -0.00084450840950027,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712799072265403,
+      "omega_meas": 2.9999832908014947,
+      "roll_overrun": 0.02962324160941021
+     },
+     "r07": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986047387123108,
+      "distance_rel_err": -0.0008720383048058111,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712203025817649,
+      "omega_meas": 4.000065896301209,
+      "roll_overrun": 0.02981361423425155
+     }
+    }
+   }
+  },
+  "constraint_peaks": [
+   "11:06:47 constraint buffers: njmax=4096 nconmax=4096 (0=newton auto) initial nefc=0 ncon=0 nv=80",
+   "11:06:50 constraint peak: nefc=256/4096 ncon=64/4096 tick=25",
+   "INFO: [OmNewtonBackend] constraint buffers set to njmax 4096, nconmax 4096 (0 = engine default 256)"
+  ]
+ },
+ {
+  "variant": "n8_warp_starve",
+  "rung": 11,
+  "why": "N=8 on the GPU path, fleet spawned CLEAR so nefc at t=0 is ~0 and the 256 default stands against 256 needed rows -- the starve",
+  "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\_variant_n8_warp_starve_rung11.wbt",
+  "fault": "starve_budget",
+  "run": {
+   "n": 8
+  },
+  "declared": {
+   "newtonSolver": "\"mujoco_warp\"",
+   "newtonNjmax": null,
+   "newtonNconmax": null
+  },
+  "checks": [
+   {
+    "name": "distance_worst",
+    "measured": 0.0008752048015594482,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.0008752048015594482,
+    "margin": 0.049124795198440555,
+    "ok": true,
+    "why": "worst relative error, over every robot of every fleet size (1, 4, 8, 16), of d_i against omega_i r t -- the distance that robot would travel ALONE.  The tolerance is rung 4's and is NOT widened with N: the failure this rung exists to catch is a silently truncated constraint vector, documented at 9% displacement error, so a tolerance that grew with N would be pre-authorised to miss it",
+    "key": "distance_worst"
+   },
+   {
+    "name": "wheel_omega_worst",
+    "measured": 2.286511228390964e-05,
+    "expected": 0.0,
+    "tol": 0.01,
+    "unit": "-",
+    "rel": false,
+    "error": 2.286511228390964e-05,
+    "margin": 0.00997713488771609,
+    "ok": true,
+    "why": "worst relative error of any robot's mean wheel rate against ITS OWN command.  The commands cycle, so an engine that simulates one robot and copies it lands every clone on one target and reds here",
+    "key": "wheel_omega_worst"
+   },
+   {
+    "name": "roll_overrun_worst",
+    "measured": 0.022680053961208868,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.022680053961208868,
+    "margin": 0.027319946038791135,
+    "ok": true,
+    "why": "rung 4's one-sided kinematic invariant over the whole fleet and the whole run: no body may outrun its own wheels, at any N",
+    "key": "roll_overrun_worst"
+   },
+   {
+    "name": "ride_worst",
+    "measured": 0.0007850289344787376,
+    "expected": 0.0,
+    "tol": 0.02,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0007850289344787376,
+    "margin": 0.019214971065521263,
+    "ok": true,
+    "why": "worst axle deviation from floor_top + wheel_radius over every robot, every fleet and every sample after the initial settle",
+    "key": "ride_worst"
+   },
+   {
+    "name": "lateral_worst",
+    "measured": 0.0,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0,
+    "margin": 0.1,
+    "ok": true,
+    "why": "worst |y - y_0| over every robot and every sample: each robot stays in its own lane at every fleet size",
+    "key": "lateral_worst"
+   },
+   {
+    "name": "separation_shortfall",
+    "measured": 0.0,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0,
+    "margin": 0.1,
+    "ok": true,
+    "why": "max over every fleet of max(0, 1.5 - min pairwise centre distance over the whole run).  All robots start abreast one lane apart and travel at different speeds, so they can only separate.  Asserted GEOMETRICALLY from the poses rather than as a contact count, because this tree has shipped a contact read that returned an empty set for a scene containing 1008 contacts",
+    "key": "separation_shortfall"
+   },
+   {
+    "name": "robots_seen",
+    "measured": 8.0,
+    "expected": 29.0,
+    "tol": 0.0,
+    "unit": "robots",
+    "rel": false,
+    "error": -21.0,
+    "margin": -21.0,
+    "ok": false,
+    "why": "every robot of every fleet was found and measured.  An engine that silently DROPS robots otherwise reports a well-behaved smaller fleet, and every other number in this rung would look fine",
+    "key": "robots_seen"
+   }
+  ],
+  "error": null,
+  "binary": "o:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "cbd80861c9f0d314",
+  "newton": {
+   "backend": "newton",
+   "degraded": false,
+   "finalised": true,
+   "runtime": {
+    "device": "cuda:0",
+    "mujoco": "3.8.1",
+    "mujoco_warp": "3.8.0.3",
+    "newton": "1.2.0",
+    "warp": "1.13.0"
+   },
+   "solver": "MuJoCo (mujoco_warp, WorldInfo.newtonSolver)",
+   "present": true
+  },
+  "single_run_of_multi": true,
+  "measurement": {
+   "steps": null,
+   "sim_time_end": null,
+   "exit_code": 0.0,
+   "n_samples": 0,
+   "distance_worst": 0.0008752048015594482,
+   "wheel_omega_worst": 2.286511228390964e-05,
+   "lateral_worst": 0.0,
+   "ride_worst": 0.0007850289344787376,
+   "roll_overrun_worst": 0.022680053961208868,
+   "separation_shortfall": 0.0,
+   "robots_seen": 8.0,
+   "solo_deviation_max": null
+  },
+  "per_n": {
+   "n8": {
+    "n": 8,
+    "robots_measured": 8,
+    "min_separation": 1.5,
+    "worst": {
+     "distance_worst": 0.0008752048015594482,
+     "wheel_omega_worst": 2.286511228390964e-05,
+     "lateral_worst": 0.0,
+     "ride_worst": 0.0007850289344787376,
+     "roll_overrun_worst": 0.022680053961208868
+    },
+    "per_robot": {
+     "r00": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993030548095703,
+      "distance_rel_err": -0.0008711814880371649,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000709569454193093,
+      "omega_meas": 2.0000328161109335,
+      "roll_overrun": 0.01995464096420463
+     },
+     "r01": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.19898521900177,
+      "distance_rel_err": -0.000845650831858465,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0006094932556152122,
+      "omega_meas": 2.999982965658996,
+      "roll_overrun": 0.01796181374928696
+     },
+     "r02": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986061096191406,
+      "distance_rel_err": -0.0008711814880371649,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0005981087684631126,
+      "omega_meas": 4.0000658658246895,
+      "roll_overrun": 0.02098499150203703
+     },
+     "r03": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.998249590396881,
+      "distance_rel_err": -0.0008752048015594482,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000589168071746804,
+      "omega_meas": 5.0001143255614195,
+      "roll_overrun": 0.022680053961208868
+     },
+     "r04": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.3979703187942505,
+      "distance_rel_err": -0.0008457005023957778,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0007850289344787376,
+      "omega_meas": 5.999966177615512,
+      "roll_overrun": 0.01963982190835689
+     },
+     "r05": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993030548095703,
+      "distance_rel_err": -0.0008711814880371649,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000709569454193093,
+      "omega_meas": 2.0000329275868913,
+      "roll_overrun": 0.0199546407293687
+     },
+     "r06": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989851593971252,
+      "distance_rel_err": -0.0008457005023957778,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0006094932556152122,
+      "omega_meas": 2.999982882798961,
+      "roll_overrun": 0.01796132618568058
+     },
+     "r07": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986061096191406,
+      "distance_rel_err": -0.0008711814880371649,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0005981087684631126,
+      "omega_meas": 4.000065865824694,
+      "roll_overrun": 0.020985043312214513
+     }
+    }
+   }
+  },
+  "constraint_peaks": [
+   "11:07:13 constraint buffers: njmax=256 nconmax=256 (0=newton auto) initial nefc=0 ncon=0 nv=80",
+   "11:07:15 constraint peak: nefc=96/256 ncon=24/256 tick=25",
+   "11:07:16 constraint peak: nefc=256/256 ncon=64/256 tick=50"
+  ]
+ },
+ {
+  "variant": "n16_warp",
+  "rung": 11,
+  "why": "N=16 on the GPU path, fleet spawned IN CONTACT with the contract's generous 4096 budget -- the control",
+  "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\_variant_n16_warp_rung11.wbt",
+  "fault": "none",
+  "run": {
+   "n": 16
+  },
+  "declared": {
+   "newtonSolver": "\"mujoco_warp\""
+  },
+  "checks": [
+   {
+    "name": "distance_worst",
+    "measured": 0.0008765757083892822,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.0008765757083892822,
+    "margin": 0.04912342429161072,
+    "ok": true,
+    "why": "worst relative error, over every robot of every fleet size (1, 4, 8, 16), of d_i against omega_i r t -- the distance that robot would travel ALONE.  The tolerance is rung 4's and is NOT widened with N: the failure this rung exists to catch is a silently truncated constraint vector, documented at 9% displacement error, so a tolerance that grew with N would be pre-authorised to miss it",
+    "key": "distance_worst"
+   },
+   {
+    "name": "wheel_omega_worst",
+    "measured": 2.284042230193961e-05,
+    "expected": 0.0,
+    "tol": 0.01,
+    "unit": "-",
+    "rel": false,
+    "error": 2.284042230193961e-05,
+    "margin": 0.00997715957769806,
+    "ok": true,
+    "why": "worst relative error of any robot's mean wheel rate against ITS OWN command.  The commands cycle, so an engine that simulates one robot and copies it lands every clone on one target and reds here",
+    "key": "wheel_omega_worst"
+   },
+   {
+    "name": "roll_overrun_worst",
+    "measured": 0.02981432265633077,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.02981432265633077,
+    "margin": 0.02018567734366923,
+    "ok": true,
+    "why": "rung 4's one-sided kinematic invariant over the whole fleet and the whole run: no body may outrun its own wheels, at any N",
+    "key": "roll_overrun_worst"
+   },
+   {
+    "name": "ride_worst",
+    "measured": 0.0001718163490295188,
+    "expected": 0.0,
+    "tol": 0.02,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0001718163490295188,
+    "margin": 0.01982818365097048,
+    "ok": true,
+    "why": "worst axle deviation from floor_top + wheel_radius over every robot, every fleet and every sample after the initial settle",
+    "key": "ride_worst"
+   },
+   {
+    "name": "lateral_worst",
+    "measured": 0.0,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0,
+    "margin": 0.1,
+    "ok": true,
+    "why": "worst |y - y_0| over every robot and every sample: each robot stays in its own lane at every fleet size",
+    "key": "lateral_worst"
+   },
+   {
+    "name": "separation_shortfall",
+    "measured": 0.0,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0,
+    "margin": 0.1,
+    "ok": true,
+    "why": "max over every fleet of max(0, 1.5 - min pairwise centre distance over the whole run).  All robots start abreast one lane apart and travel at different speeds, so they can only separate.  Asserted GEOMETRICALLY from the poses rather than as a contact count, because this tree has shipped a contact read that returned an empty set for a scene containing 1008 contacts",
+    "key": "separation_shortfall"
+   },
+   {
+    "name": "robots_seen",
+    "measured": 16.0,
+    "expected": 29.0,
+    "tol": 0.0,
+    "unit": "robots",
+    "rel": false,
+    "error": -13.0,
+    "margin": -13.0,
+    "ok": false,
+    "why": "every robot of every fleet was found and measured.  An engine that silently DROPS robots otherwise reports a well-behaved smaller fleet, and every other number in this rung would look fine",
+    "key": "robots_seen"
+   }
+  ],
+  "error": null,
+  "binary": "o:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "cbd80861c9f0d314",
+  "newton": {
+   "backend": "newton",
+   "degraded": false,
+   "finalised": true,
+   "runtime": {
+    "device": "cuda:0",
+    "mujoco": "3.8.1",
+    "mujoco_warp": "3.8.0.3",
+    "newton": "1.2.0",
+    "warp": "1.13.0"
+   },
+   "solver": "MuJoCo (mujoco_warp, WorldInfo.newtonSolver)",
+   "present": true
+  },
+  "single_run_of_multi": true,
+  "measurement": {
+   "steps": null,
+   "sim_time_end": null,
+   "exit_code": 0.0,
+   "n_samples": 0,
+   "distance_worst": 0.0008765757083892822,
+   "wheel_omega_worst": 2.284042230193961e-05,
+   "lateral_worst": 0.0,
+   "ride_worst": 0.0001718163490295188,
+   "roll_overrun_worst": 0.02981432265633077,
+   "separation_shortfall": 0.0,
+   "robots_seen": 16.0,
+   "solo_deviation_max": null
+  },
+  "per_n": {
+   "n16": {
+    "n": 16,
+    "robots_measured": 16,
+    "min_separation": 1.5000000002497524,
+    "worst": {
+     "distance_worst": 0.0008765757083892822,
+     "wheel_omega_worst": 2.284042230193961e-05,
+     "lateral_worst": 0.0,
+     "ride_worst": 0.0001718163490295188,
+     "roll_overrun_worst": 0.02981432265633077
+    },
+    "per_robot": {
+     "r00": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993022799491882,
+      "distance_rel_err": -0.000872150063514765,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017145872116086647,
+      "omega_meas": 2.000032903403538,
+      "roll_overrun": 0.029563876687610957
+     },
+     "r01": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989866495132446,
+      "distance_rel_err": -0.0008444587389629572,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712799072265403,
+      "omega_meas": 2.999982942066774,
+      "roll_overrun": 0.02962324160941021
+     },
+     "r02": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986046195030212,
+      "distance_rel_err": -0.0008721128106117804,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712203025817649,
+      "omega_meas": 4.000066068175986,
+      "roll_overrun": 0.02981432265633077
+     },
+     "r03": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.9982468485832214,
+      "distance_rel_err": -0.0008765757083892822,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001718163490295188,
+      "omega_meas": 5.000114194495675,
+      "roll_overrun": 0.025203460045285064
+     },
+     "r04": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.39797306060791,
+      "distance_rel_err": -0.0008445580800375828,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017098188400266334,
+      "omega_meas": 5.999966094765428,
+      "roll_overrun": 0.02352636268037389
+     },
+     "r05": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993022799491882,
+      "distance_rel_err": -0.000872150063514765,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017145872116086647,
+      "omega_meas": 2.0000329034035387,
+      "roll_overrun": 0.029563876687610957
+     },
+     "r06": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989866495132446,
+      "distance_rel_err": -0.0008444587389629572,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712799072265403,
+      "omega_meas": 2.9999829420667696,
+      "roll_overrun": 0.02962324160941021
+     },
+     "r07": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.598604679107666,
+      "distance_rel_err": -0.0008720755577087957,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712203025817649,
+      "omega_meas": 4.0000660430639945,
+      "roll_overrun": 0.02981350934440896
+     },
+     "r08": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.9982468485832214,
+      "distance_rel_err": -0.0008765757083892822,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001718163490295188,
+      "omega_meas": 5.00011420211151,
+      "roll_overrun": 0.02520371022400547
+     },
+     "r09": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.39797306060791,
+      "distance_rel_err": -0.0008445580800375828,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017098188400266334,
+      "omega_meas": 5.999966094765438,
+      "roll_overrun": 0.02352583750025583
+     },
+     "r10": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993022799491882,
+      "distance_rel_err": -0.000872150063514765,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017145872116086647,
+      "omega_meas": 2.0000329034035387,
+      "roll_overrun": 0.029563876687610957
+     },
+     "r11": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989866495132446,
+      "distance_rel_err": -0.0008444587389629572,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712799072265403,
+      "omega_meas": 2.9999829420667714,
+      "roll_overrun": 0.02962324160941021
+     },
+     "r12": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986046195030212,
+      "distance_rel_err": -0.0008721128106117804,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712203025817649,
+      "omega_meas": 4.000065836851918,
+      "roll_overrun": 0.02981361423425155
+     },
+     "r13": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.9982468485832214,
+      "distance_rel_err": -0.0008765757083892822,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001718163490295188,
+      "omega_meas": 5.000114167646031,
+      "roll_overrun": 0.025203438691532964
+     },
+     "r14": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.39797306060791,
+      "distance_rel_err": -0.0008445580800375828,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017098188400266334,
+      "omega_meas": 5.999966094765437,
+      "roll_overrun": 0.02352636268037389
+     },
+     "r15": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993022799491882,
+      "distance_rel_err": -0.000872150063514765,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017145872116086647,
+      "omega_meas": 2.000032903403538,
+      "roll_overrun": 0.029563876687610957
+     }
+    }
+   }
+  },
+  "constraint_peaks": [
+   "11:07:41 constraint buffers: njmax=4096 nconmax=4096 (0=newton auto) initial nefc=0 ncon=0 nv=160",
+   "11:07:43 constraint peak: nefc=512/4096 ncon=128/4096 tick=25",
+   "INFO: [OmNewtonBackend] constraint buffers set to njmax 4096, nconmax 4096 (0 = engine default 256)"
+  ]
+ },
+ {
+  "variant": "n16_warp_starve",
+  "rung": 11,
+  "why": "N=16 on the GPU path, fleet spawned CLEAR so nefc at t=0 is ~0 and the 256 default stands against 512 needed rows -- the starve",
+  "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\_variant_n16_warp_starve_rung11.wbt",
+  "fault": "starve_budget",
+  "run": {
+   "n": 16
+  },
+  "declared": {
+   "newtonSolver": "\"mujoco_warp\"",
+   "newtonNjmax": null,
+   "newtonNconmax": null
+  },
+  "checks": [
+   {
+    "name": "distance_worst",
+    "measured": 0.0024382239703256425,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.0024382239703256425,
+    "margin": 0.04756177602967436,
+    "ok": true,
+    "why": "worst relative error, over every robot of every fleet size (1, 4, 8, 16), of d_i against omega_i r t -- the distance that robot would travel ALONE.  The tolerance is rung 4's and is NOT widened with N: the failure this rung exists to catch is a silently truncated constraint vector, documented at 9% displacement error, so a tolerance that grew with N would be pre-authorised to miss it",
+    "key": "distance_worst"
+   },
+   {
+    "name": "wheel_omega_worst",
+    "measured": 9.782200615637837e-05,
+    "expected": 0.0,
+    "tol": 0.01,
+    "unit": "-",
+    "rel": false,
+    "error": 9.782200615637837e-05,
+    "margin": 0.009902177993843622,
+    "ok": true,
+    "why": "worst relative error of any robot's mean wheel rate against ITS OWN command.  The commands cycle, so an engine that simulates one robot and copies it lands every clone on one target and reds here",
+    "key": "wheel_omega_worst"
+   },
+   {
+    "name": "roll_overrun_worst",
+    "measured": 0.020872700091479457,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.020872700091479457,
+    "margin": 0.029127299908520546,
+    "ok": true,
+    "why": "rung 4's one-sided kinematic invariant over the whole fleet and the whole run: no body may outrun its own wheels, at any N",
+    "key": "roll_overrun_worst"
+   },
+   {
+    "name": "ride_worst",
+    "measured": 0.002756214141845681,
+    "expected": 0.0,
+    "tol": 0.02,
+    "unit": "m",
+    "rel": false,
+    "error": 0.002756214141845681,
+    "margin": 0.01724378585815432,
+    "ok": true,
+    "why": "worst axle deviation from floor_top + wheel_radius over every robot, every fleet and every sample after the initial settle",
+    "key": "ride_worst"
+   },
+   {
+    "name": "lateral_worst",
+    "measured": 0.01750659942626953,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.01750659942626953,
+    "margin": 0.08249340057373047,
+    "ok": true,
+    "why": "worst |y - y_0| over every robot and every sample: each robot stays in its own lane at every fleet size",
+    "key": "lateral_worst"
+   },
+   {
+    "name": "separation_shortfall",
+    "measured": 5.138310979391214e-05,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 5.138310979391214e-05,
+    "margin": 0.0999486168902061,
+    "ok": true,
+    "why": "max over every fleet of max(0, 1.5 - min pairwise centre distance over the whole run).  All robots start abreast one lane apart and travel at different speeds, so they can only separate.  Asserted GEOMETRICALLY from the poses rather than as a contact count, because this tree has shipped a contact read that returned an empty set for a scene containing 1008 contacts",
+    "key": "separation_shortfall"
+   },
+   {
+    "name": "robots_seen",
+    "measured": 16.0,
+    "expected": 29.0,
+    "tol": 0.0,
+    "unit": "robots",
+    "rel": false,
+    "error": -13.0,
+    "margin": -13.0,
+    "ok": false,
+    "why": "every robot of every fleet was found and measured.  An engine that silently DROPS robots otherwise reports a well-behaved smaller fleet, and every other number in this rung would look fine",
+    "key": "robots_seen"
+   }
+  ],
+  "error": null,
+  "binary": "o:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "cbd80861c9f0d314",
+  "newton": {
+   "backend": "newton",
+   "degraded": false,
+   "finalised": true,
+   "runtime": {
+    "device": "cuda:0",
+    "mujoco": "3.8.1",
+    "mujoco_warp": "3.8.0.3",
+    "newton": "1.2.0",
+    "warp": "1.13.0"
+   },
+   "solver": "MuJoCo (mujoco_warp, WorldInfo.newtonSolver)",
+   "present": true
+  },
+  "single_run_of_multi": true,
+  "measurement": {
+   "steps": null,
+   "sim_time_end": null,
+   "exit_code": 0.0,
+   "n_samples": 0,
+   "distance_worst": 0.0024382239703256425,
+   "wheel_omega_worst": 9.782200615637837e-05,
+   "lateral_worst": 0.01750659942626953,
+   "ride_worst": 0.002756214141845681,
+   "roll_overrun_worst": 0.020872700091479457,
+   "separation_shortfall": 5.138310979391214e-05,
+   "robots_seen": 16.0,
+   "solo_deviation_max": null
+  },
+  "per_n": {
+   "n16": {
+    "n": 16,
+    "robots_measured": 16,
+    "min_separation": 1.499948616890206,
+    "worst": {
+     "distance_worst": 0.0024382239703256425,
+     "wheel_omega_worst": 9.782200615637837e-05,
+     "lateral_worst": 0.01750659942626953,
+     "ride_worst": 0.002756214141845681,
+     "roll_overrun_worst": 0.020872700091479457
+    },
+    "per_robot": {
+     "r00": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7980494208237395,
+      "distance_rel_err": -0.0024382239703256425,
+      "lateral_m": 0.0020608901977539062,
+      "ride_dev_m": 0.002152419090270974,
+      "omega_meas": 1.9998043559876872,
+      "roll_overrun": 0.0023517103650632087
+     },
+     "r01": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1974216825395931,
+      "distance_rel_err": -0.0021485978836725352,
+      "lateral_m": 0.00030612945556640625,
+      "ride_dev_m": 0.0015877842903136985,
+      "omega_meas": 3.0000086731951923,
+      "roll_overrun": 0.0
+     },
+     "r02": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5965970973811217,
+      "distance_rel_err": -0.002126814136799021,
+      "lateral_m": 0.0005321502685546875,
+      "ride_dev_m": 0.0012271761894225852,
+      "omega_meas": 4.000050381439183,
+      "roll_overrun": 0.009533257241353565
+     },
+     "r03": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.995409270065867,
+      "distance_rel_err": -0.0022953649670665044,
+      "lateral_m": 0.0054473876953125,
+      "ride_dev_m": 0.0019281864166259544,
+      "omega_meas": 5.000015285594301,
+      "roll_overrun": 0.001135842314504698
+     },
+     "r04": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.3953759349626402,
+      "distance_rel_err": -0.0019266937655667187,
+      "lateral_m": 0.004133701324462891,
+      "ride_dev_m": 0.0016441106796264426,
+      "omega_meas": 6.000205015443348,
+      "roll_overrun": 0.0006094151643882828
+     },
+     "r05": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.798392652504922,
+      "distance_rel_err": -0.0020091843688475886,
+      "lateral_m": 0.0009534358978271484,
+      "ride_dev_m": 0.0012395739555358665,
+      "omega_meas": 2.0001201378156344,
+      "roll_overrun": 0.0020560579808823753
+     },
+     "r06": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1975483995280547,
+      "distance_rel_err": -0.0020430003932879006,
+      "lateral_m": 0.0013155937194824219,
+      "ride_dev_m": 0.00180772542953489,
+      "omega_meas": 3.000117502002958,
+      "roll_overrun": 0.007639714450080826
+     },
+     "r07": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5969215673813042,
+      "distance_rel_err": -0.0019240203866849326,
+      "lateral_m": 0.006174623966217041,
+      "ride_dev_m": 0.0012887477874755637,
+      "omega_meas": 4.000079572965834,
+      "roll_overrun": 0.009934629795448124
+     },
+     "r08": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.9958837178104178,
+      "distance_rel_err": -0.002058141094791077,
+      "lateral_m": 0.0053400397300720215,
+      "ride_dev_m": 0.001386916637420632,
+      "omega_meas": 5.000049961574739,
+      "roll_overrun": 0.010352187189827777
+     },
+     "r09": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.394977829069462,
+      "distance_rel_err": -0.0020925712210576966,
+      "lateral_m": 0.0019817352294921875,
+      "ride_dev_m": 0.001170849800109841,
+      "omega_meas": 6.000114260842412,
+      "roll_overrun": 0.013450245994885757
+     },
+     "r10": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7981937754406738,
+      "distance_rel_err": -0.0022577806991577742,
+      "lateral_m": 0.0002949237823486328,
+      "ride_dev_m": 0.0015478491783141868,
+      "omega_meas": 1.9999590276926504,
+      "roll_overrun": 0.01814262001848932
+     },
+     "r11": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1974010778066282,
+      "distance_rel_err": -0.002165768494476657,
+      "lateral_m": 0.0014781951904296875,
+      "ride_dev_m": 0.002756214141845681,
+      "omega_meas": 2.99999989325538,
+      "roll_overrun": 0.0162314120995688
+     },
+     "r12": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5964810628559847,
+      "distance_rel_err": -0.0021993357150096315,
+      "lateral_m": 0.0003018379211425781,
+      "ride_dev_m": 0.002679145336151101,
+      "omega_meas": 4.000009684837497,
+      "roll_overrun": 0.01921695948014257
+     },
+     "r13": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.995664996534303,
+      "distance_rel_err": -0.00216750173284852,
+      "lateral_m": 0.0068721771240234375,
+      "ride_dev_m": 0.0021039605140685813,
+      "omega_meas": 4.999998280123077,
+      "roll_overrun": 0.020872700091479457
+     },
+     "r14": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.395120112436214,
+      "distance_rel_err": -0.0020332864849109673,
+      "lateral_m": 0.01750659942626953,
+      "ride_dev_m": 0.0024016857147216575,
+      "omega_meas": 5.99996690634852,
+      "roll_overrun": 0.010964850605655885
+     },
+     "r15": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7982909679691971,
+      "distance_rel_err": -0.002136290038503713,
+      "lateral_m": 2.288818359375e-05,
+      "ride_dev_m": 0.0025701880455016868,
+      "omega_meas": 2.0000168668737053,
+      "roll_overrun": 0.0002793606192650344
+     }
+    }
+   }
+  },
+  "constraint_peaks": [
+   "11:08:14 constraint buffers: njmax=256 nconmax=256 (0=newton auto) initial nefc=0 ncon=0 nv=160",
+   "11:08:16 constraint peak: nefc=192/256 ncon=48/256 tick=25",
+   "11:08:17 constraint peak: nefc=512/256 ncon=128/256 tick=50  *** OVERFLOW: raise WorldInfo.newtonNjmax / newtonNconmax ***",
+   "WARNING: [OmNewtonBackend] CONSTRAINT BUFFER OVERFLOW at tick 50: peak nefc=512 vs njmax=256, peak ncon=128 vs nconmax=256. mujoco_warp SILENTLY DROPS every constraint row past njmax (and every contact past nconmax), so contact solving is degrading and the drop order is a nondeterministic GPU atomic race -- the run will still exit 0 with a clean log. Fix: raise WorldInfo.newtonNjmax / newtonNconmax (leave HEADROOM -- sizing to the measured peak is itself a trap, docs/benchmarks/determinism-scope.md sec.3), or set OMNISIM_NEWTON_NJMAX / OMNISIM_NEWTON_NCONMAX."
+  ]
+ },
+ {
+  "variant": "n8_warp_nobudget",
+  "rung": 11,
+  "why": "N=8 on the GPU path, fleet spawned IN CONTACT, budget declaration REMOVED -- the single-change starve",
+  "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\_variant_n8_warp_nobudget_rung11.wbt",
+  "fault": "none",
+  "run": {
+   "n": 8
+  },
+  "declared": {
+   "newtonSolver": "\"mujoco_warp\"",
+   "newtonNjmax": null,
+   "newtonNconmax": null
+  },
+  "checks": [
+   {
+    "name": "distance_worst",
+    "measured": 0.0008765161037445068,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.0008765161037445068,
+    "margin": 0.049123483896255496,
+    "ok": true,
+    "why": "worst relative error, over every robot of every fleet size (1, 4, 8, 16), of d_i against omega_i r t -- the distance that robot would travel ALONE.  The tolerance is rung 4's and is NOT widened with N: the failure this rung exists to catch is a silently truncated constraint vector, documented at 9% displacement error, so a tolerance that grew with N would be pre-authorised to miss it",
+    "key": "distance_worst"
+   },
+   {
+    "name": "wheel_omega_worst",
+    "measured": 2.283120562651675e-05,
+    "expected": 0.0,
+    "tol": 0.01,
+    "unit": "-",
+    "rel": false,
+    "error": 2.283120562651675e-05,
+    "margin": 0.009977168794373483,
+    "ok": true,
+    "why": "worst relative error of any robot's mean wheel rate against ITS OWN command.  The commands cycle, so an engine that simulates one robot and copies it lands every clone on one target and reds here",
+    "key": "wheel_omega_worst"
+   },
+   {
+    "name": "roll_overrun_worst",
+    "measured": 0.029813640456712198,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.029813640456712198,
+    "margin": 0.020186359543287805,
+    "ok": true,
+    "why": "rung 4's one-sided kinematic invariant over the whole fleet and the whole run: no body may outrun its own wheels, at any N",
+    "key": "roll_overrun_worst"
+   },
+   {
+    "name": "ride_worst",
+    "measured": 0.0001718163490295188,
+    "expected": 0.0,
+    "tol": 0.02,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0001718163490295188,
+    "margin": 0.01982818365097048,
+    "ok": true,
+    "why": "worst axle deviation from floor_top + wheel_radius over every robot, every fleet and every sample after the initial settle",
+    "key": "ride_worst"
+   },
+   {
+    "name": "lateral_worst",
+    "measured": 0.0,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0,
+    "margin": 0.1,
+    "ok": true,
+    "why": "worst |y - y_0| over every robot and every sample: each robot stays in its own lane at every fleet size",
+    "key": "lateral_worst"
+   },
+   {
+    "name": "separation_shortfall",
+    "measured": 0.0,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0,
+    "margin": 0.1,
+    "ok": true,
+    "why": "max over every fleet of max(0, 1.5 - min pairwise centre distance over the whole run).  All robots start abreast one lane apart and travel at different speeds, so they can only separate.  Asserted GEOMETRICALLY from the poses rather than as a contact count, because this tree has shipped a contact read that returned an empty set for a scene containing 1008 contacts",
+    "key": "separation_shortfall"
+   },
+   {
+    "name": "robots_seen",
+    "measured": 8.0,
+    "expected": 29.0,
+    "tol": 0.0,
+    "unit": "robots",
+    "rel": false,
+    "error": -21.0,
+    "margin": -21.0,
+    "ok": false,
+    "why": "every robot of every fleet was found and measured.  An engine that silently DROPS robots otherwise reports a well-behaved smaller fleet, and every other number in this rung would look fine",
+    "key": "robots_seen"
+   }
+  ],
+  "error": null,
+  "binary": "o:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "cbd80861c9f0d314",
+  "newton": {
+   "backend": "newton",
+   "degraded": false,
+   "finalised": true,
+   "runtime": {
+    "device": "cuda:0",
+    "mujoco": "3.8.1",
+    "mujoco_warp": "3.8.0.3",
+    "newton": "1.2.0",
+    "warp": "1.13.0"
+   },
+   "solver": "MuJoCo (mujoco_warp, WorldInfo.newtonSolver)",
+   "present": true
+  },
+  "single_run_of_multi": true,
+  "measurement": {
+   "steps": null,
+   "sim_time_end": null,
+   "exit_code": 0.0,
+   "n_samples": 0,
+   "distance_worst": 0.0008765161037445068,
+   "wheel_omega_worst": 2.283120562651675e-05,
+   "lateral_worst": 0.0,
+   "ride_worst": 0.0001718163490295188,
+   "roll_overrun_worst": 0.029813640456712198,
+   "separation_shortfall": 0.0,
+   "robots_seen": 8.0,
+   "solo_deviation_max": null
+  },
+  "per_n": {
+   "n8": {
+    "n": 8,
+    "robots_measured": 8,
+    "min_separation": 1.5000000002497567,
+    "worst": {
+     "distance_worst": 0.0008765161037445068,
+     "wheel_omega_worst": 2.283120562651675e-05,
+     "lateral_worst": 0.0,
+     "ride_worst": 0.0001718163490295188,
+     "roll_overrun_worst": 0.029813640456712198
+    },
+    "per_robot": {
+     "r00": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7992992997169495,
+      "distance_rel_err": -0.0008758753538132269,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017145872116086647,
+      "omega_meas": 2.000033342957118,
+      "roll_overrun": 0.029563876687610957
+     },
+     "r01": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989865899085999,
+      "distance_rel_err": -0.00084450840950027,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712799072265403,
+      "omega_meas": 2.999982969715419,
+      "roll_overrun": 0.029623138100534963
+     },
+     "r02": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986045598983765,
+      "distance_rel_err": -0.000872150063514765,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712203025817649,
+      "omega_meas": 4.000065897044613,
+      "roll_overrun": 0.029813640456712198
+     },
+     "r03": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.998246967792511,
+      "distance_rel_err": -0.0008765161037445068,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001718163490295188,
+      "omega_meas": 5.000114156028133,
+      "roll_overrun": 0.025203752931520107
+     },
+     "r04": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.3979800939559937,
+      "distance_rel_err": -0.0008416275183361261,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017098188400266334,
+      "omega_meas": 5.999966074190426,
+      "roll_overrun": 0.023526088502878517
+     },
+     "r05": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7992992997169495,
+      "distance_rel_err": -0.0008758753538132269,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.00017145872116086647,
+      "omega_meas": 2.000025388880567,
+      "roll_overrun": 0.029563876687610957
+     },
+     "r06": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989865899085999,
+      "distance_rel_err": -0.00084450840950027,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712799072265403,
+      "omega_meas": 2.999983100669661,
+      "roll_overrun": 0.02962324160941021
+     },
+     "r07": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986047387123108,
+      "distance_rel_err": -0.0008720383048058111,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0001712203025817649,
+      "omega_meas": 4.000065897788053,
+      "roll_overrun": 0.029813640456712198
+     }
+    }
+   }
+  },
+  "constraint_peaks": [
+   "11:08:47 constraint buffers: njmax=256 nconmax=256 (0=newton auto) initial nefc=0 ncon=0 nv=80",
+   "11:08:50 constraint peak: nefc=256/256 ncon=64/256 tick=25"
+  ]
+ },
+ {
+  "variant": "n16_warp_nobudget",
+  "rung": 11,
+  "why": "N=16 on the GPU path, fleet spawned IN CONTACT, budget declaration REMOVED -- the single-change starve",
+  "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\_variant_n16_warp_nobudget_rung11.wbt",
+  "fault": "none",
+  "run": {
+   "n": 16
+  },
+  "declared": {
+   "newtonSolver": "\"mujoco_warp\"",
+   "newtonNjmax": null,
+   "newtonNconmax": null
+  },
+  "checks": [
+   {
+    "name": "distance_worst",
+    "measured": 0.0016782283482250082,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.0016782283482250082,
+    "margin": 0.048321771651774995,
+    "ok": true,
+    "why": "worst relative error, over every robot of every fleet size (1, 4, 8, 16), of d_i against omega_i r t -- the distance that robot would travel ALONE.  The tolerance is rung 4's and is NOT widened with N: the failure this rung exists to catch is a silently truncated constraint vector, documented at 9% displacement error, so a tolerance that grew with N would be pre-authorised to miss it",
+    "key": "distance_worst"
+   },
+   {
+    "name": "wheel_omega_worst",
+    "measured": 4.192780492062731e-05,
+    "expected": 0.0,
+    "tol": 0.01,
+    "unit": "-",
+    "rel": false,
+    "error": 4.192780492062731e-05,
+    "margin": 0.009958072195079373,
+    "ok": true,
+    "why": "worst relative error of any robot's mean wheel rate against ITS OWN command.  The commands cycle, so an engine that simulates one robot and copies it lands every clone on one target and reds here",
+    "key": "wheel_omega_worst"
+   },
+   {
+    "name": "roll_overrun_worst",
+    "measured": 0.02224144779792092,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.02224144779792092,
+    "margin": 0.02775855220207908,
+    "ok": true,
+    "why": "rung 4's one-sided kinematic invariant over the whole fleet and the whole run: no body may outrun its own wheels, at any N",
+    "key": "roll_overrun_worst"
+   },
+   {
+    "name": "ride_worst",
+    "measured": 0.0008557796478271262,
+    "expected": 0.0,
+    "tol": 0.02,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0008557796478271262,
+    "margin": 0.019144220352172874,
+    "ok": true,
+    "why": "worst axle deviation from floor_top + wheel_radius over every robot, every fleet and every sample after the initial settle",
+    "key": "ride_worst"
+   },
+   {
+    "name": "lateral_worst",
+    "measured": 0.005108833312988281,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.005108833312988281,
+    "margin": 0.09489116668701172,
+    "ok": true,
+    "why": "worst |y - y_0| over every robot and every sample: each robot stays in its own lane at every fleet size",
+    "key": "lateral_worst"
+   },
+   {
+    "name": "separation_shortfall",
+    "measured": 0.00029832634569837424,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.00029832634569837424,
+    "margin": 0.09970167365430163,
+    "ok": true,
+    "why": "max over every fleet of max(0, 1.5 - min pairwise centre distance over the whole run).  All robots start abreast one lane apart and travel at different speeds, so they can only separate.  Asserted GEOMETRICALLY from the poses rather than as a contact count, because this tree has shipped a contact read that returned an empty set for a scene containing 1008 contacts",
+    "key": "separation_shortfall"
+   },
+   {
+    "name": "robots_seen",
+    "measured": 16.0,
+    "expected": 29.0,
+    "tol": 0.0,
+    "unit": "robots",
+    "rel": false,
+    "error": -13.0,
+    "margin": -13.0,
+    "ok": false,
+    "why": "every robot of every fleet was found and measured.  An engine that silently DROPS robots otherwise reports a well-behaved smaller fleet, and every other number in this rung would look fine",
+    "key": "robots_seen"
+   }
+  ],
+  "error": null,
+  "binary": "o:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "cbd80861c9f0d314",
+  "newton": {
+   "backend": "newton",
+   "degraded": false,
+   "finalised": true,
+   "runtime": {
+    "device": "cuda:0",
+    "mujoco": "3.8.1",
+    "mujoco_warp": "3.8.0.3",
+    "newton": "1.2.0",
+    "warp": "1.13.0"
+   },
+   "solver": "MuJoCo (mujoco_warp, WorldInfo.newtonSolver)",
+   "present": true
+  },
+  "single_run_of_multi": true,
+  "measurement": {
+   "steps": null,
+   "sim_time_end": null,
+   "exit_code": 0.0,
+   "n_samples": 0,
+   "distance_worst": 0.0016782283482250082,
+   "wheel_omega_worst": 4.192780492062731e-05,
+   "lateral_worst": 0.005108833312988281,
+   "ride_worst": 0.0008557796478271262,
+   "roll_overrun_worst": 0.02224144779792092,
+   "separation_shortfall": 0.00029832634569837424,
+   "robots_seen": 16.0,
+   "solo_deviation_max": null
+  },
+  "per_n": {
+   "n16": {
+    "n": 16,
+    "robots_measured": 16,
+    "min_separation": 1.4997016736543016,
+    "worst": {
+     "distance_worst": 0.0016782283482250082,
+     "wheel_omega_worst": 4.192780492062731e-05,
+     "lateral_worst": 0.005108833312988281,
+     "ride_worst": 0.0008557796478271262,
+     "roll_overrun_worst": 0.02224144779792092
+    },
+    "per_robot": {
+     "r00": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7987151218300563,
+      "distance_rel_err": -0.0016060977124296438,
+      "lateral_m": 0.00046825408935546875,
+      "ride_dev_m": 0.0006950855255126731,
+      "omega_meas": 2.0000838556098413,
+      "roll_overrun": 0.016008041341857515
+     },
+     "r01": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1981270914505406,
+      "distance_rel_err": -0.0015607571245496164,
+      "lateral_m": 0.0003204345703125,
+      "ride_dev_m": 0.0006084799766540305,
+      "omega_meas": 2.999962529979178,
+      "roll_overrun": 0.0143357717474768
+     },
+     "r02": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5973557501278328,
+      "distance_rel_err": -0.001652656170104544,
+      "lateral_m": 0.0020418167114257812,
+      "ride_dev_m": 0.0007204174995422141,
+      "omega_meas": 4.000012614135503,
+      "roll_overrun": 0.009004423150206886
+     },
+     "r03": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.996827093603596,
+      "distance_rel_err": -0.0015864531982020535,
+      "lateral_m": 0.0004572868347167969,
+      "ride_dev_m": 0.0007121920585632102,
+      "omega_meas": 5.000015125362913,
+      "roll_overrun": 0.011119211042223798
+     },
+     "r04": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.3961429818255615,
+      "distance_rel_err": -0.001607090906016184,
+      "lateral_m": 0.004337787628173828,
+      "ride_dev_m": 0.000608241558074929,
+      "omega_meas": 5.999915388916553,
+      "roll_overrun": 0.011208612172922239
+     },
+     "r05": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.79865741732142,
+      "distance_rel_err": -0.0016782283482250082,
+      "lateral_m": 8.20159912109375e-05,
+      "ride_dev_m": 0.0006888270378112571,
+      "omega_meas": 1.9999982801209097,
+      "roll_overrun": 0.00807913457033127
+     },
+     "r06": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.198030095144562,
+      "distance_rel_err": -0.0016415873795318685,
+      "lateral_m": 0.0010936260223388672,
+      "ride_dev_m": 0.0007290601730346458,
+      "omega_meas": 2.9999584891554956,
+      "roll_overrun": 0.01106930191433575
+     },
+     "r07": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.597376652688179,
+      "distance_rel_err": -0.0016395920698882016,
+      "lateral_m": 0.00038498640060424805,
+      "ride_dev_m": 0.0006075859069823997,
+      "omega_meas": 4.000030308625575,
+      "roll_overrun": 0.010027016393096222
+     },
+     "r08": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.9966679676911423,
+      "distance_rel_err": -0.001666016154428851,
+      "lateral_m": 0.003261268138885498,
+      "ride_dev_m": 0.0007311463356017844,
+      "omega_meas": 4.999851377429801,
+      "roll_overrun": 0.01182467330838688
+     },
+     "r09": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.3960598485147346,
+      "distance_rel_err": -0.001641729785527383,
+      "lateral_m": 0.00494837760925293,
+      "ride_dev_m": 0.0006179571151733176,
+      "omega_meas": 5.9998802162531035,
+      "roll_overrun": 0.011468356580289774
+     },
+     "r10": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7987123757038311,
+      "distance_rel_err": -0.0016095303702111374,
+      "lateral_m": 0.0003333091735839844,
+      "ride_dev_m": 0.0007549285888671653,
+      "omega_meas": 2.0000291206847702,
+      "roll_overrun": 0.010775799552807941
+     },
+     "r11": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1980576161576164,
+      "distance_rel_err": -0.0016186532019864712,
+      "lateral_m": 0.0006995201110839844,
+      "ride_dev_m": 0.0007549285888671653,
+      "omega_meas": 2.999972588410656,
+      "roll_overrun": 0.02224144779792092
+     },
+     "r12": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5973801797244045,
+      "distance_rel_err": -0.001637387672247248,
+      "lateral_m": 0.0004038810729980469,
+      "ride_dev_m": 0.0006171822547912376,
+      "omega_meas": 4.000041067073342,
+      "roll_overrun": 0.016235084239043962
+     },
+     "r13": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.9967463489096198,
+      "distance_rel_err": -0.0016268255451901137,
+      "lateral_m": 0.000698089599609375,
+      "ride_dev_m": 0.0006838202476501243,
+      "omega_meas": 4.999969649936685,
+      "roll_overrun": 0.015310853158526427
+     },
+     "r14": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.39617485362814,
+      "distance_rel_err": -0.001593810988275157,
+      "lateral_m": 0.005108833312988281,
+      "ride_dev_m": 0.0006165862083434837,
+      "omega_meas": 5.999932735817432,
+      "roll_overrun": 0.010793766192631837
+     },
+     "r15": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7986661196717263,
+      "distance_rel_err": -0.0016673504103421888,
+      "lateral_m": 1.9073486328125e-05,
+      "ride_dev_m": 0.0008557796478271262,
+      "omega_meas": 2.0000104531015417,
+      "roll_overrun": 0.00922728724818822
+     }
+    }
+   }
+  },
+  "constraint_peaks": [
+   "11:09:21 constraint buffers: njmax=256 nconmax=256 (0=newton auto) initial nefc=0 ncon=0 nv=160",
+   "11:09:23 constraint peak: nefc=512/256 ncon=128/256 tick=25  *** OVERFLOW: raise WorldInfo.newtonNjmax / newtonNconmax ***",
+   "WARNING: [OmNewtonBackend] CONSTRAINT BUFFER OVERFLOW at tick 25: peak nefc=512 vs njmax=256, peak ncon=128 vs nconmax=256. mujoco_warp SILENTLY DROPS every constraint row past njmax (and every contact past nconmax), so contact solving is degrading and the drop order is a nondeterministic GPU atomic race -- the run will still exit 0 with a clean log. Fix: raise WorldInfo.newtonNjmax / newtonNconmax (leave HEADROOM -- sizing to the measured peak is itself a trap, docs/benchmarks/determinism-scope.md sec.3), or set OMNISIM_NEWTON_NJMAX / OMNISIM_NEWTON_NCONMAX."
+  ]
+ },
+ {
+  "variant": "n8_cpu_starve",
+  "rung": 11,
+  "why": "N=8 starved on the CPU mj_step path -- the control that says whether the cliff is GPU-only",
+  "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\_variant_n8_cpu_starve_rung11.wbt",
+  "fault": "starve_budget",
+  "run": {
+   "n": 8
+  },
+  "declared": {
+   "newtonNjmax": null,
+   "newtonNconmax": null
+  },
+  "checks": [
+   {
+    "name": "distance_worst",
+    "measured": 0.0008550882339478094,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.0008550882339478094,
+    "margin": 0.04914491176605219,
+    "ok": true,
+    "why": "worst relative error, over every robot of every fleet size (1, 4, 8, 16), of d_i against omega_i r t -- the distance that robot would travel ALONE.  The tolerance is rung 4's and is NOT widened with N: the failure this rung exists to catch is a silently truncated constraint vector, documented at 9% displacement error, so a tolerance that grew with N would be pre-authorised to miss it",
+    "key": "distance_worst"
+   },
+   {
+    "name": "wheel_omega_worst",
+    "measured": 6.808244723544021e-08,
+    "expected": 0.0,
+    "tol": 0.01,
+    "unit": "-",
+    "rel": false,
+    "error": 6.808244723544021e-08,
+    "margin": 0.009999931917552765,
+    "ok": true,
+    "why": "worst relative error of any robot's mean wheel rate against ITS OWN command.  The commands cycle, so an engine that simulates one robot and copies it lands every clone on one target and reds here",
+    "key": "wheel_omega_worst"
+   },
+   {
+    "name": "roll_overrun_worst",
+    "measured": 0.02268093815751171,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.02268093815751171,
+    "margin": 0.027319061842488293,
+    "ok": true,
+    "why": "rung 4's one-sided kinematic invariant over the whole fleet and the whole run: no body may outrun its own wheels, at any N",
+    "key": "roll_overrun_worst"
+   },
+   {
+    "name": "ride_worst",
+    "measured": 0.0007850289344787376,
+    "expected": 0.0,
+    "tol": 0.02,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0007850289344787376,
+    "margin": 0.019214971065521263,
+    "ok": true,
+    "why": "worst axle deviation from floor_top + wheel_radius over every robot, every fleet and every sample after the initial settle",
+    "key": "ride_worst"
+   },
+   {
+    "name": "lateral_worst",
+    "measured": 0.0,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0,
+    "margin": 0.1,
+    "ok": true,
+    "why": "worst |y - y_0| over every robot and every sample: each robot stays in its own lane at every fleet size",
+    "key": "lateral_worst"
+   },
+   {
+    "name": "separation_shortfall",
+    "measured": 0.0,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0,
+    "margin": 0.1,
+    "ok": true,
+    "why": "max over every fleet of max(0, 1.5 - min pairwise centre distance over the whole run).  All robots start abreast one lane apart and travel at different speeds, so they can only separate.  Asserted GEOMETRICALLY from the poses rather than as a contact count, because this tree has shipped a contact read that returned an empty set for a scene containing 1008 contacts",
+    "key": "separation_shortfall"
+   },
+   {
+    "name": "robots_seen",
+    "measured": 8.0,
+    "expected": 29.0,
+    "tol": 0.0,
+    "unit": "robots",
+    "rel": false,
+    "error": -21.0,
+    "margin": -21.0,
+    "ok": false,
+    "why": "every robot of every fleet was found and measured.  An engine that silently DROPS robots otherwise reports a well-behaved smaller fleet, and every other number in this rung would look fine",
+    "key": "robots_seen"
+   }
+  ],
+  "error": null,
+  "binary": "o:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "cbd80861c9f0d314",
+  "newton": {
+   "backend": "newton",
+   "degraded": false,
+   "finalised": true,
+   "runtime": {
+    "device": "cpu",
+    "mujoco": "3.8.1",
+    "mujoco_warp": "3.8.0.3",
+    "newton": "1.2.0",
+    "warp": "1.13.0"
+   },
+   "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+   "present": true
+  },
+  "single_run_of_multi": true,
+  "measurement": {
+   "steps": null,
+   "sim_time_end": null,
+   "exit_code": 0.0,
+   "n_samples": 0,
+   "distance_worst": 0.0008550882339478094,
+   "wheel_omega_worst": 6.808244723544021e-08,
+   "lateral_worst": 0.0,
+   "ride_worst": 0.0007850289344787376,
+   "roll_overrun_worst": 0.02268093815751171,
+   "separation_shortfall": 0.0,
+   "robots_seen": 8.0,
+   "solo_deviation_max": null
+  },
+  "per_n": {
+   "n8": {
+    "n": 8,
+    "robots_measured": 8,
+    "min_separation": 1.5,
+    "worst": {
+     "distance_worst": 0.0008550882339478094,
+     "wheel_omega_worst": 6.808244723544021e-08,
+     "lateral_worst": 0.0,
+     "ride_worst": 0.0007850289344787376,
+     "roll_overrun_worst": 0.02268093815751171
+    },
+    "per_robot": {
+     "r00": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993159294128418,
+      "distance_rel_err": -0.0008550882339478094,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000709569454193093,
+      "omega_meas": 1.9999999898426453,
+      "roll_overrun": 0.01995812796681684
+     },
+     "r01": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989739537239075,
+      "distance_rel_err": -0.0008550385634105889,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0006094932556152122,
+      "omega_meas": 3.0000002042473417,
+      "roll_overrun": 0.01796049361537233
+     },
+     "r02": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986318588256836,
+      "distance_rel_err": -0.0008550882339478094,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000598168373107888,
+      "omega_meas": 4.000000004684027,
+      "roll_overrun": 0.020986219220402003
+     },
+     "r03": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.9982898235321045,
+      "distance_rel_err": -0.0008550882339477539,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000589168071746804,
+      "omega_meas": 5.0000001091580355,
+      "roll_overrun": 0.02268093815751171
+     },
+     "r04": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.397947907447815,
+      "distance_rel_err": -0.0008550385634105889,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0007850289344787376,
+      "omega_meas": 6.000000234085043,
+      "roll_overrun": 0.019639751604596967
+     },
+     "r05": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993159294128418,
+      "distance_rel_err": -0.0008550882339478094,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000709569454193093,
+      "omega_meas": 1.9999999898426453,
+      "roll_overrun": 0.01995812796681684
+     },
+     "r06": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989739537239075,
+      "distance_rel_err": -0.0008550385634105889,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0006094932556152122,
+      "omega_meas": 3.0000002042473417,
+      "roll_overrun": 0.01796049361537233
+     },
+     "r07": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986318588256836,
+      "distance_rel_err": -0.0008550882339478094,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000598168373107888,
+      "omega_meas": 4.000000004684027,
+      "roll_overrun": 0.020986219220402003
+     }
+    }
+   }
+  },
+  "constraint_peaks": [
+   "11:09:54 constraint buffers: njmax=256 nconmax=256 (0=newton auto) initial nefc=0 ncon=0 nv=80"
+  ]
+ },
+ {
+  "variant": "n16_cpu_starve",
+  "rung": 11,
+  "why": "N=16 starved on the CPU mj_step path -- the control that says whether the cliff is GPU-only",
+  "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\omnisim\\worlds\\_variant_n16_cpu_starve_rung11.wbt",
+  "fault": "starve_budget",
+  "run": {
+   "n": 16
+  },
+  "declared": {
+   "newtonNjmax": null,
+   "newtonNconmax": null
+  },
+  "checks": [
+   {
+    "name": "distance_worst",
+    "measured": 0.0008550882339478094,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.0008550882339478094,
+    "margin": 0.04914491176605219,
+    "ok": true,
+    "why": "worst relative error, over every robot of every fleet size (1, 4, 8, 16), of d_i against omega_i r t -- the distance that robot would travel ALONE.  The tolerance is rung 4's and is NOT widened with N: the failure this rung exists to catch is a silently truncated constraint vector, documented at 9% displacement error, so a tolerance that grew with N would be pre-authorised to miss it",
+    "key": "distance_worst"
+   },
+   {
+    "name": "wheel_omega_worst",
+    "measured": 6.808244723544021e-08,
+    "expected": 0.0,
+    "tol": 0.01,
+    "unit": "-",
+    "rel": false,
+    "error": 6.808244723544021e-08,
+    "margin": 0.009999931917552765,
+    "ok": true,
+    "why": "worst relative error of any robot's mean wheel rate against ITS OWN command.  The commands cycle, so an engine that simulates one robot and copies it lands every clone on one target and reds here",
+    "key": "wheel_omega_worst"
+   },
+   {
+    "name": "roll_overrun_worst",
+    "measured": 0.02268093815751171,
+    "expected": 0.0,
+    "tol": 0.05,
+    "unit": "-",
+    "rel": false,
+    "error": 0.02268093815751171,
+    "margin": 0.027319061842488293,
+    "ok": true,
+    "why": "rung 4's one-sided kinematic invariant over the whole fleet and the whole run: no body may outrun its own wheels, at any N",
+    "key": "roll_overrun_worst"
+   },
+   {
+    "name": "ride_worst",
+    "measured": 0.0007850289344787376,
+    "expected": 0.0,
+    "tol": 0.02,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0007850289344787376,
+    "margin": 0.019214971065521263,
+    "ok": true,
+    "why": "worst axle deviation from floor_top + wheel_radius over every robot, every fleet and every sample after the initial settle",
+    "key": "ride_worst"
+   },
+   {
+    "name": "lateral_worst",
+    "measured": 0.0,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0,
+    "margin": 0.1,
+    "ok": true,
+    "why": "worst |y - y_0| over every robot and every sample: each robot stays in its own lane at every fleet size",
+    "key": "lateral_worst"
+   },
+   {
+    "name": "separation_shortfall",
+    "measured": 0.0,
+    "expected": 0.0,
+    "tol": 0.1,
+    "unit": "m",
+    "rel": false,
+    "error": 0.0,
+    "margin": 0.1,
+    "ok": true,
+    "why": "max over every fleet of max(0, 1.5 - min pairwise centre distance over the whole run).  All robots start abreast one lane apart and travel at different speeds, so they can only separate.  Asserted GEOMETRICALLY from the poses rather than as a contact count, because this tree has shipped a contact read that returned an empty set for a scene containing 1008 contacts",
+    "key": "separation_shortfall"
+   },
+   {
+    "name": "robots_seen",
+    "measured": 16.0,
+    "expected": 29.0,
+    "tol": 0.0,
+    "unit": "robots",
+    "rel": false,
+    "error": -13.0,
+    "margin": -13.0,
+    "ok": false,
+    "why": "every robot of every fleet was found and measured.  An engine that silently DROPS robots otherwise reports a well-behaved smaller fleet, and every other number in this rung would look fine",
+    "key": "robots_seen"
+   }
+  ],
+  "error": null,
+  "binary": "o:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "cbd80861c9f0d314",
+  "newton": {
+   "backend": "newton",
+   "degraded": false,
+   "finalised": true,
+   "runtime": {
+    "device": "cpu",
+    "mujoco": "3.8.1",
+    "mujoco_warp": "3.8.0.3",
+    "newton": "1.2.0",
+    "warp": "1.13.0"
+   },
+   "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+   "present": true
+  },
+  "single_run_of_multi": true,
+  "measurement": {
+   "steps": null,
+   "sim_time_end": null,
+   "exit_code": 0.0,
+   "n_samples": 0,
+   "distance_worst": 0.0008550882339478094,
+   "wheel_omega_worst": 6.808244723544021e-08,
+   "lateral_worst": 0.0,
+   "ride_worst": 0.0007850289344787376,
+   "roll_overrun_worst": 0.02268093815751171,
+   "separation_shortfall": 0.0,
+   "robots_seen": 16.0,
+   "solo_deviation_max": null
+  },
+  "per_n": {
+   "n16": {
+    "n": 16,
+    "robots_measured": 16,
+    "min_separation": 1.5,
+    "worst": {
+     "distance_worst": 0.0008550882339478094,
+     "wheel_omega_worst": 6.808244723544021e-08,
+     "lateral_worst": 0.0,
+     "ride_worst": 0.0007850289344787376,
+     "roll_overrun_worst": 0.02268093815751171
+    },
+    "per_robot": {
+     "r00": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993159294128418,
+      "distance_rel_err": -0.0008550882339478094,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000709569454193093,
+      "omega_meas": 1.9999999898426453,
+      "roll_overrun": 0.01995812796681684
+     },
+     "r01": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989739537239075,
+      "distance_rel_err": -0.0008550385634105889,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0006094932556152122,
+      "omega_meas": 3.0000002042473417,
+      "roll_overrun": 0.01796049361537233
+     },
+     "r02": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986318588256836,
+      "distance_rel_err": -0.0008550882339478094,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000598168373107888,
+      "omega_meas": 4.000000004684027,
+      "roll_overrun": 0.020986219220402003
+     },
+     "r03": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.9982898235321045,
+      "distance_rel_err": -0.0008550882339477539,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000589168071746804,
+      "omega_meas": 5.0000001091580355,
+      "roll_overrun": 0.02268093815751171
+     },
+     "r04": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.397947907447815,
+      "distance_rel_err": -0.0008550385634105889,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0007850289344787376,
+      "omega_meas": 6.000000234085043,
+      "roll_overrun": 0.019639751604596967
+     },
+     "r05": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993159294128418,
+      "distance_rel_err": -0.0008550882339478094,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000709569454193093,
+      "omega_meas": 1.9999999898426453,
+      "roll_overrun": 0.01995812796681684
+     },
+     "r06": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989739537239075,
+      "distance_rel_err": -0.0008550385634105889,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0006094932556152122,
+      "omega_meas": 3.0000002042473417,
+      "roll_overrun": 0.01796049361537233
+     },
+     "r07": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986318588256836,
+      "distance_rel_err": -0.0008550882339478094,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000598168373107888,
+      "omega_meas": 4.000000004684027,
+      "roll_overrun": 0.020986219220402003
+     },
+     "r08": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.9982898235321045,
+      "distance_rel_err": -0.0008550882339477539,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000589168071746804,
+      "omega_meas": 5.0000001091580355,
+      "roll_overrun": 0.02268093815751171
+     },
+     "r09": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.397947907447815,
+      "distance_rel_err": -0.0008550385634105889,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0007850289344787376,
+      "omega_meas": 6.000000234085043,
+      "roll_overrun": 0.019639751604596967
+     },
+     "r10": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993159294128418,
+      "distance_rel_err": -0.0008550882339478094,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000709569454193093,
+      "omega_meas": 1.9999999898426453,
+      "roll_overrun": 0.01995812796681684
+     },
+     "r11": {
+      "omega_cmd": 3.0,
+      "expect_m": 1.2000000000000002,
+      "distance_m": 1.1989739537239075,
+      "distance_rel_err": -0.0008550385634105889,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0006094932556152122,
+      "omega_meas": 3.0000002042473417,
+      "roll_overrun": 0.01796049361537233
+     },
+     "r12": {
+      "omega_cmd": 4.0,
+      "expect_m": 1.6,
+      "distance_m": 1.5986318588256836,
+      "distance_rel_err": -0.0008550882339478094,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000598168373107888,
+      "omega_meas": 4.000000004684027,
+      "roll_overrun": 0.020986219220402003
+     },
+     "r13": {
+      "omega_cmd": 5.0,
+      "expect_m": 2.0,
+      "distance_m": 1.9982898235321045,
+      "distance_rel_err": -0.0008550882339477539,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000589168071746804,
+      "omega_meas": 5.0000001091580355,
+      "roll_overrun": 0.02268093815751171
+     },
+     "r14": {
+      "omega_cmd": 6.0,
+      "expect_m": 2.4000000000000004,
+      "distance_m": 2.397947907447815,
+      "distance_rel_err": -0.0008550385634105889,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.0007850289344787376,
+      "omega_meas": 6.000000234085043,
+      "roll_overrun": 0.019639751604596967
+     },
+     "r15": {
+      "omega_cmd": 2.0,
+      "expect_m": 0.8,
+      "distance_m": 0.7993159294128418,
+      "distance_rel_err": -0.0008550882339478094,
+      "lateral_m": 0.0,
+      "ride_dev_m": 0.000709569454193093,
+      "omega_meas": 1.9999999898426453,
+      "roll_overrun": 0.01995812796681684
+     }
+    }
+   }
+  },
+  "constraint_peaks": [
+   "11:10:07 constraint buffers: njmax=256 nconmax=256 (0=newton auto) initial nefc=0 ncon=0 nv=160"
+  ]
+ }
+]

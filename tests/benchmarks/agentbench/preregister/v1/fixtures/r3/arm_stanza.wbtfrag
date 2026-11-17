@@ -1,0 +1,31 @@
+
+# Appended by the AgenticSimBench v1 R3 negative-fixture runner.
+DEF ARM Robot {
+  children [
+    HingeJoint {
+      endPoint Solid {
+        translation 0.10 0 0.10
+        children [ Shape { geometry Sphere { radius 0.02 } } ]
+        name "arm link 1"
+      }
+    }
+    HingeJoint {
+      endPoint Solid {
+        translation 0.20 0 0.20
+        children [ Shape { geometry Sphere { radius 0.02 } } ]
+        name "arm link 2"
+      }
+    }
+    HingeJoint {
+      endPoint Solid {
+        translation 0.30 0 0.30
+        children [ Shape { geometry Sphere { radius 0.02 } } ]
+        name "arm link 3"
+      }
+    }
+  ]
+  name "fixture arm"
+  supervisor TRUE
+  controller "r3_fixture"
+  controllerArgs [ "__R3_MODE__" ]
+}

@@ -1,0 +1,18 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/TemplateSolidCylinder.proto"
+
+PROTO ProtoWithTemplateDefaultParameter [
+  field MFNode derivedExtensionSlot TemplateSolidCylinder { }
+]
+{
+  Robot {
+    children [
+      Solid {
+        translation -0.75 0 0
+        rotation 0 0 1 1.5708
+        children IS derivedExtensionSlot
+      }
+    ]
+  }
+}

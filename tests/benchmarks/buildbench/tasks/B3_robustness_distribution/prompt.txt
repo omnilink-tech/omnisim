@@ -1,0 +1,1 @@
+Measure how reliably this robot completes its task when the world is not exactly as authored. Randomise ground friction, payload mass and the robot's initial pose over about a thousand draws, and report the success rate with a confidence interval -- not a single run.

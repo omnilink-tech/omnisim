@@ -1,0 +1,58 @@
+qt_utils robot-window icon set.
+
+Contents
+--------
+16 PNG files in four size classes:
+  * 80x80   -- the eight directional arrows (up, down, left, right, up_left,
+               up_right, down_left, down_right) plus stop
+  * 512x512 -- reverse_button
+  * 48x48   -- reset_button
+  * 24x24   -- up_button, down_button, duplicate_button, plus, minus
+
+Where they are used
+-------------------
+This directory is registered as Qt's `icons:` search path by the qt_utils
+library itself (resources/projects/libraries/qt_utils/core/MainApplication.cpp:30,
+with resources/icons/dark as a second fallback path on line 31). Consumers are
+the motion editor's transport and list controls -- e.g.
+motion_editor/ListWidget.cpp:41 (`icons:reset_button.png`) and
+motion_editor/MotionEditor.cpp:84,245 (`icons:reverse_button.png`).
+
+License
+-------
+Apache License, Version 2.0 -- Copyright 1996-2024 Cyberbotics Ltd.
+https://www.apache.org/licenses/LICENSE-2.0
+
+Evidence for that election
+--------------------------
+1. All 16 entered this repository in the initial Webots import, commit
+   0db6a18a74ba16fa2c10f744423405d153b87c7a ("Initial commit: OmniSim robotics
+   simulator", 2026-04-11). `git log -- resources/projects/libraries/qt_utils/
+   icons/` lists that commit and no other: nothing here has changed since.
+2. Upstream is https://github.com/cyberbotics/webots, released under the Apache
+   License, Version 2.0. See the "Derivation" section of the repository-root
+   NOTICE.
+3. NO third-party notice was attached to this directory upstream. As with
+   resources/nodes/icons/, that is positive evidence: upstream attached its
+   icons8 / CC BY-NoDerivs notice to resources/icons/{core,dark,light} and to
+   nothing else, so it distinguished licensed-in artwork from its own and did
+   not place this set in the licensed-in group.
+4. These are NOT the icons8 artwork. The only basename this set shares with the
+   original icons8 `dark` set is reset_button.png, and the two files are
+   different: 48x48 / 23 unique colours here versus 512x512 / 467 unique colours
+   there, with an alpha-shape correlation of only 0.47 (i.e. a different
+   drawing of the same idea, not a resize of the same file). No other basename
+   overlaps at all.
+5. Nine of the sixteen -- every 80x80 file -- carry a PNG tEXt chunk reading
+   `Comment: Created with GIMP`: hand-drawn artwork, not a vector-library
+   export. The other seven carry no text chunk of any kind.
+
+Limits of that evidence
+-----------------------
+No file carries a copyright notice or an author name; the GIMP tag records a
+tool, not a person. The history is a squashed import, so git cannot corroborate
+anything earlier than the import commit. The election rests on the upstream
+repository's blanket Apache-2.0 grant plus the scoping and negative-match
+evidence above, not on a per-file notice.
+
+See docs/developer/asset-provenance.md for the tree-wide media ledger.

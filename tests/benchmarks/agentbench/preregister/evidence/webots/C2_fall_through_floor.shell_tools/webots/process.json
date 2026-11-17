@@ -1,0 +1,10 @@
+{
+ "exit_code": 0,
+ "timed_out": false,
+ "wall_s": 2.475,
+ "attempts_used": 1,
+ "perf_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\webots\\perf.txt",
+ "webots_version": "R2025a",
+ "command": "WEBOTS_HOME=/opt/upstream-webots/R2025a timeout 420 xvfb-run -a /opt/upstream-webots/R2025a/webots --batch --mode=fast --no-rendering --minimize --stdout --stderr --log-performance=\"/tmp/agentbench_webots/fall_through_ac68a588/out/perf.txt\",312 --port=1504 \"/tmp/agentbench_webots/fall_through_ac68a588/project/worlds/fall_through.wbt\"",
+ "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\scratch\\fall_through.wbt"
+}

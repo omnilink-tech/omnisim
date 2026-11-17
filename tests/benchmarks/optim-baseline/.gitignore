@@ -1,0 +1,6 @@
+# optim_bench.py writes `--out tests/benchmarks/optim-baseline/<tag>-pass1.json`
+# (warm-up, discarded) and then `<tag>-pass2.json` (measurement, kept) -- the
+# protocol in docs/developer/multi-instance-optimization-plan.md. A warm-up is
+# never evidence, so it stays out of the tree; a pass2 a doc cites is committed
+# normally.
+*-pass1.json

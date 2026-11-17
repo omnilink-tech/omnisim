@@ -1,0 +1,341 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+# THE SMOKE LANE'S NO-SLIP GATE -- "the wheels actually roll".
+#
+# WHY IT EXISTS. Until this world, nothing anywhere in this repo asserted that a
+# WHEEL TURNED. Every check asks only whether the body MOVED: a headless PASS, a
+# displacement assertion, a "drove to the goal" verdict, a benchmark grader. A
+# robot dragging itself along on four frozen wheels satisfies every one of them,
+# and one in this tree did exactly that for its whole life -- a 4-wheel rover
+# crossing an arena at 1.0-1.6 m/s while its four wheel hinges turned at ~0.14
+# rad/s, i.e. 0.011 m/s of actual rolling at the authored 0.08 m radius. 99.3% of
+# its motion was slip. The motor torque was going into the chassis through the
+# joint reaction instead of into the ground through the tyre.
+#
+# WHAT IS GRADED, by tests/physics/controllers/wheel_roll_noslip/:
+#
+#   1. THE ROVER ACTUALLY DRIVES. A world where nothing moves would satisfy a
+#      no-slip ratio trivially (0 == 0), so the gate refuses to grade one.
+#   2. NO-SLIP CONSISTENCY, on VELOCITIES:  |omega*r - v_body| <= 0.35*|v_body|.
+#   3. NO-SLIP CONSISTENCY, on the INTEGRALS: wheel angle travelled x r must
+#      match the chassis's net displacement over the same window. This one uses
+#      no differentiation at all, so it cannot be fooled by a noisy sample.
+#   4. THE POSITION SENSOR AND THE RIGID BODY AGREE about how fast the wheel is
+#      turning. The sensor reading and the wheel Solid's own angular velocity
+#      (read through the supervisor and de-rotated by the chassis) are two
+#      independent routes to omega; a sensor that merely echoed its setpoint
+#      would pass 2 and 3 and fail this.
+#
+# ⚠ DO NOT REPLACE ANY OF THIS WITH A STICTION/TORQUE FORMULA. The obvious one
+# does not survive contact with the engine: the failing rover above had 0.4 N.m
+# on each of four wheels against 3.6 kg -- roughly 5.6 m/s^2 of nominally
+# available traction, which should have been ample -- and it still slid, and
+# `maxTorque 12` fixed it. The mechanism is not established. The gate is
+# BEHAVIOURAL on purpose.
+#
+# THE ROVER IS NOT A NEW DESIGN. Chassis, wheel radius, masses, anchors,
+# maxTorque 12 / maxVelocity 30, basicTimeStep 8 and newtonSubsteps 4 are copied
+# from DEF ROLL in projects/robot_combat/worlds/tests/drive_test.omniworld, the
+# repo's known-good roller (measured 11 m of straight rolling in commit
+# 36ae8fa86; re-measured by scripts/dev/roll_check.py at 0.1% slip). Copying a
+# proven configuration is deliberate: if this world ever goes red, the cause is
+# the engine, not an authoring accident in the gate itself.
+#
+# THE NEGATIVE CONTROL LIVES AT scripts/dev/roll_check_assets/ -- the same
+# world with maxTorque 12 -> 0.4. It is NOT in tests/physics/worlds/ because
+# test_suite.py globs that directory and would run it as a test and record a
+# FAILURE line. Run the pair with `python scripts/dev/roll_check.py --self-test`
+# to prove this check can go RED before trusting its green.
+#
+# The floor's top face is at z = +0.2, NOT z = 0: a floor at z = 0 coincides with
+# Newton's implicit ground plane, so a statics regression would leave the rover
+# rolling on a surface that is not in this file and the gate would never notice.
+#
+# Nothing is pinned to coax a pass except the two fields the rover's traction
+# genuinely depends on and which have no usable default: newtonGroundMu (the
+# ODE-path WorldInfo.contactProperties is NOT READ -- see AGENTS.md) and
+# newtonRobotColliders (without it the chassis is not a collider).
+
+WorldInfo {
+  info [
+    "Asserts that a driven wheel's rotation actually accounts for the chassis's motion -- that the robot ROLLS rather than sliding with locked wheels."
+  ]
+  title "Wheel no-slip consistency"
+  basicTimeStep 8
+  FPS 30
+  newtonSolver "mujoco"
+  newtonSubsteps 4
+  newtonStatics TRUE
+  newtonRobotColliders TRUE
+  newtonGroundMu 0.9
+}
+Viewpoint {
+  orientation -0.3536 0.3536 0.8660 1.7017
+  position -3.2 -3.4 2.6
+}
+Background {
+  skyColor [
+    0.15 0.2 0.3
+  ]
+}
+DEF SUN DirectionalLight {
+  color 1 0.95 0.85
+  direction 0.4 -0.5 -0.7
+  intensity 2.5
+}
+DEF FLOOR Solid {
+  translation 4 0 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.45 0.48
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 24 6 0.4
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 24 6 0.4
+  }
+}
+DEF ROVER Robot {
+  translation -5 0 0.34
+  rotation 0 0 1 0
+  name "rover"
+  controller "wheel_roll_noslip"
+  supervisor TRUE
+  children [
+    TestSuiteEmitter {
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.15 0.35 0.8
+        metalness 0
+        roughness 1
+      }
+      geometry Box {
+        size 0.6 0.4 0.18
+      }
+    }
+    DEF FL_JOINT HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0.22 0.21 -0.05
+      }
+      device [
+        RotationalMotor {
+          name "front_left_wheel_motor"
+          maxVelocity 30
+          maxTorque 12
+        }
+        PositionSensor {
+          name "front_left_wheel_sensor"
+        }
+      ]
+      endPoint DEF FL_WHEEL Solid {
+        translation 0.22 0.21 -0.05
+        name "front_left_wheel"
+        children [
+          Pose {
+            rotation 1 0 0 1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.1 0.1 0.1
+                  metalness 0
+                  roughness 1
+                }
+                geometry Cylinder {
+                  height 0.05
+                  radius 0.09
+                }
+              }
+            ]
+          }
+        ]
+        boundingObject Pose {
+          rotation 1 0 0 1.5708
+          children [
+            Cylinder {
+              height 0.05
+              radius 0.09
+            }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 0.6
+        }
+      }
+    }
+    DEF FR_JOINT HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor 0.22 -0.21 -0.05
+      }
+      device [
+        RotationalMotor {
+          name "front_right_wheel_motor"
+          maxVelocity 30
+          maxTorque 12
+        }
+        PositionSensor {
+          name "front_right_wheel_sensor"
+        }
+      ]
+      endPoint DEF FR_WHEEL Solid {
+        translation 0.22 -0.21 -0.05
+        name "front_right_wheel"
+        children [
+          Pose {
+            rotation 1 0 0 1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.1 0.1 0.1
+                  metalness 0
+                  roughness 1
+                }
+                geometry Cylinder {
+                  height 0.05
+                  radius 0.09
+                }
+              }
+            ]
+          }
+        ]
+        boundingObject Pose {
+          rotation 1 0 0 1.5708
+          children [
+            Cylinder {
+              height 0.05
+              radius 0.09
+            }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 0.6
+        }
+      }
+    }
+    DEF RL_JOINT HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor -0.22 0.21 -0.05
+      }
+      device [
+        RotationalMotor {
+          name "rear_left_wheel_motor"
+          maxVelocity 30
+          maxTorque 12
+        }
+        PositionSensor {
+          name "rear_left_wheel_sensor"
+        }
+      ]
+      endPoint DEF RL_WHEEL Solid {
+        translation -0.22 0.21 -0.05
+        name "rear_left_wheel"
+        children [
+          Pose {
+            rotation 1 0 0 1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.1 0.1 0.1
+                  metalness 0
+                  roughness 1
+                }
+                geometry Cylinder {
+                  height 0.05
+                  radius 0.09
+                }
+              }
+            ]
+          }
+        ]
+        boundingObject Pose {
+          rotation 1 0 0 1.5708
+          children [
+            Cylinder {
+              height 0.05
+              radius 0.09
+            }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 0.6
+        }
+      }
+    }
+    DEF RR_JOINT HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 1 0
+        anchor -0.22 -0.21 -0.05
+      }
+      device [
+        RotationalMotor {
+          name "rear_right_wheel_motor"
+          maxVelocity 30
+          maxTorque 12
+        }
+        PositionSensor {
+          name "rear_right_wheel_sensor"
+        }
+      ]
+      endPoint DEF RR_WHEEL Solid {
+        translation -0.22 -0.21 -0.05
+        name "rear_right_wheel"
+        children [
+          Pose {
+            rotation 1 0 0 1.5708
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.1 0.1 0.1
+                  metalness 0
+                  roughness 1
+                }
+                geometry Cylinder {
+                  height 0.05
+                  radius 0.09
+                }
+              }
+            ]
+          }
+        ]
+        boundingObject Pose {
+          rotation 1 0 0 1.5708
+          children [
+            Cylinder {
+              height 0.05
+              radius 0.09
+            }
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 0.6
+        }
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.6 0.4 0.18
+  }
+  physics Physics {
+    density -1
+    mass 10
+  }
+}
+TestSuiteSupervisor {
+}

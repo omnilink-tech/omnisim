@@ -1,0 +1,12 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/parser/protos/RecursiveProtoInternal.proto"
+
+PROTO RecursiveProto [
+  field SFVec3f translation 0.0 0.0 0.0
+]
+{
+  RecursiveProtoInternal {
+    translation IS translation
+  }
+}

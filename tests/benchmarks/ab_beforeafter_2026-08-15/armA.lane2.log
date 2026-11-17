@@ -1,0 +1,53 @@
+[gate2] 2026-08-12T11:14:13Z builders=1 omnisim-bin=0 listeners=[6789] live_sim=False stable=0/600s waited=0m
+[gate2] 2026-08-12T11:14:44Z builders=4 omnisim-bin=0 listeners=[6789] live_sim=False stable=0/600s waited=1m
+[gate2] 2026-08-12T11:15:15Z builders=0 omnisim-bin=0 listeners=[6789] live_sim=False stable=0/600s waited=1m
+[gate2] 2026-08-12T11:15:46Z builders=0 omnisim-bin=0 listeners=[6789] live_sim=False stable=31/600s waited=2m
+[gate2] 2026-08-12T11:16:16Z builders=1 omnisim-bin=0 listeners=[6789] live_sim=False stable=0/600s waited=2m
+[gate2] 2026-08-12T11:16:47Z builders=0 omnisim-bin=1 listeners=[6789] live_sim=False stable=0/600s waited=3m
+[gate2] 2026-08-12T11:17:18Z builders=1 omnisim-bin=0 listeners=[6789, 6792] live_sim=False stable=0/600s waited=3m
+[gate2] 2026-08-12T11:17:49Z builders=0 omnisim-bin=1 listeners=[6789, 6790, 6792] live_sim=True stable=0/600s waited=4m
+[gate2] 2026-08-12T11:18:19Z builders=0 omnisim-bin=2 listeners=[] live_sim=False stable=0/600s waited=4m
+[gate2] 2026-08-12T11:18:50Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=0/600s waited=5m
+[gate2] 2026-08-12T11:19:20Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=30/600s waited=5m
+[gate2] 2026-08-12T11:19:51Z builders=0 omnisim-bin=1 listeners=[] live_sim=False stable=0/600s waited=6m
+[gate2] 2026-08-12T11:20:22Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=0/600s waited=6m
+[gate2] 2026-08-12T11:20:52Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=30/600s waited=7m
+[gate2] 2026-08-12T11:21:14Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=0/180s waited=0m
+[gate2] 2026-08-12T11:21:44Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=30/180s waited=1m
+[gate2] 2026-08-12T11:22:14Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=61/180s waited=1m
+[gate2] 2026-08-12T11:22:45Z builders=0 omnisim-bin=1 listeners=[] live_sim=False stable=91/180s waited=2m
+[gate2] 2026-08-12T11:23:15Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=122/180s waited=2m
+[gate2] 2026-08-12T11:23:46Z builders=1 omnisim-bin=0 listeners=[] live_sim=False stable=0/180s waited=3m
+[gate2] 2026-08-12T11:24:16Z builders=1 omnisim-bin=0 listeners=[] live_sim=False stable=0/180s waited=3m
+[gate2] 2026-08-12T11:24:47Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=0/180s waited=4m
+[gate2] 2026-08-12T11:25:19Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=0/120s waited=0m
+[gate2] 2026-08-12T11:25:49Z builders=1 omnisim-bin=0 listeners=[] live_sim=False stable=31/120s waited=1m
+[gate2] 2026-08-12T11:26:20Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=61/120s waited=1m
+[gate2] 2026-08-12T11:26:50Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=91/120s waited=2m
+[gate2] 2026-08-12T11:27:21Z builders=0 omnisim-bin=0 listeners=[] live_sim=False stable=122/120s waited=2m
+[gate2] machine safe (idle); starting armA
+=== 2026-08-12T11:27:22Z armA cell 1 starting (GPU 57, 0 %) ===
+=== 2026-08-12T11:39:24Z armA cell 1 done rc=0 (GPU 60, 1 %) ===
+containment guard: saw 53 tool call(s), denied 0
+
+=== A1_husky_swarm_10 / omnisim / claude_code ===
+outcome=FAIL failed=A1.9
+metrics={"t_agent_s": null, "t_total_s": 77.258, "turns": 99, "tool_calls": 53, "tokens_in": null, "tokens_out": null, "tokens_cache_read": null, "tokens_cache_write": null, "usd": null}
+rows -> O:\omnisim\tests\benchmarks\agentbench\results\cc_lane\20260812_ba_armA_c1\rows.jsonl
+=== 2026-08-12T11:39:25Z armA cell 2 starting (GPU 60, 0 %) ===
+=== 2026-08-12T11:51:15Z armA cell 2 done rc=0 (GPU 60, 0 %) ===
+containment guard: saw 53 tool call(s), denied 2
+
+=== A1_husky_swarm_10 / omnisim / claude_code ===
+outcome=FAIL failed=A1.9
+metrics={"t_agent_s": null, "t_total_s": 71.848, "turns": 88, "tool_calls": 53, "tokens_in": null, "tokens_out": null, "tokens_cache_read": null, "tokens_cache_write": null, "usd": null}
+rows -> O:\omnisim\tests\benchmarks\agentbench\results\cc_lane\20260812_ba_armA_c2\rows.jsonl
+=== 2026-08-12T11:51:16Z armA cell 3 starting (GPU 60, 0 %) ===
+=== 2026-08-12T12:01:51Z armA cell 3 done rc=0 (GPU 60, 0 %) ===
+containment guard: saw 53 tool call(s), denied 0
+
+=== A1_husky_swarm_10 / omnisim / claude_code ===
+outcome=FAIL failed=no_artifact
+metrics={"turns": 111, "tool_calls": 53, "usd": null, "t_agent_s": null, "tokens_in": null, "tokens_out": null, "tokens_cache_read": null, "tokens_cache_write": null}
+rows -> O:\omnisim\tests\benchmarks\agentbench\results\cc_lane\20260812_ba_armA_c3\rows.jsonl
+ARM armA COMPLETE

@@ -1,0 +1,74 @@
+#OMNISIM R2025a utf8
+
+# OmniQuad demo - loaded natively from URDF via URDFRobot. Replaces the
+# previous Spot.proto-based world. The URDF was sourced from the
+# Clearpath fork of spot_description (xacro-expanded to a flat URDF,
+# optional accessories stripped). DAE visuals + STL collisions live
+# under .../omniquad/meshes/.
+#
+# The omniquad_simple_pose controller runs a four-phase sequence:
+#   1. DROP    -- legs almost-straight absorb the spawn-pose impulse.
+#   2. CROUCH  -- ramp to standing stance over 2 s.
+#   3. LEVEL   -- pitch/roll feedback until the body is level.
+#   4. WALK    -- joint-space wave-gait leg cycle + supervisor-driven
+#                 forward body translation at 0.30 m/s.
+#
+# The supervisor-driven body translation is a deliberate trade-off:
+# purely physics-driven walks with the URDF's default-stiffness motors
+# topple after 5-10 s of gait without ever reaching the few meters of
+# forward motion the demo needs. With supervisor translation the legs
+# still animate realistically through stance/swing -- the visual result
+# is a walking OmniQuad, while sidestepping the open MPC problem.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniQuad (URDF) - walking demo"
+  info [
+    "OmniQuad loaded from URDF via URDFRobot."
+    "Four-phase walk: drop -> crouch -> level -> wave-gait walk."
+    "Supervisor-driven body translation; legs animate the gait cycle."
+  ]
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+  # translation_audit: ContactProperties.coulombFriction is an ODE-path field the
+  # Newton backend does not read; this declares the same friction where it is read.
+  newtonGroundMu 2
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.624 -4.923 5.276
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.2
+  floorAppearance PBRAppearance {
+    baseColor 0.24 0.27 0.30
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../urdf/omniquad.urdf"
+  translation 0 0 0.50
+  name "omniquad"
+  supervisor TRUE
+  controller "omniquad_simple_pose"
+  physicsBackend "newton"
+}

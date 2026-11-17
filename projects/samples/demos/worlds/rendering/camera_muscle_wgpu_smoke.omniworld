@@ -1,0 +1,213 @@
+#OMNISIM R2025a utf8
+
+# P2 GATE WORLD (docs/developer/wren-deletion-runbook.md) -- a wgpu Camera pointed at a
+# Muscle on a swinging HingeJoint.
+#
+# WHY IT HAD TO BE AUTHORED. Zero tracked worlds paired a `Camera {` with a `Muscle {`, so
+# nothing could tell "the muscle renders" from "the muscle renders in the MAIN VIEW only" --
+# the same blind spot P1 found for Cloth and SoftBody. Muscle now goes through
+# OmWgpuSceneRenderer::collectDynamicDraws, the one entry point every render path calls, and
+# this world MEASURES that instead of arguing it.
+#
+# ⚠ A Muscle is PROCEDURAL: it owns no CPU-side geometry, so its surface is a per-step
+# VERTEX STREAM uploaded through the per-(cache, mesh) epoch. That makes the ANIMATION arm
+# the load-bearing one here: a stream uploaded once and then frozen renders a perfectly
+# plausible spheroid, at the right size, in a single screenshot -- and is exactly what a
+# process-global "the clock advanced" flag produces once a second renderer exists (see
+# OmWgpuMeshCache::vertexEpochIs).
+#
+# WHAT THE GATE ASSERTS:
+#   RED       OMNISIM_WGPU_MUSCLE=0 -> this world's camera image is IDENTICAL to the sibling
+#             control camera_muscle_wgpu_control.omniworld (the same scene with the
+#             `muscles [ ... ]` field, and nothing else, removed).
+#   GREEN     default -> the two differ.
+#   ANIMATION default -> the image at two well-separated steps differs. The joint swings
+#             between two limits, so the muscle stretches and (constant volume) thins.
+#
+# The muscle keeps its default red; the bones and the floor are grey.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 16
+  coordinateSystem "ENU"
+  title "P2 gate -- wgpu Camera sees a Muscle stretching"
+}
+Viewpoint {
+  position -0.5 0 0.12
+  orientation 0 0 1 0
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.36 0.40
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 4 4 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 4 4 0.1
+  }
+}
+DEF HINGE Robot {
+  translation 0 0 0.04
+  children [
+    DEF BOX Pose {
+      translation -0.025 0 -0.01
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.8 0.8 0.8
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.05 0.08 0.06
+          }
+        }
+      ]
+    }
+    DEF JOINT Shape {
+      appearance PBRAppearance {
+        baseColor 0.337255 0.337255 0.337255
+        roughness 1
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.008
+      }
+    }
+    DEF BONE1 Pose {
+      translation 0.05 0 0
+      rotation 0 1 0 -1.5707953071795862
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.8 0.8 0.8
+            roughness 1
+            metalness 0
+          }
+          geometry Capsule {
+            height 0.1
+            radius 0.005
+          }
+        }
+      ]
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis 0 -1 0
+        anchor 0.1 0 0
+        dampingConstant 0.4
+        suspensionAxis 0 1 0
+      }
+      device [
+        RotationalMotor {
+          name "muscle"
+          controlPID 1 0.1 0
+          minPosition -0.5
+          maxPosition 3
+          maxTorque 0.5
+          muscles [
+            Muscle {
+              volume 0.0001
+              startOffset 0.01 0 0
+              endOffset 0 0.05 0
+              color [
+                1 0 0
+                1 1 0
+                1 0 1
+              ]
+            }
+          ]
+        }
+        PositionSensor {
+        }
+      ]
+      endPoint Solid {
+        translation 0.1 0 0
+        rotation 0 0 1 -1.5707996938995747
+        children [
+          USE JOINT
+          DEF BONE2 Pose {
+            translation 0 0.0225 0
+            rotation 1 0 0 1.5707996938995747
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 0.8 0.8 0.8
+                  roughness 1
+                  metalness 0
+                }
+                geometry Capsule {
+                  height 0.045
+                  radius 0.005
+                }
+              }
+            ]
+          }
+        ]
+        boundingObject Group {
+          children [
+            USE JOINT
+            USE BONE2
+          ]
+        }
+        physics Physics {
+          density -1
+          mass 0.6
+        }
+      }
+    }
+  ]
+  name "hinge"
+  # ⚠ NO `physics` NODE ON PURPOSE: a STATIC base. The first draft gave it mass 20, its
+  # boundingObject Group collapsed to the Robot-wrapper placeholder sphere (r=0.001), and
+  # the whole rig left the camera frame -- the gate then read 0 px in every arm and looked
+  # exactly like "the renderer cannot see a Muscle". The endPoint Solid keeps its own
+  # physics, so the joint still swings and the muscle still stretches.
+  boundingObject Group {
+    children [
+      USE BOX
+      USE JOINT
+      USE BONE1
+    ]
+  }
+  controller "wgpu_gate_driver"
+  controllerArgs ["--motor" "muscle" "--mode" "swing" "--max" "2.0" "--step" "0.4"]
+}
+# Camera rig: local +X is forward, identity rotation looks along world +X, straight at the
+# joint from 0.35 m out.
+DEF CAM_RIG Robot {
+  translation -0.45 0 0.05
+  children [
+    Camera {
+      name "muscle_cam"
+      width 96
+      height 72
+      fieldOfView 1.1
+      near 0.02
+      far 20.0
+      renderBackend "wgpu"
+    }
+  ]
+  name "muscle_cam_rig"
+  controller "camera_cloth_wgpu_smoke"
+  supervisor FALSE
+}

@@ -1,0 +1,182 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/factory/containers/protos/CardboardBox.proto
+# keywords: industrial/container
+# A cardboard box: six thin corrugated panels, the top one hinged on the back edge so the box can be opened.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/Cardboard.proto"
+
+PROTO CardboardBox [
+  field SFVec3f    translation 0 0 0.3
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "cardboard box"
+  field SFVec3f    size        0.6 0.6 0.6      # Defines the size of the cardboard box.
+  field SFFloat    mass        0                # Defines the mass of the cardboard box in kg. A value smaller or equal to 0 remove the physics of the cardboard box.
+  field SFBool     locked      FALSE            # Is `Solid.locked`.
+  field SFFloat    lidAngle    0                # Defines the opening of the cardboard box in radians. A value equal to 0 closes the box and uses a simple box for the bounding object, preventing it from containing objects.
+]
+{
+  %<
+    // ---------------------------------------------------------------------
+    // Size. A cardboard box is a physical object with a plausible range: too
+    // small and the panels are thinner than the corrugation, too large and it
+    // stops being cardboard. Reject the volume outright, then clamp per axis.
+    // ---------------------------------------------------------------------
+    const MAX_EDGE = 2.5;
+    const MIN_EDGE = 0.01;
+
+    let size = fields.size.value;
+    const volume = size.x * size.y * size.z;
+    if (volume < 0.000001 || volume > 1) {
+      size = fields.size.defaultValue;
+      console.error('Box volume outside of range [ 1 cm3 ; 1 m3 ]. \'size\' value reset to (' + size.x + ', ' + size.y + ', ' + size.z + ').');
+    }
+
+    const axes = ['x', 'y', 'z'];
+    for (let i = 0; i < axes.length; ++i) {
+      const a = axes[i];
+      if (size[a] > MAX_EDGE) {
+        console.error('\'size.' + a + '\' greater than maximal size (' + MAX_EDGE + '). Value clamped.');
+        size[a] = MAX_EDGE;
+      } else if (size[a] < MIN_EDGE) {
+        console.error('\'size.' + a + '\' less than minimal size (' + MIN_EDGE + '). Value clamped.');
+        size[a] = MIN_EDGE;
+      }
+    }
+
+    // Mass. Anchor it to the box's own scale: a 1 cm3 box should weigh between
+    // 0.1 and 10 g, a 1 m3 box between 1 and 100 kg. Both bracket volume^(2/3).
+    let mass = fields.mass.value;
+    const minMass = Math.pow(volume, 2 / 3);
+    const maxMass = 100 * minMass;
+    if (mass > 0 && mass < minMass) {
+      console.error('\'mass\' less than minimal value (' + minMass + '). Value clamped.');
+      mass = minMass;
+    } else if (mass > maxMass) {
+      console.error('\'mass\' greater than maximal value (' + maxMass + '). Value clamped.');
+      mass = maxMass;
+    }
+
+    // ---------------------------------------------------------------------
+    // The five fixed panels. Each is a slab of `sheet` thickness set flush with
+    // the inside of one face; `inset` keeps neighbouring panels from z-fighting
+    // where they meet at an edge.
+    // ---------------------------------------------------------------------
+    const sheet = 0.0005;
+    const inset = 0.0001;
+    const flush = 0.5 * sheet;   // pull a panel's centre in by half its thickness
+
+    const panel = function(face, axis, sign) {
+      const s = {x: size.x - inset, y: size.y - inset, z: size.z - inset};
+      s[axis] = sheet;
+      const p = {x: 0, y: 0, z: 0};
+      p[axis] = sign * (0.5 * size[axis] - flush);
+      return {face: face, size: s, pos: p};
+    };
+    const panels = [
+      panel('back',   'x', -1),
+      panel('front',  'x',  1),
+      panel('right',  'y', -1),
+      panel('left',   'y',  1),
+      panel('bottom', 'z', -1)
+    ];
+
+    // ---------------------------------------------------------------------
+    // The lid. It swings about the top back edge of the box, so its centre
+    // rides a circle of radius size.x / 2 around that hinge.
+    // ---------------------------------------------------------------------
+    const lidAngle = fields.lidAngle.value;
+    const arm = 0.5 * size.x;
+    const lid = {
+      x: -arm + arm * Math.cos(lidAngle),
+      y: 0,
+      z: 0.5 * size.z - flush + arm * Math.sin(lidAngle)
+    };
+    const closed = lidAngle === 0;
+
+    // A closed box is collided as one solid block. An open one is collided
+    // panel by panel, so that it can actually hold something.
+    const shell = 0.003;   // the bounding panels are thicker than the drawn ones
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      %< for (let i = 0; i < panels.length; ++i) { >%
+      Pose {
+        translation %<= panels[i].pos.x >% %<= panels[i].pos.y >% %<= panels[i].pos.z >%
+        children [
+          Shape {
+            appearance Cardboard {
+              type %<= '"' + panels[i].face + '"' >%
+            }
+            geometry Box {
+              size %<= panels[i].size.x >% %<= panels[i].size.y >% %<= panels[i].size.z >%
+            }
+          }
+        ]
+      }
+      %< } >%
+      DEF LID Pose {
+        translation %<= lid.x >% %<= lid.y >% %<= lid.z >%
+        rotation 0 1 0 %<= -lidAngle >%
+        children [
+          Shape {
+            appearance Cardboard {
+              type "top"
+            }
+            geometry Box {
+              size %<= size.x - inset >% %<= size.y - inset >% %<= sheet >%
+            }
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "cardboard box"
+    %< if (closed) { >%
+    boundingObject Box {
+      size %<= size.x >% %<= size.y >% %<= size.z >%
+    }
+    %< } else { >%
+    boundingObject Group {
+      children [
+        %< for (let i = 0; i < panels.length; ++i) {
+             const s = {x: panels[i].size.x, y: panels[i].size.y, z: panels[i].size.z};
+             const p = {x: panels[i].pos.x, y: panels[i].pos.y, z: panels[i].pos.z};
+             const axis = s.x === sheet ? 'x' : (s.y === sheet ? 'y' : 'z');
+             s[axis] = shell;
+             p[axis] = (p[axis] < 0 ? -1 : 1) * (0.5 * size[axis] - 0.5 * shell);
+        >%
+        Pose {
+          translation %<= p.x >% %<= p.y >% %<= p.z >%
+          children [
+            Box {
+              size %<= s.x >% %<= s.y >% %<= s.z >%
+            }
+          ]
+        }
+        %< } >%
+        Pose { # the open lid
+          translation %<= lid.x >% %<= lid.y >% %<= lid.z >%
+          rotation 0 1 0 %<= -lidAngle >%
+          children [
+            Box {
+              size %<= size.x - inset >% %<= size.y - inset >% %<= shell >%
+            }
+          ]
+        }
+      ]
+    }
+    %< } >%
+    %< if (mass > 0) { >%
+    physics Physics {
+      density -1
+      mass %<= mass >%
+    }
+    %< } >%
+    locked IS locked
+  }
+}

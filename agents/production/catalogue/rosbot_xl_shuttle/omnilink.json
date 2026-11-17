@@ -1,0 +1,15 @@
+{
+  "name": "rosbot_xl_shuttle",
+  "display_name": "Rosbot Xl Shuttle",
+  "world": "projects/samples/demos/worlds/chat/omnilink_rosbot_xl.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/rosbot_xl_shuttle/run.py",
+  "description": "rosbot_xl \u2014 run a there-and-back leg. Catalogue brief, 5 checked steps.",
+  "tags": [
+    "mobile",
+    "shuttle",
+    "rosbot_xl",
+    "catalogue",
+    "generated"
+  ]
+}

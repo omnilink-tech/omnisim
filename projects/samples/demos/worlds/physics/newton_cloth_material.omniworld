@@ -1,0 +1,275 @@
+#VRML_SIM R2025a utf8
+
+# FABRIC THAT LOOKS LIKE FABRIC. The same T-shirt and the same draped sheet the
+# neighbouring cloth worlds simulate, wearing a real `PBRAppearance` instead of
+# the engine-owned flat Phong colour -- a knit-jersey base colour, a normal map
+# and a roughness map, sampled through the garment's own UV set.
+#
+# It exists to demonstrate `Cloth { appearance ... }`, and it is deliberately
+# TWO cloths because the two modes are parameterised differently and both had to
+# be proven: the SHEET is a grid patch, where the (dimX, dimY) lattice is the UV
+# space and a texture lands square with no authoring at all; the SHIRT is a mesh
+# cloth, which uses the UV set baked into the OBJ by
+# scripts/dev/usd_to_cloth_obj.py.
+#
+# ==========================================================================
+# WHY THIS WORLD HAS TWO FILL LIGHTS AND THE OTHER CLOTH WORLDS DO NOT
+# ==========================================================================
+# ⚠ The canonical recipe declares `ambientIntensity 0` (OmniSimSun.proto), so a
+# world's ONLY fill light is image-based -- and `OmniSimSky`'s procedural sky
+# ("earth", the default) bakes an irradiance cubemap that contributes very close
+# to nothing. MEASURED on this machine, three identical PBRAppearance plates
+# (roughness 0.9, metalness 0) suspended in open sky and viewed from below, so
+# nothing shadows them:
+#
+#   atmosphericSky "earth"   IBLStrength 1 / 5 / 25  ->  (0,0,0) / (0,0,0) / ~(20,5,5)
+#   atmosphericSky ""        IBLStrength 1 / 5 / 25  ->  dark red / mid red / pink
+#
+# So on the default sky ANY surface the sun does not hit directly renders at
+# exactly (0,0,0) -- a Cloth, a Box, a robot link, all of them. That is an
+# engine-wide lighting gap and NOT something this node can fix; a garment merely
+# shows it worse than anything else, being a thin, heavily self-occluding surface
+# you see from every angle at once.
+#
+# Rather than change the sky (which would re-skin every world in the repo), this
+# world does what a lighting artist would: keeps the canonical sky + sun exactly
+# as they are, and adds two dim, shadowless DirectionalLights standing in for the
+# sky bounce. They are the reason the fabric reads on its shaded side.
+#
+# ==========================================================================
+# THE MATERIAL, FIELD BY FIELD
+# ==========================================================================
+#   baseColorMap    the knit's own light/dark, at low contrast so it reinforces
+#                   the normal map instead of fighting it
+#   normalMap       ⭐ THE ONE THAT MATTERS. The simulated mesh is 616 particles
+#                   and can only resolve ~4 cm wrinkles; every stitch-scale
+#                   highlight comes from here. WREN's pbr.frag derives the
+#                   tangent frame per pixel from screen-space derivatives, so it
+#                   needs no tangent vertex attribute -- which is essential,
+#                   because a WrDynamicMesh cannot store one.
+#   roughnessMap    jersey is matte with slightly shinier stitch crowns. A
+#                   constant roughness is what makes cloth look like painted
+#                   plastic.
+#   metalness 0     fabric is a dielectric. Anything else and the fill lights
+#                   turn the shirt into foil.
+#
+# Textures are generated, not vendored: scripts/dev/make_cloth_textures.py.
+#
+# UVs. The shirt's are `arap-panel`, 6 tile repeats per metre of surface, baked
+# per-vertex into the OBJ. ⚠ The MIRRORING is not laziness -- the map has to be
+# continuous over the whole closed garment, because the usual way to lay a tube
+# flat (cut it and duplicate the seam vertices) is unavailable here: both newton
+# and OmCloth weld duplicate positions, which they must, since an unwelded seam
+# has no stretch and no bending across it and the garment splits open there. A
+# continuous map of a tube is only possible if it FOLDS, so it does -- 2-to-1,
+# with the fold on the side seam, which is invisible on a tiling weave and is
+# exactly why this is a fabric parameterisation and not a place for a chest print.
+#
+# ⚠ IT USED TO BE `mirrored-cylindrical` (`u = |atan2(y, x)| / pi`) AND THAT WAS
+# THE CAUSE OF THIS WORLD'S MOTTLING, measured 2026-08-15. The fold was always in
+# the right place; the METRIC between the folds was not, and almost all of the
+# error was on the SLEEVES -- tubes lying along X, for which an angle about Z and
+# a bare z are both nearly constant, so each sleeve collapsed into a sliver of UV
+# space. Whole-mesh texel-density spread went 1.185 -> 0.187 mip levels and
+# anisotropy p95 4.42 -> 1.32. Regenerate with scripts/dev/usd_to_cloth_obj.py,
+# which now scores whatever map it writes. Details: docs/developer/cloth-simulation.md.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  # The coupled path: SolverMuJoCo keeps every rigid body, SolverVBD owns the
+  # cloth particles, SolverCoupledProxy exchanges forces between them.
+  newtonSolver "mujoco+vbd"
+  # 10 substeps rather than the default: the fabric here is stiffer (see the
+  # Cloth nodes' triKe) and a stiff FEM element needs a shorter effective step
+  # before the solve converges instead of ringing.
+  newtonSubsteps 10
+  newtonStatics TRUE
+  newtonGroundMu 1
+}
+Viewpoint {
+  position 1.548 -1.662 1.522
+  orientation -0.2717 0.1494 0.9507 2.2947
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+# The two stand-ins for the missing sky bounce -- see the header. Cool, dim, and
+# castShadows FALSE: a fill light that casts is a second set of hard black
+# shadows, which is the opposite of what a fill is for.
+DEF FILL_KEY DirectionalLight {
+  color 0.62 0.70 0.86
+  direction 0.75 0.62 -0.22
+  intensity 0.85
+  castShadows FALSE
+}
+DEF FILL_BACK DirectionalLight {
+  color 0.55 0.62 0.78
+  direction -0.80 -0.52 -0.30
+  intensity 0.55
+  castShadows FALSE
+}
+DEF FLOOR Solid {
+  translation 0 0 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.36 0.40
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 6 6 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 6 6 0.1
+  }
+}
+# The clothes rail. ⚠ DELIBERATELY HAS NO boundingObject: it is a VISUAL PROP.
+# What holds the shirt up is the pinned shoulder band, and giving the rail a
+# collider would put a static body back into the fabric's contact path, which is
+# the path measured to be unreliable. Also the house rule for kinematic props.
+DEF RAIL Solid {
+  translation 0 0 1.96
+  rotation 0 1 0 1.5708
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.73 0.75
+        roughness 0.35
+        metalness 0.9
+      }
+      geometry Cylinder {
+        height 1.8
+        radius 0.012
+      }
+    }
+  ]
+  name "rail"
+}
+# The table the sheet drapes over. Top face at z = 0.5.
+DEF TABLE Solid {
+  translation -0.95 0.1 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.42 0.31 0.21
+        roughness 0.65
+        metalness 0
+      }
+      geometry Box {
+        size 0.5 0.5 0.5
+      }
+    }
+  ]
+  name "table"
+  boundingObject Box {
+    size 0.5 0.5 0.5
+  }
+}
+# GRID CLOTH. 17 x 17 particles at 5 cm = a 0.8 m square, pinned along its local
+# +Y edge so it hinges and folds over the table instead of dropping flat. The
+# lattice is the UV space, so `textureTransform { scale ... }` is the only knob
+# needed to set the weave's real-world size -- 6 x 6 repeats over 0.8 m is
+# ~7.5 per metre, a little coarser than the shirt so the two read as different
+# cloths rather than as one material applied twice. The terracotta set is the
+# SAME generator with a different yarn colour and stitch count -- one flag, which
+# is the point of generating textures instead of vendoring them.
+DEF SHEET Cloth {
+  translation -1.35 -0.3 1.0
+  dimX 16
+  dimY 16
+  cellX 0.05
+  cellY 0.05
+  mass 0.001
+  particleRadius 0.01
+  fixTop TRUE
+  triKe 1000000
+  triKd 2000
+  appearance PBRAppearance {
+    baseColorMap ImageTexture {
+      url [
+        "textures/knit_jersey_terracotta_basecolor.png"
+      ]
+    }
+    normalMap ImageTexture {
+      url [
+        "textures/knit_jersey_terracotta_normal.png"
+      ]
+    }
+    roughnessMap ImageTexture {
+      url [
+        "textures/knit_jersey_terracotta_roughness.png"
+      ]
+    }
+    metalness 0
+    normalMapFactor 0.55
+    textureTransform TextureTransform {
+      scale 6 6
+    }
+  }
+}
+# MESH CLOTH, hung as worn: the OBJ's local +Z is the torso axis and its hem sits
+# at local z = 0, so at translation z = 1.30 the shirt occupies z = 1.30 (hem) to
+# 1.9346 (shoulders). `pinTopBand 0.06` pins the 47 vertices within 6 cm of the
+# maximum local Z -- the shoulder line either side of the neck -- giving them
+# mass 0 so the shirt hangs as it would from a hanger.
+#
+# `density` is kg per SQUARE METRE: 0.3 over 0.664 m^2 is a 0.199 kg shirt.
+#
+# NO textureTransform here. The OBJ's UVs are already baked at 6 repeats per
+# metre of surface, which is where a knit's scale belongs -- in the asset, next
+# to the geometry it parameterises. ⚠ That figure is now EXACT; under the old
+# mirrored-cylindrical map it was nominally the same 6 but measured ~7.3, because
+# `u` was scaled by a bbox-fitted ellipse whose major axis was the SLEEVE TIP and
+# so over-scaled the torso by 1.6x. The weave is ~1.23x larger here than it was.
+DEF TSHIRT Cloth {
+  translation 0 0 1.30
+  url [
+    "meshes/tshirt_hi.obj"
+  ]
+  density 0.3
+  particleRadius 0.01
+  pinTopBand 0.06
+  # ⚠ NOT COSMETIC, and worth copying into any garment world. At the default
+  # triKe the shipped hang world's shirt CREEPS: a 0.199 kg garment on a pinned
+  # shoulder band keeps elongating until it reads as a floor-length dress, and
+  # that happens on the 616-particle mesh as much as on this 2394-particle one --
+  # it is stretch, not resolution. A stiffer membrane holds the garment's own
+  # proportions, which is what a viewer reads as "that is a T-shirt".
+  triKe 1000000
+  triKd 2000
+  # A mesh Cloth is pinned by pinTopBand, never by the grid's edge flags;
+  # fixTop defaults TRUE, so clear it or the node correctly warns it is ignored.
+  fixTop FALSE
+  appearance PBRAppearance {
+    baseColorMap ImageTexture {
+      url [
+        "textures/knit_jersey_basecolor.png"
+      ]
+    }
+    normalMap ImageTexture {
+      url [
+        "textures/knit_jersey_normal.png"
+      ]
+    }
+    roughnessMap ImageTexture {
+      url [
+        "textures/knit_jersey_roughness.png"
+      ]
+    }
+    metalness 0
+    normalMapFactor 0.55
+  }
+}

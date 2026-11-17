@@ -1,0 +1,15 @@
+{
+  "name": "tb3_burger_shuttle",
+  "display_name": "Tb3 Burger Shuttle",
+  "world": "projects/samples/demos/worlds/chat/omnilink_tb3_burger.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/tb3_burger_shuttle/run.py",
+  "description": "tb3_burger \u2014 run a there-and-back leg. Catalogue brief, 5 checked steps.",
+  "tags": [
+    "mobile",
+    "shuttle",
+    "tb3_burger",
+    "catalogue",
+    "generated"
+  ]
+}

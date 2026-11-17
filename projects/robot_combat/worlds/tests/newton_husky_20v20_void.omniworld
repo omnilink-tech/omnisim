@@ -1,0 +1,360 @@
+#OMNISIM R2025a utf8
+
+# Newton 20v20 head-on stress world. Generated from the 4v4
+# newton_husky_head_on.omniworld template. 20 huskies per side, facing
+# each other across the arena, all on physicsBackend "newton".
+#
+# Purpose: validate the post-16dcabe (joint-anchor projection fix)
+# multi-articulation behavior at the previously-blocking 20v20 scale.
+# That fix turned the "body-index-30 cliff" from a Newton/Warp
+# articulation limit into a local-bug symptom; this world is the
+# end-to-end validation that the cliff is gone.
+#
+# Layout: 2 lines of 20 huskies along y = [-19, +19] in 2 m steps,
+# left line at x=-8 (forward), right line at x=+8 (rotated 180 deg,
+# also forward = approaching the left line).
+#
+# Per-husky: chassis + 4 wheels = 5 bodies. 40 huskies = 200 bodies,
+# 160 hinge joints. The pure-Python solver bench
+# (scripts/xpbd_probes/bench_newton_scaling.py) reached 50 huskies
+# at 3.4 ms/step flat, so end-to-end here should comfortably stay
+# below 60 Hz tick budget on a Newton-capable box.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Newton Husky 20v20 Stress (P5 in-OmniSim post-cliff)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 0.8 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation 0.000000 1.000000 0.000000 1.570796
+  position 0.000 0.000 111.110
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 80 80
+  wallHeight 0.5
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# LEFT side -- 20 huskies at x=-8, y in [-19, +19] in 2 m steps.
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -19 0.3
+  name "husky_L0"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -17 0.3
+  name "husky_L1"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -15 0.3
+  name "husky_L2"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -13 0.3
+  name "husky_L3"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -11 0.3
+  name "husky_L4"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -9 0.3
+  name "husky_L5"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -7 0.3
+  name "husky_L6"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -5 0.3
+  name "husky_L7"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -3 0.3
+  name "husky_L8"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -1 0.3
+  name "husky_L9"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 1 0.3
+  name "husky_L10"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 3 0.3
+  name "husky_L11"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 5 0.3
+  name "husky_L12"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 7 0.3
+  name "husky_L13"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 9 0.3
+  name "husky_L14"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 11 0.3
+  name "husky_L15"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 13 0.3
+  name "husky_L16"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 15 0.3
+  name "husky_L17"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 17 0.3
+  name "husky_L18"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 19 0.3
+  name "husky_L19"
+  controller "void"
+  physicsBackend "newton"
+}
+
+# RIGHT side -- 20 huskies at x=+8, y in [-19, +19], rotated 180 deg.
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -19 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R0"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -17 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R1"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -15 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R2"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -13 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R3"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -11 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R4"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -9 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R5"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -7 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R6"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -5 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R7"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -3 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R8"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -1 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R9"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 1 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R10"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 3 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R11"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 5 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R12"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 7 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R13"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 9 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R14"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 11 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R15"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 13 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R16"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 15 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R17"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 17 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R18"
+  controller "void"
+  physicsBackend "newton"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 19 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R19"
+  controller "void"
+  physicsBackend "newton"
+}

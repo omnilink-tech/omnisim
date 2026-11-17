@@ -1,0 +1,85 @@
+#OMNISIM R2025a utf8
+
+# Closed-loop agent demo, failing plan: four independent Huskies receive the
+# same target.  The scene is intentionally unsafe so OmniSim can expose the
+# resulting robot-robot contacts before the agent replans.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Agent Fleet - Shared Target Failure"
+}
+Viewpoint {
+  orientation 0 1 0 1.570796
+  position 0 0 30
+}
+OmniSimSky { }
+OmniSimSun { }
+DirectionalLight {
+  direction -0.4 0.3 -0.8
+  color 0.9 0.94 1
+  intensity 1.3
+  castShadows FALSE
+}
+RectangleArena {
+  floorSize 16 16
+  wallHeight 0.35
+  floorAppearance Asphalt { colorOverride 0.12 0.14 0.17 }
+}
+
+DEF SHARED_TARGET Solid {
+  translation 0 0 0.012
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.05 0.03
+        emissiveColor 0.35 0.01 0.0
+        roughness 0.65
+        metalness 0
+      }
+      geometry Box { size 1.35 1.35 0.024 }
+    }
+  ]
+  name "unsafe shared target"
+}
+
+DEF FLEET_A URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -6.2 0 0.1
+  rotation 0 0 1 0
+  name "fleet_a"
+  controller "fleet_goal"
+  supervisor TRUE
+  customData "{\"target\":[0.0,0.0],\"plan\":\"shared_target\"}"
+}
+DEF FLEET_B URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 6.2 0 0.1
+  rotation 0 0 1 3.141593
+  name "fleet_b"
+  controller "fleet_goal"
+  supervisor TRUE
+  customData "{\"target\":[0.0,0.0],\"plan\":\"shared_target\"}"
+}
+DEF FLEET_C URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 -6.2 0.1
+  rotation 0 0 1 1.570796
+  name "fleet_c"
+  controller "fleet_goal"
+  supervisor TRUE
+  customData "{\"target\":[0.0,0.0],\"plan\":\"shared_target\"}"
+}
+DEF FLEET_D URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 6.2 0.1
+  rotation 0 0 1 -1.570796
+  name "fleet_d"
+  controller "fleet_goal"
+  supervisor TRUE
+  customData "{\"target\":[0.0,0.0],\"plan\":\"shared_target\"}"
+}

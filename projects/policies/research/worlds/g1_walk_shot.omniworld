@@ -1,0 +1,75 @@
+#OMNISIM R2025a utf8
+
+# Screenshot variant of g1_walk_deploy.omniworld: identical G1 + walk15 policy,
+# plus a DEF CAMBOT camera-bot (controller walk_shot) that chase-photographs
+# the walking robot via Camera.saveImage. Launch with rendering ON
+# (--minimize) and the walk Newton env (ke=100/kd=5, see run_g1_walk_deploy.ps1
+# non-Arms path). PNGs -> _scratch/g1_walk_shots/.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 walking -- screenshot"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.294 -4.571 5.547
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+TexturedBackground { }
+TexturedBackgroundLight { }
+DEF SUN OmniSimSun {
+  direction -0.6 0.4 -0.5
+  intensity 2.6
+  ambientIntensity 0.45
+}
+RectangleArena {
+  floorSize 30 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF G1 URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_legs_omnisim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "g1_walk_deploy"
+  physicsBackend "newton"
+}
+
+DEF CAMBOT Robot {
+  translation 2.6 -1.9 1.15
+  children [
+    Camera {
+      name "cam"
+      width 1280
+      height 800
+      fieldOfView 0.9
+    }
+  ]
+  name "cambot"
+  controller "walk_shot"
+  supervisor TRUE
+}

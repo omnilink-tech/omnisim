@@ -1,0 +1,91 @@
+{
+  "arm": "webots",
+  "engine": "upstream Webots R2025a",
+  "generated_utc": "2026-08-12T15:07:26Z",
+  "fault": "ignore_zero",
+  "rows": [
+    {
+      "rung": 3,
+      "sim": "webots",
+      "fault": "ignore_zero",
+      "title": "one hinge + motor, no load",
+      "measured": {
+        "steps": 750.0,
+        "sim_time_end": 3.0,
+        "exit_code": 0.0,
+        "n_samples": 750,
+        "omega_driven": 1.9999893334310594,
+        "omega_zero": 1.9999893334310093,
+        "angle_driven": 1.9999893334310594,
+        "angle_total": 5.991968042297687
+      },
+      "checks": [
+        {
+          "name": "omega_driven",
+          "measured": 1.9999893334310594,
+          "expected": 2.0,
+          "tol": 0.02,
+          "unit": "rad/s",
+          "rel": false,
+          "error": -1.0666568940553844e-05,
+          "margin": 0.019989333431059447,
+          "ok": true,
+          "why": "an unloaded velocity-controlled joint reaches its command exactly at steady state: no gravity torque about a vertical axis, no damping, no contact",
+          "key": "omega_driven"
+        },
+        {
+          "name": "omega_zero",
+          "measured": 1.9999893334310093,
+          "expected": 0.0,
+          "tol": 0.01,
+          "unit": "rad/s",
+          "rel": false,
+          "error": 1.9999893334310093,
+          "margin": -1.9899893334310093,
+          "ok": false,
+          "why": "commanding zero must PRODUCE zero -- the case a servo that silently ignores its input passes only by accident",
+          "key": "omega_zero"
+        },
+        {
+          "name": "angle_travelled",
+          "measured": 1.9999893334310594,
+          "expected": 2.0,
+          "tol": 0.02,
+          "unit": "rad",
+          "rel": false,
+          "error": -1.0666568940553844e-05,
+          "margin": 0.019989333431059447,
+          "ok": true,
+          "why": "integral form of the same claim, read from the joint's own position sensor: theta = omega t",
+          "key": "angle_driven"
+        }
+      ],
+      "wall": {
+        "startup_s": 3.3913004398345947,
+        "total_s": 3.8073434829711914,
+        "step_s": 0.12179255485534668
+      },
+      "passed": false,
+      "meta": {
+        "sim": "webots",
+        "rung": 3,
+        "fault": "ignore_zero",
+        "engine": "upstream Webots R2025a",
+        "webots_home": "/opt/upstream-webots/R2025a",
+        "port": 1604,
+        "error": null,
+        "exit_code": 0,
+        "timed_out": false,
+        "proc_t0": 1786547245.8185148,
+        "proc_t1": 1786547249.6258583,
+        "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\webots\\worlds\\rung3.wbt",
+        "cmd": "wsl.exe -e bash /mnt/o/omnisim/tests/benchmarks/ladder0/webots/run_cell.sh 3 ignore_zero /mnt/o/omnisim/tests/benchmarks/ladder0/webots/results/rung3_ignore_zero /mnt/o/omnisim/tests/benchmarks/ladder0/webots/worlds/rung3.wbt 120 1604",
+        "engine_version": "R2025a",
+        "engine_sha256_16": "c12c65e8680b579d",
+        "engine_complaints": [
+          "WARNING: It is not recommended to run Webots as root."
+        ]
+      }
+    }
+  ]
+}

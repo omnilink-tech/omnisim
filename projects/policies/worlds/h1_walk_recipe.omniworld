@@ -1,0 +1,65 @@
+#OMNISIM R2025a utf8
+
+# H1 through the SAME Shadowing recipe deploy as the G1 (OMNISIM_INENGINE_PYMOD=g1_walk_recipe_deploy).
+# The point is the CODE PATH, not the gait: a 10-DOF H1 leg, its own joint order, its own knee
+# columns -- all derived from the ghost lut, none of it hardcoded. No crane (HARNESS_LAM0=0).
+# H1 WALK-DEPLOY: the PHYSICS H1 (Newton) tracking the kinematic walking shadow
+# H1 through the SAME Shadowing recipe deploy as the G1 (OMNISIM_INENGINE_PYMOD=g1_walk_recipe_deploy).
+# The point is the CODE PATH, not the gait: a 10-DOF H1 leg, its own joint order, its own knee
+# columns -- all derived from the ghost lut, none of it hardcoded. No crane (HARNESS_LAM0=0).
+# with a stiff position-PD (humanoid_walk_deploy, HUMANOID_WALK_ROBOT=h1). NO RL
+# H1 through the SAME Shadowing recipe deploy as the G1 (OMNISIM_INENGINE_PYMOD=g1_walk_recipe_deploy).
+# The point is the CODE PATH, not the gait: a 10-DOF H1 leg, its own joint order, its own knee
+# columns -- all derived from the ghost lut, none of it hardcoded. No crane (HARNESS_LAM0=0).
+# yet -- this measures the sim-to-deploy gap (how the real Newton articulation
+# H1 through the SAME Shadowing recipe deploy as the G1 (OMNISIM_INENGINE_PYMOD=g1_walk_recipe_deploy).
+# The point is the CODE PATH, not the gait: a 10-DOF H1 leg, its own joint order, its own knee
+# columns -- all derived from the ghost lut, none of it hardcoded. No crane (HARNESS_LAM0=0).
+# tracks the verified-feasible shadow). Run: run_humanoid_walk_deploy.ps1 -Robot h1
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree H1 -- walk-deploy (shadow tracking under Newton)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.294 -4.571 5.777
+  follow "h1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 60 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../robots/unitree/h1/urdf/h1.urdf"
+  translation 0 0 1.01
+  name "h1"
+  supervisor TRUE
+  controller "humanoid_stand_deploy"
+  physicsBackend "newton"
+}

@@ -1,0 +1,16 @@
+# results/ is session output: `python tests/benchmarks/ladder0/run_ladder.py`
+# writes one <tag>/<sim>/rung<N>/ tree per campaign -- the reduced evidence
+# (cell.json, ladder.json, selftest.json) and the raw streams (samples.json*,
+# console/engine logs, rung-18 .npz recordings, rung-9 run_{a,b,c}.json). The
+# 107 committed campaign trees were deleted on 2026-09-02 because nothing in
+# the tree cited them, and a rerun would only recreate them, so everything
+# under results/ is ignored now.
+#
+# The ONE tracked file is r11_budget_study/variants.json, the budget-study
+# variant table that ladder0/omnisim/variants.py reads. A campaign a doc cites
+# needs `git add -f` for its reduced evidence (cell.json / ladder.json), never
+# the raw streams. `!*/` re-includes directories so the allowlist can match.
+*
+!*/
+!.gitignore
+!/r11_budget_study/variants.json

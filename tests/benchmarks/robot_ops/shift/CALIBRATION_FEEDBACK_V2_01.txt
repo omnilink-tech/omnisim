@@ -1,0 +1,8 @@
+Shift v2 calibration feedback 01 -- 2026-09-27, from evidence/shift-v2-calibration-02 (4 oracle +
+3 oracle_bad in one process of 7; judge gemini-2.5-pro). calibration-01 died on a runner bug
+(a bare `park` fixture), fixed in be93bbf4f; nothing for the author there.
+
+shift_holdout_v2 (sha256 d36e371a...)
+  oracle: 41/41 in 4 of 4 runs, every judged check included.
+  oracle_bad: fails 38/41; did NOT fail (3 of 3 runs): 3:avoid_zone, 8:prop_still
+  (0:answered is allowed to pass.)

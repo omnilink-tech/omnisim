@@ -1,0 +1,64 @@
+#OMNISIM R2025a utf8
+
+# VISUALIZATION variant of g1_walk_arms_deploy_mjwarp.omniworld: identical physics +
+# controller, but WITH a visible RectangleArena floor (like omniquad.omniworld) so the
+# robot is seen progressing across the ground instead of floating in space.
+#
+# Why this is now safe (it wasn't before): the arena floor <Plane> was the
+# ORIGINAL XPBD-fallback trigger (newton's SolverMuJoCo rejects a plane on a
+# non-static body -> silent fallback to XPBD -> the mjwarp-trained policy
+# collapsed at ~1s). Fix cbe5e6f0 makes finalize() DROP every deferred ground
+# plane when the solver is MuJoCo (OMNISIM_NEWTON_FORCE_MUJOCO=1 here), so the
+# backend's own static ground plane carries the physics while the arena floor
+# still RENDERS. The arena is long (30 m) so the ~10 m walk stays well inside it.
+#
+# Required Newton env (same as the floorless world): OMNISIM_NEWTON_STATICS=1
+# OMNISIM_NEWTON_SUBSTEPS=4 OMNISIM_URDF_USE_INERTIA=1 OMNISIM_NEWTON_FORCE_MUJOCO=1
+# OMNISIM_NEWTON_MJWARP=1 OMNISIM_NEWTON_TARGET_KE=100 OMNISIM_NEWTON_TARGET_KD=5.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 full-body walking PPO deploy (mjwarp, visible floor)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.25 0.25 0.9354 1.6378
+  position -2 -5 1.8
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 30 6
+  floorTileSize 1 1
+  wallHeight 0.2
+  floorAppearance PBRAppearance {
+    baseColor 0.24 0.27 0.30
+    roughness 0.95
+    metalness 0
+  }
+}
+URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_23dof_omnisim_prim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "g1_walk_deploy"
+  physicsBackend "newton"
+}

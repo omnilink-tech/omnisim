@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!--
+Velodyne Puck — alias for VLP-16. Identical kinematics, identical
+sensor calibration. Kept as a separate macro so URDFs that mounted the
+old VelodynePuck PROTO migrate with a one-line xacro:include change.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="velodyne_vlp16.urdf.xacro"/>
+  <xacro:macro name="velodyne_puck" params="parent_link prefix:=velodyne_puck *origin">
+    <xacro:velodyne_vlp16 parent_link="${parent_link}" prefix="${prefix}">
+      <xacro:insert_block name="origin"/>
+    </xacro:velodyne_vlp16>
+  </xacro:macro>
+</robot>

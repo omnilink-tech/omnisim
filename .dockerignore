@@ -1,0 +1,45 @@
+# docker/Dockerfile.runtime builds the tree from the BUILD CONTEXT (COPY .), so
+# this file decides what the engine build actually sees. Keep it accurate: too
+# little and the build fails, too much and every image build uploads gigabytes.
+#
+# In CI the context is an actions/checkout, i.e. tracked files only (~1 GB).
+# On a developer box it would otherwise also sweep in untracked run residue --
+# tests/ alone reaches 2.9 GB, .git is 2.75 GB, and msys64/ is a 1.9 GB Windows
+# runtime that a Linux image can never use.
+
+# History. The release build never shells out to git (only the clean/cleanse
+# targets do), and the Dockerfile discards .git in the prune step anyway.
+.git
+.gitignore
+.githooks
+
+# Windows-only runtime tree.
+msys64
+
+# Pruned by the Dockerfile regardless, so do not pay to upload them.
+tests
+docs
+
+# Developer and operational residue, none of it needed to build or run.
+.local-runs
+.claude
+.public-release-worktree
+_scratch
+projects/_scratch
+projects/_archive
+social
+cloud
+omnilink-docs
+distribution
+
+# Build output and caches.
+**/__pycache__
+**/*.pyc
+**/*.o
+**/*.d
+**/*.a
+**/*.so.bak
+**/*.exe
+**/*.dll
+**/*.stackdump
+.build_tmp

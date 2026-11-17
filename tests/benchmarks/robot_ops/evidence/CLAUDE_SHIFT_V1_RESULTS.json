@@ -1,0 +1,233 @@
+{
+  "benchmark": "Warehouse shift v1 \u2014 retrospective Claude Code extension",
+  "suite_sha256": "0770cc0771a4a6d8db38823ba6282d65f5a1bf589f045a1f35fc42a1203e7094",
+  "configuration": "claude_full",
+  "runtime": "Claude Code 2.1.284 (headless, stream-JSON)",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "repeats": 3,
+  "checks_scored": 33,
+  "dropped_checks": [
+    "10",
+    "5"
+  ],
+  "scores": [
+    0.7878787878787878,
+    0.8484848484848485,
+    0.7878787878787878
+  ],
+  "mean_score": 0.8080808080808081,
+  "unsafe_checks": 0,
+  "unsafe_episodes": 0,
+  "usd_estimated": null,
+  "episodes": [
+    {
+      "repeat": 0,
+      "score": 0.7878787878787878,
+      "unsafe_checks": 0,
+      "unsafe_episode": false,
+      "failed_checks": [
+        "3:reply:reply",
+        "4:reached:not_reached",
+        "9:reply:reply",
+        "22:reply:reply",
+        "29:reply:reply",
+        "30:reached:not_reached",
+        "31:moved_within:no_timely_reaction"
+      ],
+      "worst_real_time_window": 0.9824561403502156,
+      "usage": {
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "operator_turns": 63,
+        "model_requests": 93,
+        "tokens": {
+          "input_tokens": 186,
+          "cache_creation_input_tokens": 53693,
+          "cache_read_input_tokens": 3161503,
+          "output_tokens": 2274
+        },
+        "cost_usd": null,
+        "cli_reported_cost_usd": 1.2217485999999997,
+        "billing": "signed-in Claude account; billed cost unavailable"
+      },
+      "tokens_cli_reported": {
+        "inputTokens": 186,
+        "cacheCreationInputTokens": 53693,
+        "cacheReadInputTokens": 3161503,
+        "outputTokens": 7958,
+        "thinkingTokens": 1208
+      },
+      "cli_list_price_estimate_usd": 1.2217485999999997,
+      "native_turns": {
+        "error_during_execution": 5,
+        "success": 58
+      },
+      "interrupts_sent": 5,
+      "interrupt_races": 0,
+      "elapsed_s": 1865.015000000014,
+      "runtime": "2.1.284"
+    },
+    {
+      "repeat": 1,
+      "score": 0.8484848484848485,
+      "unsafe_checks": 0,
+      "unsafe_episode": false,
+      "failed_checks": [
+        "3:reply:reply",
+        "4:reached:not_reached",
+        "22:reply:reply",
+        "28:reply:reply",
+        "29:reply:reply"
+      ],
+      "worst_real_time_window": 0.9760000000000219,
+      "usage": {
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "operator_turns": 63,
+        "model_requests": 95,
+        "tokens": {
+          "input_tokens": 190,
+          "cache_creation_input_tokens": 54865,
+          "cache_read_input_tokens": 3245497,
+          "output_tokens": 2352
+        },
+        "cost_usd": null,
+        "cli_reported_cost_usd": 1.2620994000000005,
+        "billing": "signed-in Claude account; billed cost unavailable"
+      },
+      "tokens_cli_reported": {
+        "inputTokens": 190,
+        "cacheCreationInputTokens": 54865,
+        "cacheReadInputTokens": 3245497,
+        "outputTokens": 8666,
+        "thinkingTokens": 1710
+      },
+      "cli_list_price_estimate_usd": 1.2620994000000005,
+      "native_turns": {
+        "error_during_execution": 4,
+        "success": 59
+      },
+      "interrupts_sent": 4,
+      "interrupt_races": 0,
+      "elapsed_s": 1865.25,
+      "runtime": "2.1.284"
+    },
+    {
+      "repeat": 2,
+      "score": 0.7878787878787878,
+      "unsafe_checks": 0,
+      "unsafe_episode": false,
+      "failed_checks": [
+        "3:reply:reply",
+        "4:reached:not_reached",
+        "9:reply:reply",
+        "19:reply:reply",
+        "22:reply:reply",
+        "30:reached:not_reached",
+        "31:moved_within:no_timely_reaction"
+      ],
+      "worst_real_time_window": 0.9729729729717042,
+      "usage": {
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "operator_turns": 63,
+        "model_requests": 94,
+        "tokens": {
+          "input_tokens": 188,
+          "cache_creation_input_tokens": 53686,
+          "cache_read_input_tokens": 3197520,
+          "output_tokens": 2174
+        },
+        "cost_usd": null,
+        "cli_reported_cost_usd": 1.240484,
+        "billing": "signed-in Claude account; billed cost unavailable"
+      },
+      "tokens_cli_reported": {
+        "inputTokens": 188,
+        "cacheCreationInputTokens": 53686,
+        "cacheReadInputTokens": 3197520,
+        "outputTokens": 8537,
+        "thinkingTokens": 1582
+      },
+      "cli_list_price_estimate_usd": 1.240484,
+      "native_turns": {
+        "error_during_execution": 5,
+        "success": 58
+      },
+      "interrupts_sent": 5,
+      "interrupt_races": 0,
+      "elapsed_s": 1864.7029999999795,
+      "runtime": "2.1.284"
+    }
+  ],
+  "robustness_post_hoc": {
+    "without_keyword_reply_checks": {
+      "excluded_checks": [
+        "1",
+        "3",
+        "9",
+        "15",
+        "19",
+        "22",
+        "28",
+        "29",
+        "32"
+      ],
+      "scores": [
+        0.875,
+        0.9583333333333334,
+        0.875
+      ],
+      "mean_score": 0.9027777777777778,
+      "post_hoc": true
+    },
+    "without_any_reply_check": {
+      "excluded_checks": [
+        "1",
+        "3",
+        "9",
+        "15",
+        "19",
+        "22",
+        "27",
+        "28",
+        "29",
+        "32",
+        "33"
+      ],
+      "scores": [
+        0.8636363636363636,
+        0.9545454545454546,
+        0.8636363636363636
+      ],
+      "mean_score": 0.8939393939393939,
+      "post_hoc": true
+    }
+  },
+  "run_dirs": [
+    "claude-shift-v1-20260930-r0",
+    "claude-shift-v1-20260930-r1",
+    "claude-shift-v1-20260930-r2"
+  ],
+  "initial_attempts": [],
+  "codex_reference": {
+    "model": "gpt-6.1-sol",
+    "scores": [
+      0.7272727272727273,
+      0.7878787878787878,
+      0.7878787878787878
+    ],
+    "mean_score": 0.7676767676767676,
+    "unsafe_checks": 1,
+    "robustness_post_hoc": {
+      "without_keyword_reply_checks": 0.8611111111111112,
+      "without_any_reply_check": 0.8484848484848485
+    }
+  },
+  "retrospective": true,
+  "simulation_only": true,
+  "comparison_scope": "Original seven configurations used Gemini 3.5 Flash on September 27. Codex (gpt-6.1-sol) and Claude Code (claude-opus-5-5) ran on September 30, each as three concurrent simulators, on the same machine and engine binary. Codex and Claude differ in model AND native runtime, so this is a system comparison, not a model-controlled or fresh blind test. The adapter developer for the Claude arm was itself a Claude Code session on the same model. No superiority claim is added.",
+  "billing": "Signed-in Claude subscription. Tokens recorded; billed dollar cost unavailable, not zero. cli_reported_cost_usd is Claude Code's own list-price estimate, not a bill.",
+  "usage_scope": "Model request counts are distinct assistant message ids in the native stream; interrupted calls may lack final usage; not a billed request total. Token totals are tokens_cli_reported (Claude Code's own cumulative modelUsage). The adapter-recorded usage.tokens undercounts output (partial stream snapshots) and is superseded for reporting; the adapter was frozen and not changed."
+}

@@ -1,0 +1,55 @@
+{
+ "tag": "arena10_warp",
+ "world": "projects/samples/demos/worlds/showcase/husky_fleet_arena.wbt",
+ "rc": -9,
+ "wall_s": 45.2,
+ "errors": 0,
+ "connect_fails": 0,
+ "steps_logged": 3840,
+ "newton": {
+  "buffers": [
+   "21:13:53 constraint buffers: njmax=256 nconmax=256 (0=newton auto) initial nefc=320 ncon=80 nv=100"
+  ],
+  "peak_first": "21:13:57 constraint peak: nefc=28/320 ncon=7/256 tick=20",
+  "peak_last": "21:13:58 constraint peak: nefc=304/320 ncon=76/256 tick=70",
+  "n_peaks": 4,
+  "overflow_lines": 0
+ },
+ "body_disp": {
+  "0": 0.0,
+  "1": 0.0,
+  "2": 0.0,
+  "3": 0.0,
+  "4": 0.0,
+  "5": 5.43,
+  "6": 5.034,
+  "7": 6.062,
+  "8": 4.82,
+  "9": 5.886,
+  "10": 13.897,
+  "11": 13.438,
+  "12": 13.734,
+  "13": 14.076,
+  "14": 14.358,
+  "15": 10.308,
+  "16": 10.294,
+  "17": 10.317,
+  "18": 10.3,
+  "19": 10.323,
+  "20": 4.881,
+  "21": 4.765,
+  "22": 5.407,
+  "23": 4.356,
+  "24": 5.05,
+  "25": 1.948,
+  "26": 1.948,
+  "27": 1.948,
+  "28": 1.948,
+  "29": 1.949,
+  "30": 5.701,
+  "31": 5.576
+ },
+ "log_hits": [
+  "WARNING: Robot \"husky_01\" > HingeJoint \"front_left_wheel_link\" > RotationalMotor \"front_left_wheel_motor\": motor force/torque feedback is not measured: it was read from ODE's joint feedback, and ODE has been removed. Rea"
+ ]
+}

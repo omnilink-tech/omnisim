@@ -1,0 +1,121 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/solids/protos/SolidBox.proto
+# keywords: primitive/geometry
+# A box built at the Solid level from an explicit six-quad mesh.
+# Texture coordinates are laid out in metres rather than one full image per face, so a
+# tiling texture keeps square texels on a non-cubic box instead of being stretched.
+# The longest edge of the box is the reference length that maps to one texture tile.
+# template language: javascript
+
+PROTO SolidBox [
+  field SFVec3f    translation           0 0 1
+  field SFRotation rotation              0 0 1 0
+  field SFString   name                  "box"
+  field SFVec3f    size                  2 2 2                                                                                                         # Defines the size of the box.                                                                                                             # Defines the number of polygons used to represent the box and so its resolution.
+  field SFString   contactMaterial       "default"                                                                                                     # Is `Solid.contactMaterial`.
+  field SFNode     appearance            PBRAppearance { baseColorMap ImageTexture { url [ "omnisim://projects/default/worlds/textures/tagged_wall.jpg" ] } metalness 0 roughness 0.5 }  # Defines the appearance of the box.
+  field SFNode     physics               NULL                                                                                                          # Is `Solid.physics`.
+  field SFBool     enableBoundingObject  TRUE                                                                                                          # Defines whether the solid should have a bounding object.
+  field SFBool     castShadows           TRUE                                                                                                          # Defines whether this object should cast shadows.
+  field MFColor    recognitionColors     []                                                                                                            # Is `Solid.recognitionColors`.
+]
+{
+  %<
+    const want = fields.size.value;
+    const fallback = fields.size.defaultValue;
+    const sx = want.x > 0 ? want.x : fallback.x;
+    const sy = want.y > 0 ? want.y : fallback.y;
+    const sz = want.z > 0 ? want.z : fallback.z;
+    if (sx !== want.x || sy !== want.y || sz !== want.z)
+      console.error('SolidBox: every component of \'size\' must be strictly positive. Reset to (' + sx + ', ' + sy + ', ' + sz + ').');
+
+    const extent = {x: sx, y: sy, z: sz};
+    const half = {x: 0.5 * sx, y: 0.5 * sy, z: 0.5 * sz};
+
+    // One reference length for the whole box: the longest edge maps to exactly one
+    // texture tile, and every other edge gets a proportionally smaller slice of the
+    // image. That is what keeps the texels square (the "metric" mapping).
+    const reference = Math.max(sx, Math.max(sy, sz));
+
+    // Describe each face by its outward axis and the two in-plane axes, chosen so that
+    // (uAxis cross vAxis) already points outward. A single counter-clockwise corner
+    // order in (u, v) then produces correct outward winding on all six faces.
+    const faces = [
+      {axis: 'x', side:  1, uAxis: 'y', vAxis: 'z'},  // +X : y cross z = +x
+      {axis: 'x', side: -1, uAxis: 'z', vAxis: 'y'},  // -X : z cross y = -x
+      {axis: 'y', side:  1, uAxis: 'z', vAxis: 'x'},  // +Y : z cross x = +y
+      {axis: 'y', side: -1, uAxis: 'x', vAxis: 'z'},  // -Y : x cross z = -y
+      {axis: 'z', side:  1, uAxis: 'x', vAxis: 'y'},  // +Z : x cross y = +z
+      {axis: 'z', side: -1, uAxis: 'y', vAxis: 'x'}   // -Z : y cross x = -z
+    ];
+
+    // Counter-clockwise unit corners in the face's own (u, v) frame.
+    const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+
+    let coordBuffer = '';
+    let texCoordBuffer = '';
+    let indexBuffer = '';
+
+    for (let f = 0; f < faces.length; ++f) {
+      const face = faces[f];
+      const uSpan = extent[face.uAxis] / reference;
+      const vSpan = extent[face.vAxis] / reference;
+
+      for (let c = 0; c < corners.length; ++c) {
+        const su = corners[c][0];
+        const sv = corners[c][1];
+
+        const p = {x: 0, y: 0, z: 0};
+        p[face.axis] = face.side * half[face.axis];
+        p[face.uAxis] = su * half[face.uAxis];
+        p[face.vAxis] = sv * half[face.vAxis];
+        coordBuffer += `${p.x} ${p.y} ${p.z}, `;
+
+        // Remap the corner from [-1, 1] to [0, span] so one unit of UV is one
+        // reference length of geometry.
+        texCoordBuffer += `${0.5 * (su + 1) * uSpan} ${0.5 * (sv + 1) * vSpan}, `;
+      }
+
+      const base = 4 * f;
+      indexBuffer += `${base} ${base + 1} ${base + 2} ${base + 3} -1 `;
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      Shape {
+        appearance IS appearance
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [
+              %<= coordBuffer >%
+            ]
+          }
+          texCoord TextureCoordinate {
+            point [
+              %<= texCoordBuffer >%
+            ]
+          }
+          coordIndex [
+            %<= indexBuffer >%
+          ]
+          creaseAngle 0
+        }
+        castShadows IS castShadows
+      }
+    ]
+    name IS name
+    model "box"
+    contactMaterial IS contactMaterial
+    %< if (fields.enableBoundingObject.value) { >%
+    boundingObject Box {
+      size %<= sx >% %<= sy >% %<= sz >%
+    }
+    %< } >%
+    physics IS physics
+    recognitionColors IS recognitionColors
+  }
+}

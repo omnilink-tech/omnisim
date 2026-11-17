@@ -1,0 +1,152 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/floors/protos/UnevenTerrain.proto
+# tags: nonDeterministic
+# keywords: primitive/ground
+# A rolling ground plane whose height field is generated from fractal value noise: octaves of
+# smoothly interpolated hash noise summed at halving amplitude. `randomSeed` picks the
+# landscape, `flatCenter` presses a level pad into the middle for a robot to start on, and
+# `flatBounds` lets the terrain fall away to zero at the edges.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/SandyGround.proto"
+
+PROTO UnevenTerrain [
+  field SFVec3f    translation    0 0 0
+  field SFRotation rotation       0 0 1 0
+  field SFString   name           "uneven terrain"
+  field SFVec3f    size           50 50 5                                                           # Defines the size of the terrain.
+  field SFInt32    xDimension     50                                                                 # Defines the number of points in the grid height array in the x direction.
+  field SFInt32    yDimension     50                                                                 # Defines the number of points in the grid height array in the y direction.
+  field SFNode     appearance     SandyGround { textureTransform TextureTransform { scale 50 50 } }  # Defines the appearance of the terrain.
+  field SFInt32    randomSeed     1                                                                  # Defines the seed of the random number generator. A value smaller or equal to 0 sets a random seed.
+  field SFBool     flatCenter     FALSE                                                              # Defines whether the center of the terrain should be flat.
+  field SFBool     flatBounds     FALSE                                                              # Defines whether the bounds of the terrain should be flat.
+  field SFInt32    perlinNOctaves 3                                                                  # Defines the number of octaves of the perlin noise.
+
+  # Deprecated in Webots R2019a
+  deprecatedField MFString   texture        "omnisim://projects/default/worlds/textures/sand.jpg"
+  # Deprecated in Webots R2020b
+  deprecatedField SFVec2f    textureScale   1.0 1.0
+]
+{
+  %<
+    // A non-positive seed means "surprise me": key the landscape off the wall clock instead.
+    const seed = fields.randomSeed.value > 0 ? fields.randomSeed.value : (Date.now() % 100000);
+
+    let octaves = fields.perlinNOctaves.value;
+    if (octaves < 0 || octaves >= 10) {
+      octaves = fields.perlinNOctaves.defaultValue;
+      console.error('UnevenTerrain: \'perlinNOctaves\' must be in the range [0, 10). Reset to ' + octaves + '.');
+    }
+
+    const size = fields.size.value;
+
+    const readDimension = (field, label) => {
+      if (field.value < 2) {
+        console.error('UnevenTerrain: \'' + label + '\' must be at least 2. Reset to ' + field.defaultValue + '.');
+        return field.defaultValue;
+      }
+      return field.value;
+    };
+    const xDimension = readDimension(fields.xDimension, 'xDimension');
+    const yDimension = readDimension(fields.yDimension, 'yDimension');
+
+    // Hash a lattice corner into a repeatable pseudo-random height in [0, 1).
+    const corner = (ix, iy) => {
+      const v = Math.sin(ix * 127.1 + iy * 311.7 + seed * 74.7) * 43758.5453123;
+      return v - Math.floor(v);
+    };
+
+    // Quintic ease. Its first and second derivatives vanish at both ends, so adjacent noise
+    // cells meet without the visible creases a plain linear blend would leave along the grid.
+    const ease = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+
+    // Value noise: bilinearly blend the four lattice corners surrounding the sample.
+    const noise = (x, y) => {
+      const ix = Math.floor(x);
+      const iy = Math.floor(y);
+      const fx = ease(x - ix);
+      const fy = ease(y - iy);
+      const near = corner(ix, iy) * (1 - fx) + corner(ix + 1, iy) * fx;
+      const far = corner(ix, iy + 1) * (1 - fx) + corner(ix + 1, iy + 1) * fx;
+      return near * (1 - fy) + far * fy;
+    };
+
+    // Fractal sum: each octave doubles the detail and halves its contribution. Dividing by
+    // the total amplitude keeps the result inside [0, 1] whatever the octave count, which is
+    // what guarantees the terrain never climbs above `size.z`.
+    const BASE_CELLS = 4;  // broad hills across the terrain at the first octave
+    const fractal = (x, y) => {
+      let total = 0;
+      let amplitude = 1;
+      let weight = 0;
+      let frequency = BASE_CELLS;
+      for (let o = 0; o < octaves; ++o) {
+        total += amplitude * noise(x * frequency, y * frequency);
+        weight += amplitude;
+        amplitude *= 0.5;
+        frequency *= 2;
+      }
+      return weight > 0 ? total / weight : 0;
+    };
+
+    // A soft circular window on the middle of the terrain, used either to press the centre
+    // flat or to hold everything outside it down.
+    const centreWindow = (x, y) => {
+      const dx = x - 0.5;
+      const dy = y - 0.5;
+      const sigma = 0.2;
+      return Math.exp(-(dx * dx + dy * dy) / (2 * sigma * sigma));
+    };
+
+    const flatCenter = fields.flatCenter.value;
+    const flatBounds = fields.flatBounds.value;
+
+    let heightBuffer = '';
+    for (let i = 0; i < xDimension; ++i) {
+      const x = i / xDimension;
+      for (let j = 0; j < yDimension; ++j) {
+        const y = j / yDimension;
+
+        // With no octaves there is nothing to sample, so the grid degenerates to a level
+        // plateau at the full height.
+        let h = octaves > 0 ? fractal(x, y) : 1;
+
+        if (flatCenter)
+          h *= 1 - centreWindow(x, y);
+        if (flatBounds)
+          h *= centreWindow(x, y);
+
+        heightBuffer += `${h * size.z} `;
+      }
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      DEF UNEVEN_TERRAIN_ELEVATION_GRID Pose {
+        translation %<= -0.5 * size.x >% %<= -0.5 * size.y >% 0
+        children [
+          Shape {
+            appearance IS appearance
+            geometry ElevationGrid {
+              xDimension %<= xDimension >%
+              xSpacing %<= size.x / (xDimension - 1) >%
+              yDimension %<= yDimension >%
+              ySpacing %<= size.y / (yDimension - 1) >%
+              height [
+                %<= heightBuffer >%
+              ]
+            }
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "uneven terrain"
+    boundingObject USE UNEVEN_TERRAIN_ELEVATION_GRID
+  }
+}

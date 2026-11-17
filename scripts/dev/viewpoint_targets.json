@@ -1,0 +1,581 @@
+[
+  {
+    "world": "projects/policies/research/worlds/omniquad_walk_deploy.omniworld",
+    "subject": "omniquad",
+    "class": "quadruped"
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_walk_deploy.omniworld",
+    "subject": "g1",
+    "class": "humanoid"
+  },
+  {
+    "world": "projects/samples/demos/worlds/omnilink_launcher.omniworld",
+    "mode": "hero",
+    "center": [
+      0,
+      0,
+      0.5
+    ],
+    "radius": 0.6
+  },
+  {
+    "world": "projects/samples/demos/worlds/chat/omnilink_husky.omniworld",
+    "subject": "husky",
+    "class": "mobile"
+  },
+  {
+    "world": "projects/samples/demos/worlds/chat/omnilink_jackal.omniworld",
+    "subject": "jackal",
+    "class": "mobile"
+  },
+  {
+    "world": "projects/samples/demos/worlds/chat/omnilink_rosbot.omniworld",
+    "subject": "rosbot",
+    "class": "mobile"
+  },
+  {
+    "world": "projects/samples/demos/worlds/chat/omnilink_rosbot_xl.omniworld",
+    "subject": "rosbot_xl",
+    "class": "mobile"
+  },
+  {
+    "world": "projects/samples/demos/worlds/chat/omnilink_omniquad.omniworld",
+    "subject": "omniquad",
+    "class": "quadruped"
+  },
+  {
+    "world": "projects/samples/demos/worlds/chat/omnilink_tb3_burger.omniworld",
+    "subject": "tb3_burger",
+    "class": "mobile",
+    "radius": 0.7
+  },
+  {
+    "world": "projects/samples/demos/worlds/chat/omnilink_tb3_waffle.omniworld",
+    "subject": "tb3_waffle",
+    "class": "mobile",
+    "radius": 0.7
+  },
+  {
+    "world": "projects/samples/demos/worlds/chat/omnilink_tb3_waffle_pi.omniworld",
+    "subject": "tb3_waffle_pi",
+    "class": "mobile",
+    "radius": 0.7
+  },
+  {
+    "world": "projects/samples/demos/worlds/showcase/husky_fleet_arena.omniworld",
+    "mode": "topdown",
+    "center": [
+      0,
+      0,
+      0.3
+    ],
+    "radius": 12
+  },
+  {
+    "world": "projects/samples/demos/worlds/showcase/warehouse_husky.omniworld",
+    "mode": "topdown",
+    "center": [
+      0,
+      0,
+      0.3
+    ],
+    "radius": 17
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_arm_motion.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_braceguard_ghost_preview.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_hstand_manip.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_sit_mimic.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_sit_mimic_shot.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_sitstand_compare.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_sitstand_ghost_preview.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_sitstand_mimic.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_standwave_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_standwave_deploy_solo.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_standwave_ghost_preview.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_static_walk.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_static_walk_bigfoot.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_static_walk_hugefoot.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_walk_shot.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/go2_walk_shot.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/h1_shadow_demo.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/h1_walk_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_walk_shot.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_preview.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_ghost_preview.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_step_turn_preview.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/h1_walk_recipe.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/husky_damage_arena_drive.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/mixed_husky_10.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/mixed_husky_1n9o.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/newton_husky_10.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/newton_husky_10v10.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/newton_husky_20v20.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/newton_husky_20v20_async.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/newton_husky_20v20_void.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/newton_husky_30.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/newton_husky_9.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/newton_husky_head_on.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/newton_husky_head_on_damage.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/tests/ode_husky_10.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/samples/demos/worlds/chat/omnilink_mavic.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/samples/demos/worlds/chat/omnilink_multi_arm.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/samples/demos/worlds/physics/newton_husky_smoke_test.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/samples/demos/worlds/physics/newton_husky_swarm_drive.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/samples/demos/worlds/physics/newton_smoke_test.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/samples/demos/worlds/showcase/husky_rocks_traverse.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/b2_getup_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/b2_hill_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/b2_parity_probe.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/b2_parity_probe_free.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/b2_stand_test.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_armcheck_shot.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_model_walk_newton_demo.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_parity_probe.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_parity_probe_free.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_policy_probe.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_policy_probe_welded.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_stand_arms_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_stand_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_stand_shot.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_standwave_push_rain.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/g1_standwave_push_throw.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/go2_parity_probe.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/h1_parity_probe.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/h1_parity_probe_free.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/rl_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_crouch_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_getup_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_getup_ghost_demo.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_hill_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_jump_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_jump_ghost_demo.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_newton_demo.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_newton_walk_demo.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_parity_probe.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_parity_probe_free.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_recovery_train.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_residual_train.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_residual_train_newton.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_residual_train_perturb_newton.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_rl.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_rl_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_rl_deploy_newton.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_rl_newton.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_walk_demo.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/research/worlds/omniquad_walk_ghost_demo.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_demo3.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_demo3_show.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_puppet.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_runway.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_solo.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_synth.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_synth3.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_synth3_show.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_walk.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_walk3.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_walk4.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_walk5.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_climb_stairs_walk6.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_crawl_ghost_preview.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_hstand_cuberain.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_hstand_cubethrow.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_hstand_cubethrow_bigfoot.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_hstand_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_stairs3_2step.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_stairs3_2step_show.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_turn_demo.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_turn_ghost_compare.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_walk_bigfoot.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_walk_orig.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/g1_walk_orig_void.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/h1_hstand_cubethrow.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/policies/worlds/h1_stand_deploy.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/battlebots/worlds/battlebox_husky_proving.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/orc/worlds/orc_forest_war.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/orc/worlds/orc_open_field.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/orc/worlds/orc_queen_defense.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/demos/husky_combat_brawl.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/demos/husky_combat_duel.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robot_combat/worlds/demos/newton_husky_combat_2.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robots/omnisim/omniquad/worlds/omniquad.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/robots/husarion/rosbot_xl/worlds/rosbot_xl.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/samples/devices/worlds/brake.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/samples/devices/worlds/gyro.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/samples/devices/worlds/motor.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/samples/devices/worlds/propeller.omniworld",
+    "auto": true
+  },
+  {
+    "world": "projects/samples/devices/worlds/track.omniworld",
+    "auto": true
+  }
+]

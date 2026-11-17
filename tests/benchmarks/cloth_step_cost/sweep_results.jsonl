@@ -1,0 +1,11 @@
+{"scene": "drape", "solver": "mujoco+vbd", "substeps": 1, "particles": 289, "iters": null, "self_contact": null, "graph": false, "ms": 30.323, "rt": 0.264, "note": "AS SHIPPED (coupled, CPU mj_step)"}
+{"scene": "drape", "solver": "mujoco_warp", "substeps": 1, "particles": 289, "iters": null, "self_contact": null, "graph": true, "ms": 2.817, "rt": 2.84, "note": "coupled on GPU mj + odd-substep graph"}
+{"scene": "drape", "solver": "vbd", "substeps": 1, "particles": 289, "iters": null, "self_contact": null, "graph": true, "ms": 2.651, "rt": 3.017, "note": "whole-world VBD + odd-substep graph"}
+{"scene": "tshirt", "solver": "mujoco+vbd", "substeps": 1, "particles": 616, "iters": null, "self_contact": null, "graph": false, "ms": 31.418, "rt": 0.255, "note": "AS SHIPPED (coupled, CPU mj_step)"}
+{"scene": "tshirt", "solver": "mujoco_warp", "substeps": 1, "particles": 616, "iters": null, "self_contact": null, "graph": true, "ms": 6.989, "rt": 1.145, "note": "coupled on GPU mj + odd-substep graph"}
+{"scene": "tshirt", "solver": "vbd", "substeps": 1, "particles": 616, "iters": null, "self_contact": null, "graph": true, "ms": 2.817, "rt": 2.84, "note": "whole-world VBD + odd-substep graph"}
+{"scene": "drape", "solver": "mujoco_warp", "substeps": 1, "particles": 289, "iters": null, "self_contact": true, "graph": true, "ms": 2.819, "rt": 2.838, "note": "self_contact=True"}
+{"scene": "drape", "solver": "mujoco_warp", "substeps": 1, "particles": 289, "iters": null, "self_contact": false, "graph": true, "ms": 1.825, "rt": 4.384, "note": "self_contact=False"}
+{"scene": "drape", "solver": "mujoco_warp", "substeps": 1, "particles": 289, "iters": 2, "self_contact": null, "graph": true, "ms": 1.521, "rt": 5.258, "note": "VBD iterations sweep (graphed)"}
+{"scene": "drape", "solver": "mujoco_warp", "substeps": 1, "particles": 289, "iters": 5, "self_contact": null, "graph": true, "ms": 2.118, "rt": 3.777, "note": "VBD iterations sweep (graphed)"}
+{"scene": "drape", "solver": "mujoco_warp", "substeps": 1, "particles": 289, "iters": 10, "self_contact": null, "graph": true, "ms": 2.979, "rt": 2.685, "note": "VBD iterations sweep (graphed)"}

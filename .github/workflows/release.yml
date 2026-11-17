@@ -1,0 +1,204 @@
+name: Release
+
+# The public beta ships one platform that this project can currently certify:
+# Windows 10/11 with the Newton runtime bundled. Linux remains a verified
+# source build. macOS physics is unverified, so publishing either as a generic
+# binary would turn an explicit README limitation into a misleading download.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)build, for example v8.1.0'
+        required: true
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build and publish verified Windows package
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          update: false
+          # curl + unzip are what scripts/dev/setup_wgpu_native.sh fetches and
+          # unpacks the wgpu-native release with.
+          install: curl unzip
+
+      - name: Install build and packaging tools
+        shell: powershell
+        run: choco install innosetup --no-progress -y
+
+      # wgpu-native is the ONLY renderer, and this workflow never installed it:
+      # every installer from v8.1.5 to v8.1.9 was built with the backend compiled
+      # OUT (WB_WGPU_NATIVE_AVAILABLE undefined), shipped no wgpu_native.dll, and
+      # showed a white viewport with "[render] wgpu-native is UNAVAILABLE" on
+      # every machine -- public issue #8, reported from an Intel UHD 620 laptop
+      # that had been told to fix its driver. The Makefile guard added for
+      # public issue #7 is what finally failed this job (v8.1.10) instead of
+      # letting it build green. The script installs to _scratch/wgpu-native,
+      # which src/omnisim/Makefile auto-discovers, and copies the DLL next to
+      # the binary; the assertion below is so a silent failure of THAT cannot
+      # ship either.
+      - name: Install wgpu-native (the only renderer)
+        run: |
+          bash scripts/dev/setup_wgpu_native.sh
+          test -f _scratch/wgpu-native/include/webgpu/webgpu.h
+          test -f msys64/mingw64/bin/wgpu_native.dll
+          ls -l msys64/mingw64/bin/wgpu_native.dll
+
+      - name: Build OmniSim and bundle Newton
+        run: |
+          export OMNISIM_HOME="$GITHUB_WORKSPACE"
+          export HOST_PYTHON_HOME="$(cygpath -u "$pythonLocation")"
+          export PATH="$HOST_PYTHON_HOME:$GITHUB_WORKSPACE/msys64/mingw64/bin:$GITHUB_WORKSPACE/bin/node:/mingw64/bin:/usr/bin:$PATH"
+          export PYTHON_HOME="$HOST_PYTHON_HOME"
+          export PYTHON_LIB="-lpython$(python.exe -c 'import sys; print("%d%d" % sys.version_info[:2])')"
+          test -f "$PYTHON_HOME/include/Python.h"
+          test -f "$PYTHON_HOME/libs/${PYTHON_LIB#-l}.lib"
+          for attempt in 1 2 3; do
+            if ./scripts/install/msys64_installer.sh --all; then
+              break
+            fi
+            if [[ "$attempt" -eq 3 ]]; then
+              exit 1
+            fi
+            echo "MSYS dependency download failed (attempt $attempt/3); retrying..."
+            sleep $((attempt * 15))
+          done
+          # Stage the runtime exactly once below so the binary-level check is
+          # part of the same operation that creates the files we package.
+          make release -j4 BUNDLE_NEWTON=0
+          python.exe scripts/packaging/bundle_newton_runtime.py \
+            --cpython-home "$(python.exe -c 'import sys; print(sys.prefix)')" \
+            --verify --verify-binary
+
+      - name: Build physics-capable installer
+        env:
+          OMNISIM_REQUIRE_NEWTON_BUNDLE: '1'
+          OMNISIM_REQUIRE_RENDERER_BUNDLE: '1'
+          INNO_SETUP_HOME: /c/Program Files (x86)/Inno Setup 6
+        run: |
+          export OMNISIM_HOME="$GITHUB_WORKSPACE"
+          export HOST_PYTHON_HOME="$(cygpath -u "$pythonLocation")"
+          export PATH="$HOST_PYTHON_HOME:$GITHUB_WORKSPACE/msys64/mingw64/bin:$GITHUB_WORKSPACE/bin/node:/mingw64/bin:/usr/bin:$PATH"
+          export PYTHON_HOME="$HOST_PYTHON_HOME"
+          export PYTHON_LIB="-lpython$(python.exe -c 'import sys; print("%d%d" % sys.version_info[:2])')"
+          test -f "$PYTHON_HOME/include/Python.h"
+          test -f "$PYTHON_HOME/libs/${PYTHON_LIB#-l}.lib"
+          make distrib -j4
+
+      # A release that silently omitted the entire documented entry point built
+      # green, published green, and sat as "latest" for three days: v8.1.6 ships
+      # no omnisim/ package, so `python -m omnisim doctor` -- step 2 of README
+      # and BETA -- fails with "No module named omnisim" on the only artifact
+      # anyone can download. Nothing here looked inside the payload;
+      # if-no-files-found: error only checks that an .exe exists.
+      #
+      # windows_distro.py emits one Source: "<path>" line per packaged file into
+      # the generated .iss, so a literal grep is exact.
+      - name: Assert the package contains the documented entry points
+        shell: bash
+        run: |
+          ISS="$(find . -name 'omnisim*.iss' -print -quit)"
+          test -n "$ISS" || { echo "FATAL: no generated .iss found"; exit 1; }
+          echo "checking $ISS"
+          fail=0
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            grep -qF "Source: \"$f\"" "$ISS" || { echo "MISSING FROM PACKAGE: $f"; fail=1; }
+          done <<'ENTRYPOINTS'
+          omnisim\cli.py
+          omnisim\doctor.py
+          omnisim.bat
+          AGENTS.md
+          README.md
+          DEMOS.md
+          PROTOCOL.md
+          LICENSE
+          launch.bat
+          projects\guided_tour.txt
+          src\python\omniworld\cli.py
+          resources\web\wwi\RobotWindow.js
+          scripts\harness\omnisim_harness.py
+          packages\omnisim-mcp\src\omnisim_mcp\server.py
+          projects\samples\demos\worlds\flagship\omniarm6_real_pick_place.omniworld
+          ENTRYPOINTS
+          if [ "$fail" -ne 0 ]; then
+            echo
+            echo "Every path above is one a document tells a new user to run."
+            echo "Add it to scripts/packaging/files_core.txt."
+            exit 1
+          fi
+          echo "OK: every documented entry point is in the payload"
+          # The renderer itself. The msys64/ tree is shipped recursively; match
+          # the path suffix up to the closing quote, whatever prefix the packager
+          # wrote (v8.1.11's build compiled the renderer in and the packager's own
+          # check saw the DLL, then THIS grep failed because it anchored a leading
+          # backslash that the relative Source line does not carry). Public issue #8.
+          grep -qF 'msys64\mingw64\bin\wgpu_native.dll"' "$ISS" \
+            || { echo "MISSING FROM PACKAGE: msys64\mingw64\bin\wgpu_native.dll -- this installer has NO renderer (public issue #8)"; exit 1; }
+          echo "OK: wgpu_native.dll is in the payload"
+          # The MinGW runtime must land BESIDE the engine (public issue #9): the
+          # installer used to put it only under bin\cpp, where nothing but the
+          # exe launcher's PATH edit could find it, so `omnisim.bat demo` died in
+          # three "DLL not found" dialogs. Match Source suffix + DestDir exactly.
+          # Show the packager's own lines for these three first, so a pattern
+          # mistake in THIS step (v8.1.14: `\$d` was a literal dollar) is visible.
+          grep -F 'libstdc++-6.dll' "$ISS" || true
+          for d in libstdc++-6.dll libgcc_s_seh-1.dll libwinpthread-1.dll; do
+            grep -qF "\mingw64\bin\\$d\"; DestDir: \"{app}\msys64\mingw64\bin\"" "$ISS" \
+              || { echo "MISSING FROM PACKAGE: msys64\mingw64\bin\\$d beside omnisim-bin.exe (public issue #9)"; exit 1; }
+          done
+          echo "OK: the MinGW runtime DLLs sit beside omnisim-bin.exe"
+
+      - name: List release asset
+        run: ls -lh distribution/*.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: omnisim-windows
+          path: distribution/*.exe
+          if-no-files-found: error
+
+      - name: Resolve release tag
+        id: tag
+        shell: bash
+        run: |
+          if [[ -n "${{ github.event.inputs.tag }}" ]]; then
+            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: OmniSim ${{ steps.tag.outputs.name }}
+          generate_release_notes: true
+          prerelease: ${{ contains(steps.tag.outputs.name, '-') }}
+          files: distribution/*.exe
+          fail_on_unmatched_files: true

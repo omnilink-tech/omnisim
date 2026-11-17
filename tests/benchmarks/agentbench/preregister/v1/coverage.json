@@ -1,0 +1,1460 @@
+{
+  "baseline": "phase0_validation/coverage.json",
+  "evidence_files": [
+    "preregister/v1/red_evidence/A1_husky_swarm_10.a1_unattributed.omnisim.verdict.json",
+    "preregister/v1/red_evidence/B2_subject_in_frame.b2_no_claim.omnisim.verdict.json",
+    "preregister/v1/red_evidence/B2_subject_in_frame.b2_unchanged.omnisim.verdict.json",
+    "preregister/v1/red_evidence/B3_measure_and_report.b3_no_distance.omnisim.verdict.json",
+    "preregister/v1/red_evidence/B3_measure_and_report.b3_no_taller.omnisim.verdict.json",
+    "preregister/v1/red_evidence/C2_fall_through_floor.c2_dirty.omnisim.verdict.json",
+    "preregister/v1/red_evidence/C2_fall_through_floor.c2_fall.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R1_lidar_nav.altered_obstacle.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R1_lidar_nav.blind.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R1_lidar_nav.dirty.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R1_lidar_nav.undrivable.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R2_arm_reach.below_ground.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R2_arm_reach.dirty.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R2_arm_reach.insufficient.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R2_arm_reach.late.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R2_arm_reach.static.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R2_arm_reach.teleport.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R2_arm_reach.wrong_order.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R3_pick_and_place.bad_start.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R3_pick_and_place.dirty.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R3_pick_and_place.insufficient_arm.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R3_pick_and_place.never_released.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R3_pick_and_place.no_lift.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R3_pick_and_place.scene_tamper.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R3_pick_and_place.teleport.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R3_pick_and_place.wrong_destination.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R4_mobile_manipulation.bad_start.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R4_mobile_manipulation.collision.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R4_mobile_manipulation.dirty.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R4_mobile_manipulation.insufficient.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R4_mobile_manipulation.no_carry.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R4_mobile_manipulation.reacquire.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R4_mobile_manipulation.scene_tamper.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R4_mobile_manipulation.teleport.omnisim.verdict.json",
+    "preregister/v1/red_evidence/R4_mobile_manipulation.wrong_delivery.omnisim.verdict.json"
+  ],
+  "rows": [
+    {
+      "assertion": "A1.1",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "impostor",
+          "file": "A1_husky_swarm_10.impostor.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "nine",
+          "file": "A1_husky_swarm_10.nine.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "impostor",
+        "nine"
+      ],
+      "task": "A1_husky_swarm_10",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "exactly ten Huskies"
+    },
+    {
+      "assertion": "A1.2",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "dupname",
+          "file": "A1_husky_swarm_10.dupname.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "nine",
+          "file": "A1_husky_swarm_10.nine.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "dupname",
+        "nine"
+      ],
+      "task": "A1_husky_swarm_10",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "ten distinct robots"
+    },
+    {
+      "assertion": "A1.3",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "overlap",
+          "file": "A1_husky_swarm_10.overlap.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "overlap"
+      ],
+      "task": "A1_husky_swarm_10",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "none interpenetrating at t=0"
+    },
+    {
+      "assertion": "A1.4",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "nine",
+          "file": "A1_husky_swarm_10.nine.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "wrong",
+          "file": "wrong.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "nine",
+        "wrong"
+      ],
+      "task": "A1_husky_swarm_10",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "all ten are controlled"
+    },
+    {
+      "assertion": "A1.5",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "dupname",
+          "file": "A1_husky_swarm_10.dupname.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "nine",
+          "file": "A1_husky_swarm_10.nine.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "wrong",
+          "file": "wrong.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "dupname",
+        "nine",
+        "wrong"
+      ],
+      "task": "A1_husky_swarm_10",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "all ten moved >= 2.0 m"
+    },
+    {
+      "assertion": "A1.6",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "dupname",
+          "file": "A1_husky_swarm_10.dupname.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "nine",
+          "file": "A1_husky_swarm_10.nine.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "wrong",
+          "file": "wrong.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "dupname",
+        "nine",
+        "wrong"
+      ],
+      "task": "A1_husky_swarm_10",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "they drove, not slid (path length)"
+    },
+    {
+      "assertion": "A1.7",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "meteor",
+          "file": "A1_husky_swarm_10.meteor.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "nine",
+          "file": "A1_husky_swarm_10.nine.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "meteor",
+        "nine"
+      ],
+      "task": "A1_husky_swarm_10",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "nobody fell through or tipped over"
+    },
+    {
+      "assertion": "A1.8",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "dupname",
+          "file": "A1_husky_swarm_10.dupname.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "nine",
+          "file": "A1_husky_swarm_10.nine.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "parade",
+          "file": "parade.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "wrong",
+          "file": "wrong.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "dupname",
+        "nine",
+        "parade",
+        "wrong"
+      ],
+      "task": "A1_husky_swarm_10",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "the motion is random, not a parade"
+    },
+    {
+      "assertion": "A1.9",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "errlog",
+          "file": "A1_husky_swarm_10.errlog.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "errlog"
+      ],
+      "task": "A1_husky_swarm_10",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "the run exited cleanly"
+    },
+    {
+      "assertion": "A1.10",
+      "extra_evidence": {
+        "end_to_end": false,
+        "fixture": "graders/test_neutral_core.py::test_a1_core_missing_attribution_is_invalid (+ a1_fixtures_extra.core_unattributed_verdict)",
+        "kind": "core-unit",
+        "reason": "structural: on a Newton-bundled engine the <log>.newton.json sidecar is written at world finalize, so every gradeable run arrives attributed; forcing ODE requires the explicit world pin (which IS an attribution) or launch-env knobs the launcher strips from the child on purpose. An unattributed run needs an engine BUILD without the Newton runtime and no pin (BUNDLE_NEWTON=0) -- a machine property, not expressible in a scripted artifact. A live-run fixture would have to provision that binary and run any A1 world against it unpinned."
+      },
+      "non_fixture_red": [
+        {
+          "agent": "core_unattributed",
+          "file": "A1_husky_swarm_10.core_unattributed.verdict.json",
+          "outcome": "INVALID"
+        }
+      ],
+      "null_only_red": [
+        "null.verdict.json"
+      ],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "A1_husky_swarm_10",
+      "unvalidated_reason": "no end-to-end red: structural: on a Newton-bundled engine the <log>.newton.json sidecar is written at world finalize, so every gradeable run arrives attributed; forcing ODE requires the explicit world pin (which IS an attribution) or launch-env knobs the launcher strips from the child on purpose. An unattributed run needs an engine BUILD without the Newton runtime and no pin (BUNDLE_NEWTON=0) -- a machine property, not expressible in a scripted artifact. A live-run fixture would have to provision that binary and run any A1 world against it unpinned.",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/A1_husky_swarm_10.a1_unattributed.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "backend attribution recorded"
+    },
+    {
+      "assertion": "B1.1",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "B1_overlap_audit.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "waffle",
+          "file": "B1_overlap_audit.waffle.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "waffle"
+      ],
+      "task": "B1_overlap_audit",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "the answer commits to a yes/no verdict"
+    },
+    {
+      "assertion": "B1.2",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "B1_overlap_audit.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "missed",
+          "file": "B1_overlap_audit.missed.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "phantom",
+          "file": "B1_overlap_audit.phantom.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "waffle",
+          "file": "B1_overlap_audit.waffle.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "missed",
+        "phantom",
+        "waffle"
+      ],
+      "task": "B1_overlap_audit",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "the verdict matches the measured scene"
+    },
+    {
+      "assertion": "B1.3",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [
+        {
+          "agent": "shotgun",
+          "file": "B1_overlap_audit.shotgun.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "yes_only",
+          "file": "B1_overlap_audit.yes_only.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "shotgun",
+        "yes_only"
+      ],
+      "task": "B1_overlap_audit",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "a yes answer commits to exactly one named pair"
+    },
+    {
+      "assertion": "B1.4",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "B1_overlap_audit.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "missed",
+          "file": "B1_overlap_audit.missed.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "phantom",
+          "file": "B1_overlap_audit.phantom.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "shotgun",
+          "file": "B1_overlap_audit.shotgun.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "waffle",
+          "file": "B1_overlap_audit.waffle.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "wrong_pair",
+          "file": "B1_overlap_audit.wrong_pair.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "yes_only",
+          "file": "B1_overlap_audit.yes_only.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "missed",
+        "phantom",
+        "shotgun",
+        "waffle",
+        "wrong_pair",
+        "yes_only"
+      ],
+      "task": "B1_overlap_audit",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "the claimed pair is the measurably overlapping one"
+    },
+    {
+      "assertion": "B2.1",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "B2_subject_in_frame.null.verdict.json"
+      ],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "B2_subject_in_frame",
+      "unvalidated_reason": "only red evidence is the null agent, which validates nothing (plan 5.5)",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/B2_subject_in_frame.b2_unchanged.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the camera was aimed somewhere new"
+    },
+    {
+      "assertion": "B2.2",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "B2_subject_in_frame.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "distractor",
+          "file": "B2_subject_in_frame.distractor.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "distractor"
+      ],
+      "task": "B2_subject_in_frame",
+      "unvalidated_reason": null,
+      "v1_evidence": [
+        "preregister/v1/red_evidence/B2_subject_in_frame.b2_unchanged.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the subject sits inside the frame with angular margin"
+    },
+    {
+      "assertion": "B2.3",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [
+        {
+          "agent": "too_far",
+          "file": "B2_subject_in_frame.too_far.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "too_far"
+      ],
+      "task": "B2_subject_in_frame",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "the subject is big enough on screen to be the subject"
+    },
+    {
+      "assertion": "B2.4",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "B2_subject_in_frame.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "distractor",
+          "file": "B2_subject_in_frame.distractor.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "distractor"
+      ],
+      "task": "B2_subject_in_frame",
+      "unvalidated_reason": null,
+      "v1_evidence": [
+        "preregister/v1/red_evidence/B2_subject_in_frame.b2_unchanged.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the subject is the best-centred body in the scene"
+    },
+    {
+      "assertion": "B2.5",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "B2_subject_in_frame.null.verdict.json"
+      ],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "B2_subject_in_frame",
+      "unvalidated_reason": "only red evidence is the null agent, which validates nothing (plan 5.5)",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/B2_subject_in_frame.b2_no_claim.omnisim.verdict.json",
+        "preregister/v1/red_evidence/B2_subject_in_frame.b2_unchanged.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the answer commits to an in-frame claim backed by a number"
+    },
+    {
+      "assertion": "B2.6",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "B2_subject_in_frame.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "distractor",
+          "file": "B2_subject_in_frame.distractor.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "fabricated",
+          "file": "B2_subject_in_frame.fabricated.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "distractor",
+        "fabricated"
+      ],
+      "task": "B2_subject_in_frame",
+      "unvalidated_reason": null,
+      "v1_evidence": [
+        "preregister/v1/red_evidence/B2_subject_in_frame.b2_no_claim.omnisim.verdict.json",
+        "preregister/v1/red_evidence/B2_subject_in_frame.b2_unchanged.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the committed proof agrees with the measured geometry"
+    },
+    {
+      "assertion": "B3.1",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "B3_measure_and_report.null.verdict.json"
+      ],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "B3_measure_and_report",
+      "unvalidated_reason": "only red evidence is the null agent, which validates nothing (plan 5.5)",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/B3_measure_and_report.b3_no_distance.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "a distance is stated at all"
+    },
+    {
+      "assertion": "B3.2",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "B3_measure_and_report.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "wrong",
+          "file": "B3_measure_and_report.wrong.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "wrong"
+      ],
+      "task": "B3_measure_and_report",
+      "unvalidated_reason": null,
+      "v1_evidence": [
+        "preregister/v1/red_evidence/B3_measure_and_report.b3_no_distance.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the stated distance matches the measured one"
+    },
+    {
+      "assertion": "B3.3",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "B3_measure_and_report.null.verdict.json"
+      ],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "B3_measure_and_report",
+      "unvalidated_reason": "only red evidence is the null agent, which validates nothing (plan 5.5)",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/B3_measure_and_report.b3_no_taller.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the answer says which one is taller"
+    },
+    {
+      "assertion": "B3.4",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "B3_measure_and_report.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "wrong",
+          "file": "B3_measure_and_report.wrong.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "wrong"
+      ],
+      "task": "B3_measure_and_report",
+      "unvalidated_reason": null,
+      "v1_evidence": [
+        "preregister/v1/red_evidence/B3_measure_and_report.b3_no_taller.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "and it is the right one"
+    },
+    {
+      "assertion": "C1.1",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "C1_parse_error_fix.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "half_fix",
+          "file": "C1_parse_error_fix.half_fix.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "half_fix_type",
+          "file": "C1_parse_error_fix.half_fix_type.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "half_fix",
+        "half_fix_type"
+      ],
+      "task": "C1_parse_error_fix",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "the world loads and the run is clean"
+    },
+    {
+      "assertion": "C1.2",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "C1_parse_error_fix.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "amputate",
+          "file": "C1_parse_error_fix.amputate.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "half_fix",
+          "file": "C1_parse_error_fix.half_fix.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "half_fix_type",
+          "file": "C1_parse_error_fix.half_fix_type.verdict.json",
+          "outcome": "FAIL"
+        },
+        {
+          "agent": "wholesale",
+          "file": "C1_parse_error_fix.wholesale.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "amputate",
+        "half_fix",
+        "half_fix_type",
+        "wholesale"
+      ],
+      "task": "C1_parse_error_fix",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "the intended scene survived the fix"
+    },
+    {
+      "assertion": "C1.3",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "C1_parse_error_fix.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "half_fix_type",
+          "file": "C1_parse_error_fix.half_fix_type.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "half_fix_type"
+      ],
+      "task": "C1_parse_error_fix",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "it steps, and every pose stays finite"
+    },
+    {
+      "assertion": "C2.1",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "C2_fall_through_floor",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/C2_fall_through_floor.c2_dirty.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the run is clean"
+    },
+    {
+      "assertion": "C2.2",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "C2_fall_through_floor.null.verdict.json"
+      ],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "C2_fall_through_floor",
+      "unvalidated_reason": "only red evidence is the null agent, which validates nothing (plan 5.5)",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/C2_fall_through_floor.c2_fall.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the robot stays up"
+    },
+    {
+      "assertion": "C2.3",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [
+        {
+          "agent": "wrong",
+          "file": "C2_fall_through_floor.wrong.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "wrong"
+      ],
+      "task": "C2_fall_through_floor",
+      "unvalidated_reason": null,
+      "validated": true,
+      "what": "it is still a dynamic body"
+    },
+    {
+      "assertion": "C2.4",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "C2_fall_through_floor.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "wrong",
+          "file": "C2_fall_through_floor.wrong.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "wrong"
+      ],
+      "task": "C2_fall_through_floor",
+      "unvalidated_reason": null,
+      "v1_evidence": [
+        "preregister/v1/red_evidence/C2_fall_through_floor.c2_fall.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "gravity still acts on it, and it came to rest"
+    },
+    {
+      "assertion": "C2.5",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [
+        "C2_fall_through_floor.null.verdict.json"
+      ],
+      "observed_red": [
+        {
+          "agent": "wrong",
+          "file": "C2_fall_through_floor.wrong.verdict.json",
+          "outcome": "FAIL"
+        }
+      ],
+      "targeted_fixtures": [
+        "wrong"
+      ],
+      "task": "C2_fall_through_floor",
+      "unvalidated_reason": null,
+      "v1_evidence": [
+        "preregister/v1/red_evidence/C2_fall_through_floor.c2_fall.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "it rests on the floor surface"
+    },
+    {
+      "assertion": "R1.1",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R1_lidar_nav",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R1_lidar_nav.dirty.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the run is clean"
+    },
+    {
+      "assertion": "R1.2",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R1_lidar_nav",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R1_lidar_nav.undrivable.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "there is one drivable robot"
+    },
+    {
+      "assertion": "R1.3",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R1_lidar_nav",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R1_lidar_nav.altered_obstacle.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the benchmark obstacles are intact"
+    },
+    {
+      "assertion": "R1.4",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R1_lidar_nav",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R1_lidar_nav.altered_obstacle.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R1_lidar_nav.blind.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R1_lidar_nav.dirty.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R1_lidar_nav.undrivable.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the goal is reached"
+    },
+    {
+      "assertion": "R1.5",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R1_lidar_nav",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R1_lidar_nav.altered_obstacle.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R1_lidar_nav.blind.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R1_lidar_nav.dirty.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R1_lidar_nav.undrivable.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "nothing was hit"
+    },
+    {
+      "assertion": "R1.6",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R1_lidar_nav",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R1_lidar_nav.altered_obstacle.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R1_lidar_nav.blind.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R1_lidar_nav.dirty.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R1_lidar_nav.undrivable.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "it drove around the obstacles, and did not teleport"
+    },
+    {
+      "assertion": "R2.1",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R2_arm_reach",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R2_arm_reach.dirty.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the run is clean"
+    },
+    {
+      "assertion": "R2.2",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R2_arm_reach",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R2_arm_reach.insufficient.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "there is one arm with at least six joints"
+    },
+    {
+      "assertion": "R2.3",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R2_arm_reach",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R2_arm_reach.below_ground.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.dirty.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.insufficient.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.static.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.wrong_order.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the three targets are reached, in order, and held"
+    },
+    {
+      "assertion": "R2.4",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R2_arm_reach",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R2_arm_reach.below_ground.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.dirty.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.insufficient.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.static.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.teleport.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.wrong_order.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "it was actuated, not teleported"
+    },
+    {
+      "assertion": "R2.5",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R2_arm_reach",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R2_arm_reach.below_ground.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.insufficient.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "nothing went into the ground"
+    },
+    {
+      "assertion": "R2.6",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R2_arm_reach",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R2_arm_reach.below_ground.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.dirty.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.insufficient.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.late.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.static.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R2_arm_reach.wrong_order.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the sequence finished inside the deadline"
+    },
+    {
+      "assertion": "R3.1",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R3_pick_and_place",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R3_pick_and_place.dirty.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the run is clean"
+    },
+    {
+      "assertion": "R3.2",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R3_pick_and_place",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R3_pick_and_place.scene_tamper.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the benchmark scene is intact"
+    },
+    {
+      "assertion": "R3.3",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R3_pick_and_place",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R3_pick_and_place.insufficient_arm.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "there is a graspable cube and a distinct arm"
+    },
+    {
+      "assertion": "R3.4",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R3_pick_and_place",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R3_pick_and_place.bad_start.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the cube started at rest on the table"
+    },
+    {
+      "assertion": "R3.5",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R3_pick_and_place",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R3_pick_and_place.bad_start.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.dirty.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.insufficient_arm.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.no_lift.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.scene_tamper.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the cube was lifted clear and carried toward the bin"
+    },
+    {
+      "assertion": "R3.6",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R3_pick_and_place",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R3_pick_and_place.bad_start.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.dirty.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.insufficient_arm.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.never_released.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.no_lift.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.scene_tamper.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the cube was released and settled"
+    },
+    {
+      "assertion": "R3.7",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R3_pick_and_place",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R3_pick_and_place.bad_start.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.dirty.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.insufficient_arm.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.never_released.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.no_lift.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.scene_tamper.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R3_pick_and_place.wrong_destination.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the cube is inside the bin and stayed there"
+    },
+    {
+      "assertion": "R3.8",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R3_pick_and_place",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R3_pick_and_place.teleport.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the cube was never teleported"
+    },
+    {
+      "assertion": "R4.1",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R4_mobile_manipulation",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R4_mobile_manipulation.dirty.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the run is clean"
+    },
+    {
+      "assertion": "R4.2",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R4_mobile_manipulation",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R4_mobile_manipulation.scene_tamper.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the specified scene is present and intact"
+    },
+    {
+      "assertion": "R4.3",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R4_mobile_manipulation",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R4_mobile_manipulation.insufficient.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "there is one articulated mobile manipulator"
+    },
+    {
+      "assertion": "R4.4",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R4_mobile_manipulation",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R4_mobile_manipulation.bad_start.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the payload started at rest on the table"
+    },
+    {
+      "assertion": "R4.5",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R4_mobile_manipulation",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R4_mobile_manipulation.bad_start.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.collision.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.insufficient.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the base drove the route without striking anything"
+    },
+    {
+      "assertion": "R4.6",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R4_mobile_manipulation",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R4_mobile_manipulation.bad_start.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.insufficient.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.no_carry.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.teleport.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the payload was lifted clear and carried"
+    },
+    {
+      "assertion": "R4.7",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R4_mobile_manipulation",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R4_mobile_manipulation.bad_start.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.insufficient.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.no_carry.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.reacquire.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.teleport.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the payload was held continuously, never re-acquired"
+    },
+    {
+      "assertion": "R4.8",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R4_mobile_manipulation",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R4_mobile_manipulation.bad_start.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.insufficient.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.no_carry.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.wrong_delivery.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "the payload was delivered onto the pad and stayed"
+    },
+    {
+      "assertion": "R4.9",
+      "extra_evidence": null,
+      "non_fixture_red": [],
+      "null_only_red": [],
+      "observed_red": [],
+      "targeted_fixtures": [],
+      "task": "R4_mobile_manipulation",
+      "unvalidated_reason": "no committed red verdict from any fixture",
+      "v1_evidence": [
+        "preregister/v1/red_evidence/R4_mobile_manipulation.bad_start.omnisim.verdict.json",
+        "preregister/v1/red_evidence/R4_mobile_manipulation.teleport.omnisim.verdict.json"
+      ],
+      "v1_observed_red": true,
+      "validated": true,
+      "what": "nothing was teleported and nothing was attached"
+    }
+  ],
+  "rule": "an assertion is validated only when a committed verdict from a non-null scripted fixture shows it red; null-only red evidence counts as none (agent-edge-validation-plan.md 5.5)",
+  "suite": "agenticsimbench/v1",
+  "summary": {
+    "by_task": {
+      "A1_husky_swarm_10": {
+        "total": 10,
+        "validated": 10
+      },
+      "B1_overlap_audit": {
+        "total": 4,
+        "validated": 4
+      },
+      "B2_subject_in_frame": {
+        "total": 6,
+        "validated": 6
+      },
+      "B3_measure_and_report": {
+        "total": 4,
+        "validated": 4
+      },
+      "C1_parse_error_fix": {
+        "total": 3,
+        "validated": 3
+      },
+      "C2_fall_through_floor": {
+        "total": 5,
+        "validated": 5
+      },
+      "R1_lidar_nav": {
+        "total": 6,
+        "validated": 6
+      },
+      "R2_arm_reach": {
+        "total": 6,
+        "validated": 6
+      },
+      "R3_pick_and_place": {
+        "total": 8,
+        "validated": 8
+      },
+      "R4_mobile_manipulation": {
+        "total": 9,
+        "validated": 9
+      }
+    },
+    "open": 0,
+    "total": 61,
+    "validated": 61
+  }
+}

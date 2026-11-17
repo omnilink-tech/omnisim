@@ -1,0 +1,119 @@
+CHECK: -m pytest -m not engine -q tests/harness tests/python tests/packaging tests/dev
+........................................................................ [  5%]
+........................................................................ [ 11%]
+........................................................................ [ 16%]
+........................................................................ [ 22%]
+........................................................................ [ 27%]
+........................................................................ [ 33%]
+........................................................................ [ 38%]
+........................................................................ [ 44%]
+........................................................................ [ 49%]
+........................................................................ [ 55%]
+........................................................................ [ 60%]
+........................................................................ [ 66%]
+........................................................................ [ 71%]
+........................................................................ [ 77%]
+........................................................................ [ 83%]
+..........................s...s......................................... [ 88%]
+.......................sssssssss........................................ [ 94%]
+................................................... [ 98%]
+..........................                                               [100%]
+============================== warnings summary ===============================
+tests/test_headless_never_stepped.py::test_sim_never_stepped
+  C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_headless_never_stepped.py::test_sim_never_stepped returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_headless_never_stepped.py::test_sim_never_stepped_legacy_wb_tag
+  C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_headless_never_stepped.py::test_sim_never_stepped_legacy_wb_tag returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_headless_never_stepped.py::test_sidecar_finalised
+  C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_headless_never_stepped.py::test_sidecar_finalised returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_headless_never_stepped.py::test_controller_start_failures
+  C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_headless_never_stepped.py::test_controller_start_failures returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_newton_cloth_attach.py::ClothAttachTest::test_attach_protocol_end_to_end
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:6422: DeprecationWarning: The legacy DOF-shaped joint_target_q layout is deprecated for models whose joint coordinate and DOF counts differ (free/ball/distance joints). In a future release joint_target_q will always use the coordinate layout (matching joint_q) and newton.use_coord_layout_targets will be removed. Set newton.use_coord_layout_targets = True before building models and index targets via Model.joint_target_q_start.
+    self.model = self.builder.finalize()
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_slot_ids_are_not_coordinate_offsets
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:548: DeprecationWarning: Scalar ModelBuilder.gravity is deprecated in Newton 1.4; pass a gravity vector instead. Scalar gravity will be removed in a future release.
+    self.builder.gravity = (float(gx) * up[0] + float(gy) * up[1]
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_slot_ids_are_not_coordinate_offsets
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:553: DeprecationWarning: Scalar ModelBuilder.gravity is deprecated in Newton 1.4; pass a gravity vector instead. Scalar gravity will be removed in a future release.
+    _res = ((float(gx) - self.builder.gravity * up[0]) ** 2
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_slot_ids_are_not_coordinate_offsets
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:554: DeprecationWarning: Scalar ModelBuilder.gravity is deprecated in Newton 1.4; pass a gravity vector instead. Scalar gravity will be removed in a future release.
+    + (float(gy) - self.builder.gravity * up[1]) ** 2
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_slot_ids_are_not_coordinate_offsets
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:555: DeprecationWarning: Scalar ModelBuilder.gravity is deprecated in Newton 1.4; pass a gravity vector instead. Scalar gravity will be removed in a future release.
+    + (float(gz) - self.builder.gravity * up[2]) ** 2)
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_slot_ids_are_not_coordinate_offsets
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:6420: DeprecationWarning: The legacy DOF-shaped joint_target_q layout is deprecated for models whose joint coordinate and DOF counts differ (free/ball/distance joints). In a future release joint_target_q will always use the coordinate layout (matching joint_q) and newton.use_coord_layout_targets will be removed. Set newton.use_coord_layout_targets = True before building models and index targets via Model.joint_target_q_start.
+    self.model = self.builder.finalize(device="cpu")
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_slot_ids_are_not_coordinate_offsets
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:7040: DeprecationWarning: Scalar ModelBuilder.gravity is deprecated in Newton 1.4; pass a gravity vector instead. Scalar gravity will be removed in a future release.
+    tuple(self.builder.up_vector), self.builder.gravity))
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:9678: DeprecationWarning: Model.contacts() is deprecated; create a CollisionPipeline and call pipeline.contacts() instead.
+    self._contacts_cache = self.model.contacts() if hasattr(self.model, 'contacts') else None
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1290 passed, 11 skipped, 40 deselected, 46 warnings, 21 subtests passed in 74.80s (0:01:14)
+CHECK: -m pytest docs/tests -q
+................                                                         [100%]
+16 passed in 4.14s
+CHECK: -m pytest tests/sources/test_license.py -q
+..                                                                       [100%]
+2 passed in 1.48s

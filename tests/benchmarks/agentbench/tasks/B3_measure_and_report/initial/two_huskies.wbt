@@ -1,0 +1,77 @@
+#VRML_SIM R2025a utf8
+
+# AgentBench B3 measure_and_report -- initial state. Two Huskies.
+#
+# NOTHING ABOUT THE TASK'S QUESTIONS IS DOCUMENTED HERE ON PURPOSE (the
+# C1/C2 rule, 4e5cbdc4): the world must not answer its own task in comments.
+# The questions live in prompt.txt only; the ground truth lives in the
+# grader, which re-measures the loaded scene itself.
+#
+# @HUSKY_URDF@ is substituted with the absolute path to
+# projects/robots/clearpath/husky_description/urdf/husky.urdf when the runner
+# materialises this file into the per-run scratch directory. URDFRobot urls
+# are resolved relative to the world file, so a relocated relative path would
+# silently break.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "AgentBench B3 - two Huskies, one on a plinth"
+  newtonSolver "mujoco"
+  newtonStatics TRUE
+  newtonSubsteps 4
+}
+Viewpoint {
+  orientation 0.000000 1.000000 0.000000 1.570796
+  position 3.200 1.100 24.000
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 30 30
+  wallHeight 0.4
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+DEF PLINTH Solid {
+  translation 6.4 2.2 0.2
+  name "plinth"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.35 0.40
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 2 2 0.4
+      }
+    }
+  ]
+  boundingObject Box {
+    size 2 2 0.4
+  }
+}
+
+URDFRobot {
+  url "@HUSKY_URDF@"
+  translation 0 0 0.2
+  name "husky_ground"
+  controller "<none>"
+}
+
+URDFRobot {
+  url "@HUSKY_URDF@"
+  translation 6.4 2.2 0.6
+  name "husky_plinth"
+  controller "<none>"
+}

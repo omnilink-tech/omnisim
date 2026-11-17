@@ -1,0 +1,65 @@
+{
+  "schema": 2,
+  "name": "omniquad_walk",
+  "title": "OmniQuad walk (residual PPO on a model-based trot; velocity-conditioned)",
+  "class": "quadruped",
+  "robots": [
+    "omniquad"
+  ],
+  "kind": "rl",
+  "method": "residual-rl",
+  "status": "verified",
+  "motion_class": "cyclic",
+  "summary": "OmniQuad walks straight and durably (+119 m / 298 s) via residual PPO on a model-based trot, with a velocity-conditioned variant for walk/stop cycles and a terrain-curriculum variant that clears 18 cm rubble. The OmniSim-native RL pipeline's first robot. Same quadruped .npz ghost lineage as go2_walk. NOTE (relabelled 2026-07-12): this skill previously declared `method: shadowing`, which was not accurate -- it has no stored ghost lut and no validator verdict. OmniQuad is NOT YET a Shadowing walk -- but the reason is now MEASURED, not pending. The tooling is ready (build_quad_shadow_ghost.py --robot omniquad builds and validates a OmniQuad ghost; omniquad_shadow_deploy + omniquad_baton_deploy exist; the validator and baton.py needed NO changes). What blocks it is the CHAMPION: this policy's achieved gait is torque-saturated on 210/750 steps (28%) vs the Go2 legacy champion's 21/750 (3%), so folding it yields a ghost with closure p95 81.1 mm against a 20 mm gate -- an UN-FOLDABLE gait (see docs/developer/shadow-iteration.md: Shadowing compounds only from a foldable source). The fix is known and unstarted: give OmniQuad a feasible reference first (the analytic trot is one by construction), train there, and its champion becomes foldable.",
+  "ghost": {
+    "lut": "",
+    "format": "generated",
+    "provenance": "retargeted",
+    "validator": "n/a (quadruped lineage)",
+    "preview_world": "projects/policies/research/worlds/omniquad_walk_ghost_demo.omniworld",
+    "notes": "The omniquad walk ghost is a foot-sphere-on-calf trot retarget. Other omniquad ghosts (getup/hill/jump/crouch) are stored .npz under research/shadowing/ghosts/."
+  },
+  "policy": {
+    "checkpoint": "projects/policies/research/inference/policies/gpu_omniquad_walk_main/policy.pt",
+    "arch": "residual-ppo",
+    "obs": {
+      "family": "quad_omniquad"
+    },
+    "action": {
+      "dim": 12,
+      "space": "legs",
+      "decode": "trot + residual"
+    },
+    "alt_checkpoints": {
+      "vc": "projects/policies/research/inference/policies/gpu_omniquad_walk_vc_main/policy.pt (velocity-conditioned walk/stop)",
+      "rough": "projects/policies/research/inference/policies/gpu_omniquad_rough_main/policy.pt (18cm rubble terrain curriculum)"
+    }
+  },
+  "baton": {
+    "blend": "cyclic",
+    "mode": "walk",
+    "attractor": "locomotion",
+    "notes": "Cross-robot cataloguing; not blended with the g1 family."
+  },
+  "train": {
+    "trainer": "projects/policies/research/training/gpu_mjwarp_omniquad_walk_trainer.py",
+    "status": "external",
+    "notes": "OmniSim-native residual PPO on a model-based gait. See docs/developer/omniquad-residual-rl.md."
+  },
+  "deploy": {
+    "run": "world",
+    "world": "projects/policies/research/worlds/omniquad_walk_deploy.omniworld",
+    "controller": "projects/policies/research/controllers/omniquad_walk_deploy/omniquad_walk_deploy.py",
+    "notes": "Controller + policy baked into the world; `skill_lib.py run omniquad_walk` launches it."
+  },
+  "verification": {
+    "date": "2026-06-28",
+    "engine": "Newton/mujoco_warp",
+    "result": "OmniQuad walks +119 m / 298 s straight, 0 falls; terrain variant clears 18 cm rubble (memory project_omniquad_walk_g1_recipe / project_quad_terrain_training_works)."
+  },
+  "doc": "docs/developer/omniquad-residual-rl.md",
+  "memory": "project_omniquad_walk_vc",
+  "related": [
+    "go2_walk"
+  ]
+}

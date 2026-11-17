@@ -1,0 +1,31 @@
+[
+  {
+    "name": "startup-empty",
+    "world": "resources/projects/worlds/empty.omniworld",
+    "category": "startup"
+  },
+  {
+    "name": "rendering-normals",
+    "world": "tests/rendering/worlds/normals.omniworld",
+    "category": "sensor-heavy-frame",
+    "coordinate_system": "NUE",
+    "note": "NUE, but NOT in the same category as proto-deterministic below: this world contains zero Physics nodes and zero ray-casting sensors (7 Cameras only), so the pre-c77cbe98 NUE defect (gravity projected to zero, implicit floor stood up as a vertical wall) had nothing to act on. Its numbers are not void. Audited 2026-08-08."
+  },
+  {
+    "name": "physics-contact-points",
+    "world": "tests/physics/worlds/contact_points.omniworld",
+    "category": "steady-state-physics-step"
+  },
+  {
+    "name": "newton-4v4-husky-head-on",
+    "world": "projects/robot_combat/worlds/tests/newton_husky_head_on.omniworld",
+    "category": "contact-heavy-physics-step"
+  },
+  {
+    "name": "proto-deterministic",
+    "world": "tests/protos/worlds/template_deterministic.omniworld",
+    "category": "world-load",
+    "coordinate_system": "NUE",
+    "note": "KEPT, with this dated caveat (2026-08-08). ANY NUMBER OR VERDICT RECORDED FOR THIS ENTRY BEFORE COMMIT c77cbe98 IS VOID. Until then WorldInfo.coordinateSystem never reached the Newton solver: for a NUE world the gravity vector projected onto the builder's up_vector to exactly zero (nothing fell) and the implicit ground plane took its normal from the same axis, standing up as a vertical WALL -- and in this world that wall sits exactly where its four DistanceSensors are, so all four read 0.000000. The engine source names this world as the case. A Newton-era timing or PASS for it therefore measured a FROZEN SCENE. RE-VERIFIED after the fix, machine 9722d23d12a3, 2026-08-08: 20 s headless run, sidecar {backend: newton, solver: MuJoCo (cpu/mj_step, default), degraded: false}, and the world's own template_deterministic controller exited 0 -- i.e. all three of its DistanceSensor assertions passed (det1 == det2, nondet1 != nondet2, det1 != nondet2), which is only possible if the sensors read distinct non-zero values. KEPT rather than removed because it is this manifest's only NUE world and its only world-load entry, so deleting it would delete the manifest's only coverage of the coordinate-system plumbing that had just been silently wrong for 210 NUE worlds."
+  }
+]

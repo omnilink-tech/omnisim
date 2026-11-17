@@ -1,0 +1,72 @@
+{
+  "physics": "newton/MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5 (CPU)",
+  "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5",
+  "scan": {
+    "log_found": true,
+    "newton_imported": true,
+    "finalised": true,
+    "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5",
+    "ode_fallback": false
+  },
+  "engine_log": "sim-to-real\\aloha-battery\\evidence\\insertion-angle\\engine.log",
+  "home": {
+    "root": "O:\\omnisim",
+    "source": "explicit"
+  },
+  "load": "unknown",
+  "warmup_token": false,
+  "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU (driver 596.36)",
+  "machine": {
+    "id": "9722d23d12a3",
+    "host": "hc385771a14",
+    "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "cpu": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+    "cores": 16
+  },
+  "build": "9863ef955",
+  "binary": {
+    "path": "msys64/mingw64/bin/omnisim-bin.exe",
+    "sha256": "d25c20b7b44fb050",
+    "size": 7617024,
+    "mtime": 1789261466,
+    "ipc_nonce": true
+  },
+  "libcontroller": {
+    "path": "lib/controller/Controller.dll",
+    "sha256": "0bd8db2b5018d7fe",
+    "size": 642048,
+    "mtime": 1788455211,
+    "ipc_nonce": true
+  },
+  "stack": {
+    "source": "bundle+pth",
+    "versions": {
+      "newton": "1.5.0",
+      "warp_lang": "1.16.0",
+      "mujoco": "3.11.0",
+      "mujoco_warp": "3.11.0",
+      "torch": null,
+      "onnxruntime": "1.26.0"
+    },
+    "origin": {
+      "newton": "bundle",
+      "warp_lang": "bundle",
+      "mujoco": "bundle",
+      "mujoco_warp": "bundle",
+      "torch": "absent",
+      "onnxruntime": "bundle"
+    },
+    "anomalies": []
+  },
+  "os": "Windows-11",
+  "python": "3.12.14",
+  "numpy": "2.3.5",
+  "onnxruntime": null,
+  "knobs": {},
+  "intent": {},
+  "warnings": [
+    "libController (lib/controller/Controller.dll) is >24h OLDER than the engine binary -- possible ABI/IPC drift. If controllers hang in Robot(), rebuild the controller lib; run 'python -m omnisim doctor'."
+  ],
+  "ok": true,
+  "collection_scope": "Post-run host fingerprint; controller runtime environment is recorded in result.json."
+}

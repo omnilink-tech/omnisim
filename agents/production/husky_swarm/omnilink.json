@@ -1,0 +1,13 @@
+{
+  "name": "husky_swarm",
+  "display_name": "HuskySwarm",
+  "omnilink_agent_name": "HuskySwarm",
+  "world": "projects/samples/demos/worlds/flagship/omnilink_husky_swarm.omniworld",
+  "bridge_port": 8865,
+  "agent_script": "agents/production/husky_swarm/swarm_agent.py",
+  "agent_port": 51520,
+  "agent_port_env": "HUSKY_SWARM_PORT",
+  "bridge_url_env": "HUSKY_SWARM_BRIDGES",
+  "description": "Four Clearpath Huskies under one coordinator: a 20-tool production surface backed by 45 discoverable tools, verified atomic/repeated motion and recovery skills, parallel failure containment, persistent waypoints/routines/memory, and outcome learning. bridge_port probes husky_ne only; the agent resolves all four (8865-8868) from HUSKY_SWARM_BRIDGES.",
+  "tags": ["husky", "swarm", "multi-robot", "parallel", "showcase", "first-party"]
+}

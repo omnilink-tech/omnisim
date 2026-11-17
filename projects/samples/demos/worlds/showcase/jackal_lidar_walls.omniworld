@@ -1,0 +1,104 @@
+#OMNISIM R2025a utf8
+
+# Clearpath Jackal + front SICK LMS1xx lidar, measured against walls at KNOWN
+# distances.
+#
+# ⚠ The lidar exists ONLY when the world is loaded with
+#   OMNISIM_URDF_USE_SENSORS=1
+# Without it the URDF's <sensor> block is parsed and dropped, and
+# /list_sensors reports no Lidar (that is the control run).
+#
+# The laser is upstream Clearpath's default JACKAL_LASER accessory (SICK LMS1xx,
+# upright bracket on the front mount): 270 deg, 720 samples, 0.1-30 m, focal
+# point 0.12 m ahead of base_link and 0.333 m above it.
+#
+# Geometry (world frame; robot spawns at the origin facing +X; focal point at
+# x = +0.12 m):
+#   FRONT_WALL  near face x = +3.00  -> 2.880 m straight ahead
+#   LEFT_WALL   near face y = +2.00  -> 2.000 m at +90 deg (left)
+#   RIGHT_BOX   near face y = -1.50  -> 1.500 m at -90 deg (right)
+#   REAR_WALL   near face x = -1.50  -> 1.620 m straight BEHIND, inside the
+#               scanner's 90-degree blind sector: no beam may report it
+# Every obstacle is 0.8 m tall with a boundingObject; the stage's own rim
+# walls are 0.05 m, below the scan plane.
+#
+# Driven by omnilink_mobile_bridge on port 8782 (not the chat demos' 8765).
+# Measurement script: scripts/dev/measure_urdf_lidar.py
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Jackal SICK LMS1xx lidar — known-distance walls"
+  info [
+    "Clearpath Jackal with its front SICK LMS1xx lidar (URDF <sensor type=ray>),"
+    "facing walls at known distances. Needs OMNISIM_URDF_USE_SENSORS=1."
+  ]
+}
+Viewpoint {
+  orientation -0.3 0.1 0.95 2.5
+  position 5.5 -6.0 5.5
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 10 10
+  wallHeight 0.05
+}
+DEF FRONT_WALL Solid {
+  translation 3.05 0 0.4
+  name "front_wall"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.85 0.35 0.2 roughness 0.8 metalness 0 }
+      geometry Box { size 0.1 4.0 0.8 }
+    }
+  ]
+  boundingObject Box { size 0.1 4.0 0.8 }
+}
+DEF LEFT_WALL Solid {
+  translation 0 2.05 0.4
+  name "left_wall"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.2 0.5 0.85 roughness 0.8 metalness 0 }
+      geometry Box { size 5.0 0.1 0.8 }
+    }
+  ]
+  boundingObject Box { size 5.0 0.1 0.8 }
+}
+DEF RIGHT_BOX Solid {
+  translation 0.12 -1.7 0.4
+  name "right_box"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.3 0.75 0.3 roughness 0.8 metalness 0 }
+      geometry Box { size 0.4 0.4 0.8 }
+    }
+  ]
+  boundingObject Box { size 0.4 0.4 0.8 }
+}
+DEF REAR_WALL Solid {
+  translation -1.55 0 0.4
+  name "rear_wall"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.8 0.8 0.3 roughness 0.8 metalness 0 }
+      geometry Box { size 0.1 2.0 0.8 }
+    }
+  ]
+  boundingObject Box { size 0.1 2.0 0.8 }
+}
+
+DEF JACKAL URDFRobot {
+  url "../../../../robots/clearpath/jackal_description/urdf/jackal.urdf"
+  translation 0 0 0.1
+  name "jackal"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "jackal" "--port" "8782" ]
+}

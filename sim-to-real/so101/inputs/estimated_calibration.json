@@ -1,0 +1,40 @@
+{
+  "status": "estimated",
+  "units": "normalised",
+  "description": "Diagnostic estimate only. Encoder spans inferred from follower observation quantisation; signs assumed positive, zeros estimated. Not hardware calibration.",
+  "encoder_spans_ticks": [
+    2441,
+    2316,
+    2231,
+    2392,
+    3864,
+    907
+  ],
+  "ticks_per_revolution": 4096,
+  "joints": {
+    "shoulder_pan": {
+      "scale_deg_per_unit": 1.072705078125,
+      "offset_deg": 0
+    },
+    "shoulder_lift": {
+      "scale_deg_per_unit": 1.0177734375,
+      "offset_deg": 0
+    },
+    "elbow_flex": {
+      "scale_deg_per_unit": 0.980419921875,
+      "offset_deg": -5
+    },
+    "wrist_flex": {
+      "scale_deg_per_unit": 1.051171875,
+      "offset_deg": -6
+    },
+    "wrist_roll": {
+      "scale_deg_per_unit": 1.698046875,
+      "offset_deg": 0
+    },
+    "gripper": {
+      "scale_deg_per_unit": 0.79716796875,
+      "offset_deg": -4
+    }
+  }
+}

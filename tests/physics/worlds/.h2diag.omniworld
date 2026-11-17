@@ -1,0 +1,92 @@
+#VRML_SIM R2025a utf8
+
+# GENERATED AT TEST TIME by tests/test_newton_ball_hinge2.py -- do not commit.
+
+WorldInfo {
+  basicTimeStep 4
+  newtonStatics TRUE
+  coordinateSystem "ENU"
+}
+Viewpoint {
+  position -3 -2 1.5
+}
+Background {
+  skyColor [ 0.15 0.2 0.3 ]
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  name "floor"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.4 0.4 0.45 roughness 1 metalness 0 }
+      geometry Box { size 6 6 0.1 }
+    }
+  ]
+  boundingObject Box { size 6 6 0.1 }
+}
+DEF RIG Robot {
+  translation 0 0 0.05
+  name "rig"
+  controller "ball_hinge2_probe"
+  controllerArgs [ "--mode" "hinge2" ]
+  supervisor TRUE
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.3 0.32 0.38 roughness 1 metalness 0 }
+      geometry Box { size 1 1 0.1 }
+    }
+    DEF H2 Hinge2Joint {
+      jointParameters HingeJointParameters {
+        anchor 0 0 1
+        axis 0 0 1
+        minStop -1.5
+        maxStop 1.5
+      }
+      jointParameters2 JointParameters {
+        axis 1 0 0
+        minStop -1.5
+        maxStop 1.5
+      }
+      device [
+        RotationalMotor {
+          name "m1"
+          maxVelocity 6
+          maxTorque 60
+          minPosition -1.4
+          maxPosition 1.4
+        }
+        PositionSensor { name "ps1" }
+      ]
+      device2 [
+        RotationalMotor {
+          name "m2"
+          maxVelocity 6
+          maxTorque 60
+          minPosition -1.4
+          maxPosition 1.4
+        }
+        PositionSensor { name "ps2" }
+      ]
+      endPoint DEF ARM Solid {
+        translation 0 0 1
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.9 0.7 0.2 roughness 1 metalness 0 }
+            geometry Box { size 0.3 0.08 0.08 }
+          }
+        ]
+        name "arm"
+        boundingObject Box { size 0.3 0.08 0.08 }
+        physics Physics {
+          density -1
+          mass 0.5
+        }
+      }
+    }
+  ]
+  boundingObject Box { size 1 1 0.1 }
+  physics Physics {
+    density -1
+    mass 200
+  }
+}

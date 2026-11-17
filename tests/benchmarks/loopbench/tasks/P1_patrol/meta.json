@@ -1,0 +1,53 @@
+{
+  "id": "P1_patrol",
+  "rung": "P1",
+  "tier": "loopbench_construct",
+  "outcome": "an agent CONSTRUCTS a mobile robot and makes it patrol a square perimeter indefinitely",
+  "prompt_file": "prompt.txt",
+  "grader": "loopbench.graders.p1",
+  "status": "EXPLORATORY, INTERNAL. This is a sounding of three simulators, not a publishable benchmark, and no row from it may be quoted as one.",
+  "scoring_class": "exploratory",
+  "repeats_default": 1,
+  "achieved_rule": "solved_at_least_once; never quotable as a pass rate at n=1",
+  "par_s": 1800,
+  "timeout_s": 5400,
+
+  "container": {
+    "description_dir": null,
+    "files": [],
+    "note": "NOTHING is supplied. The task is to build the robot, so shipping one would measure whose asset library is better rather than which simulator is easier to construct in. The prompt says primitive shapes and no vendor model, which every column can satisfy."
+  },
+
+  "constants": {
+    "SIDE_M": 5.0,
+    "SIDE_TOL_M": 1.5,
+    "MIN_LAPS": 2,
+    "LAP_EXIT_M": 2.0,
+    "LAP_RETURN_M": 1.0,
+    "MAX_STEP_JUMP_M": 0.5,
+    "MAX_SAMPLE_DT_S": 0.05,
+    "Z_BAND_M": 0.5
+  },
+
+  "constants_note": "Deliberately loose. The prompt says 'about 5 m' and the point of this rung is whether a robot gets built and driven at all, not precision. SIDE_TOL_M 1.5 accepts anything between a 3.5 m and a 6.5 m box.",
+
+  "known_limits": [
+    "P1.2 is a SIZE check, not a SHAPE check: it measures the axis-aligned extent the route swept, so a CIRCLE of diameter 5 m passes it. Pinned by a test rather than hidden. If the shape itself turns out to matter, that needs a corner detector, and a corner detector encodes a driving style -- which is why this rung does not have one.",
+    "P1.3 ('still patrolling at the end') is a proxy for 'it kept working'. A robot that patrols correctly but is stopped by the recording window closing mid-lap can fail it."
+  ],
+
+  "phases": {
+    "harness": {"enabled": false, "why": "graded from the cold standalone re-run only"},
+    "standalone": {"settle_s": 0.5, "duration_s": 120.0, "contact_stride": 10,
+                   "surfaces": ["ground", "floor", "terrain"],
+                   "duration_note": "120 s so a robot driving a 20 m perimeter at a plausible 0.5 m/s has time for the required two laps plus the third that P1.3 wants to see."}
+  },
+
+  "expectation": {
+    "pre_registered": "All three columns are expected to MANAGE this. It is the control rung: its job is to prove the harness works end to end on three simulators and to expose the COST difference, not to separate them on outcome.",
+    "discriminator": "tool calls, wall clock, and how many times the agent had to fix something the simulator did not tell it about.",
+    "if_all_three_pass": "that is the expected result and is not a null result -- it makes the cost columns the finding. If all three pass at comparable cost, P1 is NOT_DISCRIMINATING and the ladder has to be climbed to P2/P3/P4."
+  },
+
+  "cost_class": "CPU minutes. No GPU. Tokens only."
+}

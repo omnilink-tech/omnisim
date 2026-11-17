@@ -1,0 +1,256 @@
+#VRML_SIM R2025a utf8
+# AgentBench R1 (lidar_nav) ORACLE world -- upstream Webots R2025a.
+#
+# The SPEC 7.1 gate needs a known-good solution that PASSES, on THIS arm, or an
+# R1 pass rate measured here means nothing. This is that world; the driver is
+# controllers/r1_oracle/, the do-nothing control is controllers/r1_null/, and
+# adapters/webots/test_r1_discriminates_webots.py runs both through the
+# unmodified graders.r1_core.
+#
+# Built from UPSTREAM assets only, and deliberately from the SAME pieces
+# Cyberbotics' own lidar-navigation sample uses (projects/robots/adept/pioneer3/
+# worlds/pioneer3at.wbt): a Pioneer 3-AT carrying a SickLms291 at the mount
+# upstream itself chose, "translation 0.136 0 0.35". Upstream ships no Husky
+# (webots-control-baseline.md sec. 4), and the Pioneer 3-AT is the analogue this
+# arm already uses.
+#
+# Three numbers here were MEASURED rather than assumed, by
+# controllers/r1_probe_lidar (BRINGUP.md sec. 5):
+#   * the SickLms291 fan is 181 samples over 180 deg with an 80 m max range, so
+#     it clears the task's stated LiDAR minima (>= 180 deg / >= 180 samples /
+#     >= 5 m) by construction and not by assertion;
+#   * a resting Pioneer 3-AT is LEVEL (|pitch| = 3e-5 rad), which is what makes
+#     a horizontal fan at 0.46 m stay under a 0.5 m obstacle across a 10 m
+#     arena. The Pioneer 3-DX -- the two-wheel differential-drive sibling -- is
+#     NOT: it rests nose-up by 0.0367 rad on its smaller castor, which lifts the
+#     same fan over the far wall and left 86 of 181 beams reading `inf`;
+#   * mounting lower than upstream's 0.35 puts the robot's OWN CHASSIS in the
+#     fan (0.15-0.18 m returns at 0.31 m, a 0.57 m return at 0.36 m), so the
+#     upstream mount is also the lowest self-clear one.
+#
+# Baseline sec. 5 traps honoured: every EXTERNPROTO resolves from the pre-seeded
+# offline asset cache (trap 1); no rotation angle is anywhere near +/-pi (trap
+# 3). Trap 2 (lidar is GPU-bound) is deliberately NOT avoided here -- R1 IS the
+# lidar task -- and the probe confirmed the device works under
+# `--no-rendering` in xvfb, which is how this arm launches every run.
+#
+# **The arena is authored here rather than taken from RectangleArena**, for a
+# reason worth stating: that PROTO's four walls are Solids NESTED inside it, so
+# the adapter reports them with ``member_of`` set, and
+# ``r1_core.hittable_bodies`` skips a member body BEFORE it applies its
+# "name contains wall" rule -- measured: a RectangleArena build of this same
+# world offered R1.5 five hittable bodies (the obstacles) and no wall at all,
+# so "collided with a WALL" was not expressible. Top-level wall Solids are, and
+# they cost two fewer network-fetched PROTOs as well (the R2025a distribution
+# ships zero .proto files, so every EXTERNPROTO is a cache hit or a download).
+#
+# The five obstacles are the task's frozen benchmark_assets/obstacles.json, at
+# the published centres and full extents. The straight line from START (-4, -4)
+# to GOAL (4, 4) passes through OBSTACLE_1, so a robot that does not perceive
+# cannot get there without hitting something.
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/adept/pioneer3/protos/Pioneer3at.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/devices/sick/protos/SickLms291.proto"
+
+WorldInfo {
+  info [
+    "AgentBench R1 lidar_nav oracle: a Pioneer 3-AT with a Sick LMS 291 "
+    "navigates from (-4, -4) to (4, 4) around five static box obstacles."
+  ]
+  title "AgentBench R1 lidar_nav (oracle)"
+  basicTimeStep 16
+}
+Viewpoint {
+  orientation 0.35 0.35 -0.87 1.7
+  position -12 -12 11
+}
+Background {
+  skyColor [
+    0.15 0.18 0.22
+  ]
+}
+DirectionalLight {
+  ambientIntensity 1
+  direction 0.4 0.5 -1
+  intensity 2
+  castShadows FALSE
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.02
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.55 0.58
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 10 10 0.04
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 10 10 0.04
+  }
+}
+DEF WALL_EAST Solid {
+  translation 5.05 0 0.25
+  children [
+    DEF WALL_NS_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.75 0.75 0.72
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.1 10.2 0.5
+      }
+    }
+  ]
+  name "wall_east"
+  boundingObject USE WALL_NS_SHAPE
+}
+DEF WALL_WEST Solid {
+  translation -5.05 0 0.25
+  children [
+    USE WALL_NS_SHAPE
+  ]
+  name "wall_west"
+  boundingObject USE WALL_NS_SHAPE
+}
+DEF WALL_NORTH Solid {
+  translation 0 5.05 0.25
+  children [
+    DEF WALL_EW_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.75 0.75 0.72
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 10.2 0.1 0.5
+      }
+    }
+  ]
+  name "wall_north"
+  boundingObject USE WALL_EW_SHAPE
+}
+DEF WALL_SOUTH Solid {
+  translation 0 -5.05 0.25
+  children [
+    USE WALL_EW_SHAPE
+  ]
+  name "wall_south"
+  boundingObject USE WALL_EW_SHAPE
+}
+DEF OBSTACLE_1 Solid {
+  translation 0 0 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 1.6 1.6 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_1"
+  boundingObject Box {
+    size 1.6 1.6 0.5
+  }
+}
+DEF OBSTACLE_2 Solid {
+  translation -2 -1.4 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 1.2 0.8 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_2"
+  boundingObject Box {
+    size 1.2 0.8 0.5
+  }
+}
+DEF OBSTACLE_3 Solid {
+  translation 1.6 0.6 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.8 2 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_3"
+  boundingObject Box {
+    size 0.8 2 0.5
+  }
+}
+DEF OBSTACLE_4 Solid {
+  translation -1.2 2 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 2 0.8 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_4"
+  boundingObject Box {
+    size 2 0.8 0.5
+  }
+}
+DEF OBSTACLE_5 Solid {
+  translation 2.4 -2 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.35 0.18
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 1 1 0.5
+      }
+    }
+  ]
+  name "OBSTACLE_5"
+  boundingObject Box {
+    size 1 1 0.5
+  }
+}
+DEF ROBOT Pioneer3at {
+  translation -4 -4 0.11
+  rotation 0 0 1 0
+  controller "r1_oracle"
+  extensionSlot [
+    SickLms291 {
+      translation 0.136 0 0.35
+      resolution 181
+    }
+    GPS {
+    }
+    InertialUnit {
+    }
+  ]
+}

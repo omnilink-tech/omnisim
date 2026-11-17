@@ -1,0 +1,67 @@
+#OMNISIM R2025a utf8
+
+# Deploy world for the G1 push-recovery stand+wave RL policy under CUBE-RAIN.
+# Same as g1_stand_arms_deploy.omniworld (controller g1_stand_arms_deploy drives the
+# 13-DOF leg/waist policy + waves the arms from G1_STANDWAVE_REF) but with 8
+# dynamic cubes pre-positioned above the robot so they FALL onto it. Tests
+# whether the push-DR-trained policy actively holds the stand through impacts,
+# vs the deterministic baseline (topples ~2.7s).
+#
+# Launch sets: G1_POLICY_ONNX (the trained push policy), G1_STANDWAVE_REF (wave
+# csv), and the Newton gains MATCHING training (g1_full_kp100 => KE=100).
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 push-recovery stand+wave -- cube rain"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.294 -4.571 5.547
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF CUBE0 Solid { translation 0.02 0.00 1.45 physicsBackend "newton" children [ DEF C0S Shape { appearance PBRAppearance { baseColor 0.90 0.45 0.10 roughness 0.6 metalness 0 } geometry Box { size 0.13 0.13 0.13 } } ] name "cube0" boundingObject USE C0S physics Physics { density -1 mass 0.6 } }
+DEF CUBE1 Solid { translation -0.06 0.05 1.95 physicsBackend "newton" children [ DEF C1S Shape { appearance PBRAppearance { baseColor 0.20 0.55 0.90 roughness 0.6 metalness 0 } geometry Box { size 0.13 0.13 0.13 } } ] name "cube1" boundingObject USE C1S physics Physics { density -1 mass 0.6 } }
+DEF CUBE2 Solid { translation 0.07 -0.05 2.45 physicsBackend "newton" children [ DEF C2S Shape { appearance PBRAppearance { baseColor 0.90 0.45 0.10 roughness 0.6 metalness 0 } geometry Box { size 0.13 0.13 0.13 } } ] name "cube2" boundingObject USE C2S physics Physics { density -1 mass 0.6 } }
+DEF CUBE3 Solid { translation -0.04 -0.06 2.95 physicsBackend "newton" children [ DEF C3S Shape { appearance PBRAppearance { baseColor 0.20 0.55 0.90 roughness 0.6 metalness 0 } geometry Box { size 0.13 0.13 0.13 } } ] name "cube3" boundingObject USE C3S physics Physics { density -1 mass 0.6 } }
+DEF CUBE4 Solid { translation 0.05 0.07 3.45 physicsBackend "newton" children [ DEF C4S Shape { appearance PBRAppearance { baseColor 0.90 0.45 0.10 roughness 0.6 metalness 0 } geometry Box { size 0.13 0.13 0.13 } } ] name "cube4" boundingObject USE C4S physics Physics { density -1 mass 0.6 } }
+DEF CUBE5 Solid { translation -0.07 0.03 3.95 physicsBackend "newton" children [ DEF C5S Shape { appearance PBRAppearance { baseColor 0.20 0.55 0.90 roughness 0.6 metalness 0 } geometry Box { size 0.13 0.13 0.13 } } ] name "cube5" boundingObject USE C5S physics Physics { density -1 mass 0.6 } }
+DEF CUBE6 Solid { translation 0.03 -0.07 4.45 physicsBackend "newton" children [ DEF C6S Shape { appearance PBRAppearance { baseColor 0.90 0.45 0.10 roughness 0.6 metalness 0 } geometry Box { size 0.13 0.13 0.13 } } ] name "cube6" boundingObject USE C6S physics Physics { density -1 mass 0.6 } }
+DEF CUBE7 Solid { translation -0.02 -0.03 4.95 physicsBackend "newton" children [ DEF C7S Shape { appearance PBRAppearance { baseColor 0.20 0.55 0.90 roughness 0.6 metalness 0 } geometry Box { size 0.13 0.13 0.13 } } ] name "cube7" boundingObject USE C7S physics Physics { density -1 mass 0.6 } }
+
+URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "g1_stand_arms_deploy"
+  physicsBackend "newton"
+}

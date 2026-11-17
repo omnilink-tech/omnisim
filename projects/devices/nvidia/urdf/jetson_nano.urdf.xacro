@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+NVIDIA Jetson Nano — single-board computer module. Visual + collision
++ mass only; no sensors. Mount as a payload on a robot platform.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="jetson_nano" params="parent_link prefix:=jetson_nano *origin">
+    <link name="${prefix}_link">
+      <visual>
+        <origin xyz="0 0 0.015" rpy="0 0 0"/>
+        <geometry><box size="0.100 0.080 0.030"/></geometry>
+        <material name="${prefix}_green"><color rgba="0.10 0.40 0.20 1.0"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.015" rpy="0 0 0"/>
+        <geometry><box size="0.100 0.080 0.030"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0.015" rpy="0 0 0"/>
+        <mass value="0.140"/>
+        <inertia ixx="9.8e-5" ixy="0" ixz="0" iyy="1.3e-4" iyz="0" izz="2.0e-4"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}_link"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+  </xacro:macro>
+</robot>

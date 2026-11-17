@@ -1,0 +1,155 @@
+{
+  "schema": "omnisim-hil/realtime-measurement/1",
+  "utc": "2026-08-22T13:10:27Z",
+  "world": "O:\\omnisim\\packages\\omnisim-hil\\worlds\\hil_timing_probe_fractional.omniworld",
+  "mode": "realtime",
+  "ticks_requested": 1200,
+  "step_ms_requested": 9,
+  "fingerprint": {
+    "source": "env_fingerprint",
+    "machine": {
+      "id": "9722d23d12a3",
+      "host": "hc385771a14",
+      "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+      "cpu": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+      "cores": 16
+    },
+    "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU (driver 596.36)",
+    "os": "Windows-11",
+    "build": "355c70bc5",
+    "binary": {
+      "path": "msys64/mingw64/bin/omnisim-bin.exe",
+      "sha256": "04cfdcdab318a1c9",
+      "size": 8286720,
+      "mtime": 1787401413,
+      "ipc_nonce": true
+    },
+    "physics": "newton/MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) (CPU)",
+    "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+    "warnings": [
+      "libController (lib/controller/Controller.dll) is >24h OLDER than the engine binary -- possible ABI/IPC drift. If controllers hang in Robot(), rebuild the controller lib; run 'python -m omnisim doctor'."
+    ]
+  },
+  "runs": [
+    {
+      "tag": "realtime_01",
+      "mode": "realtime",
+      "world": "O:\\omnisim\\packages\\omnisim-hil\\worlds\\hil_timing_probe_fractional.omniworld",
+      "cmd": [
+        "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+        "O:\\omnisim\\packages\\omnisim-hil\\worlds\\hil_timing_probe_fractional.omniworld",
+        "--batch",
+        "--mode=realtime",
+        "--no-rendering",
+        "--minimize",
+        "--stdout",
+        "--stderr"
+      ],
+      "exit_code": 0,
+      "launch_wall_s": 45.12449099996593,
+      "recording": {
+        "schema": "omnisim-hil/timing-probe/1",
+        "basic_time_step_ms": 8.5,
+        "basic_time_step_is_integer": false,
+        "step_ms_requested": 9,
+        "ticks_requested": 1200,
+        "ticks_recorded": 1200,
+        "wall_start_s": 786792.6880694,
+        "wall_end_s": 786830.2215503,
+        "sim_start_s": 0.0,
+        "perf_counter_resolution_s": 1e-07,
+        "perf_counter_monotonic": true,
+        "controller_python": "3.12.9",
+        "controller_executable": "C:\\Users\\<user>\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"
+      },
+      "recording_path": "C:\\Users\\<user>\\AppData\\Local\\Temp\\omnisim_hil_5aweeh5y\\recording_realtime_01.json",
+      "log_path": "C:\\Users\\<user>\\AppData\\Local\\Temp\\omnisim_hil_5aweeh5y\\omnisim_log_realtime_01.txt",
+      "newton_sidecar": {
+        "backend": "newton",
+        "degraded": false,
+        "finalised": true,
+        "runtime": {
+          "device": "cpu",
+          "mujoco": "3.11.0",
+          "mujoco_warp": "3.11.0",
+          "newton": "1.5.0",
+          "warp": "1.16.0"
+        },
+        "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)"
+      },
+      "note": null,
+      "stdout_tail": "INFO: CUDA initialized: device 0 'NVIDIA GeForce RTX 3060 Laptop GPU' (compute capability 8.6, 6143 MiB total).\nINFO: [OmWgpuBackend] wgpu-native init OK (instance + adapter + device + queue)\nINFO: [OmViewpoint] a WREN main-view frame was rendered: building the WREN post-processing effects that were deferred for the wgpu renderer.\nINFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend \"wgpu\").\nINFO: [OmWgpuSurface] on-screen surface created + configured (source=windows-hwnd)\nINFO: [OmView3D] wgpu main view tonemap: HDR linear-light + AgX (exposure 1)\nINFO: [OmniLight] progress overlay active\nINFO: sun_marker: Starting controller: python.exe -u sun_marker.py\nINFO: hil_timing_probe: Starting controller: python.exe -u hil_timing_probe.py --ticks 1200\nINFO: [OmniLight] probe volume live: 12x12x4 (576 probes, 512 valid), 1176 tris, BVH 0 ms, trace 42 ms\n[sun_marker] ready \u00e2\u20ac\u201d marker HIDDEN, press V to show\nINFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=0.8 ke=0 kd=0 iters=0 ls_iters=0\nINFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)\nINFO: [OmNewtonBackend] registered 1 dynamic + 1 static Newton bodies (+2 this pass) (statics: floor)\nINFO: [OmNewtonBackend] solver preference set to 'mujoco'\nINFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=0.8 ke=0 kd=0 iters=0 ls_iters=0\nINFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver))\nINFO: [OmNewtonBackend] step 1 dt=0.0085s b0=(0.000,0.000,-0.050) b1=(0.000,0.000,0.049)\nINFO: [OmNewtonBackend] step 30 dt=0.0085s b0=(0.000,0.000,-0.050) b1=(0.000,-0.000,0.050)\nINFO: [OmNewtonBackend] step 60 dt=0.0085s b0=(0.000,0.000,-0.050) b1=(0.000,-0.000,0.050)\nINFO: [OmNewtonBackend] step 120 dt=0.0085s b0=(0.000,0.000,-0.050) b1=(0.000,-0.000,0.050)\nINFO: [OmNewtonBackend] step 240 dt=0.0085s b0=(0.000,0.000,-0.050) b1=(-0.000,-0.000,0.050)\nINFO: [OmNewtonBackend] step 480 dt=0.0085s b0=(0.000,0.000,-0.050) b1=(-0.000,-0.000,0.050)\nINFO: [OmNewtonBackend] step 960 dt=0.0085s b0=(0.000,0.000,-0.050) b1=(-0.000,-0.000,0.050)\nINFO: [OmNewtonBackend] step 1920 dt=0.0085s b0=(0.000,0.000,-0.050) b1=(-0.000,-0.000,0.050)\nINFO: sun_marker: Terminating.\nINFO: hil_timing_probe: Terminating.\nINFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)\nINFO: omnisim exited normally (code 0)\n",
+      "stderr_tail": "[OmniSim] log: C:\\Users\\<user>\\AppData\\Local\\Temp\\omnisim_hil_5aweeh5y\\omnisim_log_realtime_01.txt\nOmWrenOpenGlContext::makeWrenCurrent: QOpenGLContext::makeCurrent FAILED -- all subsequent GL work silently no-ops. The WREN surface is not usable (unexposed window? destroyed surface?).\n",
+      "stats": {
+        "ok": true,
+        "ticks": 1200,
+        "sim_elapsed_s": 20.383000000000003,
+        "wall_elapsed_s": 37.258474799920805,
+        "realtime_factor": 0.5470701661691028,
+        "nominal_step_ms": 16.99999999999946,
+        "nominal_step_source": "median of delivered sim intervals",
+        "interval_ms": {
+          "mean": 31.074624520367642,
+          "median": 31.064199982210994,
+          "p95": 32.037400058470666,
+          "p99": 32.63230004813522,
+          "max": 45.39450001902878,
+          "min": 18.849599990062416,
+          "stdev": 0.8991589212232537
+        },
+        "jitter_ms": {
+          "mean": 14.074624520368184,
+          "median": 14.064199982211534,
+          "p95": 15.037400058471206,
+          "p99": 15.632300048135761,
+          "max": 28.394500019029323
+        },
+        "drift_ms": {
+          "final": -16875.4747999208,
+          "max_abs": 16875.4747999208,
+          "sign_convention": "positive = sim clock ahead of wall clock"
+        },
+        "overruns": {
+          "count": 1198,
+          "fraction": 0.9991659716430359,
+          "threshold_ms": 20.399999999999352,
+          "definition": "wall interval exceeded nominal by more than 20%"
+        },
+        "basic_time_step_ms": 8.5,
+        "basic_time_step_is_integer": false,
+        "step_ms_requested": 9,
+        "perf_counter_resolution_s": 1e-07
+      },
+      "verdict": {
+        "applicable": true,
+        "held_realtime": false,
+        "realtime_deviation": "too_slow",
+        "held_jitter_p99": false,
+        "held_both": false,
+        "thresholds": {
+          "realtime_factor_floor": 0.98,
+          "realtime_factor_ceiling": 1.02,
+          "jitter_p99_budget_ms": 4.249999999999865,
+          "jitter_p99_budget_fraction_of_step": 0.25
+        },
+        "measured": {
+          "realtime_factor": 0.5470701661691028,
+          "jitter_p99_ms": 15.632300048135761
+        },
+        "scope": "One machine, one scene, 1200 ticks at a 17.000 ms nominal step. Says nothing about other hardware, larger scenes, or tail behaviour beyond the percentiles reported."
+      }
+    }
+  ],
+  "aggregate": {
+    "runs": 1,
+    "realtime_factor": {
+      "mean": 0.5470701661691028,
+      "min": 0.5470701661691028,
+      "max": 0.5470701661691028
+    },
+    "jitter_p99_ms": {
+      "mean": 15.632300048135761,
+      "max": 15.632300048135761
+    }
+  }
+}

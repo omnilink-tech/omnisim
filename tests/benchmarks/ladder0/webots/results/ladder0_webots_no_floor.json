@@ -1,0 +1,94 @@
+{
+  "arm": "webots",
+  "engine": "upstream Webots R2025a",
+  "generated_utc": "2026-08-12T15:07:16Z",
+  "fault": "no_floor",
+  "rows": [
+    {
+      "rung": 1,
+      "sim": "webots",
+      "fault": "no_floor",
+      "title": "box resting on a floor",
+      "measured": {
+        "steps": 500.0,
+        "sim_time_end": 2.0,
+        "exit_code": 0.0,
+        "n_samples": 501,
+        "rest_z": -14.559719999999986,
+        "z_drift": 8.593559999999995,
+        "spawn_z": 0.6,
+        "min_z": -19.059239999999992,
+        "final_z": -19.059239999999992,
+        "penetration": 15.159719999999986,
+        "penetration_mm": 15159.719999999987
+      },
+      "checks": [
+        {
+          "name": "rest_z",
+          "measured": -14.559719999999986,
+          "expected": 0.6,
+          "tol": 0.005,
+          "unit": "m",
+          "rel": false,
+          "error": -15.159719999999986,
+          "margin": -15.154719999999985,
+          "ok": false,
+          "why": "a box of half-height 0.100 m resting on a floor whose top is at z=0.500 m has its centre at z=0.600 m; contact compliance may sink it by up to g*tau^2 ~ 4 mm",
+          "key": "rest_z"
+        },
+        {
+          "name": "contact_penetration",
+          "measured": 15.159719999999986,
+          "expected": 0.0,
+          "tol": 0.001,
+          "unit": "m",
+          "rel": false,
+          "error": 15.159719999999986,
+          "margin": -15.158719999999986,
+          "ok": false,
+          "why": "how far the box sank INTO the floor.  Failing this while rest_z passes means the contact is softer than the solver's own defaults imply -- a different claim from 'the body is on the wrong surface'",
+          "key": "penetration"
+        },
+        {
+          "name": "z_drift",
+          "measured": 8.593559999999995,
+          "expected": 0.0,
+          "tol": 0.005,
+          "unit": "m",
+          "rel": false,
+          "error": 8.593559999999995,
+          "margin": -8.588559999999994,
+          "ok": false,
+          "why": "a body at rest must stay at rest: peak-to-peak z over the settle window is zero for a body in equilibrium",
+          "key": "z_drift"
+        }
+      ],
+      "wall": {
+        "startup_s": 3.1706295013427734,
+        "total_s": 3.64465594291687,
+        "step_s": 0.1606578826904297
+      },
+      "passed": false,
+      "meta": {
+        "sim": "webots",
+        "rung": 1,
+        "fault": "no_floor",
+        "engine": "upstream Webots R2025a",
+        "webots_home": "/opt/upstream-webots/R2025a",
+        "port": 1604,
+        "error": null,
+        "exit_code": 0,
+        "timed_out": false,
+        "proc_t0": 1786547235.9923363,
+        "proc_t1": 1786547239.6369922,
+        "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\webots\\worlds\\rung1_no_floor.wbt",
+        "cmd": "wsl.exe -e bash /mnt/o/omnisim/tests/benchmarks/ladder0/webots/run_cell.sh 1 no_floor /mnt/o/omnisim/tests/benchmarks/ladder0/webots/results/rung1_no_floor /mnt/o/omnisim/tests/benchmarks/ladder0/webots/worlds/rung1_no_floor.wbt 120 1604",
+        "engine_version": "R2025a",
+        "engine_sha256_16": "c12c65e8680b579d",
+        "engine_complaints": [
+          "WARNING: It is not recommended to run Webots as root."
+        ]
+      }
+    }
+  ]
+}

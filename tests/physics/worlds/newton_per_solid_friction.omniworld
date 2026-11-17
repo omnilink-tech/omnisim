@@ -1,0 +1,101 @@
+#OMNISIM R2025a utf8
+
+# Per-Solid friction discriminator (Solid.newtonFriction).
+#
+# Two IDENTICAL 1 kg boxes on one 30 deg ramp (tan 30 = 0.577). The only
+# difference between them is Solid.newtonFriction. The ramp declares 0.1, so
+# MuJoCo's contact-friction combination -- which is the elementwise MAX of the
+# two geoms, MEASURED here, not assumed -- lets each box's OWN value decide:
+#
+#   LOW_MU   0.1 -> eff max(0.1,0.1)=0.1 -> a = +4.06 m/s^2 -> SLIDES
+#   HIGH_MU  1.2 -> eff max(1.2,0.1)=1.2 -> a = -5.29 m/s^2 -> STICKS
+#
+# MEASURED 2026-08-27, CPU mj_step, --duration 15, both starting at
+# x=-0.7910 z=0.8799:
+#   LOW_MU  -> x= 62.882  z=-999.050   (slid the ramp, off the end, fell)
+#   HIGH_MU -> x= -0.740  z=   0.850   (stayed put; 0.03 of contact settle)
+#
+# Before Solid.newtonFriction existed this world could not be written: friction
+# was ONE global value (WorldInfo.newtonGroundMu) applied to every shape, so both
+# boxes were necessarily identical. If the field is ever silently dropped again,
+# the two boxes converge and this world goes red.
+#
+# NOTE there is deliberately no floor: the only collider is the ramp, so a box
+# that slides off free-falls (no implicit ground plane is added for a world that
+# authors no Plane collider). The -999 is the PASS signature for LOW_MU.
+WorldInfo {
+  basicTimeStep 8
+  newtonGroundMu 0.3
+  newtonSolver "mujoco"
+}
+Viewpoint {
+  orientation -0.35 0.62 0.70 2.2
+  position 3.5 -3.0 2.4
+}
+DEF RAMP Solid {
+  translation 0 0 0.25
+  newtonFriction 0.1
+  rotation 0 1 0 0.52359878
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.6 0.6 0.62
+        roughness 0.9
+      }
+      geometry Box {
+        size 4 2 0.1
+      }
+    }
+  ]
+  boundingObject Box {
+    size 4 2 0.1
+  }
+}
+DEF LOW_MU Solid {
+  translation -0.7910 -0.5 0.8799
+  rotation 0 1 0 0.52359878
+  newtonFriction 0.1
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.9 0.3 0.2
+        roughness 0.5
+      }
+      geometry Box {
+        size 0.2 0.2 0.2
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.2 0.2 0.2
+  }
+  physics Physics {
+    density -1
+    mass 1
+  }
+}
+DEF HIGH_MU Solid {
+  translation -0.7910 0.5 0.8799
+  rotation 0 1 0 0.52359878
+  newtonFriction 1.2
+  newtonFrictionTorsional 0.7
+  newtonFrictionRolling 0.3
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.2 0.5 0.9
+        roughness 0.5
+      }
+      geometry Box {
+        size 0.2 0.2 0.2
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.2 0.2 0.2
+  }
+  physics Physics {
+    density -1
+    mass 1
+  }
+}

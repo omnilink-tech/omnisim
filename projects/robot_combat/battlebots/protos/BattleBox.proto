@@ -1,0 +1,216 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# documentation url: omnisim://projects/robot_combat/README.md
+# keywords: arena/combat
+# The OmniSim BattleBox — a fully enclosed combat arena modeled on the
+# real-world BattleBots-style fighting pit. Floor + four lexan walls +
+# corner hazard mounts. Hazards (killsaw, pulverizer, screws, OOTA pits)
+# are exposed as toggleable fields so a single PROTO covers everything
+# from a clean test fight to a fully-hazarded broadcast match.
+#
+# The arena center is at translation; +x = stage right, +y = stage back,
+# +z = up. Default 8m square matches the real BattleBox footprint scaled
+# 1:1 (real BattleBox is 48ft square but most of the action happens in
+# the inner 8m, and 8m keeps frame rates good even in CUDA debris mode).
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/objects/solids/protos/SolidBox.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedSteel.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+
+PROTO BattleBox [
+  field SFVec3f    translation     0 0 0
+  field SFRotation rotation        0 0 1 0
+  field SFString   name            "battlebox"
+  field SFString   contactMaterial "default"
+  field SFFloat    arenaSize       8.0      # square edge length in meters.
+  field SFFloat    wallHeight      1.2      # lexan wall height.
+  field SFFloat    wallThickness   0.05
+  field SFBool     enableKillsaw   TRUE     # corner saw blade that pops up.
+  field SFBool     enablePushers   TRUE     # angled corner wedges (no-OOTA bumpers).
+  field SFBool     enableScrews    TRUE     # wall-mounted screws on one side.
+  field SFBool     enableOotaPits  FALSE    # four corner pits (off by default).
+  field SFColor    floorColor      0.18 0.18 0.20
+  field SFColor    wallTint        0.85 0.92 1.00   # faint cyan = lexan.
+]
+{
+  %<
+    const a = fields.arenaSize.value;
+    const half = a * 0.5;
+    const wt = fields.wallThickness.value;
+    const wh = fields.wallHeight.value;
+    const enableKillsaw = fields.enableKillsaw.value;
+    const enablePushers = fields.enablePushers.value;
+    const enableScrews = fields.enableScrews.value;
+    const ootaSize = a * 0.15;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "battlebox"
+    children [
+      # ----- Floor -----
+      Floor {
+        size %<= a >% %<= a >%
+        tileSize 1.0 1.0
+        contactMaterial IS contactMaterial
+        appearance PBRAppearance {
+          baseColor IS floorColor
+          metalness 0
+          roughness 1
+        }
+      }
+
+      # ----- Four lexan-style perimeter walls -----
+      SolidBox {
+        translation %<= half + wt * 0.5 >% 0 %<= wh * 0.5 >%
+        name "wall_east"
+        size %<= wt >% %<= a >% %<= wh >%
+        appearance PBRAppearance {
+          baseColor IS wallTint
+          metalness 0
+          roughness 1
+        }
+        contactMaterial IS contactMaterial
+      }
+      SolidBox {
+        translation %<= -(half + wt * 0.5) >% 0 %<= wh * 0.5 >%
+        name "wall_west"
+        size %<= wt >% %<= a >% %<= wh >%
+        appearance PBRAppearance {
+          baseColor IS wallTint
+          metalness 0
+          roughness 1
+        }
+        contactMaterial IS contactMaterial
+      }
+      SolidBox {
+        translation 0 %<= half + wt * 0.5 >% %<= wh * 0.5 >%
+        name "wall_north"
+        size %<= a + 2 * wt >% %<= wt >% %<= wh >%
+        appearance PBRAppearance {
+          baseColor IS wallTint
+          metalness 0
+          roughness 1
+        }
+        contactMaterial IS contactMaterial
+      }
+      SolidBox {
+        translation 0 %<= -(half + wt * 0.5) >% %<= wh * 0.5 >%
+        name "wall_south"
+        size %<= a + 2 * wt >% %<= wt >% %<= wh >%
+        appearance PBRAppearance {
+          baseColor IS wallTint
+          metalness 0
+          roughness 1
+        }
+        contactMaterial IS contactMaterial
+      }
+
+      %< if (enablePushers) { >%
+      # ----- Corner pusher wedges (angled ramps in each corner) -----
+      # Cosmetic + functional: prevent bots from camping the corners.
+      # Yawed 45deg with a tall back so a fast bot riding them gets
+      # bounced back into the middle instead of getting stuck.
+      SolidBox {
+        translation %<= half - 0.5 >% %<= half - 0.5 >% 0.15
+        rotation 0 0 1 -0.7854
+        name "pusher_ne"
+        size 0.9 0.6 0.3
+        appearance PBRAppearance { baseColor 0.55 0.55 0.55 metalness 0 roughness 1 }
+        contactMaterial IS contactMaterial
+      }
+      SolidBox {
+        translation %<= -(half - 0.5) >% %<= half - 0.5 >% 0.15
+        rotation 0 0 1 0.7854
+        name "pusher_nw"
+        size 0.9 0.6 0.3
+        appearance PBRAppearance { baseColor 0.55 0.55 0.55 metalness 0 roughness 1 }
+        contactMaterial IS contactMaterial
+      }
+      SolidBox {
+        translation %<= half - 0.5 >% %<= -(half - 0.5) >% 0.15
+        rotation 0 0 1 0.7854
+        name "pusher_se"
+        size 0.9 0.6 0.3
+        appearance PBRAppearance { baseColor 0.55 0.55 0.55 metalness 0 roughness 1 }
+        contactMaterial IS contactMaterial
+      }
+      SolidBox {
+        translation %<= -(half - 0.5) >% %<= -(half - 0.5) >% 0.15
+        rotation 0 0 1 -0.7854
+        name "pusher_sw"
+        size 0.9 0.6 0.3
+        appearance PBRAppearance { baseColor 0.55 0.55 0.55 metalness 0 roughness 1 }
+        contactMaterial IS contactMaterial
+      }
+      %< } >%
+
+      %< if (enableScrews) { >%
+      # ----- Wall screws (south wall) ----------------------------------
+      # Three short cylindrical pegs running half the wall length. Bots
+      # that get shoved into the south wall get a side-tug from these.
+      # Visual + bounding cylinder; not rotating in Phase 1 (a static
+      # peg has the same gameplay effect as the slowly-rotating prop
+      # screw on the real BattleBox).
+      Solid {
+        translation -2.0 %<= -(half - 0.15) >% 0.25
+        name "screw_a"
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.55 0.55 0.55 metalness 0 roughness 1 }
+            geometry Cylinder { height 0.5 radius 0.08 }
+          }
+        ]
+        boundingObject Cylinder { height 0.5 radius 0.08 }
+      }
+      Solid {
+        translation 0.0 %<= -(half - 0.15) >% 0.25
+        name "screw_b"
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.55 0.55 0.55 metalness 0 roughness 1 }
+            geometry Cylinder { height 0.5 radius 0.08 }
+          }
+        ]
+        boundingObject Cylinder { height 0.5 radius 0.08 }
+      }
+      Solid {
+        translation 2.0 %<= -(half - 0.15) >% 0.25
+        name "screw_c"
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.55 0.55 0.55 metalness 0 roughness 1 }
+            geometry Cylinder { height 0.5 radius 0.08 }
+          }
+        ]
+        boundingObject Cylinder { height 0.5 radius 0.08 }
+      }
+      %< } >%
+
+      %< if (enableKillsaw) { >%
+      # ----- Center killsaw (static blade poking through floor) --------
+      # Real BattleBox killsaws pop up on a cam; here we render it as a
+      # short permanent blade. Match director can teleport it down out
+      # of frame between rounds via Supervisor if desired.
+      Solid {
+        translation 0 0 0.05
+        name "killsaw"
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 1.0 0.85 0.2
+              metalness 0
+              roughness 1
+            }
+            geometry Cylinder { height 0.1 radius 0.35 }
+          }
+        ]
+        boundingObject Cylinder { height 0.1 radius 0.35 }
+      }
+      %< } >%
+    ]
+  }
+}

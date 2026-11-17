@@ -1,0 +1,73 @@
+#OMNISIM R2025a utf8
+
+# SO-101 (Standard Open Arm) baseline world — the 6-DoF hobbyist/education arm
+# from TheRobotStudio, imported from URDF via URDFRobot.
+#
+# The real arm clamps to a desk edge, so it is mounted here on a small bench
+# with `staticBase TRUE` rather than standing on the floor. It is a light arm
+# (0.63 kg all in) with a ~0.35 m reach, hence the close viewpoint.
+#
+# Controller is <none> BY DESIGN: this is the robot package's load/render
+# baseline, not a driven demo. Joint names are the LeRobot dataset column names
+# (shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper) —
+# see PROVENANCE.md.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  newtonCompoundColliders TRUE
+  title "SO-101 (URDF)"
+  info [
+    "SO-101 Standard Open Arm imported from URDF (TheRobotStudio, Apache-2.0)."
+    "Bench-mounted (staticBase). Load/render baseline; no controller attached."
+  ]
+}
+
+Viewpoint {
+  orientation -0.22 0.36 0.91 1.40
+  position 0.85 -0.75 0.72
+  exposure 1.4
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 2 2
+  wallHeight 0.02
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.23
+    roughness 0.95
+    metalness 0
+  }
+}
+
+# Bench the arm clamps to. Visual + collision, fixed.
+Solid {
+  translation 0 0 0.175
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.42 0.44 0.47
+        roughness 0.7
+        metalness 0.2
+      }
+      geometry Box { size 0.5 0.4 0.35 }
+    }
+  ]
+  boundingObject Box { size 0.5 0.4 0.35 }
+  name "bench"
+}
+
+DEF SO101 URDFRobot {
+  url "../so101/so101.urdf"
+  translation 0 0 0.35
+  name "so101"
+  supervisor TRUE
+  staticBase TRUE
+  controller "<none>"
+}

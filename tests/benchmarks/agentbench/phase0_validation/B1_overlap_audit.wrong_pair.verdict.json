@@ -1,0 +1,190 @@
+{
+  "task": "B1_overlap_audit",
+  "outcome": "FAIL",
+  "progress": 3,
+  "progress_name": "artifact_runs",
+  "assertions": {
+    "B1.1": {
+      "ok": true,
+      "what": "the answer commits to a yes/no verdict",
+      "measured": {
+        "verdict": "yes",
+        "read as": "first committed cue: a bare 'yes' at character 0"
+      },
+      "threshold": "exactly one committed yes/no",
+      "detail": "",
+      "basis": "core-structural",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "a verdict is present",
+          "how_to_fail": "an answer that never says yes or no",
+          "witness": "the agent's final message was captured",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "B1.2": {
+      "ok": true,
+      "what": "the verdict matches the measured scene",
+      "measured": {
+        "verdict": "yes",
+        "measured overlapping pairs": [
+          "husky_one+husky_two"
+        ],
+        "pair clearances (m; negative = interpenetration)": {
+          "husky_one+husky_two": -0.3963,
+          "husky_one+husky_three": 3.0126,
+          "husky_four+husky_one": 7.0126,
+          "husky_five+husky_one": 3.3307,
+          "husky_one+husky_six": 7.0126,
+          "husky_three+husky_two": 2.7126,
+          "husky_four+husky_two": 6.7126,
+          "husky_five+husky_two": 3.2307,
+          "husky_six+husky_two": 6.7126,
+          "husky_four+husky_three": 3.0126,
+          "husky_five+husky_three": 3.3307,
+          "husky_six+husky_three": 3.3307,
+          "husky_five+husky_four": 3.3307,
+          "husky_four+husky_six": 3.3307,
+          "husky_five+husky_six": 3.0126
+        }
+      },
+      "threshold": {
+        "verdict": "yes",
+        "overlap floor (m)": 0.05
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "verdict matches measured overlap",
+          "how_to_fail": "a yes/no that contradicts the measured pairwise AABB interpenetration at t=0",
+          "witness": "a world-space AABB for every robot from a frozen t=0 scan",
+          "witness_present": true,
+          "detail": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)"
+        }
+      ]
+    },
+    "B1.3": {
+      "ok": true,
+      "what": "a yes answer commits to exactly one named pair",
+      "measured": {
+        "robot names mentioned": [
+          "husky_one",
+          "husky_six"
+        ],
+        "committed pair": "husky_one+husky_six",
+        "read as": "the only two robot names in the answer"
+      },
+      "threshold": "exactly two robot names offered as the pair",
+      "detail": "",
+      "basis": "core-structural",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "one pair is named",
+          "how_to_fail": "a yes answer naming no pair, or blanketing many pairs",
+          "witness": "the roster names are known and the final message was captured",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "B1.4": {
+      "ok": false,
+      "what": "the claimed pair is the measurably overlapping one",
+      "measured": {
+        "claimed pair": "husky_one+husky_six",
+        "measured overlapping pairs": [
+          "husky_one+husky_two"
+        ],
+        "claimed pair clearance (m)": 7.0126
+      },
+      "threshold": [
+        "husky_one+husky_two"
+      ],
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "the named pair matches the measurement",
+          "how_to_fail": "naming a pair whose AABBs are measurably clear of each other, or claiming a pair when every pair is clear",
+          "witness": "a world-space AABB for every robot from a frozen t=0 scan",
+          "witness_present": true,
+          "detail": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)"
+        }
+      ]
+    }
+  },
+  "n_pass": 3,
+  "n_total": 4,
+  "failed_assertion": "B1.4",
+  "failed_assertions": [
+    "B1.4"
+  ],
+  "self_verified": false,
+  "attribution": {},
+  "measurements": {
+    "truth": {
+      "names": [
+        "husky_one",
+        "husky_two",
+        "husky_three",
+        "husky_four",
+        "husky_five",
+        "husky_six"
+      ],
+      "n_robots": 6,
+      "measured_all": true,
+      "unmeasured": [],
+      "frozen": true,
+      "pair_clearance_m": {
+        "husky_one+husky_two": -0.3963,
+        "husky_one+husky_three": 3.0126,
+        "husky_four+husky_one": 7.0126,
+        "husky_five+husky_one": 3.3307,
+        "husky_one+husky_six": 7.0126,
+        "husky_three+husky_two": 2.7126,
+        "husky_four+husky_two": 6.7126,
+        "husky_five+husky_two": 3.2307,
+        "husky_six+husky_two": 6.7126,
+        "husky_four+husky_three": 3.0126,
+        "husky_five+husky_three": 3.3307,
+        "husky_six+husky_three": 3.3307,
+        "husky_five+husky_four": 3.3307,
+        "husky_four+husky_six": 3.3307,
+        "husky_five+husky_six": 3.0126
+      },
+      "overlapping": [
+        "husky_one+husky_two"
+      ],
+      "ambiguous": []
+    },
+    "answer": "Yes. husky_one and husky_six are overlapping; every other robot in the scene is clear."
+  },
+  "artifacts": {
+    "trace": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\integration_b1\\B1_overlap_audit.wrong_pair.r0\\trace.jsonl",
+    "engine_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\integration_b1\\B1_overlap_audit.wrong_pair.r0\\phaseB\\phaseB_engine.log",
+    "recorder_csv": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\integration_b1\\B1_overlap_audit.wrong_pair.r0\\phaseB\\phaseB.csv"
+  },
+  "notes": [],
+  "basis": {
+    "core-physical": [
+      "B1.2",
+      "B1.4"
+    ],
+    "core-structural": [
+      "B1.1",
+      "B1.3"
+    ]
+  },
+  "vacuous_assertions": {}
+}

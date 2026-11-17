@@ -1,0 +1,100 @@
+target=1 frame=1 width=1896 height=1113 gpuSpanUs=3957.76 aoUs=619.52 bloomUs=118.784 sceneUs=2191.36 ssrUs=68.608 sunShadowUs=197.632 taaUs=122.88 tonemapUs=54.272 passes=14
+target=1 frame=2 width=1896 height=1113 gpuSpanUs=3286.016 cpuIntervalUs=266703.3 aoUs=621.568 bloomUs=114.688 sceneUs=1729.536 ssrUs=68.608 sunShadowUs=200.704 taaUs=365.568 tonemapUs=54.272 passes=14
+target=1 frame=3 width=1896 height=1113 gpuSpanUs=3274.752 cpuIntervalUs=134807.6 aoUs=622.592 bloomUs=118.784 sceneUs=1721.344 ssrUs=68.608 sunShadowUs=194.56 taaUs=362.496 tonemapUs=54.272 passes=14
+target=2 frame=1 width=320 height=200 gpuSpanUs=102.4 sceneUs=55.296 sunShadowUs=19.456 tonemapUs=4.096 passes=3
+target=2 frame=2 width=320 height=200 gpuSpanUs=98.304 cpuIntervalUs=6623.6 sceneUs=53.248 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=2 frame=3 width=320 height=200 gpuSpanUs=100.352 cpuIntervalUs=28192.8 sceneUs=54.272 sunShadowUs=18.432 tonemapUs=5.12 passes=3
+target=1 frame=4 width=1896 height=1113 gpuSpanUs=3305.472 cpuIntervalUs=79609.5 aoUs=638.976 bloomUs=115.712 sceneUs=1729.536 ssrUs=69.632 sunShadowUs=198.656 taaUs=365.568 tonemapUs=54.272 passes=14
+target=2 frame=4 width=320 height=200 gpuSpanUs=105.472 cpuIntervalUs=30974.1 sceneUs=55.296 sunShadowUs=22.528 tonemapUs=4.096 passes=3
+target=2 frame=5 width=320 height=200 gpuSpanUs=97.28 cpuIntervalUs=30610.7 sceneUs=53.248 sunShadowUs=18.432 tonemapUs=3.072 passes=3
+target=1 frame=5 width=1896 height=1113 gpuSpanUs=3288.064 cpuIntervalUs=61361.1 aoUs=618.496 bloomUs=116.736 sceneUs=1731.584 ssrUs=69.632 sunShadowUs=198.656 taaUs=365.568 tonemapUs=54.272 passes=14
+target=2 frame=6 width=320 height=200 gpuSpanUs=99.328 cpuIntervalUs=30714.1 sceneUs=54.272 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=2 frame=7 width=320 height=200 gpuSpanUs=96.256 cpuIntervalUs=31992.4 sceneUs=52.224 sunShadowUs=18.432 tonemapUs=3.072 passes=3
+target=1 frame=6 width=1896 height=1113 gpuSpanUs=3268.608 cpuIntervalUs=62542.9 aoUs=618.496 bloomUs=116.736 sceneUs=1723.392 ssrUs=68.608 sunShadowUs=195.584 taaUs=362.496 tonemapUs=54.272 passes=14
+target=2 frame=8 width=320 height=200 gpuSpanUs=101.376 cpuIntervalUs=32036.3 sceneUs=55.296 sunShadowUs=19.456 tonemapUs=4.096 passes=3
+target=2 frame=9 width=320 height=200 gpuSpanUs=97.28 cpuIntervalUs=31144.2 sceneUs=52.224 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=1 frame=7 width=1896 height=1113 gpuSpanUs=3282.944 cpuIntervalUs=64359.6 aoUs=620.544 bloomUs=116.736 sceneUs=1722.368 ssrUs=68.608 sunShadowUs=195.584 taaUs=364.544 tonemapUs=54.272 passes=14
+target=2 frame=10 width=320 height=200 gpuSpanUs=104.448 cpuIntervalUs=45374.9 sceneUs=55.296 sunShadowUs=19.456 tonemapUs=4.096 passes=3
+target=2 frame=11 width=320 height=200 gpuSpanUs=100.352 cpuIntervalUs=31857.8 sceneUs=55.296 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=1 frame=8 width=1896 height=1113 gpuSpanUs=3278.848 cpuIntervalUs=76429.4 aoUs=617.472 bloomUs=117.76 sceneUs=1723.392 ssrUs=68.608 sunShadowUs=195.584 taaUs=365.568 tonemapUs=54.272 passes=14
+target=2 frame=12 width=320 height=200 gpuSpanUs=100.352 cpuIntervalUs=31983.9 sceneUs=55.296 sunShadowUs=18.432 tonemapUs=5.12 passes=3
+target=2 frame=13 width=320 height=200 gpuSpanUs=95.232 cpuIntervalUs=31121.8 sceneUs=52.224 sunShadowUs=18.432 tonemapUs=3.072 passes=3
+target=1 frame=9 width=1896 height=1113 gpuSpanUs=3284.992 cpuIntervalUs=62750.5 aoUs=623.616 bloomUs=115.712 sceneUs=1722.368 ssrUs=69.632 sunShadowUs=195.584 taaUs=364.544 tonemapUs=53.248 passes=14
+target=2 frame=14 width=320 height=200 gpuSpanUs=103.424 cpuIntervalUs=30900.9 sceneUs=55.296 sunShadowUs=19.456 tonemapUs=4.096 passes=3
+target=2 frame=15 width=320 height=200 gpuSpanUs=96.256 cpuIntervalUs=31540.7 sceneUs=52.224 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=1 frame=10 width=1896 height=1113 gpuSpanUs=3296.256 cpuIntervalUs=62341.5 aoUs=616.448 bloomUs=117.76 sceneUs=1723.392 ssrUs=68.608 sunShadowUs=194.56 taaUs=368.64 tonemapUs=54.272 passes=14
+target=2 frame=16 width=320 height=200 gpuSpanUs=100.352 cpuIntervalUs=31671.6 sceneUs=54.272 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=2 frame=17 width=320 height=200 gpuSpanUs=98.304 cpuIntervalUs=31043.2 sceneUs=53.248 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=2 frame=18 width=320 height=200 gpuSpanUs=97.28 cpuIntervalUs=31244.6 sceneUs=52.224 sunShadowUs=18.432 tonemapUs=3.072 passes=3
+target=1 frame=11 width=1896 height=1113 gpuSpanUs=3283.968 cpuIntervalUs=94201.4 aoUs=620.544 bloomUs=117.76 sceneUs=1723.392 ssrUs=68.608 sunShadowUs=195.584 taaUs=364.544 tonemapUs=54.272 passes=14
+target=2 frame=19 width=320 height=200 gpuSpanUs=100.352 cpuIntervalUs=30626.1 sceneUs=54.272 sunShadowUs=19.456 tonemapUs=4.096 passes=3
+target=2 frame=20 width=320 height=200 gpuSpanUs=102.4 cpuIntervalUs=32338.7 sceneUs=55.296 sunShadowUs=19.456 tonemapUs=5.12 passes=3
+target=1 frame=12 width=1896 height=1113 gpuSpanUs=3320.832 cpuIntervalUs=63161.5 aoUs=630.784 bloomUs=116.736 sceneUs=1722.368 ssrUs=68.608 sunShadowUs=195.584 taaUs=367.616 tonemapUs=54.272 passes=14
+target=2 frame=21 width=320 height=200 gpuSpanUs=101.376 cpuIntervalUs=31006.3 sceneUs=55.296 sunShadowUs=19.456 tonemapUs=4.096 passes=3
+target=2 frame=22 width=320 height=200 gpuSpanUs=96.256 cpuIntervalUs=31351.3 sceneUs=53.248 sunShadowUs=18.432 tonemapUs=3.072 passes=3
+target=1 frame=13 width=1896 height=1113 gpuSpanUs=3303.424 cpuIntervalUs=62453 aoUs=616.448 bloomUs=117.76 sceneUs=1723.392 ssrUs=69.632 sunShadowUs=194.56 taaUs=366.592 tonemapUs=54.272 passes=14
+target=2 frame=23 width=320 height=200 gpuSpanUs=99.328 cpuIntervalUs=30761.2 sceneUs=54.272 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=2 frame=24 width=320 height=200 gpuSpanUs=97.28 cpuIntervalUs=30734.1 sceneUs=52.224 sunShadowUs=17.408 tonemapUs=4.096 passes=3
+target=1 frame=14 width=1896 height=1113 gpuSpanUs=3297.28 cpuIntervalUs=61293.2 aoUs=620.544 bloomUs=116.736 sceneUs=1723.392 ssrUs=68.608 sunShadowUs=195.584 taaUs=363.52 tonemapUs=54.272 passes=14
+target=2 frame=25 width=320 height=200 gpuSpanUs=101.376 cpuIntervalUs=32319.3 sceneUs=55.296 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=2 frame=26 width=320 height=200 gpuSpanUs=98.304 cpuIntervalUs=29729.7 sceneUs=52.224 sunShadowUs=18.432 tonemapUs=3.072 passes=3
+target=1 frame=15 width=1896 height=1113 gpuSpanUs=3299.328 cpuIntervalUs=62148.6 aoUs=619.52 bloomUs=116.736 sceneUs=1722.368 ssrUs=68.608 sunShadowUs=196.608 taaUs=364.544 tonemapUs=54.272 passes=14
+target=2 frame=27 width=320 height=200 gpuSpanUs=100.352 cpuIntervalUs=31237.6 sceneUs=54.272 sunShadowUs=18.432 tonemapUs=5.12 passes=3
+target=2 frame=28 width=320 height=200 gpuSpanUs=97.28 cpuIntervalUs=30700.8 sceneUs=52.224 sunShadowUs=17.408 tonemapUs=4.096 passes=3
+target=1 frame=16 width=1896 height=1113 gpuSpanUs=3300.352 cpuIntervalUs=61958.9 aoUs=621.568 bloomUs=116.736 sceneUs=1722.368 ssrUs=69.632 sunShadowUs=195.584 taaUs=366.592 tonemapUs=54.272 passes=14
+target=2 frame=29 width=320 height=200 gpuSpanUs=98.304 cpuIntervalUs=32117.8 sceneUs=54.272 sunShadowUs=19.456 tonemapUs=4.096 passes=3
+target=2 frame=30 width=320 height=200 gpuSpanUs=96.256 cpuIntervalUs=46266.3 sceneUs=52.224 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=1 frame=17 width=1896 height=1113 gpuSpanUs=3290.112 cpuIntervalUs=78273.6 aoUs=620.544 bloomUs=115.712 sceneUs=1723.392 ssrUs=68.608 sunShadowUs=195.584 taaUs=362.496 tonemapUs=54.272 passes=14
+target=2 frame=31 width=320 height=200 gpuSpanUs=101.376 cpuIntervalUs=31942.7 sceneUs=55.296 sunShadowUs=19.456 tonemapUs=4.096 passes=3
+target=2 frame=32 width=320 height=200 gpuSpanUs=97.28 cpuIntervalUs=31067.2 sceneUs=52.224 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=1 frame=18 width=1896 height=1113 gpuSpanUs=3315.712 cpuIntervalUs=63241.3 aoUs=617.472 bloomUs=115.712 sceneUs=1731.584 ssrUs=69.632 sunShadowUs=197.632 taaUs=365.568 tonemapUs=54.272 passes=14
+target=2 frame=33 width=320 height=200 gpuSpanUs=103.424 cpuIntervalUs=32069.3 sceneUs=54.272 sunShadowUs=22.528 tonemapUs=5.12 passes=3
+target=1 frame=19 width=1896 height=1113 gpuSpanUs=3302.4 cpuIntervalUs=32113.3 aoUs=620.544 bloomUs=116.736 sceneUs=1722.368 ssrUs=68.608 sunShadowUs=195.584 taaUs=363.52 tonemapUs=54.272 passes=14
+target=1 frame=20 width=1896 height=1113 gpuSpanUs=3317.76 cpuIntervalUs=83393 aoUs=623.616 bloomUs=118.784 sceneUs=1722.368 ssrUs=69.632 sunShadowUs=196.608 taaUs=367.616 tonemapUs=54.272 passes=14
+target=2 frame=34 width=320 height=200 gpuSpanUs=100.352 cpuIntervalUs=87029 sceneUs=55.296 sunShadowUs=18.432 tonemapUs=5.12 passes=3
+target=1 frame=21 width=1896 height=1113 gpuSpanUs=3297.28 cpuIntervalUs=16393.6 aoUs=621.568 bloomUs=116.736 sceneUs=1724.416 ssrUs=68.608 sunShadowUs=196.608 taaUs=364.544 tonemapUs=54.272 passes=14
+target=2 frame=35 width=320 height=200 gpuSpanUs=101.376 cpuIntervalUs=38008.1 sceneUs=55.296 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=1 frame=22 width=1896 height=1113 gpuSpanUs=3353.6 cpuIntervalUs=26101.5 aoUs=622.592 bloomUs=115.712 motionUs=40.96 sceneUs=1714.176 ssrUs=69.632 sunShadowUs=195.584 taaUs=371.712 tonemapUs=54.272 passes=15
+target=1 frame=23 width=1896 height=1113 gpuSpanUs=3295.232 cpuIntervalUs=113535.6 aoUs=620.544 bloomUs=117.76 sceneUs=1714.176 ssrUs=69.632 sunShadowUs=196.608 taaUs=365.568 tonemapUs=54.272 passes=14
+target=2 frame=36 width=320 height=200 gpuSpanUs=100.352 cpuIntervalUs=119253.7 sceneUs=54.272 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=2 frame=37 width=320 height=200 gpuSpanUs=98.304 cpuIntervalUs=36736.3 sceneUs=54.272 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=1 frame=24 width=1896 height=1113 gpuSpanUs=3358.72 cpuIntervalUs=41411.5 aoUs=618.496 bloomUs=117.76 motionUs=40.96 sceneUs=1715.2 ssrUs=69.632 sunShadowUs=195.584 taaUs=371.712 tonemapUs=53.248 passes=15
+target=1 frame=25 width=1896 height=1113 gpuSpanUs=3298.304 cpuIntervalUs=70294 aoUs=621.568 bloomUs=116.736 sceneUs=1715.2 ssrUs=69.632 sunShadowUs=195.584 taaUs=363.52 tonemapUs=53.248 passes=14
+target=2 frame=38 width=320 height=200 gpuSpanUs=99.328 cpuIntervalUs=74066.3 sceneUs=54.272 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=2 frame=39 width=320 height=200 gpuSpanUs=96.256 cpuIntervalUs=20373 sceneUs=51.2 sunShadowUs=18.432 tonemapUs=5.12 passes=3
+target=1 frame=26 width=1896 height=1113 gpuSpanUs=3345.408 cpuIntervalUs=24382 aoUs=622.592 bloomUs=117.76 motionUs=40.96 sceneUs=1723.392 ssrUs=69.632 sunShadowUs=194.56 taaUs=371.712 tonemapUs=53.248 passes=15
+target=1 frame=27 width=1896 height=1113 gpuSpanUs=3301.376 cpuIntervalUs=75711.4 aoUs=623.616 bloomUs=117.76 sceneUs=1723.392 ssrUs=69.632 sunShadowUs=195.584 taaUs=363.52 tonemapUs=54.272 passes=14
+target=2 frame=40 width=320 height=200 gpuSpanUs=97.28 cpuIntervalUs=79804.6 sceneUs=52.224 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=2 frame=41 width=320 height=200 gpuSpanUs=101.376 cpuIntervalUs=15030.5 sceneUs=56.32 sunShadowUs=19.456 tonemapUs=4.096 passes=3
+target=1 frame=28 width=1896 height=1113 gpuSpanUs=3435.52 cpuIntervalUs=21623.8 aoUs=620.544 bloomUs=116.736 motionUs=43.008 sceneUs=1804.288 ssrUs=68.608 sunShadowUs=195.584 taaUs=362.496 tonemapUs=54.272 passes=15
+target=1 frame=29 width=1896 height=1113 gpuSpanUs=3447.808 cpuIntervalUs=68149.9 aoUs=618.496 bloomUs=114.688 motionUs=37.888 sceneUs=1804.288 ssrUs=68.608 sunShadowUs=195.584 taaUs=374.784 tonemapUs=54.272 passes=15
+target=2 frame=42 width=320 height=200 gpuSpanUs=102.4 cpuIntervalUs=74519.1 sceneUs=56.32 sunShadowUs=18.432 tonemapUs=5.12 passes=3
+target=2 frame=43 width=320 height=200 gpuSpanUs=102.4 cpuIntervalUs=20298.2 sceneUs=56.32 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=1 frame=30 width=1896 height=1113 gpuSpanUs=3438.592 cpuIntervalUs=24305.2 aoUs=622.592 bloomUs=117.76 motionUs=38.912 sceneUs=1798.144 ssrUs=68.608 sunShadowUs=196.608 taaUs=370.688 tonemapUs=54.272 passes=15
+target=1 frame=31 width=1896 height=1113 gpuSpanUs=3383.296 cpuIntervalUs=68119.8 aoUs=620.544 bloomUs=114.688 sceneUs=1800.192 ssrUs=69.632 sunShadowUs=196.608 taaUs=365.568 tonemapUs=54.272 passes=14
+target=2 frame=44 width=320 height=200 gpuSpanUs=103.424 cpuIntervalUs=72044.2 sceneUs=57.344 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=2 frame=45 width=320 height=200 gpuSpanUs=99.328 cpuIntervalUs=22375.9 sceneUs=55.296 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=1 frame=32 width=1896 height=1113 gpuSpanUs=3328 cpuIntervalUs=26625.4 aoUs=619.52 bloomUs=118.784 motionUs=39.936 sceneUs=1702.912 ssrUs=69.632 sunShadowUs=194.56 taaUs=364.544 tonemapUs=54.272 passes=15
+target=1 frame=33 width=1896 height=1113 gpuSpanUs=3292.16 cpuIntervalUs=69221.5 aoUs=623.616 bloomUs=115.712 sceneUs=1703.936 ssrUs=69.632 sunShadowUs=195.584 taaUs=364.544 tonemapUs=53.248 passes=14
+target=2 frame=46 width=320 height=200 gpuSpanUs=101.376 cpuIntervalUs=73694.7 sceneUs=55.296 sunShadowUs=19.456 tonemapUs=5.12 passes=3
+target=2 frame=47 width=320 height=200 gpuSpanUs=97.28 cpuIntervalUs=34825.4 sceneUs=52.224 sunShadowUs=18.432 tonemapUs=5.12 passes=3
+target=1 frame=34 width=1896 height=1113 gpuSpanUs=3358.72 cpuIntervalUs=38745 aoUs=624.64 bloomUs=117.76 motionUs=38.912 sceneUs=1704.96 ssrUs=68.608 sunShadowUs=194.56 taaUs=372.736 tonemapUs=54.272 passes=15
+target=1 frame=35 width=1896 height=1113 gpuSpanUs=3287.04 cpuIntervalUs=73850.9 aoUs=619.52 bloomUs=114.688 sceneUs=1703.936 ssrUs=69.632 sunShadowUs=195.584 taaUs=365.568 tonemapUs=54.272 passes=14
+target=2 frame=48 width=320 height=200 gpuSpanUs=99.328 cpuIntervalUs=78364.6 sceneUs=53.248 sunShadowUs=19.456 tonemapUs=5.12 passes=3
+target=2 frame=49 width=320 height=200 gpuSpanUs=98.304 cpuIntervalUs=45623 sceneUs=53.248 sunShadowUs=18.432 tonemapUs=5.12 passes=3
+target=1 frame=36 width=1896 height=1113 gpuSpanUs=3424.256 cpuIntervalUs=50142.6 aoUs=623.616 bloomUs=117.76 motionUs=43.008 sceneUs=1770.496 ssrUs=69.632 sunShadowUs=194.56 taaUs=375.808 tonemapUs=54.272 passes=15
+target=1 frame=37 width=1896 height=1113 gpuSpanUs=3358.72 cpuIntervalUs=86293 aoUs=620.544 bloomUs=117.76 sceneUs=1769.472 ssrUs=69.632 sunShadowUs=195.584 taaUs=365.568 tonemapUs=54.272 passes=14
+target=2 frame=50 width=320 height=200 gpuSpanUs=99.328 cpuIntervalUs=91299.2 sceneUs=54.272 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=2 frame=51 width=320 height=200 gpuSpanUs=99.328 cpuIntervalUs=35995 sceneUs=54.272 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=1 frame=38 width=1896 height=1113 gpuSpanUs=3421.184 cpuIntervalUs=41200.7 aoUs=626.688 bloomUs=118.784 motionUs=43.008 sceneUs=1767.424 ssrUs=69.632 sunShadowUs=194.56 taaUs=369.664 tonemapUs=54.272 passes=15
+target=1 frame=39 width=1896 height=1113 gpuSpanUs=3362.816 cpuIntervalUs=76215.4 aoUs=625.664 bloomUs=116.736 sceneUs=1766.4 ssrUs=68.608 sunShadowUs=195.584 taaUs=365.568 tonemapUs=54.272 passes=14
+target=2 frame=52 width=320 height=200 gpuSpanUs=101.376 cpuIntervalUs=80261 sceneUs=55.296 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=1 frame=40 width=1896 height=1113 gpuSpanUs=3355.648 cpuIntervalUs=19173.1 aoUs=620.544 bloomUs=118.784 sceneUs=1766.4 ssrUs=69.632 sunShadowUs=194.56 taaUs=367.616 tonemapUs=53.248 passes=14
+target=2 frame=53 width=320 height=200 gpuSpanUs=100.352 cpuIntervalUs=42778.7 sceneUs=55.296 sunShadowUs=18.432 tonemapUs=4.096 passes=3
+target=1 frame=41 width=1896 height=1113 gpuSpanUs=3411.968 cpuIntervalUs=28033.6 aoUs=625.664 bloomUs=117.76 motionUs=41.984 sceneUs=1764.352 ssrUs=69.632 sunShadowUs=195.584 taaUs=372.736 tonemapUs=54.272 passes=15
+target=1 frame=42 width=1896 height=1113 gpuSpanUs=9537.536 cpuIntervalUs=73201.1 aoUs=1846.272 bloomUs=428.032 sceneUs=4840.448 ssrUs=367.616 sunShadowUs=566.272 taaUs=995.328 tonemapUs=222.208 passes=14
+target=2 frame=54 width=320 height=200 gpuSpanUs=273.408 cpuIntervalUs=77522.7 sceneUs=150.528 sunShadowUs=63.488 tonemapUs=12.288 passes=3
+target=2 frame=55 width=320 height=200 gpuSpanUs=271.36 cpuIntervalUs=47303.1 sceneUs=144.384 sunShadowUs=49.152 tonemapUs=31.744 passes=3
+target=1 frame=43 width=1896 height=1113 gpuSpanUs=9406.464 cpuIntervalUs=51284.2 aoUs=1606.656 bloomUs=429.056 motionUs=177.152 sceneUs=4770.816 ssrUs=364.544 sunShadowUs=516.096 taaUs=1060.864 tonemapUs=221.184 passes=15
+target=1 frame=44 width=1896 height=1113 gpuSpanUs=9832.448 cpuIntervalUs=85946.1 aoUs=1642.496 bloomUs=434.176 sceneUs=4918.272 ssrUs=366.592 sunShadowUs=548.864 taaUs=1468.416 tonemapUs=221.184 passes=14
+target=2 frame=56 width=320 height=200 gpuSpanUs=271.36 cpuIntervalUs=89952.5 sceneUs=151.552 sunShadowUs=67.584 tonemapUs=13.312 passes=3

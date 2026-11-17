@@ -1,0 +1,104 @@
+#OMNISIM R2025a utf8
+
+# Clearpath Husky + its SICK LMS111 lidar, measured against walls at KNOWN
+# distances.
+#
+# ⚠ The lidar exists ONLY when the world is loaded with
+#   OMNISIM_URDF_USE_SENSORS=1
+# Without it the URDF's <sensor> block is parsed and dropped, and
+# /list_sensors reports no Lidar (that is the control run).
+#
+# The laser is the husky_description sensor-arch scanner modelled on the SICK
+# LMS111: 270 deg, 541 samples, 0.1-20 m, mounted 0.12 m ahead of the top
+# plate. The bridge reports the measured mount; distances below are to the
+# near faces in the WORLD frame, so the expected ranges depend on that mount.
+#
+# Geometry (world frame; robot spawns at the origin facing +X):
+#   FRONT_WALL  near face x = +3.00  (straight ahead)
+#   LEFT_WALL   near face y = +2.00  (at +90 deg, left)
+#   RIGHT_BOX   near face y = -1.50  (at -90 deg, right; a 0.4 m box)
+#   REAR_WALL   near face x = -1.50  straight BEHIND, inside the scanner's
+#               90-degree blind sector: no beam may report it
+# Every obstacle is 0.8 m tall with a boundingObject; the stage's own rim
+# walls are 0.05 m, below the scan plane.
+#
+# Driven by omnilink_mobile_bridge on port 8783 (not the chat demos' 8765).
+# Measurement script: scripts/dev/measure_urdf_lidar.py husky
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husky SICK LMS111 lidar — known-distance walls"
+  info [
+    "Clearpath Husky with its SICK LMS111 lidar (URDF <sensor type=ray>),"
+    "facing walls at known distances. Needs OMNISIM_URDF_USE_SENSORS=1."
+  ]
+}
+Viewpoint {
+  orientation -0.3 0.1 0.95 2.5
+  position 5.5 -6.0 5.5
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 10 10
+  wallHeight 0.05
+}
+DEF FRONT_WALL Solid {
+  translation 3.05 0 0.4
+  name "front_wall"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.85 0.35 0.2 roughness 0.8 metalness 0 }
+      geometry Box { size 0.1 4.0 0.8 }
+    }
+  ]
+  boundingObject Box { size 0.1 4.0 0.8 }
+}
+DEF LEFT_WALL Solid {
+  translation 0 2.05 0.4
+  name "left_wall"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.2 0.5 0.85 roughness 0.8 metalness 0 }
+      geometry Box { size 5.0 0.1 0.8 }
+    }
+  ]
+  boundingObject Box { size 5.0 0.1 0.8 }
+}
+DEF RIGHT_BOX Solid {
+  translation 0.12 -1.7 0.4
+  name "right_box"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.3 0.75 0.3 roughness 0.8 metalness 0 }
+      geometry Box { size 0.4 0.4 0.8 }
+    }
+  ]
+  boundingObject Box { size 0.4 0.4 0.8 }
+}
+DEF REAR_WALL Solid {
+  translation -1.55 0 0.4
+  name "rear_wall"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.8 0.8 0.3 roughness 0.8 metalness 0 }
+      geometry Box { size 0.1 2.0 0.8 }
+    }
+  ]
+  boundingObject Box { size 0.1 2.0 0.8 }
+}
+
+DEF HUSKY URDFRobot {
+  url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 0 0 0.2
+  name "husky"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "husky" "--port" "8783" ]
+}

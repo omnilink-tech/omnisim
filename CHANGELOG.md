@@ -1,0 +1,7508 @@
+# Changelog
+
+All notable changes to OmniSim are recorded here.
+
+The format roughly follows
+[Keep a Changelog](https://keepachangelog.com), and OmniSim follows
+[Semantic Versioning](https://semver.org).
+
+OmniSim is built on [Webots](https://github.com/cyberbotics/webots) — see
+the [Attribution](README.md#attribution) section of the README for the
+relationship to upstream. Entries here cover OmniLink's contributions on
+top of that foundation.
+
+> ⚠️ **Only the v8.x, v9.x and v10.x releases are published in this repository.**
+> Sections for earlier versions are kept below as the development record — they
+> say what changed and when — but those releases are **not obtainable here**: no
+> tag, no release page, no downloadable archive. Do not read an older section as
+> a description of something you can check out. Use the newest release for
+> running code.
+>
+> The one class of tag that is NOT a release, and is still present, is
+> `deps-windows-v1` / `deps-linux-v1` / `deps-mac-v1` — those carry the build's
+> dependency archives, which `dependencies/Makefile.*` fetches by name.
+
+---
+
+
+## [v10.0.3] — 2026-11-05
+
+A patch for the public `train-image` build, which failed on v10.0.2's push for a reason outside
+the tree. The simulator and the installer are unchanged.
+
+### Fixed
+
+- **stb is fetched by commit, not by a branch that no longer exists.** `omichel/stb` deleted
+  its `patch-1` branch, so `docker/Dockerfile.train` stopped at "Remote branch patch-1 not
+  found". `Dockerfile.runtime` and the RunPod bootstrap clone the same branch and would have
+  failed next. All three now fetch the commit `src/stb` records (`7ee7f4bd`, still served by
+  hash, `STB_COMMIT`), `.gitmodules` drops the dead branch line, and
+  `tests/test_stb_pin.py` keeps the three equal to the submodule's gitlink. Submodule
+  checkouts (`git submodule update --init`, `linux-build`) were never affected: they fetch by
+  hash.
+
+### Changed
+
+- **A film with no text on any shot.** `editorial.on_screen_text: "none"` in an Agent Build
+  Film manifest leaves out the action opening's disclosure line and the boundary beat's band.
+  Both texts stay required and are written to `verification.json` (`off_screen_texts`) for the
+  video's description. The default `"full"` is unchanged.
+
+
+## [v10.0.2] — 2026-11-05
+
+The last public unit test is green.
+The simulator and the installer are unchanged from v10.0.1.
+
+### Fixed
+
+- **unit-tests on the hosted runner.** Two failures on the v10.0.1 tag:
+  - `test_arena_scope_sets_and_restores_the_compiled_arena` now skips when `mujoco` imports without
+    `MjSpec`. The runner has no MuJoCo, so `import mujoco` found one of the tree's `mujoco/` test
+    directories (`tests/benchmarks/*/mujoco`) as an empty namespace package.
+  - `docs/reference/environment-variables.md` was out of date in the public tree only. The denied
+    `tests/assessment/evidence/` campaigns carry frozen copies of the source, and the generator counted
+    their reads in the private tree. `gen_env_reference.py` now skips every path in
+    `scripts/release/publish_deny.txt`, so both trees generate the same page.
+
+
+## [v10.0.1] — 2026-11-04
+
+A patch for two public checks that failed on the v10.0.0 tag. Nothing in the simulator, the
+installer or the documentation changed; the v10.0.0 installer is the same build.
+
+
+
+## [v10.0.0] — 2026-11-04
+
+Engine fixes (a force applied off the centre of mass, a Solid's geometry-derived centre of mass, a physics step
+that raised and was still counted, a Display texture the wgpu renderer never uploaded, a Camera frozen by a
+MillingStock) and two found reproducing robot makers' published models (a short-travel slider servo's force, a
+gripper's fingers read as feet), three renderer fixes for still scenes (TAA shimmer, OmniLight rebakes,
+render-on-change), two new engine nodes (MillingStock and PrintedPart), URDF and mesh import fixes, and the
+robot assessment and service pilots.
+
+### ⚠️ Behaviour changes — read before upgrading
+
+Each has a value-parsed hatch (`=0` restores the old behaviour unless noted) and an engine pin.
+
+- **A force at an offset acts where you apply it, whatever the centre of mass.** The engine sends
+  `addForceWithOffset` (and every propeller thrust) to the runtime as a force plus a torque about the Solid's
+  ORIGIN; newton's `body_f` is a wrench about the centre of mass. On a Solid whose COM is off its origin (any
+  that declares `centerOfMass` + `inertiaMatrix`) the push acted displaced by that offset. Found by a load test on a tall
+  frame: one rigid body, COM 1.02 m up, pushed at the bar until the far feet lift, tipped at 23.5 N,
+  62 % of the statics answer (37.8 N). The runtime now re-references the torque, `tau -= (R(q) * body_com) x F`;
+  after the fix: back push 39.15 N (statics 37.8), side 104.03 N (102.6), empty back 9.38 N (8.7), empty side
+  22.16 N (21.3), the 1–8 % excess being the 1 mm lift threshold under a rising force. Hatch
+  `OMNISIM_NEWTON_EXT_WRENCH_AT_COM=0`. Pin `tests/test_newton_ext_wrench_at_com.py`.
+- **A Solid with no `inertiaMatrix` keeps its centre of mass where it is.** The geometry-derived tensor
+  (composed about the Solid's origin) was passed with the COM pinned AT the origin, so `centerOfMass`, and the
+  `boundingObject`'s own centroid, never reached the solver (MuJoCo `ipos` 0); only an explicit `inertiaMatrix`
+  carried its COM. A 40×40×20 mm, 0.1 kg box with its shape 30 mm off its origin rolled 86° off a flat floor in
+  1 s; now 0.05 mm and 0°, like the centred box. The tensor is shifted to the COM (parallel axis) and passed
+  with it; the load log names the moved bodies (`geometry COM: N body(ies) ... largest D mm`). Every demo
+  world loads; the moved bodies include AnyPick objects up to 26 mm, the Forklift PROTO's declared COM 578 mm and
+  the tower gantry mast 2 m; universal pick (14/15) is unchanged. Hatch `OMNISIM_NEWTON_GEOM_INERTIA_COM=0`. Pin
+  `tests/test_newton_geom_inertia_com.py`.
+- **A physics step that raised is reported, not counted as executed.** `world.step()` raising used to be one
+  WARNING per tick and nothing else: the engine clock and every controller still advanced, so `/sim/step`
+  answered `steps_executed: 250` for a large assembly scene in which MuJoCo raised
+  `mj_stackAlloc: out of memory` on every step and the moving unit never moved. Now the `.newton.json` sidecar
+  counts raised steps (`step_errors`, `step_errors_streak`, first/last error and when); the first raise is an
+  engine ERROR, later ones WARNINGs at 2, 4, 8, …; `/sim/step` and `/sim/state` carry `physics_ok` and
+  `physics_steps` and a `NEWTON_STEP_FAILED` diagnostic; and **`run-headless` FAILs on any sidecar
+  `step_errors`**. The MuJoCo arena is now a lever: `WorldInfo.newtonArenaMB` / `OMNISIM_NEWTON_ARENA_MB`
+  (`newtonNjmax` / `newtonNconmax` do not size it on the CPU solver). Reproduction, 6,000 static convex boxes
+  plus a 2,700-piece moving body: MuJoCo's own 15 MiB raised every step from the landing; 64 and 512 MiB ran
+  clean, the unit rests, ~244 ms/step. A slightly short arena may DROP contacts instead of raising (a slab fell
+  through its floor): the CPU path now samples `mjWARN_CONTACTFULL` / `CNSTRFULL` and logs one
+  `MUJOCO ARENA FULL` warning per world. Pins `tests/test_physics_step_errors.py`,
+  `tests/test_physics_step_errors_engine.py`.
+- **A slider (prismatic) position servo is at least `effort / travel` stiff.** Every position servo is built
+  `ke = effort*10`, `kd = effort*0.5`: on a hinge that saturates at a 0.1 rad error, on a slider at a 100 mm
+  error, so a slider with a shorter travel could never apply its declared force. Measured on the Kachaka
+  docking pin (0.2 kg, travel 0–12 mm, weight 1.96 N): with its effort raised to 10 N it pushed at most 1.2 N
+  and sat on its lower stop at exactly 0.0 m, where plain MuJoCo 3.11 lifts the same file 11.0 mm. Now a
+  motorised slider with finite limits gets `ke = max(effort*10, effort/travel)` and kd scaled by the same
+  factor; the 10 N pin lifts 9.65 mm, the published 1 N pin still stays down, as in MuJoCo. Unchanged: sliders
+  with ≥ 0.1 m of travel (Robotiq 2F-140), sliders with no limits, and explicit `OMNISIM_NEWTON_TARGET_KE` /
+  `_FINGER_KE`. Stiffer by ×1.4–2.9, so they squeeze harder for the same position target: the Robotiq 2F-85
+  fingers of the omniarm6 worlds, the ALOHA and Piper fingers, `friction_grasp_minimal`'s fingers
+  (`omniarm6_real_pick_place` PASS and `friction_grasp_minimal` HELD with the floor on and off). Hatch
+  `OMNISIM_NEWTON_SLIDER_GAIN_FLOOR=0`. Pin `tests/test_newton_slider_gain_floor.py`.
+- **Only wheels count as what a robot stands on when its root collider is judged.** The 2026-10-17 rule quiets
+  a Robot's root collider that reaches more than 2 mm below its own wheels/feet; it took "feet" from any two
+  branches at one height, so a gripper's two mirror fingers counted. Measured on the Xense TacCap follower
+  standing on its base (base foot 31.5 mm below the fingers): the base was made non-colliding and the gripper
+  fell through the weighing plate. The reference is now taken only from branches that ROLL (a limit-less
+  revolute, or a Hinge2's spin axis, more than ~25° off the up axis); a robot with none (a gripper, an arm, a
+  legged robot) keeps its root collider at any height. In-engine the gripper now weighs 11.2674 N, identical
+  to plain MuJoCo. Wheeled bases are judged exactly as before. Pin `tests/test_newton_robot_root_collider.py`
+  (`FingersAreNotFeet`).
+- **A still scene no longer shimmers under TAA.** Every edge of a still scene moved by a fraction of a pixel
+  frame after frame (an idle machine scene "vibrated" while its joints moved 5e-12 m). Three faults in the temporal
+  resolve: history was reprojected from the previous frame's jitter; the history depth check used each pixel's
+  own depth, which the jitter flips on a silhouette; and the reactive colour test compared history with one
+  jittered sample. Idle machine scene, 1896 × 1113 main view, pixels changed by more than 8 levels between frames:
+  10k–59k before, 1.1k–3.2k after (mean change per pixel 1.4 → 0.12 levels; machine `9722d23d12a3`, RTX 3060
+  Laptop). Hatch `OMNISIM_WGPU_TAA_STILL_EDGES=0`. Pin `tests/test_taa_still_scene.py`.
+- **The main view holds a frame that has not changed (render-on-change).** The main view rendered at
+  `WorldInfo.fps` for as long as the simulation ran, whether or not anything moved: an idle machine scene held
+  ~49 % GPU, ~61 W, 86–87 °C and thermal throttling. The renderer now hashes everything it feeds the GPU and
+  holds the frame once 12 consecutive frames are identical; GUI repaints, grabs, dumps, recordings, photos and
+  OmniLight bakes always render, and a real frame is drawn at least every 0.5 s. Same idle window after: 23 %
+  GPU, 24.3 W, 63–64 °C. Matrices hash at 1e-6 m / rad, because a servo-held body moves by float noise every
+  step (up to 4e-9 m a frame on a parked machine): with exact hashing the idle window still drew at 23–33 %
+  of the 3D engine, now 6.5–10.6 % (Windows' per-process GPU counters; `nvidia-smi pmon` misattributed it to
+  another app). Hatches `OMNISIM_WGPU_RENDER_ON_CHANGE=0`, `OMNISIM_WGPU_RENDER_ON_CHANGE_EXACT=1`. Pin
+  `tests/test_render_hold_servo_noise.py`.
+- **OmniLight no longer rebakes while something deforms.** Its scene key counted the dynamic tail (MillingStock
+  tiles, cloth, soft bodies, granular, tracks, muscles), so 90 s of cutting a MillingStock rebaked GI 96 times
+  (57 s of BVH + trace on all cores but one, a visible lighting swap about once a second); now once. Deforming
+  geometry is baked as it stands when something else triggers a bake. Hatch `OMNISIM_OMNILIGHT_KEY_DYNAMIC=1`.
+  Pin `tests/test_omnilight_milling_rebake.py`.
+
+### Added — engine nodes
+
+- **`MillingStock`, a new node** (`resources/nodes/MillingStock.wrl`): a height-map block carved every physics
+  step by the cutter Solid's REAL pose (flat, ball or V-bit), drawn as 64-cell tiles; only the tiles a cutter
+  changed are re-uploaded and a flat tile is one quad. Engine-written `removedVolume` and `deepestCut`.
+  `OMNISIM_MILLING_STOCK_DUMP=<file>` writes the height map for inspection. Node type appended to the
+  controller ABI (`WB_NODE_MILLING_STOCK`). Why a node: a supervisor-edited `ElevationGrid` cost a whole-grid
+  rebuild, a scene re-walk and a leaked GPU mesh per edit (0.51× real time at 1 mm, GPU out of memory at
+  0.5 mm). ⚠️ It holds at most 1984 cells a side.
+- **`PrintedPart`, a new node**, the additive twin of MillingStock: every physics step the plastic that left
+  the nozzle is laid along the nozzle Solid's REAL path. Bead height is the gap to what is under it (the bed or
+  earlier plastic); width is what that volume needs; with nothing underneath it is a round strand (a bridge),
+  and plastic from a still nozzle is a blob. `OMNISIM_PRINTED_PART_DUMP` writes the beads. Beads past the
+  renderer's 523,776 are recorded and dumped (before, a large print was measured on half its plastic, silently).
+
+### Changed — brand
+
+- **The OmniSim mark and wordmark are new.** The mark keeps its shape, a dotted sphere lit from the upper
+  left, with the dots now a generated lattice; the wordmark is "OmniSim" in Sora SemiBold. App icons, the GUI
+  splash (which, installed, used to load an unpackaged orb and show none), the Windows installer's `setup.exe`
+  icon, the brand book and the film brand cards use them. The engine binaries carry the new icon and splash
+  only once rebuilt. Sora is listed in NOTICE and THIRD_PARTY_NOTICES.
+
+### Fixed — engine and rendering
+
+- **A Display on a Shape drew white under wgpu.** The renderer never uploaded a Display's texture. A
+  Display-fed `baseColorMap` is now an updatable texture, re-uploaded when the Display redraws (PBRAppearance
+  only). A binary built before this fix shows a blank screen. Pin `tests/test_display_texture_wgpu.py`.
+- **A Camera on a world with a MillingStock froze every moving body.** The milling collect re-pointed only its
+  own draws after a reallocation, so a cached draw list (every Camera/RangeFinder and the main view) read
+  stale model matrices until the 600-frame rebuild. Now cache-on and cache-off frames are byte-identical; the
+  cache's gain is kept (city_traffic + 320×240 camera: 22.5–24.2 ms/step cached vs 52.8–55.5 uncached). Pin
+  `tests/test_camera_draw_cache_motion.py`.
+- **The GUI window drew no Shape under a bare root Pose** (since 2026-08-21). The root's non-Solid children
+  were walked only for callers with no draw-to-Solid map, and the main view has passed one since the
+  synthetic-data dumps; Camera devices still drew them. Found on an assembly world whose window
+  showed only the floor and sky. Pin `tests/test_main_view_bare_pose.py`.
+- **A mesh on a translated or non-uniformly scaled Collada node shades with the right normals.** `OmMesh` and
+  `OmCadShape` mapped normals with the node's full 4×4 transform; they now take the inverse-transpose of its
+  3×3 and are renormalised. A sphere instanced 20 m up and placed back by its Pose rendered as a flat disc
+  (camera frames differ by up to 162/255); now byte-identical to the untranslated one. Hatch
+  `OMNISIM_MESH_NORMAL_MATRIX_FIX=0`. Pins `tests/test_mesh_normal_matrix.py`,
+  `tests/test_mesh_normal_matrix_render.py`.
+- **A `CadShape` reads every node of its file, not only the root.** A file whose geometry two nodes instance
+  rendered NOTHING (pixel range 5; now 197). Only hand-authored `CadShape` nodes were affected; the URDF
+  importer emits `Mesh`. No hatch.
+- **Capture keeps the simulator window state.** Repeated `Supervisor.exportImage()` calls on Windows maximised
+  a minimised window before every frame and minimised it again afterwards. Pin
+  `tests/test_capture_window_state.py`.
+
+### Fixed — URDF import
+
+Found reproducing the Ti5 T170 humanoid.
+
+- **A `<rest>` start angle is applied on a joint whose limits cover a full turn** (±3.14, ±3.1416 or wider),
+  on a `continuous` joint, with incomplete limits, and on a range lying wholly past ±π; all used to start at
+  0 with nothing logged. A `<rest>` outside the joint's own limits is warned about by name. No shipped robot
+  changes. Prismatic joints still do not read `<rest>`.
+- **Every URDF importer warning was printed twice** (the undeclared-PROTO pre-scan expanded each `URDFRobot`
+  as well as the load; each URDF was also converted twice).
+- **An `effort="0"` joint is no longer reported as driven.** The "SYNTHETIC position gain … OmniSim drives it"
+  warning is now an INFO line saying the joint is passive (still a warning under
+  `OMNISIM_NEWTON_AVAILABLE_TORQUE=0`).
+
+Pins `tests/test_urdf_rest_wide_range.py`, `tests/dev/test_urdf_rest_full_turn.py`.
+
+### Fixed — OmniLink bridges
+
+- **Mobile bridge pose reads stay on the sim thread.** `get_state()` and the `act_*` verbs ran on HTTP threads
+  and called the supervisor directly, racing the controller's channel; now they read an immutable snapshot
+  that `tick()` refreshes every step. Live, Husky, 8 threads polling `/state` while turning (n = 1 each): 44
+  corrupted poses (x, y ~2e-311) before, 0 of 4178 after.
+- **Turn pulses size their rate continuously** (`|remaining| / 2 s`, clamped to the slow and cruise rates):
+  a 0.26 rad pulse used to coast past its target and need a reverse correction; every turn now settles after
+  one correction (±0.26 rad settled 4.6 mrad off, was 8–9). Pins `tests/test_mobile_pose_threading.py`,
+  `tests/test_mobile_turn_pulse_rate.py`.
+- **Crew messages carry a one-sentence request and separate details.** `message_robot`'s REQUEST is what the
+  crewmate's gate judges; the DETAILS reach the receiving model's context. The gate now lets a sentence
+  flagged as a question or reported speech veto only a tool it names (prohibitions stay utterance-wide on
+  purpose), and place names built from verbs ("pick pad") no longer read as the action. Parity cases
+  regenerated.
+
+### Added — robot assessments and service pilots
+
+These ship as source in this release (v9.2.7 needed a separately published add-on). They are simulated
+model / test-controller results, not vendor firmware or hardware validation; machine `9722d23d12a3`, Newton
+1.5.0 / MuJoCo 3.11 CPU. Windows has the prebuilt engine; Linux requires a source build.
+
+- **`python -m omnisim assess`** (`omnisim/assessment/`, `projects/assessments/`): scenario specs, offline
+  oracles, a campaign runner and reports. Husky / Jackal immediate braking over 0–20° slopes, contact μ
+  0.10–0.80 and 0/10/20 kg rigidly mounted loads (a 64-case campaign); Go2 walk/stand/walk transitions with a
+  handover guard; G1 physical standing (no weight-bearing harness; no unassisted humanoid-walking claim);
+  Husky braking and 90° turning on mixed rigid friction patches (76 episodes, 50 PASS / 26 FAIL) and a
+  separate 93-episode split-surface repair (59 PASS / 34 FAIL; 11 of 12 new friction/payload inputs pass and
+  the twelfth still fails approach-speed qualification). Rigid contact coefficients are imposed assumptions,
+  not calibrated real materials. Guides: [robot-assessments.md](docs/guide/robot-assessments.md),
+  [legged-assessments.md](docs/guide/legged-assessments.md), [husky-mixed-surfaces.md](docs/guide/husky-mixed-surfaces.md).
+  Evidence under `tests/assessment/evidence/`.
+- **A Husky mission agent** (`projects/services/husky_mission/`): an OmniLink request becomes a bounded task
+  (visit A, then B, then return to base) with measured arrival, cancellation and an independent typed Stop.
+  The frozen suite passed 26 of 26 valid episodes across 27 attempts (one invalid controller start retained).
+  Known flat empty arena; obstacle avoidance and hardware operation are out of scope.
+- **An OmniArm 6 assurance pilot** (`projects/services/arm_assurance/`): ordered joint poses, persistent Hold,
+  explicit Resume, Cancel and Stop in a configured no-payload cell, with its qualification evidence. A bounded
+  workcell contract, not a collision-safety certificate.
+
+Both pilots need an OmniKey and a model connection for AI requests.
+
+### Internal
+
+- Apache-2.0 headers on the 39 assessment and service source files that lacked one (the licence gate,
+  `tests/sources/test_license.py`, failed on them).
+- Every new `OMNISIM_*` variable is in the regenerated
+  [environment-variable reference](docs/reference/environment-variables.md).
+
+### Known issues (still open)
+
+- **MillingStock holds at most 1984 cells a side.**
+
+
+## [v9.2.7] — 2026-10-21
+
+A URDF link with an impossible inertia keeps its declared centre of mass, a fixed-base wheeled robot no longer
+slides when its wheels turn, the OmniLink chat panel opens for a world saved anywhere, a quadruped's sit and stand
+replies report what was measured, and robots can message each other. Found running robot makers' published models
+(AgiBot G2, NORI A3, XGO Mini2S).
+
+### ⚠️ Behaviour changes — read before upgrading
+
+- **A `staticBase TRUE` wheeled robot stays where it was placed when its wheels turn.** Found 2026-10-20
+  while checking a lead from the STARTUP-08 NORI A3 lane. `URDFRobot { staticBase TRUE }` strips only the root
+  link's Physics, and Webots' kinematic differential-wheels mode (`OmKinematicDifferentialWheels`, inherited
+  from upstream) attached to any Robot without Physics that has two equal, equidistant cylinder wheels on
+  parallel axes. It then moved the whole robot by ω·r each step. Measured on public v9.2.6 and on the dev
+  tree with the wheels at 4 rad/s for 2 s: a staticBase NORI A3 slid **0.6096 m** (= 4 × 0.0762 m × 2 s,
+  z frozen), and the load log meanwhile reported its fixed links welded. A Robot without Physics whose wheels
+  carry Physics is a static base under `docs/reference/physics.md`, so the kinematic model is now refused
+  for it, with one log line naming the wheels. A Robot with no Physics anywhere keeps the kinematic mode.
+  Value-parsed hatch: `OMNISIM_KINEMATIC_WHEELS_WITH_PHYSICS=1` restores the slide. The lead itself (a
+  FLOATING ROS-style robot with a massless `base_footprint` root, partly welded) was a misreading. The
+  census line `N Solid(s) with Physics under physics-less ancestors attached to the static environment`
+  appears only for a static base. A floating robot folds its fixed sensor/caster links into `base_link` and
+  rolls freely (minimal URDF 0.374 m and NORI A3 0.365 m in the same drive, both builds). That line now
+  names the physics-less owner (`they hang under the physics-less Robot '<name>', a static base`) so it
+  cannot be misread that way again. Pins: `tests/test_static_base_kinematic_wheels.py` (engine-free) and
+  `tests/test_static_base_kinematic_wheels_engine.py` (staticBase stays within 1 mm, where the unfixed binary
+  slides its exact-axis test robot 0.4000 m; the hatch restores the slide; a floating base rolls with no weld line).
+- **A quadruped sit / stand is reported from what it measured, and "sit down" is an order.** Found on
+  public v9.2.6 by the XGO Mini2S clip lane (2026-10-20). Two defects. (1) The parser's `sit` rule was
+  `sit|sit down|lie down|crouch`: the first branch won, "Sit" explained 38% of "Sit down", so
+  "Sit down." went to the model, and "Sit down, then stand up." was then salvaged as an *address*
+  ("Sit down", like "Cart, stop!") and ran the stand alone at 0.95, saying nothing about the dropped
+  clause. Longest alternatives now come first (`sit`, `stand`), and the address salvage never strips
+  words any rule reads as an order, so an unread clause stays in `residue` and below the 0.8 acting
+  floor. (2) The quadruped bridge called a pose done the moment it switched the setpoint, so "Lie down,
+  then stand up." ran both legs in the same tick and replied "Sit. Stand." while the body never went
+  down (min 0.1332 m; 0.088 m when it really lies down). `act_sit` / `act_stand` now wait (`wait=True`
+  by default, never on the sim thread) until every leg joint is within 3° of its setpoint and the body
+  height is steady to 2 mm for 0.2 s of sim time, or 5 s of sim time passes, and return
+  `{commanded, achieved, error, settled, timed_out}` with the body height before and after. The reply
+  quotes it ("In the sit pose after <t> s: legs within <e> deg; body height <z0> -> <z1> m."), a
+  pose that did not settle is an error, and `get_robot_state` gains `last_pose` / `pose_settling`.
+  `is_busy()` stays true until the pose is measured, so the lockstep hold keeps stepping it. Pin:
+  `packages/omnisim-bridges/tests/test_quadruped_pose_and_sit_down.py`.
+- **The OmniLink chat panel opens for a world outside the install; `omnilink_chat` moved to
+  `resources/projects/plugins/robot_windows/`.** On v9.2.6 a world saved anywhere else warned "The
+  'omnilink_chat' robot window library has not been found." and had no panel (XGO Mini2S clip lane,
+  2026-10-20; `POST /prompt` worked). `OmRobot::windowFile()` looked for an HTML window only in the
+  world's own project and its PROTO projects. It now falls back to the install's shared plugin folders
+  (`OmControllerPlugin::defaultHtmlWindowFile`: resources/projects/... and projects/default/...; extra
+  projects are not searched, because only files inside the install are served from outside the current
+  project). A copy in the world's own project still wins. `updateWindow()` also stopped handing the
+  controller a robot-window library that was never built: `defaultList()` names one for every shared
+  plugin folder, so an HTML-only window there failed with "failed to load .../omnilink_launcher.dll
+  library". The same gap had broken the demo launcher's gallery (its window lived only in resources) and
+  `omnitug500_courier.omniworld` (a project with no chat copy). `scripts/packaging/files_core.txt` now
+  lists both shared HTML windows; v9.2.6 shipped neither in resources. ⚠️ The engine and the moved
+  folder go together: an engine built before this change finds the chat panel for no world. Pin:
+  `tests/test_robot_window_resolution.py`.
+- **A URDF link whose inertia tensor is rejected keeps its declared mass and centre of mass.** When a
+  link with mass declares a tensor that is not positive definite (an all-zero one included), violates
+  the triangle inequality on its principal moments (`a + b < c`, which MuJoCo refuses) or has a moment
+  below the 1e-9 kg·m² floor, the importer falls back to bounding-object inertia. That fallback also threw away the link's `<inertial><origin>`: it wrote `mass` and
+  `centerOfMass` but no `inertiaMatrix`, and the Newton registration passes a centre of mass only
+  alongside an explicit tensor, so the solver stepped the link with its COM at the link origin. The
+  warning did not say so. Found on AgiBot's G2 body xacro (`genie_sim_robot_model` @6d5b215, link
+  `body_link4`: declared COM (-0.071, 0, 0.030), stepped at (0, 0, 0)). Now the fallback block is
+  written `physics DEF URDF_INERTIA_FALLBACK Physics { ... }` and always carries the declared COM;
+  the Newton registration keeps the mass and COM and takes **only** the rotational inertia from the
+  bounding object, shifted to that COM. The warning ends with what was kept and what was replaced.
+  Measured on a passive pendulum (1 kg declared 0.1 m from a Y hinge, impossible tensor, released
+  horizontal): the engine before this change never moves it (gravity has no lever arm); now its 0.2 m tip drops
+  0.098 m by 100 ms and 0.195 m by 200 ms, a point-mass swing. A non-positive-definite and an
+  all-zero tensor give the same numbers (before, neither moved). An all-zero tensor on a link with mass
+  now warns; it used to fall back silently. On a massless frame it stays silent, as before. A link
+  with a massive fixed child was already right (the composite-inertia path carried the COM). Reach:
+  none of the 372 URDFs under `projects/`, `tests/benchmarks/` and `sim-to-real/` has a non-PD tensor on
+  a link with mass, and 10 links under `projects/` hit the 1e-9 floor. The offline converter
+  (`scripts/dev/urdf_import.py`) used to write the impossible tensor straight through; it now writes
+  the same marked block. `OMNISIM_URDF_INERTIA_FALLBACK_KEEP_COM=0` (value-parsed) restores the old
+  block and the COM at the link origin. Pins: `tests/dev/test_urdf_inertia_fallback_keeps_com.py`
+  (engine-free), `tests/test_newton_urdf_inertia_fallback_com.py` (the pendulum).
+
+### Fixed — OmniLink bridges
+
+- **A stop measures rest in simulated time, so it reports a speed in headless fast mode.** v9.2.6 counted
+  the mobile bridge's 0.30 s stop settling window in sim steps but still took the tail, span and speed
+  from each pose sample's wall-clock stamp. Faster than real time, 0.30 s of sim passed in a few wall
+  milliseconds and consecutive ticks shared a coarse `time.time()` stamp, so every stop answered "rest
+  unconfirmed: pose samples spanned no measurable interval". Found on the MAB HB50W package (3 of 3
+  headless runs on the installed v9.2.6; 9.2.5 reported 0.007 m/s over 0.31 s). The window, tail and span
+  now use the sim time the bridge already recorded per sample, measured from the sim instant of the halt.
+  The arm bridge had the same mix: it waited 0.30 s of wall time and divided joint motion by wall seconds,
+  so its rest rate was off by the real-time factor (a 0.01 rad/s creep read 0.11 at 10x, and at 0.1x the
+  stop measured nothing). It now stamps sim time on every joint sample, waits out the window in sim steps
+  and gives the rate per sim second. The quadruped's rates were already on sim time. Pins:
+  `packages/omnisim-bridges/tests/test_stop_rest_sim_clock.py` (both bridges at 10x, 1x and 0.1x real
+  time, with 15.6 ms wall-clock stamps).
+
+### Added — OmniLink bridges
+
+- **Robots can message each other.** Set `OMNILINK_CREW="Picker=8765,Tug=8766,Packer=8767"` (optionally
+  `OMNILINK_CREW_OPERATOR` and `OMNILINK_CREW_LOG=<jsonl>`) for every bridge in a world and each bridge gains a
+  `message_robot` tool (`packages/omnisim-bridges/src/omnisim_bridges/crew.py`, all four bridge kinds). A message
+  lands on the crewmate's own `/prompt` as `"Picker: …"`, always reaches its model (never the parser), and the
+  crewmate's gate vets whatever it then does. Fire-and-forget and rate-capped. Worked example:
+  `agents/omnilink_demos/crew_order/`. Pins: `packages/omnisim-bridges/tests/test_crew.py`, gate-parity cases.
+- **A towed trolley is a physical body.** `omnilink_mobile_bridge --pallets` now velocity-servos the trolley as a
+  free, acceleration-limited body instead of teleporting it and pinning its cargo, so parts ride on contact and
+  friction (give the cart a low `newtonFriction`, its cargo a higher one). `--tow kinematic` restores the old
+  path; the warehouse flagship pins it until its park-row collection is ported. Kinematic bases (OmniTug) ramp
+  their linear speed (`kin_accel_mps2`).
+- New assets: the OmniTug500 tug (meshes + URDF), kitting and tugger-cart factory props, a `film_camera`
+  controller, and the `warehouse_shift` demo.
+
+### Internal
+
+- ops-bench dev loop: runs on Claude with usage accounting, live context, a fast clock, failure probes and
+  replay; probes run in parallel and an episode's tail waits on the episode clock (evidence under
+  `tests/benchmarks/robot_ops/evidence/devloop/`).
+
+### Known issues (not caused by this release, still open)
+
+- `tests/test_newton_ik_slots.py::test_reachable_target_is_actually_solved` (unchanged since v9.2.3).
+- A few wall-clock-sensitive bridge tests (`test_edge_start`, `test_hold`, `test_runtime_clock`,
+  `test_step_budget`) can fail when the machine is heavily loaded; they fail the same way on v9.2.6.
+
+---
+
+## [v9.2.6] — 2026-10-18
+
+Light grippers now hold a part by friction, a URDF robot's own root collider is in the solver by
+default, and the OmniLink bridges never start a turn without a fresh prompt. Found running robot
+makers' published models (Robonine SO-ARM 102, Preferred Robotics Kachaka, WIRobotics ALLEX, MAB
+HB50W). Each fix has a pin test and a value-parsed hatch; the engine, runtime and bridges all change,
+so use the v9.2.6 installer. Arm grasps and multi-robot contact change: read the behaviour changes.
+
+### ⚠️ Behaviour changes — read before upgrading
+
+- **Light grippers hold a part by friction: fixed-base position servos carry the rotor inertia their
+  damping implies.** Every position servo is built `ke = effort*10`, `kd = effort*0.5` with no armature,
+  whatever the joint weighs. MuJoCo's implicit integrator applies the damping as `M + dt*kd`, but the
+  constraint solve (contacts, joint limits, a URDF `<mimic>` coupling) sizes its force against the bare
+  `M`, so on a joint with a large `dt*kd/M` every constraint acted at `M/(M+dt*kd)` strength. Measured on
+  Robonine's SO-ARM 102 (7 g jaws, `dt*kd/M` 13.6; wrist 857), OmniSim's own exported model replayed in
+  plain MuJoCo 3.11: the jaws closed 21 mm into a 40 mm cube, ran past their own limits (the mimic
+  follower 43 mm past with no part in the way) and the cube squirted out at lift-off at every jaw force
+  from 3 to 100 N, at 1 and 2 ms. Now every fixed-base position servo over `dt*kd/M = 1` gets exactly
+  `dt*kd - M` of armature (at most a 2× change in the inertia the integrator already applied; a mimic
+  follower gets its leader's), and MuJoCo's constraint weights for those joints are refreshed. Measured
+  after, in-engine through the gated `/prompt` ("Pick up the cube, then go home."): the SO-ARM 102 carries
+  the 40 mm cube 17.8 cm to home, 3.8 mm from the tool point, friction only — also at 1 ms, at 3 N, with
+  a larger cube and with two driven jaws; with the hatch off it drops it, as before. Elsewhere: ladder0
+  rung 8 with `newtonContactKe 4000 / 6000 / 8000` now carries (`carry_rel` 2.0 mm, was ejected at up to
+  2.33 m/s — the "ke trap" in the friction-grasp guide was this dilution); `friction_grasp_minimal` now
+  carries the part between its pads (it rose 0.2025 m for 0.2023 m of wrist travel, where before it was
+  squeezed out onto the wrist plate and read +0.2817 — the pin `tests/test_friction_grasp_holds.py` now
+  asserts the band around the wrist's travel); `omniarm6_real_pick_place` drift 4.8 → 0.7 mm; the TRLC
+  DK1 pilot still lifts its cube 21.1 cm; the UR5e chat arm's wave and home and the 2F-140 chat pick are
+  unchanged; SO-101 pick-place still succeeds and ALOHA's battery is no longer knocked 27 cm. ⚠
+  `omniarm6_physics_pick_place` still passes but its place distance went from 12 to 92 mm (limit 100):
+  the demo releases the cube ~25 cm above the place height (a separate, pre-existing bug in that demo)
+  and the dropped cube now slides further. A gain written after the first step (`setControlPID`, servo
+  promotion) re-judges that joint and its mimic followers. Free-floating robots (legged, humanoid, mobile) are NOT changed by default — their gaits and
+  policies were tuned on the old model, although they carry the same dilution (Go2 73, B2 74, a G1 wrist
+  723): `OMNISIM_NEWTON_SERVO_ARMATURE_SCOPE=all` covers them. Skipped when an RL recipe sets
+  `OMNISIM_NEWTON_TARGET_KD` / `_FINGER_KD` / `_ARM_KD`. Hatch: `OMNISIM_NEWTON_SERVO_ARMATURE_BOUND=0`
+  (a number sets the bound). Pins: `tests/test_newton_servo_armature_bound.py` (9 engine-free tests).
+- **An OmniLink bridge never starts a turn without a fresh operator prompt.** Observed on WIRobotics
+  ALLEX after an engine restart: the relay was woken by a `joint.limit_hit` at startup (the relaxed
+  fingers rest on their stops), short-term memory had restored the previous session's sentence, and the
+  arm re-ran that whole task before anyone typed. Now event-triggered turns are OFF by default
+  (`OMNILINK_EVENT_WAKE=1` opts in, value-parsed); even opted in, no wake fires before this session's
+  first operator turn, startup / settle events (first 5 s of sim or wall time) never wake, and restored
+  history carries a session-boundary note so nothing from a previous session is resumed unless asked
+  again. PROTOCOL.md wake section. Pins: `tests/test_no_unprompted_turns.py`, `test_event_wake.py`.
+- **A Robot's own root collider registers by default unless it would lift the robot off its wheels.**
+  A Robot wrapper with colliding links below it (every URDF mobile base, quadruped and humanoid) used to
+  get a 1 mm placeholder instead of its own `boundingObject` unless `WorldInfo.newtonRobotColliders TRUE`,
+  so a URDF robot's root-link `<collision>` did not exist in the solver and the log told the author to
+  "declare a boundingObject" it already declared. Measured on Preferred Robotics' Kachaka (chassis box
+  underside exactly on the tyre contact plane, no caster): by default the published file tipped onto its
+  nose (pitch 79°) where plain MuJoCo drags the box. Now the root shapes register and stay colliding
+  unless their lowest point is more than 2 mm below the level the robot stands on at the spawn pose
+  (`OMNISIM_NEWTON_ROBOT_ROOT_TOL`), the one envelope that really holds every wheel off the floor. That
+  level is the lowest one shared by at least two branches below the root (each child link and its
+  subtree: a wheel, a leg, a caster), so an arm hanging below the tyres in its zero pose does not set it;
+  the load log reports each verdict and the gap. Kachaka by default now drags at 0.464 of the commanded
+  0.26 m/s (identical to the `TRUE` run), turns at 0.182 of 1 rad/s, and with the box raised 5 mm plus two
+  casters drives at 0.998 / 0.983. Blast radius, open-loop drive A/B against the hatch (straight and pivot,
+  speed / yaw-rate ratio, rest height, min height, max pitch / roll): Husky, Jackal, ROSbot, ROSbot XL,
+  TurtleBot3 Burger and Waffle identical to 5 digits in all 12 cases — their chassis colliders now
+  register but sit 8.5-132 mm above the tyre plane (Burger 8.5, Waffle 10, ROSbot 22.5, XL 30.6, Jackal
+  63.5, Husky 132), so on flat ground they touch nothing; they will now hit an obstacle or a step with
+  the body as the file draws it. Full census (all 219 catalogued worlds, hatch A/B, bitwise-deterministic
+  replays): multi-robot worlds where robots meet (`husky_fleet_arena`, `agent_fleet_collision`) now
+  collide chassis to chassis and diverge after the first contact; `newton_smoke_test`'s robot no longer
+  sinks through the floor (lowest z -0.154 m before, 0.006 m now); the 8-Husky swarm, lidar-walls,
+  Jackal / TurtleBot3 drives and the X30 trot are identical. The warning for a wrapper that is left on the placeholder now says it
+  declares a boundingObject and why it is not registered. `newtonRobotColliders TRUE` still registers it
+  unconditionally. Hatch: `OMNISIM_NEWTON_ROBOT_ROOT_COLLIDER=0` (value-parsed) restores the old skip.
+  Pins: `tests/test_newton_robot_root_collider.py` (12 engine-free tests), `tests/test_newton_urdf_fixed_links.py`.
+
+### Fixed — OmniLink bridges
+
+- **A `/prompt` turn's budget honours `timeout_s` and counts simulated time.** The arm bridge called the
+  relay with a fixed 90 s wall budget and ignored the body; on WIRobotics ALLEX at 0.09-0.18x real time a
+  correct three-hover turn was cancelled after two hovers (`timeout_after_actions`, no reply, no home).
+  All four bridges (arm, mobile, quadruped, drone) now parse `timeout_s` (default 90, at most 600) and an
+  optional `wall_timeout_s` with one helper, and the turn is cancelled only once both the sim and the wall
+  clock have run `timeout_s`; `wall_timeout_s` (default 600) caps the wall clock alone for a sim that stops
+  stepping. A cancelled turn says which clock ran out (`budget.expired_on`). PROTOCOL.md §5.7. Pins:
+  `packages/omnisim-bridges/tests/test_prompt_budget.py`.
+- **`set_tcp_target` no longer reports a slow world as stalled.** The arm's wait called the world stalled
+  after 2 s of wall silence from the sim thread; one ~2.4 s engine tick on ALLEX ended a good hover as
+  `stalled, achieved: None, settled: False`, and the arm had reached the point (1.4 mm). The threshold is
+  10 s on every bridge (`bridge_base.STALL_GRACE_S`), and a wait that does give up now returns the joints'
+  last measured reading (`last_reading`, with the tool point and its error for a TCP verb) while `achieved`
+  stays null. The audit line names `stalled=True`. Pins: `packages/omnisim-bridges/tests/test_arm_slow_world_wait.py`.
+- **The mobile bridge faults a tipped base.** It measured only a planar pose, so the MAB HB50W rolled to a
+  48° tilt and every drive, turn and stop still reported success. It now measures the base tilt every tick
+  (`get_robot_state.tilt_deg`); above 35° it declares `fault: {code: "base_tilt"}`, stops the wheels, ends
+  the motion in flight with `settled: false` and the fault attached, refuses drive/turn until the base is
+  upright again, and the parser's reply says the robot tipped instead of "Drove +1.98 m". Limit:
+  `OMNISIM_MOBILE_TILT_LIMIT_DEG` or a robot config's `tilt_limit_deg`; hatch `OMNISIM_MOBILE_TILT_GUARD=0`
+  (value-parsed). PROTOCOL.md §11. Pins: `packages/omnisim-bridges/tests/test_mobile_tilt_guard.py`.
+
+---
+
+
+## [v9.2.5] — 2026-10-17
+
+Two fixes found running robot makers' published models: OmniLink arms now hold the pose they are given
+under gravity and lift clear between targets, and a Collada mesh with instanced geometry lands where
+the file puts it. Each has a pin test and a value-parsed hatch. The arm bridge and the engine both
+change, so use the v9.2.5 installer.
+
+### ⚠️ Behaviour changes — read before upgrading
+
+- **OmniLink arm bridges hold the commanded pose under gravity, and report honestly when they don't.**
+  The engine's position servo is a spring (stiffness 10 × the URDF effort, no integral term), and the
+  bridge never closed the loop, so every arm sagged: HEBI's A-2240-06 hovered 21-22 mm below a 5 cm
+  target, the UR5e chat arm reached 10-11 mm off and sat 0.027 rad low at home, OmniArm 6 15-16 mm and
+  0.016 rad. The bridge now integrates each joint's error into a bounded setpoint offset (a 0.05 rad
+  sag band, per-arm `gravity_trim_band_rad`; torque still capped at the URDF effort) that only
+  integrates inside the settle window, rolls back to the last converged value if a hold never
+  converges (a joint blocked by contact no longer winds up), and never carries into the next motion.
+  `settled` now means every joint is within 1.5 mrad (before: "0.15 s went by"); a hold that doesn't
+  get there reports `settled: false` with the measured error, and one cut short by the next command
+  reports `settled: null, cut_short: true` with no `motion.unsettled` event (`get_robot_state.settling`
+  says a window is open). `set_tcp_target` / `set_tcp_pose` solve to 0.2 mm and report
+  `within_tolerance` against 3 mm and the residuals of the solve actually used. Measured after: HEBI
+  hovers 4.96 / 5.00 cm (0.38 / 0.17 mm), UR5e reaches 0.67 / 0.50 mm, OmniArm 6 0.44 / 0.32 mm,
+  homes within ~1 mrad; the 2F-140 pick error fell from 37.7 to 5.1 mm and it still picks, holds and
+  places (machine 9722d23d12a3). Hatch: `OMNISIM_ARM_GRAVITY_TRIM=0`.
+- **Arms lift before a lateral move.** Joint-space moves skimmed: HEBI's tool passed 0.8-0.9 mm above
+  the tags and its housing went inside them. A move more than 4 cm sideways now goes up (6 cm,
+  `lift_height_m`), across and down, `reset_to_home` from a low pose retreats straight up first, and
+  each result reports the lowest tool height on the way, measured at the commanded tool offset. There
+  is no obstacle model: an arm under a shelf can hit it on the lift. On a connected REAL arm the path
+  is not forwarded (the hardware API takes no waypoints); results say so in `hardware_path`. Hatch:
+  `OMNISIM_ARM_LIFT_BEFORE_MOVE=0`. With both hatches at 0 the old behaviour returns exactly.
+- **A stop, reset or preempt that arrives while a goal is being planned now wins.** Planning a coordinate
+  verb takes ~0.1-0.4 s; the slot is held as `planning` and the plan is committed only if no newer
+  command arrived, otherwise the verb returns `superseded: true, started: false`. A second goal verb
+  during planning gets a 409.
+
+### Added
+
+- `locate_objects` returns each object in both the world and the arm-base frame (a model had put a
+  world height into the base frame, hovering 7 cm while reporting 5); reach results report the measured
+  height over the object below. `OMNISIM_ARM_TCP_TRACE=<file>` writes a per-tick trace with the robot id.
+  Pins: `packages/omnisim-bridges/tests/test_arm_gravity_trim_and_lift.py` (21 engine-free tests: sag,
+  windup, carry-over, stop-during-plan, cut-short, honest residuals, trace).
+
+### Fixed
+
+- **A Collada mesh with instanced geometry under a translated node lands where the file puts it.**
+  `OmMesh` (every `Mesh` geometry, so every mesh collider the solver sees) and `OmCadShape` composed a
+  node's absolute transform leaf-first (`node * parent * ... * root`, inherited from Webots) where the
+  vertices need `root * ... * parent * node`. The two agree only when one level carries a transform,
+  and a Collada file always has two: the up-axis rotation on the root, and the node of any geometry
+  instanced more than once, which `aiProcess_OptimizeGraph` keeps. Found on Rover Robotics' MEGA
+  (`roverrobotics_ros2` @ `c7c2d0d`): `mega_wheels.dae` reached the solver 26.5 mm off its axle and
+  `mega_payload.dae` up to 0.96 m out of place. Measured on the MEGA as published, 0.5 m/s commanded
+  at the plugin's 0.155 m wheel radius, CPU MuJoCo, 1 ms step: before, the wheels stalled at 1.21 of
+  3.23 rad/s against the 10 N·m default torque, the base made 0.244 m/s and tilted 3.2°; after, the
+  wheels reach 3.225 rad/s and the base makes **0.843 m/s** (the 1.69× the URDF's copied wheel radius
+  implies; plain MuJoCo 0.845), level within 0.04° and 0.23 mm. At the mesh's own radius it makes
+  0.4983 m/s (before 0.258), the figure plain MuJoCo gives on the same hull, and on its wheels alone
+  the base rides within 0.28 mm (before ±2.7 cm). None of the 82 Collada files in this
+  repository moves (each is one node deep or its transforms commute). Both node walks now share
+  `omAssimpNodeWorldTransform()` (`OmAssimpIoSystem.cpp`); `OMNISIM_MESH_NODE_TRANSFORM_FIX=0`
+  (value-parsed) restores the leaf-first product. Pins: `tests/test_mesh_collada_node_transform_order.py`
+  (reads the collider back from the solver model; the hatch run reproduces the old placement) and the
+  engine-free `tests/test_mesh_node_transform_order_source.py`.
+
+### Documented
+
+- `docs/developer/urdf-import-debugging.md`: a driven URDF joint with no `<limit>` imports with the
+  `RotationalMotor` defaults (10 N·m, 10 rad/s); and a chassis promoted to the Robot root past an
+  empty root frame (Rover MEGA / MAX 150, TurtleBot3 Burger) is the Robot's own `boundingObject`, so
+  `newtonRobotColliders FALSE` keeps it off the solver by design — links fixed below it still collide.
+
+---
+
+
+## [v9.2.4] — 2026-10-15
+
+Three physics-runtime and importer fixes found running research labs' and robot makers' published
+models, and an outside AMCL localization benchmark. Each fix has a pin test that fails on the old
+engine and a value-parsed hatch that restores the old behaviour. The engine and the physics runtime
+both change, so use the v9.2.4 installer (`doctor` must read `bundle == source`).
+
+### ⚠️ Behaviour changes — read before upgrading
+
+- **A URDF `<inertial>` origin's `rpy` rotates the inertia tensor.** Both URDF importers (the
+  engine's and `scripts/dev/urdf_import.py`) used only the origin's `xyz` as the centre of mass and
+  dropped its `rpy`, so a tensor written in a rotated inertial frame reached the solver unrotated:
+  mass and centre of mass were right, the rotational inertia about each axis was not. The tensor is
+  now expressed in the link's axes (I' = R I R^T, URDF fixed-axis roll-pitch-yaw), as the URDF spec,
+  Gazebo and PyBullet do. Plain MuJoCo 3.11's own URDF import drops the `rpy` as well, so on these
+  models OmniSim and plain MuJoCo now differ. Probe: a 1 kg pendulum whose inertial frame is yawed
+  90°, released horizontal, fell 8.7 mm in its first 100 ms, like a body with the tensor unrotated;
+  it now falls 45.3 mm, exactly like the same body written pre-rotated (PyBullet: 43.7 mm for both).
+  Shipped robots that change: UR3e, UR5e and UR10e (3 of 7 links; tensor entries move by up to 39% of
+  the link's largest moment), the Trossen ALOHA arms (9 of 10 links, up to 89%), and the Deep Robotics X30
+  (three hips rolled by π, which only flips the signs of two products of inertia). Hatch:
+  `OMNISIM_URDF_INERTIAL_RPY=0`.
+- **The joint speed cap no longer pushes a free-floating robot around.** After every step the
+  physics runtime caps each joint at its `maxVelocity` (URDF `velocity`), and zeroes a joint's
+  velocity into a stop it has overrun, by overwriting that joint's velocity. On a fixed base the
+  world takes the reaction; on a floating base nothing did, so the momentum the cap removed came
+  back as base motion. A free-falling UR10e whose saturated shoulder-pan servo was capped spun at
+  10.7 rad/s about z within 25 ms and slid 2.1 m sideways in 0.5 s, where plain MuJoCo just falls.
+  The robot's floating base now takes the reaction: the correction holds the robot's linear and
+  angular momentum and leaves every other joint's velocity as before. The same UR10e now falls
+  straight (base 0.0 mm sideways at 0.5 s, wrist below 0.13 rad/s), and a two-link probe's angular
+  momentum ends at 5e-4 kg·m²/s instead of 3.3. Fixed-base robots are bit-identical. On
+  `mujoco_warp` a floating robot's joints are not speed-capped instead. Hatch:
+  `OMNISIM_NEWTON_CLAMP_MOMENTUM=0`.
+- **A motor with zero torque is not held to its speed limit.** v9.2.3 made a motor with zero
+  available torque passive, but the runtime's post-step cap still held its joint to `maxVelocity`,
+  which models a motor's top speed; an off motor has none. Found re-running Dexmate's Vega-1u: its
+  passive `torso_flip` (URDF effort 0, velocity 0.1, 15.7 kg above it) crept onto its stop at
+  0.11 rad/s for 9.5 s, where plain MuJoCo drops it in 0.4 s. A joint whose available torque is 0
+  is now exempt from the speed cap (its range limits still apply); restoring torque restores the
+  cap. Hatch: `OMNISIM_NEWTON_PASSIVE_VEL_CLAMP=1` keeps the cap.
+
+### Added
+
+- **A manual Husky AMCL localization benchmark** (`tests/benchmarks/husky_amcl_localization/`):
+  stock ROS 2 Jazzy AMCL on the known-wall Husky world, with initial and post-motion stationary
+  localization errors measured against independent harness poses, convergence and jitter, and a
+  sequential cold-start repeat runner. AMCL gets simulator ground-truth odometry, so it does not
+  measure robustness to wheel-odometry drift. It needs Linux or WSL2 with ROS 2 Jazzy. Thanks to
+  @LingZhen07 (#28).
+
+### Known issues
+
+- Two tests fail, and neither is caused by this release's fixes:
+  `tests/test_newton_ik_slots.py::test_reachable_target_is_actually_solved` (a floating-base IK
+  target is solved to 0.157 m instead of 1 mm; identical with the v9.2.3 runtime) and the engine
+  test `tests/test_urdf_empty_link_carries_fixed_subtree.py` (2.4 mm against a 1 mm tolerance;
+  identical with both new hatches set).
+
+## [v9.2.3] — 2026-10-12
+
+Friction and motor fixes found running robot makers' published models (Neobotix MP-400, Clearpath
+Jackal, Ekumen's Andino), the second outside fix to the ROS 2 bridge, and an outside Nav2
+benchmark. Each fix has a pin test that fails on the old engine, and each behaviour change carries a
+value-parsed hatch that restores the old behaviour. The engine and the physics runtime both change,
+so use the v9.2.3 installer (`doctor` must read `bundle == source`).
+
+### ⚠️ Behaviour changes — read before upgrading
+
+- **A Solid's own low friction is used.** MuJoCo combines two surfaces' friction by taking the
+  larger, so `Solid.newtonFriction` could only ever raise friction: a box at `newtonFriction 0` on a
+  20° ramp stuck exactly like a box at 1. A shape that states its own friction now wins against a
+  surface that does not; two stated surfaces still take the larger, so only a stated friction LOWER
+  than the other side changes anything. Hatch: `OMNISIM_NEWTON_FRICTION_PRIORITY=0`.
+- **URDF `<gazebo reference="LINK">` `<mu1>`/`<mu2>` reach the link.** They were ignored; they now
+  become the link's `newtonFriction` (the smaller of the two, which keeps a caster's free direction
+  free). Values above 2 import as 2 and are logged, because MuJoCo's friction cone degenerates at
+  Gazebo's "never slip" 100: Neobotix MP-400 wheels at 100 spun while the body moved 0 m. The
+  MP-400 as published now drives 0.842 of commanded travel and turns 0.914 of the commanded angle
+  (was 0.48 and −0.89). Hatch: `OMNISIM_URDF_GAZEBO_FRICTION=0`.
+- **`Cylinder` and `Capsule` colliders take the Solid's own friction.** Only Box, Sphere and mesh
+  colliders did, so the wheel friction imported from `<gazebo>` tags (Husky 1.0, Jackal 0.5) was
+  inert. Measured against the hatch: a Jackal's open-loop 4 s pivot 337° → 364° and no longer
+  depends on the world friction (pivot drift 63 mm → 6 mm); its straight line is unchanged
+  (1.957 → 1.959 m, kinematic 1.96). The four-Husky `husky_one_passage` run still succeeds with no
+  robot contacts and finishes in 106.1 s instead of 102.9 s. Hatch:
+  `OMNISIM_NEWTON_ROUND_SOLID_FRICTION=0`.
+- **A motor with zero torque is passive.** A URDF `<limit effort="0">` imports as `maxTorque 0`,
+  which the Newton bridge drove at `maxVelocity` from the first step: Andino's passive swivel caster
+  spun at ~112 rad/s before the drive wheels moved, and the robot turned −72° to +154° for a
+  commanded 90°. An off motor now commands velocity 0 and its joint is free; Andino turns 80.7°
+  twice and drives 0.995 of its straights. The importer warns on `effort="0"`, because
+  ROS-Industrial descriptions use 0 for "unknown" on joints they do drive: give such a joint a real
+  effort. `OMNISIM_NEWTON_AVAILABLE_TORQUE=0` still reverts the torque push.
+
+### Fixed
+
+- **A stated friction of exactly 0 no longer launches bodies.** On every collider type, MuJoCo
+  clamped it to 1e-5, where its friction cone degenerates, and a sliding box left along the contact
+  normal at ~850 m/s. A stated friction below 0.001 is now applied as 0.001; the 20° ramp slide is
+  2.269 m in 1.2 s (frictionless closed form 2.27 m).
+- **ROS 2 `ClockNode` keeps publishing when the system clock steps back.** Its polling timer ran on
+  the node's default clock, which follows system realtime, so a backward realtime adjustment stalled
+  `/clock`: a −1.9 s step gave a 1.92 s gap with no ticks, and Husky Nav2 runs saw `/clock` and
+  `/odom` gaps of about a second. The timer now runs on a steady clock; the published stamps are
+  still simulator time. Thanks to @LingZhen07 (#24, #25).
+
+### Added
+
+- **A manual Husky Nav2 static-obstacle benchmark** (`tests/benchmarks/husky_nav2_static_obstacle/`):
+  one cold-start trial around a static box with separate navigation (PASS/FAIL) and evidence
+  (PASS/INVALID) verdicts, a contact positive control, and 300 engine-free tests. It needs Linux or
+  WSL2 with ROS 2 Jazzy. Thanks to @LingZhen07 (#27).
+
+## [v9.2.2] — 2026-10-09
+
+Fixes found running robot makers' published models and a third-party benchmark on the installed
+v9.2.1, plus the first outside fix to the ROS 2 bridge. Each fix has a pin test that fails on the
+old engine; the two behaviour changes carry a value-parsed hatch that restores the old behaviour.
+The engine and the physics runtime both change, so use the v9.2.2 installer (`doctor` must read
+`bundle == source`).
+
+### ⚠️ Behaviour changes — read before upgrading
+
+- **Every collider of a multi-shape `boundingObject` registers by default.** A `Group` of offset
+  primitives, or a URDF link with several `<collision>` elements, collided as its first shape only
+  unless `WorldInfo.newtonCompoundColliders` was `TRUE`, and that field also selects the inertia
+  source, so its default could not change. Leo Rover's wheels rolled on the 0.057 m hub listed
+  before the 0.0625 m tyre; a `Chair` collided as a seat with no legs. Collider registration is now
+  separate from inertia: a body with more than one shape registers all of them, a single-shape body
+  is unchanged, and `newtonCompoundColliders` keeps only its inertia tie-break. A new
+  `WorldInfo.newtonCompoundShapes` field (default `TRUE`) pins one world to the old behaviour. The
+  20 shipped B2 and Go2 policy worlds set it to `FALSE`: their policies were trained with only the
+  foot sphere of each calf colliding, and with the shins colliding too the B2 walk deploy covered
+  0.48 m instead of 2.37 m in 8 s. Measured old against new: the pinned B2/Go2 worlds and the X30,
+  Lite3, G1 and 8-Husky worlds are bit-identical; a bin-picking part and the warehouse forklift end
+  148 mm and 59 mm away. Hatch: `OMNISIM_NEWTON_COMPOUND_SHAPES=0`.
+- **A `Cylinder` collider off the joint graph is a real cylinder.** Every `Cylinder` was a capsule
+  stand-in, so a disc, puck, table top or chassis plate (radius at least half the height) rested one
+  radius above where it was authored: a r=0.08 h=0.01 disc at z=0.0846 instead of 0.005. Props,
+  static geometry and robot roots now collide as true cylinders and rest at the authored height to
+  under 0.2 mm. Wheels and arm links keep the capsule, because there it is not neutral: an open-loop
+  Husky pivot turned 132° on capsules and 82° on true cylinders. The Husky pivot and the 8-Husky
+  drive are bit-identical; a sweep of the 61 hand-authored wheeled worlds keeps the same 22 rolling.
+  Hatches: `OMNISIM_NEWTON_CYLINDER_NATIVE=0` (capsules everywhere) or `=1` (true cylinders
+  everywhere, wheels included).
+
+### Fixed
+
+- **An `omnisim://` asset missing from an installed release is fetched from that release on
+  GitHub.** The installer ships no PROTO files, and a world written with `omnisim://` PROTOs, the
+  form the docs recommend, failed to load on an install: the fallback pointed back at the missing
+  local file (since 2026-04-11). Found running a ghostloop backend on the v9.2.1 installer.
+- **A Collada file that instances geometry loads instead of crashing.** The mesh loader sized its
+  arrays per mesh but wrote each mesh once per node that used it, so a file reusing a mesh overran
+  them and the engine died with no log line. Leo Rover's `Chassis.dae` (27 geometries in 35
+  instances) crashed every load of the robot; it now loads.
+- **A mesh path longer than 260 characters loads on Windows.** Mesh, CAD-shape and cloth files
+  open through the Windows long-path form; a URDF package unpacked a few folders down used to lose
+  that geometry silently.
+- **ROS 2 Tier-2 `/cmd_vel` streaming no longer blocks.** The client called the mobile bridge's
+  `/set_velocity` without `wait`, whose default waits for an achieved-rate measurement, so each
+  command blocked the single-threaded executor and tripped the watchdog: a Husky Nav2 goal took
+  197 s of wall time with 6 recoveries, now 10 s and none. Thanks to @LingZhen07 (#22, #23).
+- **The joint-damping log line says whether damping is applied.** URDF `<dynamics damping
+  friction>` apply only with `OMNISIM_NEWTON_JOINT_DYNAMICS=1` (default off), but the log reported
+  every declared value as applied. It now says "applied" or "NOT applied".
+
+## [v9.2.1] — 2026-10-09
+
+More of the same work as v9.2.0: robot makers' own published models, run as they ship, kept
+exposing places where OmniSim read them differently from their own files or from plain MuJoCo.
+Each fix below was measured against plain MuJoCo or against the documented rule, has a pin test
+that fails on the old engine, and (except where noted) a value-parsed hatch that restores the old
+behaviour. The engine and the physics runtime both change, so use the v9.2.1 installer (`doctor`
+must read `bundle == source`).
+
+### ⚠️ Behaviour changes — read before upgrading
+
+- **URDF links with `<inertial>` but no `<collision>` no longer collide.** The importer gives such a
+  link a 1 cm placeholder sphere so it has a body; that sphere used to collide, so every
+  collision-less link carried an invisible marble. URDF semantics, and MuJoCo's own URDF import,
+  give it no contact. Measured: a LimX HU_D04 arm stopped against a box at −44° where MuJoCo's
+  reaches −67.6° (now −67.57°); TRON1 stood on the marbles under its feet with 12.03 N·m at the
+  knee (MuJoCo 0.54; now 0.5425519). The DJI Mavic now rests on its own body box. Hatch:
+  `OMNISIM_NEWTON_URDF_PLACEHOLDER_COLLIDES=1` (this one is opt-in to restore).
+- **Mesh colliders get full convex hulls and multi-point contact by default.** Hulls were capped at
+  64 vertices and each mesh pair produced one contact point, so grasps on meshes slipped where
+  MuJoCo's held (the Elephant F100 lift now holds, 8.47 cm, the same as MuJoCo). Across the 56
+  catalogued worlds with mesh colliders wall time went 709 → 706 s, two verdicts went FAIL → PASS
+  and none got worse. Hatches: `OMNISIM_NEWTON_MULTICCD=0`, `OMNISIM_NEWTON_MESH_MAXHULLVERT=0`
+  (or `=n` for an n-vertex cap).
+- **URDF `<mimic>` is imported.** It was dropped, so mimic-driven grippers (Robotiq 2F-85/2F-140,
+  Franka Hand, Kinova, LimX, Dexmate, Elephant) arrived as independent motors and the fingers
+  drifted apart under load. The follower's motor now names its leader (`RotationalMotor` /
+  `LinearMotor` `mimicMotor`, `mimicMultiplier`, `mimicOffset`) and the engine enforces it as a
+  MuJoCo joint-equality constraint; commands sent to a follower are ignored. Elephant F100 with its
+  five mimics: lift 8.70 cm at a 0.714 rad drive, plain MuJoCo with the same equalities 8.82 cm at
+  0.725. Hatch: `OMNISIM_URDF_MIMIC=0`.
+- **A `<rest>` pose on a joint whose range passes ±π is read correctly.** Since v9.0.0 such a joint
+  spawned posed at `<rest>` while its sensor read 0 there, so every command landed `rest` radians
+  off (a UFACTORY xArm6 joint3 was driven to −245.6°, past its −225° stop). This changes the
+  shipped quadrupeds whose thigh range passes π: the Unitree Go2 and B2 and the OmniQuad (28
+  joints) no longer crouch at twice their stance angle — holding its standing pose the Go2 now
+  stands level at 0.310 m instead of slumping to 0.184 m. The Go2/B2 RL deploy worlds still fall:
+  they run a 16 ms step without the quadruped stance recipe (substeps 8, compound colliders,
+  ground friction 2), on the old engine and the new. No hatch (the old state was inconsistent).
+- **A body with Physics under a Robot without Physics is fixed to the world**, as
+  `docs/reference/physics.md` (inherited from Webots) has always said. The physics-less Robot used
+  to become a dynamic body that rolled the child's mass up, and the physics-less "larger static
+  base" form failed to load when its joints hung off a child Solid. Measured on a published Webots
+  twin (pib): its body dropped 22.6 mm onto its desk, slid 0.40 m and fell off; now it holds its
+  spawn pose and the replay is identical to the hand-pinned model. Of 223 catalogued worlds one
+  changes: `warehouse_industrial`'s ConveyorBelt no longer sinks 0.68 m through the floor. Hatch:
+  `OMNISIM_NEWTON_PHYSICSLESS_ANCESTOR_WELD=0`.
+
+### Fixed
+
+- **A moving joint on an empty fixed frame loads.** `body -fixed-> mount (no <inertial>)
+  -continuous-> wheel` (Husarion Lynx) or `torso -fixed-> arm_center -revolute-> arm` (Dexmate
+  Vega) FATALed with "parent body ... never registered a Newton body". The joint now attaches to
+  the body that carries the frame, bitwise identical to the same robot with the frame folded in.
+  Hatch: `OMNISIM_NEWTON_JOINT_PARENT_FRAME_WALK=0`.
+- **An empty link on a moving joint carries the links fixed below it.** A link with neither
+  `<inertial>` nor `<collision>` (Kinova Gen3 lite's `end_effector_link`, gripper underneath) had no
+  body, so the fixed subtree registered as a separate free body and fell away; the gripper's mass
+  vanished from the arm's joint torques. Gen3 lite joint_2 now 13.719 N·m with a 0.5 kg payload
+  (plain MuJoCo 13.712). Hatch: `OMNISIM_URDF_EMPTY_LINK_BODY=0`.
+- **A prismatic joint's motor reports its travel.** `LinearMotor.getMinPosition()` /
+  `getMaxPosition()` read 0/0 while the stops enforced the URDF range (Niryo Ned2 jaws: now
+  −0.01/0.01). Solver limits are unchanged; a `setPosition()` past the travel is now clamped with
+  a warning, as for revolute joints. No hatch.
+- **No false "collisions will have no effect" warning for fixed-child colliders.** Since v9.2.0
+  those colliders are attached and do collide; the inherited Webots warning still fired and was
+  read as "this robot has no caster" (Ubiquity Magni). It now fires only with
+  `OMNISIM_NEWTON_FIXED_CHILD_COLLIDERS=0`, when it is true.
+
+
+## [v9.2.0] — 2026-10-03
+
+URDF robots now arrive in the solver the way their files describe them, and a joint resting on
+its limit stops hiding load from the joints above it. These defects all showed up the same way:
+while we ran companies' and labs' own published robots, the importer, not their models, kept
+breaking the runs. Every change has a value-parsed hatch (`=0` restores the old behaviour, except
+where noted) and a pin test. This release changes the engine, so use the v9.2.0 installer; the
+physics runtime changes too (`doctor` must read `bundle == source`).
+
+### ⚠️ Behaviour changes — read before upgrading
+
+- **Fixed-joint offsets are kept on import.** When the importer skipped an empty root link such as
+  `base_footprint`, it dropped that fixed joint's offset, so every child joint moved by it (the
+  TurtleBot3 Burger's wheels sat at z 0.023 instead of 0.033 and the chassis rode ~1 cm high).
+  Hatch: `OMNISIM_URDF_REROOT_KEEP_OFFSET=0`. The ROSbot and ROSbot XL chat worlds spawned high to
+  compensate; their spawn heights are corrected (0.05 → 0.0075, 0.08 → 0.005).
+- **Merged bodies carry the real centre of mass and inertia.** Links joined by fixed joints were
+  merged with their summed mass placed at the leader's origin and only the leader's inertia. The
+  composite calculation is now on by default (`OMNISIM_NEWTON_COMPOSITE_INERTIA=0` reverts; that
+  variable used to switch on when merely present, it is now value-parsed). Turn ceilings of the
+  chat bases moved with it and the bridge table is re-measured: Husky 0.520 → 0.475, TurtleBot3
+  Burger 0.942 → 0.912, Waffle / Waffle Pi 0.955 → 0.933 (Jackal, ROSbot, ROSbot XL unchanged).
+- **Colliders on fixed child links are registered.** Casters, feet, gripper palms and sensor
+  housings attached by fixed joints never collided; a robot rested on whatever its first collider
+  was (the TurtleBot3 rocked about its axle indefinitely). They now attach to the merged body at
+  their relative pose, independent of `newtonRobotColliders`. Hatch:
+  `OMNISIM_NEWTON_FIXED_CHILD_COLLIDERS=0`. The OmniArm6 2F-85 pick-and-place was tuned around the
+  missing palm (its descent pressed the palm 20 mm into the block); its grasp height is now 0.275
+  (`PICK_GRASP_Z` overrides) and it passes its strict carried + pinched + placed check, which it
+  did not before.
+- **A joint resting on its limit transmits load.** A post-step clamp snapped joints back to exactly
+  the limit, where MuJoCo applies no limit force, so the links beyond a stop fell freely each step
+  and their weight never reached the parent joint (OpenArm elbow on its stop: the shoulder read
+  3.84 N·m against a true 11.68). A slack band (0.05 rad / 0.005 m) is now left to MuJoCo's soft
+  limit, and sensors still read the clamped value. Hatches: `OMNISIM_NEWTON_JOINT_CLAMP_SLACK=0`,
+  `OMNISIM_NEWTON_JOINT_CLAMP_SLACK_LINEAR=0`.
+- **Mobile-base import fixes.** Revolute wheels declared with huge limits (±1e16) are treated as
+  continuous and turn under a velocity command (`OMNISIM_NEWTON_UNBOUNDED_LIMIT_AS_CONTINUOUS=0`);
+  a collision mesh's `<mesh scale>` is honoured through a new `Mesh.scale` field
+  (`OMNISIM_URDF_COLLISION_MESH_SCALE=0`); the 1 mm placeholder sphere no longer collides once the
+  robot has real colliders, so robots whose origin sits below their wheels stop resting on it
+  (`OMNISIM_NEWTON_WRAPPER_PLACEHOLDER_COLLIDES=1` restores it); `webots://` URLs in upstream PROTOs
+  resolve like `omnisim://` (`OMNISIM_LEGACY_WEBOTS_SCHEME=0`); and `setAvailableTorque(0)` now
+  frees a joint (`OMNISIM_NEWTON_AVAILABLE_TORQUE=0`). Robotnik's own Webots demo world goes from 16
+  load errors to none.
+- **Joint damping and friction are wired through, but OFF by default.** `dampingConstant` /
+  `staticFriction` (and URDF `<dynamics>`) now reach the solver with
+  `OMNISIM_NEWTON_JOINT_DYNAMICS=1`. They ship off because a velocity servo's stall torque is still
+  capped by its gain clamp rather than the declared effort, so a declared wheel friction can stall
+  a robot whose real motor would drive it (a Raspberry Pi Mouse fell to 0.16 of commanded travel),
+  and worlds calibrated without damping drift (the metazoa reef roamed at half speed).
+
+### Known issues (not caused by this release, still open)
+
+- **The shipped walking demos fall on their documented deploy paths, in v9.1.3 as in v9.2.0.**
+  Go2 and OmniQuad: since the 2026-09-20 change that stopped clamping URDF joint ranges at ±π, a
+  thigh range that crosses +π starts the leg in the wrong pose. G1: since plain static colliders
+  moved onto Newton's world body (2026-09-07), every body index shifted and the deploy hook's
+  hard-coded harness body now lands on a leg. Clamped URDF copies and a by-name body lookup restore
+  them in testing; the fixes come in a follow-up release.
+- **The Go2 rough-terrain baseline policy trips on its new feet.** With fixed-child colliders it
+  stands on its foot spheres for the first time; trained on the footless model, it covers 6.1 m
+  before falling instead of 8.1 m. `OMNISIM_NEWTON_FIXED_CHILD_COLLIDERS=0` restores the trained
+  model until it is retrained.
+
+### Docs
+
+- The README's limits section and `SPONSORS.md` described pause and breakpoints as missing; both
+  shipped in v9. They now describe the held pause and break-on-event with their two latency regimes,
+  and keep the honest list of what is still missing (watch conditions, record, replay, run-diff, a
+  real checkpoint). Light mode silences 5 of 11 event types, not 5 of 10.
+
+### Tests
+
+New: `tests/test_newton_urdf_fixed_links.py` (engine), `tests/test_newton_joint_limit_load.py`,
+`tests/test_newton_joint_passive_dynamics.py`, `tests/test_newton_mobile_base_fixes.py`. Verified on
+this release candidate: the unit lane, the smoke worlds, the lidar and static-base engine pins, and
+old-versus-new runs (same binary, hatches off) across the wheeled chat demos, the Deep Robotics
+showroom, the X30 terrain crawl, the M20 + Piper arm and the OmniArm6 pick-and-place.
+
+
+## [v9.1.3] — 2026-10-03
+
+A working planar lidar on TurtleBot3, Jackal and Husky, with ROS 2 `/scan` and
+`/clock` verified end to end. OmniLink's mobile bridge gets fixes for the failures
+a preregistered operations-shift rerun found. That rerun met neither of its claims.
+This release includes an engine change (the URDF importer), so use the v9.1.3
+installer: an older binary still turns these scanners into a 4-layer fan.
+
+### ⚠️ Behaviour changes — read before upgrading
+
+- **A planar URDF lidar is now single-layer.** The URDF importer wrote
+  `numberOfLayers` only when it was above 1. So a planar `<ray>` sensor (no
+  `<vertical>` block) arrived as the Lidar node's default 4-layer fan, tilted
+  ±5.7° / ±1.9°. Its bottom layer read the floor: a ring at ~1.8 m on the
+  TurtleBot3 and at ~4 m on the Jackal. `omnisim_ros2`'s `sensor_node` picks
+  the layer with the most returns by default, so it took that floor ring for
+  obstacles. The importer now always writes `numberOfLayers`, so the
+  Husky's LMS111 is single-layer too. This applies only with
+  `OMNISIM_URDF_USE_SENSORS=1`. On an older binary, pass `lidar_layer:=1`.
+  Pinned by `tests/test_urdf_lidar_tb3_jackal.py`.
+- **ROS 2 `/clock` follows the robot's own clock.** `clock_node` published
+  `GET /sim/state` → `sim_time_ms`, which is the harness supervisor's loop
+  counter, not the engine clock. Over one run it advanced 23 s while the
+  engine advanced 281 s. With the bring-up's default `use_sim_time:=true`,
+  `/scan`, `/odom`, `/imu` and `/gps` published 3 messages in 30 s (0.106 Hz)
+  instead of 5 Hz. This was found by an external evaluation against the Husky
+  lidar world. When the bridge is up (`bridge:=true`, the default), `/clock`
+  now follows the bridge's `POST /get_robot_state` → `sim_time`. That is the
+  robot controller's clock, refreshed every control step, and the one its
+  sensor stamps use. Otherwise it uses `engine_time_ms`, which is coarse because
+  it is sampled only when the harness supervisor steps (11 distinct values in 30 s).
+  `sim_time_ms` is used only on a harness too old to report anything else, and
+  it logs a warning. `robot_state_node` stamps from `engine_time_ms`. Measured
+  after the fix on the Husky (`use_sim_time:=true`, realtime engine at 0.64×
+  wall): `/clock` had 293 distinct values of 300 with a largest step of
+  0.128 s; `/scan` ran at 5.0 Hz and `joint_states` at 2.5 Hz in simulated time.
+- **`/scan` angles are the engine's own beam angles.** `sensor_node` spread
+  the beams edge to edge (`angle_increment = fov/(n−1)`), but the engine fires
+  each beam at its bin centre. The error was up to half a step (0.5° on the
+  LDS-01), and on a 360° scanner the first and last beams both claimed ±π.
+  `conversions.scan_angles()` now publishes `angle_increment = fov/n` and
+  `angle_min = −fov/2 + fov/(2n)`. TurtleBot3 worst wall error: 8.6 → 5.5 mm.
+- **OmniLink mobile bridge: pending timed orders now survive a controller
+  restart.** The v9.1.0 notes said timed orders were not persisted and nothing
+  would start moving by itself after a restart. **That is no longer true.**
+  Arrivals, odometer, routines, holds and pending timed orders are now restored
+  when the controller restarts (`OMNILINK_INTENT_PERSIST`, on by default). A
+  restored order still fires on the simulation clock and is still vetted by the
+  gate when it fires. A restored order whose simulation clock went backwards
+  (a world reload, not a restart) is dropped, and the drop is recorded.
+- **An implicit halt no longer cancels the conversation.** When a new order
+  arrived while the robot was working, it used to halt through the operator-STOP
+  path. That cancelled the running prompt and dropped every queued one, each
+  answered "Stopped. I cancelled the rest of that request because you told me
+  to stop". Now the earlier prompts keep running and answering (facts saved,
+  rules set, questions answered), but they may not start a motion tool. An
+  explicit stop still cancels everything, as before.
+
+### Lidar and ROS 2
+
+- **Planar lidar on TurtleBot3 and Jackal** (with
+  `OMNISIM_URDF_USE_SENSORS=1`). TurtleBot3 burger, waffle and waffle_pi carry
+  the ROBOTIS LDS-01: 360 samples over 6.28 rad, 0.12–3.5 m. The Jackal carries
+  Clearpath's default front SICK LMS1xx: 720 samples over 270°, 0.1–30 m.
+  That 30 m is the Gazebo accessory default, not the datasheet's 20 m. The
+  TurtleBot3 URDFs had the `base_scan` mount but no sensor. Their `base_scan`
+  visual also enclosed the lidar origin, so the render-based Lidar read the
+  inside of its own housing (0 of 1440 finite values). The visual now has an
+  8 mm open band at the scan plane, and the collider is unchanged.
+- **Three known-wall worlds:** `showcase/tb3_lidar_walls.omniworld` (bridge
+  :8781), `showcase/jackal_lidar_walls.omniworld` (:8782) and
+  `showcase/husky_lidar_walls.omniworld` (:8783). `scripts/dev/measure_urdf_lidar.py`
+  reproduces the numbers. Every wall straight ahead reads within 1 mm, ≥ 98 %
+  of beams agree with the authored geometry, and beyond-max reads as no return.
+  A 0.9949 m drive shrank the Jackal's forward range by 0.9953 m, and a
+  0.987 m drive shrank the Husky's by 0.987 m.
+- **`/scan` verified end to end through ROS 2** on all three scanners. The
+  path was the engine on Windows → `omnilink_mobile_bridge` →
+  `wsl_harness_link` → `sensor_node` under Humble in WSL → an rclpy
+  subscriber. Every beam was scored at the angle ROS publishes for it:
+  - TurtleBot3: 360/360 beams equal to the bridge row, 359/360 within 5.5 mm.
+  - Jackal: 720/720 equal, 720/720 within 8.0 mm.
+  - Husky: 541/541 equal, 540/541 within 9.0 mm.
+
+  The two misses graze a box corner ~3.5 mm outside it. `/tf_static`
+  base→scanner equals the bridge's measured mount on all three. The tunnel
+  delivered 4.99–5.03 Hz for 5 Hz requested.
+- Caveats: the scan has **no noise model** (the importer ignores `<noise>`;
+  ranges are exact to ~1 mm). On the TurtleBot3, index 0 points straight
+  behind, not straight ahead as on the real LDS-01 driver, so index by angle,
+  not by position. The lidar runs only with `OMNISIM_URDF_USE_SENSORS=1`.
+  Measured in simulation only; nothing here was checked against a physical
+  scanner.
+
+### OmniLink bridges: fixes from the operations-shift traces
+
+These are mobile-bridge fixes, each made from a failure measured in an OmniLink
+trace. The shifts they were tuned on have been **seen**, so the tests pin
+behaviour. They are not evidence of generalisation, which needs a new blind
+holdout (see Benchmarks).
+
+- **An addressed stop is a stop.** "Priya: Cart, stop! Stop right there." was
+  not treated as a halt. The address left the parser explaining 44 % of the
+  clause, so the stop queued 17.5 s behind a model turn while the robot drove on
+  ~5 m. A declined parse now gets a second reading. That reading drops a
+  leading address of at most two words before a comma (never a condition: "If
+  you see a person, stop" stays a rule), and reads stops sentence by sentence.
+  The second reading only ever upgrades a declined parse.
+- **A hold binds every voice, and is engaged when said.** One person's "Hold
+  where you are, don't move until I say" used to bind only the robot's own
+  autonomy, and another person's order drove it off. The hold also existed only
+  once a model called `hold_until_told` (27 s later in one probe). Now the hold
+  is captured the moment it is said and records who asked for it. A motion order
+  from anyone else is refused and queued, and the holder's own new order lifts
+  the hold. Unattributed speech is unchanged.
+- **A supervisor's order is protected from a worker's countermand** for 180 s
+  after it is given. "Who's in charge?" names the latest handover ("I'm off,
+  Sam's got the floor").
+- **More is handled without a model:** the facts a shift opens with (station
+  lists like "dock (3.00, 0.00)", roles from introductions), plain requests to
+  one known station ("Tool crib, please."), and routines ("when I say 'the
+  usual run' I mean ..."). Questions about the robot's own record ("how far have
+  you driven", "how many times did you go to X", "did that job for later
+  happen") are answered from its measured odometer, arrivals and timed orders.
+  Route instructions, negations, corrections, conditions and keep-out talk still
+  go to the model.
+- **Zones a shift has named can be re-closed or reopened by name** ("corridor's
+  shut again"). A reopened zone keeps its lift rules. A shortcut through a zone
+  the speaker cannot lift is refused in words that say why, and the delivery
+  goes round.
+- The relay withdraws an arrival claim on an order turn that ran no motion tool
+  (a model had reported an arrival it never drove). "Don't" interrupts only as
+  a negated order ("Don't suppose you eat." no longer halts a delivery), and a
+  standing rule ("whenever you're at Ward 3, wait fifteen seconds") no longer
+  parks the robot.
+- **Gate:** "when you get a sec" / "when you're done there" is politeness, not
+  a deferral. "... for me?" is a request tag, and "notes to" + a destination
+  is a noun, not reported speech. These fixes remove false refusals. The parity
+  fixture (`tests/benchmarks/gate_parity/`) carries the new cases. The
+  platform's TypeScript copy of the gate lives in the OmniLink repository.
+- `OMNILINK_TEST_MODEL_DELAY_S`: a test hatch that simulates a slow model
+  provider.
+
+### Benchmarks
+
+- **Native Claude Code on the published warehouse shift**
+  (`ops-bench run --arms claude_full`). This is the Codex extension's
+  counterpart, run under a protocol copied clause for clause
+  (`tests/benchmarks/robot_ops/shift/CLAUDE_EXTENSION.md`, fixed before any
+  scored run). Claude Code 2.1.284 with `claude-opus-5-5` at high effort scored
+  78.8 / 84.8 / 78.8 % (mean 80.8 %) with 0 unsafe checks. Codex scored 76.8 %
+  with 1 unsafe check, and OmniLink 89.9 %. **The scores overlap Codex's, so
+  this makes no superiority claim.** Disclosed:
+  - The Claude episodes ran at ~0.97× real time, against 0.15–0.26× for
+    Codex, which may have favoured them.
+  - The adapter was written by a Claude Code session on the same model.
+  - Claude Code's billed cost is unavailable and is excluded from the cost
+    ranking.
+
+  Report: `tests/benchmarks/robot_ops/evidence/CLAUDE_SHIFT_V1_RESULTS.md`.
+- **Shift v2, the preregistered rerun: neither claim was met.** Under
+  `FREEZE_V2.md` there were five waves of seven arms on a new blind holdout,
+  judged by gemini-2.5-pro.
+  - Claim A (vs the basic tier): **not met**. OmniLink separates from every
+    basic arm (p = 0.004) but had 13 unsafe checks against 0.
+  - Claim B (vs the full tier): **not met, a tie** (p = 0.48 / 0.75 / 0.77;
+    unsafe 13 vs 12 / 12 / 14). OmniLink's mean was 0.608 and the full tier's
+    0.615–0.672.
+
+  Every preregistered sensitivity agrees. OmniLink's estimated model spend was
+  $5.18 against $10.89–16.95 for the full tier: cheaper at a tie, estimated
+  from recorded usage. Disclosed: waves 1–3 ran at 0.06–0.15× real time under
+  a load from outside the campaign. The bridge fixes above address the four
+  OmniLink failure causes read from its traces. They have not yet been scored
+  on a blind shift. Report: `tests/benchmarks/robot_ops/evidence/SHIFT_V2_RESULTS.md`.
+- **Prepared, not yet run:**
+  - **Shift v3**: a new blind holdout, preregistration and a real-time
+    validity rule. A wave whose median worst-5 s real-time factor is under
+    0.8× is void and re-run.
+  - **A long-horizon (3-hour) shift**: a blind holdout, a DRAFT
+    preregistration, a `restart` fixture that restarts the robot's controller
+    mid-shift, and a third competitor tier `lc` (last 40 turns plus a rolling
+    model-written summary, persisted across the restart).
+
+  Two v3 calibration attempts were void, and neither produced a row.
+- **`tests/benchmarks/robot_ops/devloop/`**: the development loop (probes, the
+  seen shifts against stored competitor baselines, `explain`, `confirm`).
+  Its scores are a development signal on seen shifts, not a result.
+
+### Known limitations
+
+- The ROS 2 rig behind the `/scan` end-to-end figures is not in this
+  repository.
+- The baselines the development loop compares against predate the
+  2026-09-30 / 10-01 fixes.
+
+## [v9.1.2] — 2026-09-30
+
+### Fixed
+
+- **The unit-test check was red on v9.1.1, on one test:** the generated
+  environment-variable reference (`docs/reference/environment-variables.md`)
+  still cited the pre-fix line numbers of two variables that v9.1.1's
+  packaging fix moved, so its drift check failed (1 failed, 2635 passed). The
+  page is regenerated; line numbers only. No product code changed; the v9.1.1
+  installer and runtime are unaffected.
+
+## [v9.1.1] — 2026-09-30
+
+### Fixed
+
+- **The v9.1.0 Windows installer did not build, so v9.1.0 has no installer.**
+  The build runner's MSYS2 had moved to GCC 16.2, which split `gcc-libs` into
+  separate packages and left `mingw-w64-x86_64-cc-libs` owning no files. The
+  packager turned that empty file list into an empty path, and Inno Setup
+  aborted on it (`Source file "...\msys64" does not exist`). Packages with no
+  files are now skipped. Everything else is v9.1.0 unchanged; use this release
+  for the Windows installer. Pinned by
+  `tests/packaging/test_windows_distro_empty_package.py`.
+
+## [v9.1.0] — 2026-09-30
+
+Physics corrections that change what some worlds do, a harness that reports the
+joint limits the solver actually enforces, OmniLink bridges that can hold a
+30-minute operations shift, a PX4 x500 drone, and a legged OmniLink demo on real
+contact physics. Four of the physics and harness fixes came from external users'
+reports.
+
+### ⚠️ Behaviour changes — read before upgrading
+
+- **A `staticBase` robot's root now collides.** A `URDFRobot` with
+  `staticBase TRUE` (or an articulated `Robot` whose root has no `Physics`) was
+  welded to the world with **no collision shape**: grippers, props and other
+  robots passed silently through every fixed robot base, and MuJoCo generated no
+  contacts for those pairs. Found through an external 5-DOF arm evaluation, where
+  the gripper sat 17.7 mm inside its own base. The root's `boundingObject` and the
+  colliders of its joint-free fixed children now attach to the welded body.
+  Checked on all 78 tracked `staticBase` worlds (load + `--fail-on-runaway`):
+  verdicts are unchanged apart from two timing flips on one world pair that both
+  pass at 40 s. Physics is bit-identical in 37 of the 38 worlds with tracked
+  dynamic bodies, and the `omniarm6_real_pick_place` grasp is bit-identical.
+  `OMNISIM_NEWTON_STATIC_BASE_COLLIDERS=0` reverts (value-parsed). Pinned by
+  `tests/test_newton_static_base_colliders.py`.
+- **A body whose mass comes from `density` now weighs what its density says.**
+  Every dynamic Solid defined by density (`Physics { density 250 }`, or a bare
+  `Physics {}` at the default 1000 kg/m³) was registered on the Newton solver at
+  **0.25 kg**, whatever its size: the body build summed the raw `mass` field
+  (−1 for these bodies) and fell through to a 0.25 kg fallback. Measured: a
+  0.2 m box at density 250 → 2 kg, a 0.2 m-radius sphere at density 2000 →
+  67 kg, a 0.5 m box with `Physics {}` → 125 kg, all previously 0.25 kg. Bodies
+  that declare `mass` (every URDF link and every shipped demo) are unchanged.
+  Most visible for objects spawned at runtime and then simulated with
+  `/sim/rebuild_physics`: a heavy ball used to bounce off a stack of light
+  blocks. Affected shipped worlds are samples only (the device samples,
+  `physics_primitives`, `cylinder_stack`); all still load, and the three with
+  top-level bodies pass `--fail-on-runaway`. Pinned by
+  `tests/test_newton_density_mass.py`.
+- **`GET /robot/<def>/joints` reports the limits the physics enforces.** It read
+  `lower`/`upper` from the joint's raw stops only, but the solver uses the
+  Motor's `minPosition`/`maxPosition` when they are set. So every URDF revolute
+  limited by its motor alone read `lower: 0, upper: 0`, and neither `hit_limit`
+  nor the `joint.limit_hit` event could ever fire for it. Reported by an external
+  user on a Galbot R1. `lower`/`upper` are now the effective limits, with a new
+  `limit_source` (`"motor"`, `"stops"` or `null`) and the raw
+  `stop_lower`/`stop_upper` and `motor_lower`/`motor_upper` beside them.
+  **An unconstrained joint now reads `null`, not `0`/`0`.** `joint.limit_hit`
+  uses the same limits and carries `limit_source`. PROTOCOL.md §7.14 and §10.4
+  and the MCP `get_robot_joints` description are updated.
+
+### Fixed
+
+- **Two joint-registration defects on Newton**, both reported by an external
+  user with minimal probes. A joint under a fixed joint that merged a *rotated*
+  parent into its leader body turned about the wrong axis (0.353 rad
+  orientation error at q = 0.25 rad; 3.7e-6 rad after). A slider child authored
+  at an angle was snapped to its parent's orientation. Across the 72 shipped
+  robot URDFs (743 moving joints) no axis changes; the M20 Piper's two gripper
+  fingers now keep their authored orientation.
+- **The first demo no longer fails on a machine with no CUDA GPU.** A world
+  pinned to `newtonSolver "mujoco_warp"` JIT-compiled its kernels for the CPU,
+  and the first step landed after `run-headless --until-finalized`'s 10 s
+  budget, so the quickstart's `warehouse_husky` FAILed on a healthy install.
+  With zero CUDA devices the pin now runs the CPU MuJoCo step and the solver
+  label says it fell back (`OMNISIM_NEWTON_MJWARP=1` forces the old path).
+  Reported by an external tester.
+- `run-headless` printed the `--step-wait-timeout` budget as the time it waited;
+  it now reports the measured wait beside the budget.
+- The Windows build's Python probe embedded the newest CPython it found (3.14
+  beside 3.12 won silently). It now prefers Python 3.12, warns on any other
+  pick, and `make linker-info` prints the choice.
+- **Harness mutation verbs emit events.** `POST /robot/<def>/joints/set` and its
+  siblings now poll the contact, grip, joint-limit and damage trackers during
+  their settle steps, as `/sim/step` does; motion inside them used to fire no
+  `contact.*` or `joint.limit_hit` events.
+- The Mavic bridge published `v_xy`/`v_z` over wall-clock time, so below real
+  time (e.g. under 1080p capture) a moving drone read ~0 m/s, a flight tool
+  "settled" mid-flight and landings overshot by up to 0.47 m. Velocity is now
+  taken over simulation time (landing drift 0.35–0.47 m → 0.018 m on the x500).
+
+### OmniLink bridges: a robot that keeps a 30-minute shift
+
+Built from what a new benchmark of robot operations under change (below) found
+the bridges getting wrong. Everything here applies to the mobile bridge; the
+gate still vets every motion, including scheduled ones at the moment they fire.
+
+- **Stop means stop, now.** A "Stop!" mid-plan used to queue behind the running
+  motion (answered after 9.4 s, after the robot finished its leg and turn); it
+  is now answered in ~0.3 s. "Emergency stop!", "Abort!", "Stop turning!" parse
+  as stops; "Stop at the door." does not.
+- **A new order while the robot works stops the work first**, and the reply
+  says so. Remarks, information and questions are answered beside the running
+  work instead of interrupting it.
+- **Spatial rules and keep-out zones.** "Keep your x at or below 0.40 until I
+  say so" and rectangular keep-out zones are recorded, enforced on every drive
+  (a drive stops short of the line and reports that it was clipped) and liftable
+  only by the supervisor, the safety lead or whoever set them; a rule worded as
+  permanent cannot be lifted.
+- **Route planning.** `drive_to` plans around zones, lines and obstacles the
+  robot has met; a blocked leg is detected from speed within a fraction of a
+  second, backs off and replans, and a stalled drive ends as `blocked` instead
+  of pushing until its timeout.
+- **Orders for later.** "In 15 seconds, drive forward 1 metre", "if anything
+  bumps into you, back away 0.3 metres", and timed orders to named places run on
+  the simulation clock. They are not persisted: nothing starts moving by itself
+  after a restart.
+- **Replies come from what was measured.** A parsed order is answered after the
+  motion, from the robot's measured result ("I stopped short: I drove +1.20 m of
+  the +2.00 m asked"), not by echoing the request.
+- **Shift memory.** Named places, visit counts, people and roles, rules and the
+  record of scheduled orders are kept per shift; `/state` and the new
+  `get_shift_memory` tool expose them to every caller. A radio-style
+  `"Name: ..."` prefix is read as the speaker.
+
+### Drones and URDF import
+
+- **PX4 x500** (`projects/robots/px4/x500/`, BSD-3-Clause, generated
+  deterministically from the PX4 gazebo models; full trail in its
+  `PROVENANCE.md`) and `showcase/x500_arena.omniworld`, flown by the Mavic
+  OmniLink bridge. Needs `OMNISIM_URDF_USE_SENSORS=1`, like the Mavic chat demo.
+- **Opt-in flight model per airframe:** rotor spin-up lag, ground effect, drag
+  and seeded, modelled wind (not measured air). `/capabilities.airframe` states
+  which effects a world declares; the Mavic declares none and is unchanged
+  except for a softer landing flare.
+- **The URDF importer reads `<texture>`, colour alpha and material names**
+  (textures, transparency and appearance names were parsed and dropped).
+
+### Demos and capture
+
+- **X30 plant inspection** (`showcase/x30_plant_inspection.omniworld`, bridge on
+  port 8796): a Deep Robotics X30 on an inspection round, driven through
+  OmniLink, trotting on real contact physics via the quadruped bridge's new
+  opt-in `--locomotion crawl|trot`. It is a scripted gait on flat ground with
+  Supervisor pose and no obstacle sensing, and the world says so. Everything
+  behind the demo lives in `agents/omnilink_demos/`.
+- **Capture records on simulation time:** `POST /capture/record/{start,stop,status}`
+  saves a frame every `period_ms` of sim time, so footage plays back smoothly
+  at any real-time factor, and `record/follow` keeps a camera on a robot.
+
+### Benchmarks
+
+- **`python -m omnisim ops-bench`** (`validate`, `run`, `judge`, `regrade`)
+  grades what happens *while* a robot works: standing rules, interruptions,
+  timed orders, disturbances. See `tests/benchmarks/robot_ops/`.
+- **Warehouse shift v1 results** (README, "How OmniLink compares in OmniSim"):
+  one blind 30-minute shift, seven configurations, three repeats each, one
+  laptop, simulation only. The report states its deviations first:
+  `tests/benchmarks/robot_ops/evidence/SHIFT_V1_RESULTS.md`, with costs in
+  `SHIFT_V1_COSTS.md`. The raw per-episode evidence is published as a
+  downloadable bundle on the benchmark page rather than in this repository.
+
+### Known limitations
+
+- The OmniLink edge connector still needs OmniLink SDK 0.6.4, which is not yet
+  on PyPI; with the published 0.6.3 it reports itself `unavailable`.
+- Bump detection runs only while the robot is at rest, and its 5 mm threshold
+  was chosen on one fixture.
+
+## [v9.0.1] — 2026-09-25
+
+### Fixed
+
+- **The Linux unit lane was red on the v9.0.0 tag, on one check:** the
+  generated environment-variable reference
+  (`docs/reference/environment-variables.md`) cited a frozen copy of the
+  bridges' `route.py` kept by a benchmark that is not part of the public tree,
+  so the page's drift check could not match the published sources. Every
+  other test passed (2408). The generator now skips benchmark `frozen/` copies
+  as it already skipped `results/` and `evidence/`, and the page cites only
+  files that ship. No product code changed; the v9.0.0 installer and runtime
+  are unaffected.
+
+## [v9.0.0] — 2026-09-25
+
+### You can stop the simulation at the moment something goes wrong
+
+OmniSim could observe a running scene in detail and could not stop it. Every
+inspection read one instant while the engine free-ran between calls, so the
+question an agent actually has — *what did the scene look like when the gripper
+let go?* — could only be answered by guessing where to look.
+
+- **`POST /sim/break` arms a breakpoint.** Give it event types, optionally
+  filtered by `def`, `counterpart` or `joint`. When a matching event fires the
+  supervisor takes the pause lease, so the scene freezes at the moment of
+  interest and stays frozen while you read it. `GET /sim/breaks` lists what is
+  armed; `DELETE /sim/break/<id>` and its `POST /sim/break/delete` twin disarm.
+- **`POST /sim/step` is now continue-to-breakpoint.** A batch stops early on the
+  step a break fires and reports `steps_executed` and `stopped_on_break`.
+  `steps_executed` used to be echoed back from the request, so a run that
+  stopped early would have claimed it ran the whole batch.
+- **`break.hit` is the eleventh event type**, carrying the matched event, the
+  sim time of the hold and the measured hold latency, on the same cursor-paged
+  `/sim/events` stream as everything else.
+- **`GET /sim/state` gains** `paused`, `lease_remaining_ms`, `break_hit`,
+  `breaks_armed` and `engine_time_ms`.
+- **A break that could never fire is refused, not accepted.** Light mode is the
+  default and silences five of the eleven event types. Arming a break on one of
+  those returns `BREAK_EVENT_TYPE_UNAVAILABLE` with a diagnostic naming the
+  producer, the silenced set and the `{"light": false}` workaround. The refusal
+  is scoped: `damage.*` survives light mode and is still accepted in the same
+  session.
+
+Two limits, stated because they bound what this is good for. **There is no
+sub-step precision.** Held, and stepping, detection is per basic step: zero
+supervisor-milliseconds and at most one basic step of engine time. Free-running,
+detection is one *supervisor tick*, and a tick is not a basic step — measured
+from 8 ms to about 600 ms of engine time depending on load. On a three-body
+fixture the engine outran the controller so far that a whole one-second drop fell
+inside a single tick and no contact event was emitted at all. The reliable
+workflow is the debugger one: pause, then step. And **`sim_time_ms` and
+`engine_time_ms` are different rulers** — the first is the injected supervisor's
+counter that stamps every harness response, the second is the engine's own clock,
+which runs far ahead in fast mode and does not rewind on `/sim/reset`.
+
+Measured on `9722d23d12a3` (RTX 3060 Laptop, Ryzen 16-thread, Windows 11) with
+four live cases: a break on contact, a break on a joint limit, the light-session
+refusal, and the pause verbs themselves.
+
+### The pause that shipped in v8.5.x did not pause
+
+`POST /sim/pause` and `POST /sim/resume` landed on 2026-09-15 with no test, no
+documentation and no client. Building the breakpoint on top of them exposed
+**seven defects**, all fixed and now covered by 43 engine-free tests:
+
+- **It reported a frozen clock over a moving engine.** Pausing only *queues* the
+  request, and the main loop stopped stepping the instant the lease was taken, so
+  nothing ever delivered it. Measured: a break fired at t=168 ms and the scene
+  kept moving to about 400 ms — roughly 29 basic steps *after* the freeze.
+- **A lease expiry could hang the supervisor permanently**, turning the deadline
+  that exists as a safety property into the thing that broke it.
+- The supervisor clock advanced while held, which tripped the "someone reset the
+  world behind our back" heuristic every other iteration.
+- A held lease and armed breaks survived a `/world/load`, so a session could
+  inherit a freeze belonging to the previous world.
+- Break detection lagged by up to 17 basic steps.
+
+"The pause exists" was true from v8.5.x. "The pause worked" is true from v9.
+
+### One command surface, and the parser is actually in it
+
+- **The deterministic parser is now wired into the live `/prompt` path** on all
+  five bridges, over HTTP and in the robot window. It was not before: the
+  short-circuit entry point had no production caller in any bridge, so the model
+  answered every turn and the parser's own counters read zero on a live run. The
+  "parser first" evidence came from a benchmark that calls the parser in its own
+  process and never touches a bridge. Order on every path is access check,
+  parser, model, gate. Verified live on the Husky: a command is answered by the
+  parser in 0.01 s and the robot moves 1.997 m against 2.0 commanded; a keyless
+  prompt is refused before the parser sees the sentence.
+- ⚠️ **`POST /tool` reported `status: "err"` for every successful motion.**
+  `error` in a measured result is the *control* error — a float, achieved minus
+  commanded — and any non-zero float is truthy, so only a mathematically perfect
+  motion could have reported success. Measured live: a settled 1 m drive with
+  0.23 mm of error came back as a failure. An agent driving through `/tool` would
+  have concluded its every command failed. A real failure is a string, so the
+  test is now the type rather than the truthiness.
+- **A sixth `/tool` handler was completely ungated.** The OmniTug courier reached
+  its motors with no safety check of any kind; it was not one of the four demo
+  bridges, so the 2026-09-21 audit missed it.
+- **One vetting implementation, not six.** The fail-closed wrapper existed in six
+  copies, each re-declaring its own list of physical verbs; the relay registered
+  every bridge's tools with no surface at all, so per-surface rails only worked
+  because callers happened to pass one at check time.
+- **All five keyword ladders are deleted**, along with the shared module and the
+  `OMNISIM_BRIDGE_LEGACY_ROUTER` variable that advertised putting them back. One
+  of them carried ungated takeoff and land methods.
+- ⚠️ **The model pin was Google's, and it was sent to every engine.** The relay
+  pinned `gemini-3.5-flash` — a Google model id — and sent it whatever
+  `OMNILINK_ENGINE` named, so selecting any other provider asked that provider
+  for a model it does not serve. Measured on an account with google and xai both
+  connected: `g3-engine` returned `not-found: The model gemini-3.5-flash does not
+  exist`. Two connected credentials, zero reachable engines. The pin now follows
+  the engine; an engine with no measured tier sends no model and lets the
+  platform pick one it serves. The reasoning behind the Google pin is unchanged
+  and still applies to the Google engine.
+- **A drive with no distance now asks how far instead of driving a metre.**
+  "drive forward", "go ahead", "back up" and "reverse" used to reach the robot with
+  no distance, and the drive adapter filled in 1 m — a magnitude nobody said, and
+  one the gate could not see because the default was applied after it looked. A
+  distance-less drive that is the whole instruction now gets the answer "How far
+  should I drive?" from the parser, with no model call and no motion. The adapter
+  has no default any more, and the gate requires a distance. "go ahead and stop"
+  still stops.
+- **The parser understands more of what people actually type.** Adverbs, "in
+  place", more drive verbs, "one metre forty", quarter turns and pi radians,
+  quantity-first and verbless orders, sequence words, and more ways of asking for a
+  repeat. It also handles a condition on the robot's own measured position or
+  heading — "if your y is above 0.4 m, drive back 0.5 m, otherwise turn left" —
+  choosing the branch from the **measured** pose, and handing the turn to the model
+  rather than guessing when no pose is available.
+- **Three kinds of legitimate order are no longer refused by the gate:** a
+  first-person correction ("I said reverse 1.2 m — ignore that, 0.6 m"), a polite
+  request phrased as a question ("mind giving it a quarter turn?"), and a condition
+  followed by an order. Re-checked on 332 corpus and benchmark sentences: only those
+  three changed verdict, and no sentence that must not move the robot changed.
+- `python -m omnisim key --check` now reports a key the platform has **disabled**
+  after repeated billing or authentication failures, with the reason and the fix,
+  instead of saying no model provider is connected.
+
+### The simulator and the platform are one loop, not a tether
+
+OmniLink could call a robot. It could not hear back from one, and the two halves
+read the same sentence differently. Everything below is the simulator's half; the
+platform's half is written and needs a deploy before an operator sees it.
+
+- **Both doors interpret the same way.** The web chat used to post to the platform
+  and then push tool calls at the robot, so a model answered every web turn while
+  the robot's own door ran the deterministic parser first. The platform now hands
+  the operator's sentence to the robot, and falls back to the old path, unchanged,
+  whenever the robot is unreachable — a refusal is not a fallback, it is a completed
+  turn. `/prompt` reports **which stage answered** on every reply, so the parser's
+  share is measurable instead of asserted, and the chat sweep records it per
+  sentence and refuses to guess: a reply that does not say is recorded as unknown,
+  two unknowns are not agreement, and an arm that did not run can never score clean.
+- **One safety vocabulary, and it had already drifted.** The platform's gate is a
+  port of `gate.py`, guarded by a fixture generated from it. **The platform's copy
+  was stale at 64 cases while the source had moved to 78**, so the guard was passing
+  against an old table — exactly the divergence it exists to catch. The fixture now
+  carries the caller's surface per case, publishes its own registration table built
+  by the same function that teaches the gate, and the generator refuses to write
+  unless every case replays from that published table and agrees under all 24
+  registration orders. 106 cases, byte-identical on both sides.
+- ⚠️ **A surface arriving over HTTP is accepted and ignored.** The rail a command is
+  judged against is the bridge's own. A caller able to declare itself a drone would
+  buy the 120 m altitude rail on a quadruped, which would make a safety property a
+  client-chosen setting.
+- **The robot has an event stream of its own.** `GET /events` is cursor-paged with
+  the harness's envelope: eight types raised by the bridge — motion timeouts and
+  unsettled motions, joint limits, two fault kinds, gate refusals, contacts — plus
+  six forwarded from the harness when one is attached. Every detector was disabled
+  in turn and its tests confirmed to fail, so none of them is an assertion that has
+  never gone red. `GET /sim/state` carries the totals.
+- **An event can wake the agent, and the wake is bounded.** A physical or safety
+  event dispatches one turn through the same cascade and the same gate as an
+  operator sentence. A burst of a hundred qualifying events produces **one** wake and
+  records ninety-nine suppressed; disabling it produces none while the ring still
+  fills, so the record survives even when nothing is spent on it. No key still means
+  no model turn, and now also no wake.
+- **Sim time on every measured result, and a stall is not a timeout.** Waits are
+  counted in simulation steps rather than against the wall clock, and results carry
+  the sim time they started and ended at. `last_tick_at` is sim seconds for the first
+  time; the wall clock moved to its own field. A frozen world can never expire a step
+  budget, so a bridge now reports `stalled` rather than `timed_out` — an agent told
+  "timed out" reissues commands into a simulation that is not running. Eighteen reads
+  of the simulator's clock were also moved off HTTP threads; that pattern once dragged
+  the simulation to a fifth of real time.
+- **Opt-in lockstep** holds the world between commands on three robot classes. The
+  drone declares it unsupported rather than shipping a hold that would stop commanding
+  its rotors.
+- **The action journal follows the agent to another machine.** Surviving a restart was
+  never the new part — the local file has done that since July. What is new is that the
+  newest 50 entries ride in the memory write, so a second instance on the same key
+  restores them before its first turn. The sync is a 30 s beat plus a flush on clean
+  shutdown, and it does **not** need a completed model turn: that dependency was a real
+  defect, found on the first live check — a session the parser answered by itself synced
+  nothing, and an account answering `402` on every turn synced nothing at all. ⚠️ It is a
+  beat, not a commit: a hard kill between beats can lose up to one beat, only the newest
+  50 entries travel, and with no OmniKey there is no relay, so the record stays local.
+  It is the surface that removed a 26% fabrication rate.
+- **The bridge can start a connector that lets a standing order reach a simulated
+  robot with no browser open** — ⚠️ **but not yet for anyone installing this
+  release.** The connector lives in `omnilink.edge_connector`, which is in OmniLink
+  SDK 0.6.4 and later. The newest SDK on PyPI is **0.6.3**, which does not contain it,
+  so on a normal install the bridge reports the connector `unavailable` and a standing
+  order cannot reach the robot this way. It also needs the platform half of the
+  handoff, which is written and not deployed (see below). The OmniSim side is done
+  and tested against a faked SDK; the feature becomes real when SDK 0.6.4 is
+  published and the platform half is live.
+
+Two things this is honest about. **There is no window-raise verb** in the robot-window
+protocol, so a wake makes itself visible in the chat panel; nothing raises a window.
+And **on the parser door the gate is a second line that rarely fires**, because the
+parser already declines questions and sentences it cannot consume — the refusals you
+will actually see arrive through `/tool` and the model path.
+
+### Demos
+
+The launcher showed 15 of the 21 chat demos and one quadruped, so a release
+about four robot classes presented one of them as a single robot. All five Deep
+Robotics quadrupeds and the OmniArm talk world are now listed (58 → 64 entries).
+The count disagreed on every surface — 21, 18, 20 and 22 depending where you
+looked — and a test now pins the launcher, `DEMOS.md`, `WORLDS.md`, the chat
+index and the sweep together.
+
+### Benchmarks that had lost their target
+
+Deleting the ladders revealed that several benchmark arms were measuring a path
+the product no longer has. Two of them were **manufacturing a pass**: run the
+warehouse benches the obvious way and every prompt is refused, yet the gate
+stamps the result `verified` and the safety column comes out perfect, because a
+robot that is never commanded never moves when it should not. Those arms now
+refuse at launch and say why. `commandbench`'s ladder arm is dropped rather than
+re-pointed, because the honest statement is that the comparison is gone; its
+parser arm refuses for the same reason. Recorded result files are untouched —
+they are evidence of runs that happened.
+
+A **robotics-control benchmark** now ships (`omnisim/control_bench`, with tasks,
+tests and methodology under `tests/benchmarks/robot_control/`). It runs specific
+control implementations against the Husky, TurtleBot3 Burger and OmniArm 6 and
+grades them mechanically on task completion, instruction compliance, state
+grounding, multi-turn execution and recovery. It is a comparison of specific
+implementations under stated conditions — not a ranking of hosted products and not
+a hardware validation — and none of its bundled task sets is an untouched holdout.
+Its raw working evidence is not in the source tree; it is distributed as a separate
+archive with its own reproduction instructions.
+
+### Agent surface
+
+The first-party MCP server goes from 37 to 46 tools and, for the first time,
+reaches a robot: `robot_prompt`, `robot_tool`, `robot_state` and `robot_events`
+speak to a bridge's gated paths, never the ungated REST verbs. `sim_pause`,
+`sim_resume`, `sim_break`, `sim_breaks` and `sim_break_clear` expose the new
+capability. ⚠️ `robot_events` reads the *robot's* ring, not the harness's
+`/sim/events` — two rings, two cursors — and it dies with the bridge process.
+Carrying a cursor meant the tool allowlist had to ignore query strings, so a test
+now pins that `/stop_robot?since=1` is still refused.
+
+### Release engineering
+
+- **The licence gate was red on 22 files**, not the 4 a first pass found — the
+  same gate that forced the v8.5.1 patch a day after v8.5.0. Nineteen were
+  OmniLink's own work carrying a short SPDX header the gate has never accepted.
+  Three are vendored MIT code whose provenance record forbids modifying it, so
+  they carry sha256 content pins over git's stored bytes instead of a header,
+  which excuses the missing header and still detects any edit.
+- **Asset provenance was red on 18 files**, including the ALOHA videos the README
+  links. Those now carry a provenance record separating OmniLink's own renders
+  from the composites that embed third-party footage.
+- **A documentation gate** now fails the build on keyless, ladder or withdrawn
+  cost claims across 21 customer-facing pages, with the scanner tested in both
+  directions so it cannot rot into a rubber stamp.
+- The engine-free unit lane runs in CI for the first time, and now includes the
+  MCP package. The publisher accepts a prerelease tag so a release candidate can
+  be validated on the public account. `doctor` reports a second CI row and no
+  longer prints a token that was embedded in a remote URL.
+
+### Verified
+
+All 21 chat demos live, **84 of 84 sentences answered, zero trap actuations**,
+on the default engine (`tests/benchmarks/langsoak/chat_demos_2026-09-22.json`).
+The trap in each script is a question carrying a motion keyword — the one that
+once landed an aircraft on *"where did the package land?"* — and none of them
+moved a robot. 2,212 engine-free tests pass. The break-on-event and pause work
+carries four live harness cases on machine `9722d23d12a3`, and the parser wiring
+was checked against a running Husky.
+
+The loop work above was verified on the same machine against a running Husky:
+`/state` reporting sim seconds where it used to report a wall-clock epoch; the
+full safety-gate block served with fourteen honestly-listed ungated routes; a
+300 m drive refused by the rail with nothing moving; `/prompt` naming the stage
+that answered on every reply and setting the top-level error on a failure; and
+the event ring filling and paging, with a gate refusal landing on it.
+
+Two claims were then checked against the live platform with the rigs in
+`tests/benchmarks/trackd_loop/`. **The journal crosses machines:** one relay synced
+three entries with no model turn, and a second relay booted with an empty local
+directory and restored all three from the platform alone. **An event reaches the
+platform as one bounded wake:** a non-waking event produced nothing, one timed-out
+motion woke the relay in 0.9 s and dispatched exactly one turn, and a burst of
+twenty inside the window produced no second one.
+
+**The model half was then re-measured on this tree, on 2026-09-23.** The previous
+day every model turn was refused; the cause turned out to be the account holding 41
+agent profiles against a plan allowance of 25, and clearing twenty unused ones fixed
+it. It was found a day late because the relay reported **every** 402 as "needs a
+model-provider key", so the agent-cap refusal reached us as a key problem while the
+key worked. The relay now reports the code the platform states, and says plainly
+when the provider key is not the problem. The full sweep then ran on the committed tree (`74b8ceadf`): **21 of 21 demos
+clean, 84 of 84 sentences answered, zero trap actuations**, and every reply named the
+stage that answered it — the parser 42 times, the model 42 times, no sentence
+unreported (`tests/benchmarks/langsoak/chat_demos_2026-09-23_bridge.json`). Five arms
+stated one refusal each, an open-gripper command on an arm with no gripper, which is
+the correct answer. And the wake now closes end to end: one timed-out drive woke the
+Husky, which answered *"It looks like my attempt to drive forward timed out after
+covering 1.2 meters of the requested 5.0 meters"* — the figures the event carried.
+
+The sweep's two-door comparison is still unrun: it needs the platform deployed.
+
+⚠️ **Reproducibility came out worse than the old figure, and that is the reason for
+the hold.** Four parser-answered commands, three runs, the bitwise CPU solver: three
+different results. Positions agreed to four decimals, so the physics is
+deterministic; the coupling is not. A command returned busy in two runs and executed
+in the third, and the robot finished 0.99 m and 1.98 m from identical input. **With
+the hold on and a client that waits on it, the same three runs were identical**: every
+command executed and the world reached the same rest points at the same sim times.
+Both halves are required. With the hold and a naive client the runs still diverge,
+because under a hold the wheels read zero while the world is frozen, so the next
+command goes out early and comes back busy. This is reproducibility of a run on the
+CPU solver with parser-answered commands, not replay, and it says nothing about
+commands a model chose.
+
+⚠️ **The first lockstep measurement reset the connection, and the cause shipped.** A
+bridge holding the world makes no calls to the engine, so when its engine died it never
+noticed and kept serving on its port for up to a lease; the next run's requests landed
+on that orphan. The hold now checks the engine every half second and the bridge exits
+0.35 s after it. Two more hold defects were fixed on the way: an expired lease was
+re-taken at once, letting the world advance one step per thirty-second lease, and a
+motion waited on under a hold was reported stalled in no time at all.
+
+### Still true, and not claimed otherwise
+
+No policy trained here has run on hardware; the shipped bridges run against mock
+drivers. A digital twin here is a model built from a robot's own URDF or CAD, not
+live-synced telemetry. Windows has the only prebuilt package. `POST /sim/snapshot`
+is still not a checkpoint — it saves poses and joint angles, never velocity — and
+there is still no record, replay or run-diff. Watch conditions are not
+implemented and are declared as such. The earlier parser-only cost and accuracy
+experiments are not measurements of the connected product, and no
+zero-model-cost, universal-accuracy, market-exclusivity or hardware-performance
+claim is made here.
+
+⚠️ **The gated command surface covers the four demo bridges and the courier. It
+does not cover every bridge in the tree.** `husky_omnilink_bridge` — a seventh
+bridge, used by the Husky maze agent — imports no part of the gate. It is a
+standalone HTTP server whose `POST /action` reaches the motors with no schema,
+magnitude or deixis check, and the maze agent's `chat_drive.py` posts a model's
+tool calls straight at it. It ships in this release as it did in the last, and it
+is documented in `packages/omnisim-bridges/GATE_COVERAGE.md` rather than fixed,
+because moving it onto the shared handler changes its wire contract and that is
+not a change to make during a cut. Separately, `goto_waypoint` on the drone flies
+to an absolute coordinate and is not gated either: the distance rail bounds how
+far a single motion goes, and a waypoint is a position rather than a distance, so
+gating it is a design question and not yet a fix. Treat both as open.
+
+New with the loop work, and stated for the same reason. The platform half of the
+prompt handoff is **written and not deployed**, so until it is, the web door
+behaves exactly as it did before. Lockstep is opt-in, covers three of four robot
+classes, and its reproducibility claim is **unmeasured** — removing the model does
+not by itself buy an identical run, because the engine free-runs between HTTP
+calls, and closing that was the point of the hold. The wake rate on an idle scene
+has never been measured, so the default policy is bounded by a limiter rather than
+by evidence. Events are raised by the bridge, so the ring dies with the bridge
+process and is not a recording; contact events are top-level scope only, because
+the supervisor's contact query cannot see a URDF robot's sub-links. None of this
+adds sub-step detection: the two latency regimes are unchanged.
+
+## [v8.5.1] — 2026-09-12
+
+### Fixed
+
+- **The public licence gate was red from 2026-09-11 through the v8.5.0 cut**, on
+  six files. Four were OmniLink-authored and had simply never been given the
+  standard Apache header (the DDBot square replay, the two evaluation
+  controllers, the pilot-ledger generator). The other two were the vendored OIDN
+  headers, and that half was a defect in the check: the pin was the sha256 of the
+  author's working-tree bytes, which were CRLF, while the directory's
+  `.gitattributes` (`*.h text eol=lf`) normalises the blob without rewriting a
+  file already on disk -- so the pin matched on exactly one machine and failed on
+  the committed blob, every fresh clone and every CI runner. The digest is now
+  taken over LF-normalised bytes and pinned to what git stores, so the verdict is
+  the same on either line ending.
+
+## [v8.5.0] — 2026-09-12
+
+### Rendering
+
+- **Photo mode** (`af23053e2`): a bounded, cancellable CPU path-traced capture,
+  from the File menu and from an automated capture path. It traces owned scene
+  geometry and material textures, importance-samples emissive surfaces and the
+  environment, adapts sampling per pixel, and optionally denoises with Open
+  Image Denoise. Solid glass now carries Fresnel reflection, Snell refraction,
+  internal reflection and thickness absorption. Live rendering gains local
+  reflection captures, complete GGX mip chains, shadowed moving point and spot
+  lights, and a reusable rectangular area light; roughness-map overrides are
+  corrected. Native checks cover sampling error, dielectric transport, energy,
+  denoising, cancellation and reflection mips; engine checks cover photo output,
+  area emission, moving-light shadows and robot-camera roughness maps.
+- **Temporal antialiasing that knows what it is reprojecting** (`c1c9e2528`,
+  `affa49d62`). A history tap from a different surface is rejected, reprojection
+  is aligned with raster jitter, persistence drops on changing colours, and
+  history is reprojected with per-object transforms and previous deformation
+  vertices so rigid and deforming surfaces both track. MSAA motion and depth
+  samples are matched, and the extra draw pass is skipped for unchanged opaque
+  geometry. TAA stays optional and the sensor path stays unjittered — invariant
+  vertex precision is confined to the motion-enabled HDR viewport — and the
+  house, warehouse and city TAA-off images match the previous executable
+  exactly. **No FPS claim:** the measurements ran against concurrent workloads,
+  which is recorded rather than rounded up.
+- **Stationary local shadows are reused instead of redrawn** (`37aa0fc84`), with
+  conservative per-cubemap-face caster culling when a redraw is needed, and the
+  shared main-view and sensor draw caches kept current across geometry and
+  material edits and completed subtree insertion. Both optimisations are
+  independently reversible. Stationary house and warehouse captures match the
+  reference exactly while the repeated local-shadow draws disappear; **the city
+  control does not establish an FPS or timing gain**, and the measured binary,
+  world and image hashes are preserved with the timing limitations attached.
+  Validated against 119,155 native frustum witnesses, with thirteen edit states
+  matching in both the main view and a camera sensor.
+- **Optional asynchronous GPU timestamp profiling** (`c1c9e2528`): per-target
+  pass timings and render-start intervals through a bounded readback ring. A
+  binding that depends on a scene buffer is now invalidated explicitly when that
+  buffer grows, so a recycled native handle can no longer hide a newly inserted
+  object.
+
+### Fixed
+
+- **A mesh preflight that reported "0 unresolved" for 8,048 references it could
+  not decode** (`93d883d42`). Pointed at a stranger's robot gallery (718 URDFs,
+  4,024 `.glb`, every one carrying `KHR_draco_mesh_compression`),
+  `urdf_import.py --report --strict`, `validate-urdf --check-meshes` and a
+  headless load all passed. The engine warned `GLTF: Draco mesh compression not
+  supported` and then substituted a collider — an AABB box, or where even that
+  was unavailable, a default 12 cm sphere. A robot whose collision geometry is a
+  sphere still loads, still steps, still exits 0, and every contact it produces
+  is fiction. The preflight was asking whether the file EXISTS and reporting
+  that as "resolved"; existence is not decodability. The boolean is now a
+  four-state classification — missing / undecodable / unverified / ok — and
+  `undecodable` is asserted only when provable from the bytes.
+- **Import order, not packaging, is why two bridge demos quietly ran without
+  their intent layer** (`ba280cb15`). `_omnilink_relay` puts
+  `packages/omnisim-bridges/src` on `sys.path`, but both bridges imported
+  `omnisim_bridges` about thirty lines above that and a bare `except Exception`
+  swallowed the `ModuleNotFoundError`. The arm bridge proved the mechanism by
+  failing only half way: its `intent_router` import at line 135 fell through to
+  a stub while `intents` at line 211 worked, same file, same run, decided purely
+  by line number. The mobile bridge had lost the shared status/resume intents
+  and the whole deferred-intent layer. Both now bootstrap the path at module top
+  level with no `try`, which is what every other consumer already did.
+- **Thirty-two files still built paths into `projects/rl`**, deleted when it
+  became `projects/policies/research` (`91d7def9e`). None of them raised: every
+  site had an `.exists()` guard and a degraded branch that exits 0, so a demo
+  that never loaded its policy reported success. The shape that hid it is a
+  candidate list whose every entry ahead of the dead path is opt-in, so running
+  it the documented way — no flag, no environment variable — made the dead path
+  the default rather than the fallback.
+- **The Newton bundle is also the CONTROLLER interpreter, so it now ships
+  `onnxruntime`** (`e0db3abcc`). Twenty-six shipped controllers import it — every
+  `*_deploy` / `*_mimic` under `projects/policies/research/controllers`, plus
+  `anypick_cam` and `omniarm6_bin_picking` — and the bundle they run under did
+  not contain it. The engine embeds CPython for physics but spawns a separate
+  python per controller, resolved from PATH, so the developer's own interpreter
+  (with onnxruntime installed) was never the one running them: every local gate
+  passed while a clean clone was broken. The bundler's `VERIFY_IMPORTS` was the
+  other half of the hole — it verified what the bundle was for, not what the
+  controllers need.
+
+### Agent bridges
+
+- **The three yaw leftovers are measured, and one constant's REASON was false**
+  (`7e99acfd4`). `PIVOT_ANGULAR_R_S_MAX` carried a traction argument — that a
+  faster pivot would break the tyres loose and wedge the Husky against a maze
+  wall. Measured across all five shipped `husky_maze_*` worlds, every hop driven
+  start-to-goal over the BFS route: 0 wedges at cap 1.0, 1.5 and 2.5. The cap
+  stays at 1.5 and its justification is now what the measurement supports, not
+  the story it was kept for. Nothing needed retuning.
+- **The Mavic flight step no longer cites a Gyro defect that was fixed**
+  (`0e592a3a2`). The comment claimed the Gyro reads a constant (0,0,0) under
+  Newton and that the defect was "documented in AGENTS.md"; the defect was fixed
+  on 2026-09-01 by `bde550489` and AGENTS.md has never contained the word gyro.
+  The IMU-differencing itself is kept, and the comment now says why it is kept:
+  it works, it is exercised, and `dt` is the basic time step rather than wall
+  clock, so `--mode=fast` does not distort it. Switching this path back to the
+  Gyro is a behaviour change on the demo that public issue #10 was filed
+  against, so it gets its own change.
+
+### Contributed
+
+- **The corridor worlds declare `newtonGroundMu`** (public PR #20,
+  lluisestape-upc). Neither world declared ground friction, so both ran at the
+  engine default and the parked airframe slid at ~0.077 m/s: on v8.4.0 the start
+  guard measured 4.846 m from the authored start and refused to fly. With 1.5
+  declared the same flight is 8/8 in 40.55 s and eighteen consecutive flights
+  start within a millimetre of each other. The worlds handed over were copies
+  made before the friction experiment, so the fix never travelled with them.
+- **The corridor hull-clearance threshold is withdrawn** (#20 follow-up). The
+  README shipped 0.17-0.21 m of hull on the `none` condition, measured the day
+  the benchmark landed. It does not reproduce: three flights on v8.4.0 measure
+  0.0934, 0.0977 and 0.1092 m here and the reporter measures 0.084-0.093 m over
+  six flights on their own machine, so the two of us agree and the published
+  figure is the outlier — as written it would have failed every flight on the
+  build it was meant to gate. Two engine changes that landed in between were
+  tested as explanations and both refuted: reverting the URDF inertia work moves
+  clearance to 0.0358 m (the fix *improves* it) and reverting the wheel rotor
+  armature leaves it at 0.0974 m. The README now quotes 0.076-0.109 m across the
+  fifteen control flights the two of us have flown, records the one wider line
+  at 0.306 m, and names the tight spot.
+- **Lane-offset scoring for the Mavic corridor benchmark** (public PR #21,
+  lluisestape-upc): `tests/benchmarks/mavic_corridor/lane_scoring.py`, called by
+  `corridor_mission.py` so a report written with `--keep-trajectories` grows a
+  `lane` block, plus a CLI that re-scores a past campaign without re-flying. It
+  measures the benchmark's third failure signature, which no summary metric
+  sees: a contact the aircraft survives delays its return to the lane, and an
+  obstacle corner inside that recovery distance is what collects, while
+  completion stays 8/8 and clearance moves only at that one corner. The three
+  rules that decide every number are in code because each had already produced a
+  disagreement in prose — forward-only nearest-segment leg assignment, a station
+  anchored at the closest approach to the leg's start waypoint (one flight
+  admitted +0.49, +1.25 and +3.02 for the same station without it), and a
+  station inside the turn returning `in-turn` rather than a number. Verified by
+  re-scoring our own twelve v8.4.0 flights with the contributor's module: it
+  reproduces our independently written script's per-leg maxima exactly
+  (`blocked_1` legs 5-7 at 0.272 / 0.302 / 0.297 m), classifies x = 4.3 as
+  in-turn in every completed flight — the objection that prompted the module —
+  and returns "not reached" rather than a number for the three flights that
+  wedged against the blocker.
+- **The station reading no longer depends on the sample rate** (follow-up to
+  #21). `offset_m` is read at the first sample past the station, and a sample
+  sits a fraction of a period past it, so on an aircraft recovering toward its
+  lane the reading is biased low — 0.002 to 0.024 m over the twelve flights
+  re-scored here, never high, which is exactly the gap between the contributor's
+  readings and the numbers we published on #14 from an interpolating script.
+  Each reading now also carries `offset_interp_m`, interpolated onto the station
+  itself, which agrees with those published numbers to the third decimal. The
+  bias grows with `SAMPLE_PERIOD_S`: at a quarter of the rate one reading moved
+  0.065 m and one changed sign, so a band published from one campaign was not
+  safely comparable with another. Pinned by a test that decimates a synthetic
+  recovery. A second test pins `CORNER_SKIP_M`, which the suite named but did
+  not exercise — the samples it used were already excluded by leg assignment, so
+  the test passed with the corner ball set to zero.
+- **A corridor flight is not reproducible with a second engine on the machine**,
+  and the README now says so. The engine runs `--mode=fast` while the bridge is
+  driven over HTTP, so wall-clock latency decides how many simulation steps pass
+  between a waypoint arriving and the next command landing. Three consecutive
+  `none` flights on one build: with a second engine running the aircraft
+  collided, 32.09 m of path in 36.37 s; alone it cleared 0.0973 m of hull,
+  33.38 m in 40.44 s, inside the published band. The benchmark already asked for
+  one engine per flight; it now asks for one engine on the host.
+
+### Tooling
+
+- **`publish_snapshot.sh` measures its worktree path before it commits
+  anything** (2026-09-11). The snapshot worktree was materialised only after
+  the changelog and version-bump commits had landed, so a checkout that could
+  not succeed failed with the bump already on private `main` — which is what
+  happened cutting v8.4.0: a 100-character `OMNISIM_PUBLISH_WORKTREE_DIR`
+  prefix plus the tree's 204-character longest tracked path crossed Windows'
+  260-character `MAX_PATH`, and 42 files under `social/` died with
+  `Filename too long`. The script now checks that the worktree's parent is
+  creatable and, on Windows, adds prefix + longest tracked path before its
+  first commit; when the sum reaches 260 it prints the number and runs the
+  checkout with `core.longpaths=true`, which git honours for the worktree's
+  own checkout. The header also records that the release token's Contents
+  write permission is not enough to comment on the tracker afterwards
+  (`addComment` needs Issues and Pull requests write), which the v8.4.0
+  replies hit.
+
+### Documentation
+
+- **Our own gripper geometry is no longer attributed to a manufacturer**
+  (`04876072d`). `DEMOS.md`, the launcher card, three world titles and two
+  controller docstrings called the 140 mm two-finger gripper a "Robotiq 2F-140",
+  while `projects/robots/robotiq/PROVENANCE.md` says in terms that the geometry
+  is original work of this repository, defined entirely by URDF primitive solids
+  with no mesh, texture or CAD file from any third party. Four more files
+  claimed third-party CAD lineage for geometry that is entirely ours. Both
+  directions are corrected at the source.
+- **AGENTS.md claimed a test pinned the environment-variable reference, and then
+  the correction was itself wrong** (`ff00cea13`, `215ec0aa9`). The test did
+  exist — in `make tests-docs`, a lane nobody runs — so the drift check now also
+  runs in the default lane as `tests/test_env_reference_current.py`. The
+  generated page is regenerated in this release: 473 variables, one newly
+  discovered.
+
+## [v8.4.0] — 2026-09-11
+
+The release where the solver runs on what the author declared — a link's
+inertia tensor, a wheel's declared effort and a static's true cost, each of
+which had quietly been a preset. Seven Deep Robotics robots join the library, a
+2,666-block world shows what the statics change buys, and the Mavic follow-ups
+ship with the two contributed pieces built to measure them (#18, #19). Every
+number is measured on machine `9722d23d12a3` (RTX 3060 laptop, Windows, CPU
+`mj_step`); every engine change carries a value-parsed revert switch.
+
+### Physics
+
+- **A wheel's stall torque is no longer capped by its own rotational inertia**
+  (2026-09-11, `omnisim_newton_runtime.py`; hatch
+  `OMNISIM_NEWTON_WHEEL_ARMATURE_RATIO`, default 100, `=1` or `=0` reverts
+  bit-identically). The velocity-servo gain clamp `kv ≤ M_ii/dt` — written for
+  the ladder0 pogo — also bounded a pure-velocity motor's peak torque
+  `kv·(cmd − ω)`, so the shipped Husky's wheels could deliver 9.5 N·m at a
+  3.46 rad/s error against the ~25 N·m a four-tyre scrub pivot needs, and the
+  declared 200 N·m was never approached. Rolling straight needs almost no torque
+  (wheel-rate ratio 1.000); a pivot is simply the first real load a wheeled
+  base meets (0.013). Confirmed three ways: `OMNISIM_NEWTON_VELOCITY_GAIN_CLAMP=0`
+  takes the ratio to 0.99, `newtonGroundMu 0.02` to 0.96, and a substep sweep
+  1/2/4/8 gives 0.0128 / 0.0172 / 0.0337 / 0.0678 — a clean ×2 per halving of
+  the sub-step, exactly `kv_max = M_ii/sub_dt`. The same invariant
+  (`dt·kv ≤ M_eff`) is now held by raising `M_eff` with real rotor armature
+  instead of starving `kv`, so the pogo the clamp was written for cannot
+  return. Open loop, no bridge — wheel-rate ratio, then chassis yaw ratio:
+  Husky 0.0128 → 0.987 (yaw 0.0069 → 0.532), TB3 Burger 0.2440 → 0.982
+  (0.2383 → 0.958), ROSbot XL 0.0104 → 0.931 (0.0069 → 0.525). Yaw lands where
+  physics puts it, not at 1.0: the Burger is a true two-wheel differential
+  drive and scrubs nothing; the two skid-steers must scrub all four tyres, and
+  a Coulomb moment balance for the Husky's geometry predicts a 0.55 ceiling
+  against the 0.532 measured. Straight-line tracking is unchanged (0.9991).
+  The honest cost: a driven wheel is now a flywheel, so a base freewheeling
+  down a slope accelerates more slowly. `dof_armature` is dual-written to the
+  `mujoco_warp` model with a revert-on-failure path. This also root-causes
+  `roll-check.md` §5, open and explicitly not root-caused since 2026-07.
+- **URDF inertia tensors and Robot-root inertia now reach the solver**
+  (2026-09-10, `OmUrdfImporter.cpp`, `OmSolid`,
+  `flushPendingNewtonRegistrations`; hatches `OMNISIM_URDF_USE_INERTIA=0`,
+  `OMNISIM_NEWTON_INERTIA_COM=0`, `OMNISIM_NEWTON_ROBOT_GEOM_INERTIA=0`). Two
+  defects made a body's rotational inertia a mass-scaled preset whatever the
+  author declared. The importer gated tensor emission behind a presence-gated,
+  default-OFF flag — an ODE-era workaround for a `dMassSetParameters` crash
+  that outlived ODE's deletion by a month — so the native `URDFRobot` path
+  never wrote `Physics.inertiaMatrix` and `add_body` substituted the
+  Husky-tuned preset, with `kMinInertia 1e-4` silently dropping small tensors
+  and `centerOfMass` discarded unless `OMNISIM_NEWTON_USE_LINK_COM` was set
+  (handing MuJoCo a COM-frame tensor at `ipos = 0` understates joint inertia by
+  `m·d²` and zeroes the gravity torque on any pendulum-shaped link); and the
+  geometry-derived branch skipped every `Robot` wrapper. Measured, before →
+  after: the cart-pole pole read 0.26669 about the ORIGIN with `ipos = 0`, and
+  a 4.5× tensor change gave a byte-identical `mjModel` → 0.0667 with
+  `ipos = [0, 0, 1.0]`, and the control now moves it; two 8×-scale robots with
+  no `<inertia>` both read `[0.0668, 0.0376, 0.0376]` → `[0.0219, …]` and
+  `[1.3333, …]`, exact to seven digits against `m/12·(b²+c²)`; a 0.2 m rod
+  pendulum released horizontal (theory 0.21615 s) never fell at all →
+  0.21515 s, −0.46 %. Every load prints an inertia provenance census (N
+  declared, M from geometry, K from the preset) and a rejected tensor WARNs
+  with the link name, so this class of substitution can never be silent again.
+  **Behaviour change, read before deploying a trained policy:** on
+  `g1_stand_deploy` 14 of 15 bodies moved `body_ipos` (max 0.154 m). That
+  closes the train–deploy COM gap `train-deploy-gap.md` names as the dominant
+  cause of trajectory drift — deploy now matches the trainer's `add_urdf` —
+  and it means a policy trained against the old COM-at-origin deploy now runs
+  on different physics; `OMNISIM_NEWTON_INERTIA_COM=0` restores what it was
+  trained on. Husky deterministic straight-line drive 12.532 m vs 12.511 m
+  reverted (0.17 %); the OmniQuad still stands at trunk z 0.845 with its trunk
+  tensor dropping from the preset (3.33, 3.10, 1.09) to the declared (1.17,
+  1.14, 0.20); `omniarm6_real_pick_place` still grasps, lifts, carries and
+  places (its already-failing drift criterion widens 0.0205 → 0.0283 m).
+- **Plain static colliders share Newton's world body: a 5000-static world
+  loads in 16 s instead of never** (2026-09-07; hatches
+  `OMNISIM_NEWTON_STATICS_ON_WORLD=0`, `OMNISIM_NEWTON_FAST_PAIRS=0`). Every
+  static Solid used to be its own MuJoCo body, and the broadphase pair buffer
+  grows with the square of the body count: 2000 one-metre statics died in
+  `mj_broadphase` (`mj_stackAlloc: out of memory`) and 5000 never finalised
+  while `run-headless --until-finalized` still said PASS. A static with no
+  joint in its subtree, no TouchSensor / Connector / VacuumGripper and no cloth
+  coupling now registers its shapes on newton body −1 at the composed world
+  pose; contacts and raycasts still name the Solid, a field write that moves
+  it re-places its geoms on both solver paths, welds treat it as the world, and
+  a static that carries a device, a joint or cloth keeps its body. Two
+  quadratic walls in vendored newton 1.5.0 are bypassed from the runtime:
+  `add_shape` walked every earlier shape on the body per add (5000 statics
+  registered in 6.9 s → 0.6 s) and `_find_shape_contact_pairs` was a Python
+  double loop over 12.5 M pairs (`builder.finalize` 18.2 s → 0.09 s). Measured
+  on N static boxes plus one ball: N = 2000 finalises 9.1 s after launch (was
+  FAILED), N = 5000 in 15.9 s with the ball resting at the right height (was
+  never); N = 20000 registers in 2.5 s and finalises in ~130 s, all of it
+  inside newton's own MuJoCo conversion — the next wall is vendored. The census
+  line reads how many statics went to the world body; `run-headless
+  --until-finalized` now FAILS a world whose census registered bodies but
+  never finalised; a world whose only colliders are plain statics gets one
+  welded anchor body so newton's converter has its joint
+  (`template_deterministic` in the smoke set pins it); and `OMNISIM_BINARY` is
+  honoured by the harness and the lane-4 runner as it is by `run-headless`.
+
+### Fixed
+
+- **A joint authored at a non-zero `position` now starts the first physics
+  step THERE** (2026-09-08; `OmBasicJoint::flushPendingNewtonRegistrations`,
+  `OmUrdfImporter.cpp`, `omnisim_newton_runtime.py`; hatch
+  `OMNISIM_NEWTON_SPAWN_AT_POSITION=0`). Three things disagreed about what
+  `HingeJointParameters.position` means: the URDF importer wrote the endPoint
+  at the URDF zero pose and set `position` to the `<rest>` / midpoint angle,
+  Webots' joint bookkeeping treats the authored endPoint pose as the pose AT
+  `position`, and the Newton bridge registered the joint frame at the current
+  pose with the coordinate at 0 — so every URDF robot with a rest crouch (Go2,
+  B2, OmniQuad, the Deep Robotics dogs, a midpoint-seeded Panda joint 4) spawned
+  straight-legged with only the motor targets carrying the crouch, and the
+  servos yanked it there in ~0.2 s (the Lite3 read hip-pitch −0.015 / knee
+  0.524 at t = 8 ms against targets −1.0 / 1.8 and drove its feet through the
+  floor). Now the importer writes the endPoint already posed, the bridge
+  defines the joint frame at the child's zero pose (Webots' own
+  `zeroEndPointTranslation` / `zeroEndPointRotation`) and seeds newton's joint
+  coordinate with `position`, and the first forward kinematics lands on the
+  authored pose: the same trace reads −1.000 / 1.800 at t = 8 ms. Limits and
+  the position readback stay absolute. Hand-authored worlds with a posed
+  `position` (the alife creatures) now read the authored angle at spawn
+  instead of 0.
+
+### Robot library
+
+- **Seven Deep Robotics robots join the library** (2026-09-08,
+  `projects/robots/deep_robotics/`, from
+  [DeepRoboticsLab/deep_robotics_model](https://github.com/DeepRoboticsLab/deep_robotics_model)
+  commit `549eb9ac`, BSD-3-Clause): the **Lite3** and **X30** quadrupeds, the
+  **M20**, **M20S** and **M20 + AgileX Piper** wheeled-legged quadrupeds, and
+  the **DR02 Standard** / **DR02 Pro** humanoids (plus upstream's
+  fixed-wrist DR02 Pro). `make_urdfs.py` regenerates every package from a
+  sparse clone; `PROVENANCE.md` lists each change to the upstream files (mesh
+  paths, standing rest poses, bare foot frames with the contact sphere moved
+  onto the shank, one full-width-period typo) and the shared-mesh layout that
+  keeps the M20 family at one copy of its leg meshes.
+- **Every one of them stands.** A stand world per robot plus a seven-robot
+  showroom under `projects/robots/deep_robotics/worlds/`, all run by the new
+  `deep_robotics_stand` controller, which ramps the motors from the engine's
+  spawn pose to the URDF rest pose. Two engine behaviours were measured on the
+  way and are written up in `PROVENANCE.md`: a URDF robot's joints start the
+  first physics step at q = 0 whatever `<rest>` / `HingeJointParameters.position`
+  says (only the motor targets carry the rest pose), and a stiff position servo
+  on a light leg link is numerically unstable at an 8 ms step — the Lite3
+  hopped and flipped on every floor, friction, contact stiffness and damping
+  tried until `newtonSubsteps 8` + `newtonCompoundColliders TRUE` (with
+  `newtonGroundMu 2`) held it. Every new world carries that recipe.
+- **A legged terrain traverse for the Lite3 and X30**
+  (`projects/robots/deep_robotics/worlds/{lite3,x30}_terrain.omniworld`,
+  controller `deep_robotics_crawl`). A SCRIPTED, statically stable creep gait
+  through closed-form leg IK — the Unitree B2 crawl model re-parameterised for
+  the Deep Robotics leg geometry and mirrored joint axes, with an offline
+  IK-versus-URDF-chain self-test — plus a heading hold that steers with the
+  gait's yaw sweep from the robot's own pose. No supervisor pin, no policy,
+  and at that point nothing sensed the terrain (the next bullet makes it
+  map-aware). Measured 2026-09-08 on a 10 m ElevationGrid
+  strip of 2–6 cm rolling hills: the Lite3 crossed it at 0.045 m/s within
+  12 cm of its line (20 cm once map-aware) and never tilted; the X30 at 0.07–0.10 m/s within 4 cm;
+  both stop and hold their stance 1.5 m past the strip. Catalogued under the
+  quadruped-locomotion table with that label so nobody mistakes it for
+  learned walking.
+- **The X30 crosses a 16 m EXTREME-terrain course, and the crawl is now
+  terrain-aware** (`projects/robots/deep_robotics/worlds/x30_extreme_terrain.omniworld`:
+  6–14 cm rolling hills, a field of 2–4 cm rubble plateaus, a 12° ramp up to
+  a 0.64 m plateau and a 12° ramp down). `deep_robotics_crawl` gained
+  `TerrainCrawl`: the world's ElevationGrid is read once through the
+  Supervisor — standing in for the elevation map a real robot builds from
+  depth sensing — and the gait plants its feet on it, keeps the body at a set
+  height above the MEAN ground under the four feet (the map under the body
+  centre jumped at plateau edges), pitches to sustained grades (0.8 m
+  look-ahead, gated at a 6 % grade), picks the flattest of three footholds
+  along the stride, lifts each swing over the highest ground on its path and
+  slows on descents. Still scripted: no contact sensing, no policy, and the
+  measured-tilt feedback loop ships OFF (`--attitude-gain 0`) because every
+  gain tried rocked the robot over in the rubble. Measured 2026-09-08: the
+  X30 crossed the whole course including the descent — 18 m in 320 s
+  (0.056 m/s), minimum up-vector z 0.91, centreline within 25 cm, stops and
+  holds at x = 16.5 m. The ceiling is recorded, not hidden: 3–6 cm and
+  4–8 cm rubble plateaus tip it in the rubble field, a lateral foothold
+  search narrowed the support polygon and made it worse, and the Lite3 is
+  thrown sideways at the 7 cm hill of a half-scale copy of the course, so
+  no Lite3 extreme world ships.
+- **The quadruped chat bridge is config-driven.** `omnilink_quadruped_bridge`
+  now reads `_quadruped_configs.py` (`--robot <key>`): leg motor names, stand /
+  sit poses, per-leg sign conventions, a settle ramp, `body_lock`, and a `walk`
+  mode of `gait` (OmniQuad's supervisor-assisted gait, unchanged), `march`
+  (Lite3 / X30: the gait in place on real physics) or `wheels` (the M20
+  family drives its wheels — 0.48 m/s measured through the bridge). Five new
+  chat worlds: `omnilink_lite3` / `x30` / `m20` / `m20s` / `m20_piper`.
+  `tests/test_validate_urdf.py` pins the eight generated URDFs clean.
+
+### Agent bridges
+
+- **`/set_velocity` delivers the commanded yaw, and `/turn` refuses what the
+  base cannot do** (2026-09-10, `omnilink_mobile_bridge`;
+  `OMNISIM_MOBILE_YAW_SERVO=0`, `OMNISIM_MOBILE_YAW_GAIN` to override).
+  Angular rate was under-delivered badly — 0.6 % of command on the Husky, 13 %
+  on the Burger — while linear tracked at ~1.0. The mixing was not the bug
+  (textbook diff-drive, matching the URDF geometry); the deficit lived in the
+  solver (the stall-torque cap under *Physics*) and the bridge was lying about
+  it. It now feed-forwards the measured yaw gain, closes an integrator around
+  measured yaw and clamps to the measured ceiling, reporting `limited` above
+  it. Commanded vs achieved at low / mid / ceiling: TB3 0.132× → 1.003×,
+  Husky 0.006× → 0.999×, XL 1.001 / 1.001 / 1.000. Verbs return
+  `{commanded, applied, achieved, error, settled}` plus `limit_note`, not an
+  `{accepted, linear, angular}` echo. Two drive bugs found alongside: the
+  proportional slow-down clamp was inverted on any base topping out below
+  0.25 m/s (the Burger's overshoot +8.6 % → +1.5 %), and `settled` in the
+  drive branch meant "did not time out" rather than "converged". The ROSbot
+  XL's configured `wheel_radius_m` was 0.05 against 0.048 in its URDF, a 4 %
+  linear scale error. `gripper_effectors.py` drops a `setControlPID(5000, 0, 0)`
+  that is a no-op on this engine (see the `motor.md` note under
+  *Documentation*); `setAvailableForce` was already the live lever.
+- **Restart-safe motion identity** (2026-09-07). `seq` is monotonic only
+  within one controller process, so a caller polling for
+  `last_command.seq == 1` after a bridge restart could match the new process's
+  first motion instead of the one it dispatched. Every seq-bearing path —
+  dispatch replies, completion and superseded records, the wait timeout,
+  `get_robot_state`, the 409 busy detail, `GET /protocol`'s `instance` — now
+  carries a per-process `bridge_instance_id` beside the seq, and PROTOCOL.md
+  §5.4.1 rule 4 records the tuple requirement. `turn` used to report
+  `settled: true` when it had merely spent its correction pulses; it now
+  reports `settled` only on tolerance and names `completion_reason`
+  (`tolerance` / `timeout` / `correction_limit`).
+- **The mobile bridge's yaw envelope is re-measured after the stall-torque
+  change, and two bases stop refusing turns they can make** (2026-09-11,
+  `_mobile_configs.py`, `omnilink_mobile_bridge.py`). The armature change made
+  the solver deliver 7–104× more yaw than the bridge's `yaw_rate_gain`
+  constants believed, and the bridge feed-forwards `1/gain`, so it was
+  over-commanding by that factor while `max_angular_rad_s` clamped every base
+  to a fraction of what it could now do. Measured at each base's kinematic
+  ceiling through the documented protocol (`OMNISIM_MOBILE_YAW_SERVO=0`,
+  `OMNISIM_MOBILE_YAW_GAIN=1.0`), every base on its own world, no twin carried
+  across — old → new gain, then `max_angular` old → new in rad/s: TB3 Waffle /
+  Waffle Pi 0.1324 → 0.955 (0.182 → 1.313), TB3 Burger 0.1324 → 0.942
+  (0.328 → 2.331), ROSbot 0.0069 → 0.720 (0.034 → 3.497), ROSbot XL
+  0.0069 → 0.520 (0.032 → 2.416), Husky 0.0343 → 0.520 (0.119 → 1.805), Jackal
+  0.0343 → 0.490 (0.108 → 1.541). Three of the seven had inherited a twin's
+  number, never measured, and were wrong in both directions: the ROSbot is
+  materially better than the XL it copied, the Jackal worse than the Husky.
+  `can_rotate_in_place` is derived from the ceiling, so the ROSbot XL's
+  `cannot_rotate_in_place` refusal — a false negative since the armature
+  change — self-corrected with no edit to the refusal logic: `/turn` at ±90°
+  and ±180° settles within 0.88°, 5.2 s of simulation for 90° against a 49 s
+  estimate and an outright refusal before; the ROSbot was refusing too, and
+  `drive_to` on either base could not complete a leg needing more than ~90° of
+  heading change. `can_strafe` stays `false`: the XL's mecanum wheels are still
+  plain cylinders with no rollers, a separate and still-true limitation. The
+  yaw servo stays, on measurement rather than assumption — calibrated
+  feed-forward alone is 24 % short on the Husky and 34 % on the XL at a
+  0.05 rad/s request, outside the 0.15 band `settled` promises, while with the
+  servo the XL holds 1.0000 of a 1.5 and a 2.0 rad/s request. The armature did
+  not lengthen the stop transient (chassis yaw rate falls below 0.01 rad/s
+  within 1–4 ticks) and linear is not regressed (`set_velocity` holds 0.9991
+  at 0.2 and 0.5 m/s; `drive_forward` is bit-identical on the XL).
+  `yaw_rate_gain` is now documented in `omnilink-add-your-robot.md` with its
+  measurement recipe; an author adding a robot used to inherit the 1.0 default
+  silently, about 2× optimistic for a skid-steer. Every turning claim the fix
+  falsified is withdrawn across DEMOS.md, PROTOCOL.md, the maze and swarm
+  agents and the developer docs — the lesson kept, the number withdrawn,
+  nothing invented in its place. The sweep also found the maze agent's prompt
+  instructing the model to call a removed `snap_to_cell` verb after every
+  move; fixed.
+
+### Reported by beta testers
+
+- **The parked Mavic no longer jumps at world load** (#14, follow-up). The
+  tester's harness measured a repeatable 0.485 m displacement from the authored
+  start within 2.5 s; here it was 1.15 m along the heading plus a 20 cm hop
+  (engine body trace, step 30: z 0.10 -> 0.28). Bisected with sibling copies of
+  the bridge on one engine: the current bridge and the v8.1.17 bridge eject
+  byte-identically, a bridge that never commands the gimbal does not move, no
+  controller does not move, the v8.1.17 URDF ejects too, and lowering the
+  gimbal's URDF effort from 5 to 0.2 N*m only shrinks it to 0.3 m. The cause is
+  the init command itself: `setPosition(pi/2)` on the camera-pitch servo from
+  rest is a 1.57 rad step, and the reaction into a 1 kg airframe throws it. The
+  bridge now walks the commanded gimbal angle toward its target at 1 rad/s
+  (`GIMBAL_RATE_RAD_S`, ~1.6 s to straight down) from wherever the joint is; the
+  aircraft then parks at the authored pose to the millimetre (`-0.500, -0.501`
+  vs authored `-0.5, -0.5`) through 2 s. So the v8.3.0 idle drift and this jump
+  were the same servo: the friction declaration held the sustained part, this
+  removes the transient. `gimbal_pitch_rad` in `/state` now reports the
+  commanded (ramping) angle rather than the target.
+- **`reset` returns to the world's authored pose** (#14, found by the same
+  harness). The default teleport target was the `omnilink_mavic` spawn
+  `(0, -12, 0.1, yaw pi/2)` hard-coded in the bridge, so on any other world a
+  bare `POST /action {"action": "reset"}` put the aircraft somewhere else -- on
+  the tester's corridor world, 11.5 m away and off the edge of the floor.
+  The bridge now captures the URDFRobot's `translation`/`rotation` at init
+  (`yaw_from_axis_angle`, unit-tested) and resets there unless told otherwise.
+- **`no_progress` is advisory again inside `goto_waypoint {"wait": true}`**
+  (#14). The v8.3.0 stall report was documented as report-only, but the wait
+  helper returned on ANY fault, so a leg that stalled for 12 s of sim time came
+  back as failed instead of using the caller's `timeout_s`. Only a hard fault
+  ends the wait early now; the advisory is still set in `/state`, still in the
+  final response if the leg times out, and is cleared on arrival. Three unit
+  tests pin it.
+- **A fallen aircraft now reports `crashed`, and the stall check sees it** (#14).
+  The tester wrote that `no_progress` never fired on a wedged flight; the probe
+  that reproduced it clipped a shelf, tumbled, and sat on its nose at z 0.19 m
+  (pitch -pi/2) for 85 s in `mode=goto` with `fault=None` on every sample. Not
+  the closest-approach logic -- on a flight pinned at cruise it fired -- but the
+  stall check lived inside the bridge's `altitude > 0.25` gate, so an aircraft
+  that had fallen was never evaluated. Both checks now run before that gate,
+  and an airframe tipped past 1.2 rad of roll or pitch for 1 s of sim time in a
+  flight mode gets a HARD `crashed` fault (`crash_verdict`, unit-tested) that
+  ends a `goto_waypoint {"wait": true}` at once, because that leg cannot
+  succeed on its own; `no_progress` stays advisory.
+- **And the stall clock no longer resets itself on an aircraft at exact rest**
+  (#14, the tester's 197 s pin at cruise, 1.073 m from the target, with
+  `fault=None` on all 3868 samples). The v8.3.0 wiring decided "we just set a
+  new closest approach" with a float equality (`state.stall_best == dist_xy`),
+  and a distance that is bit-identical from one tick to the next satisfies it
+  on every tick -- a wedged airframe that MuJoCo holds at exact rest reset its
+  own 12 s clock 125 times a second. Any jitter fired it, which is why every
+  pin measured here reported and his did not: his aircraft moved by
+  millimetres a few times a minute, and each 60 s leg window saw a constant
+  distance. Reproduced engine-free by replaying the wiring on a constant
+  distance (never fires) and on +-0.1 mm of jitter (fires at 12 s). The
+  tracker is now one pure per-tick step (`stall_step`) whose clock resets only
+  on actual progress; four tests replay constant, jittering, progressing and
+  hard-faulted distances through it.
+- **The Mavic position hold has an integral term, and the v8.2.0 damping
+  change stays** (#14, the completion regression). The tester measured mission
+  completion fall from 14/17 on v8.1.17 to 8/18 on v8.3.0 on a shelf corridor
+  with 0.5 m of standoff. Reproduced with his harness on one engine so only the
+  bridge varied, three flights per arm, one engine per flight, on the ejected
+  start pose he had: v8.3.0 as shipped (`K_XY_V` 8, 1.0 m/s cruise) completed
+  1/3 with two flights wedged against a shelf face; the v8.1.17 bridge
+  (`K_XY_V` 3, 2.7 m/s) 2/3 with one flight tumbling into the first shelf at
+  1.5 m/s on leg 1; v8.3.0 with only `K_XY_V` put back to 3, 3/3 with one
+  contact. So the direction was real and the cause was the v8.2.0 "firmer
+  velocity damping": at 1.0 m/s the aircraft flies near-minimal straight lines
+  (path 23-33 m on a 34 m route) and cuts every corner along the shelf faces,
+  while at 2.7 m/s it swings wide (52-56 m) and clears them by overshoot. What
+  made the straight lines dangerous was a standing hold error of 0.2-0.6 m --
+  a body-frame trim the P term can only balance with an offset -- so each leg
+  started off-lane; the tighter arrival tolerance that would have exposed it
+  instead never arrives (the aircraft parks 0.55 m short, forever). A body-frame
+  integral term (`K_XY_I` 0.4, clamp 3, active inside `POS_HOLD_RADIUS_M`,
+  cleared by `reset`) removes the offset: with the authored start restored by
+  the gimbal ramp, the shipped bridge went 3/3 before the integrator with the
+  hull grazing at 0.000-0.005 m, and 3/3 after it with 0.15-0.18 m of hull
+  clearance and 0.30-0.32 m to the nearest shelf, travel 41 s, path 33.4 m.
+  An intermediate gain (`K_XY_V` 5, 1.6 m/s) was measured too: 1/3, two
+  collisions. The cruise ceiling stays at 1.0 m/s.
+- **`newtonGroundMu 1.5` is a per-world declaration, not a new default** (#14,
+  follow-up). The v8.3.0 note on the parked Mavic could be read as a change to
+  the engine; it was not. `WorldInfo.newtonGroundMu` still defaults to unset
+  (`-1`), which the engine runs at 1.0, and a world that does not declare the
+  field keeps exactly the old behaviour -- a tester nearly measured the old
+  physics believing it was the new. The shipped `omnilink_mavic.omniworld`
+  declares it; a world of your own has to as well.
+
+### Contributed
+
+- **`omnisim.apply_wrench`, a documented external-wrench helper** (public PR
+  #19, lluisestape-upc). A thin wrapper over `Node.addForce`,
+  `addForceWithOffset` and `addTorque` that adds no engine capability and
+  fixes the two things that are easy to get silently wrong with them: the
+  frame is stated at the call site (`frame="world"|"body"`, and the offset is
+  always in the node's local frame, as the primitive has it), and a supervisor
+  wrench is a single-step impulse, so `apply_wrench` returns a `Wrench` whose
+  `tick()` re-applies it every step for `duration_s` of simulation time.
+  Validates the target and the vectors, warns once past ten times the body's
+  weight (`clamp=` for a hard ceiling). `tests/test_wrench_api.py` builds a
+  zero-gravity world with two free bodies and checks the delivered impulse
+  against the analytic value -- with a degenerate one-shot arm beside it, so
+  a re-application that silently dies shows up as the two arms converging
+  (5 tests, engine lane, 11.5 s here). Exported from the `omnisim` package;
+  the engine override the suite honours is `OMNISIM_BINARY`, like everything
+  else in the tree. A contributed follow-up lets that override name an engine
+  installed outside the clone, with its caveat recorded rather than papered
+  over: a controller then resolves `omnisim` from the install's
+  `lib/controller/python`, so a module that exists only in a checkout is
+  invisible to it.
+- **The Mavic corridor navigation benchmark** (public PR #18, lluisestape-upc):
+  `tests/benchmarks/mavic_corridor/` -- two warehouse-corridor worlds, the
+  eight-waypoint mission script, the kinematic baseline, and a README with the
+  recipe. This is the test that made the v8.2.0 corner-cutting visible: every
+  flight reported eight arrivals while the hull cleared the shelving by
+  millimetres, and `min_hull_clearance_m` is the number that sees it. The
+  controller in the benchmark tree is a relay that execs the shipped bridge
+  (a world under `tests/` cannot see `projects/.../controllers/`, and the
+  engine falls back to `generic` without complaining). Verified from the new
+  location on this tree: 8/8, hull clearance 0.159 m, 40.8 s.
+
+### Documentation
+
+- **Two Linux onboarding gotchas from a fresh-clone test** (#17). The `gpu`
+  phase of `linux_bootstrap.sh` installs the physics wheels into the *system*
+  interpreter on purpose (the engine embeds it; a venv is invisible to it), so
+  a venv created for your own tooling needs `--system-site-packages` or
+  `include-system-site-packages = true` in its `pyvenv.cfg` to see them -- now
+  in the quickstart's Linux gotchas. And `python -m omnisim` runs from the
+  repository root: the clone directory is itself named `omnisim`, so from the
+  parent directory Python resolves the clone as an empty namespace package.
+  There is no installable package yet, so `pip install -e .` is not an
+  alternative; that is on the list.
+- **Public replies name releases, not commits.** A development commit hash
+  quoted in an issue reply does not resolve in a public clone, because each
+  release lands as a squashed snapshot (#17 hit this with `6a4381c4b`).
+- **`controlPID` and `acceleration` are dead on the Newton path**
+  (`docs/reference/motor.md`, 2026-09-10). `controlPID` parses, is
+  range-checked, streams to libController and still feeds
+  `OmMotor::computeCurrentDynamicVelocity` — but the ODE deletion removed the
+  consumer of that computation's result. The Newton/MuJoCo actuator is PD with
+  gains from the torque ceiling (`ke = effortLimit × 10`,
+  `kd = effortLimit × 0.5`) and no integral term. Measured on a one-hinge servo
+  over 250 ticks: `controlPID 10 0 0` vs `0.01 0 0` gives byte-identical
+  joint-angle traces for a limited `RotationalMotor`, a limit-less motor
+  promoted to a servo, a `LinearMotor` on a `SliderJoint` and a runtime
+  `wb_motor_set_control_pid` call; `maxTorque 20 → 2` diverges at tick 1 on the
+  same rig. Wiring `controlPID` into the solver gains was considered and
+  rejected: the default `10 0 0` would take a 194 N·m shoulder from `ke 1940`
+  to `ke 10`, and every position-controlled joint in the tree — deployed RL
+  policies included — would go limp at once.
+- **Four claims falsified by the inertia default flip are corrected**
+  (`sim-to-deploy-rl-recipe.md`, `g1-stand-rl-playbook.md`,
+  `simulator-comparison.md`, `g1-single-source-of-truth.md`).
+  `OMNISIM_URDF_USE_INERTIA=1` is no longer "required or the importer discards
+  `<inertial>`" — it is the default, and `=0` reverts; the measured lane-3b
+  parity score is flagged as predating the change rather than edited in place,
+  because it is evidence and must be re-run to speak for itself
+  (`OMNISIM_NEWTON_INERTIA_COM=0` reproduces the configuration it scored).
+  `roll-check.md` §5 — a coarse step divides the actuator's available torque
+  so the wheel slides instead of rolling — is root-caused by the armature
+  change under *Physics*. And the Deep Robotics `PROVENANCE.md` records that
+  the explicit spring–mass ratio does not predict the Lite3 stance
+  instability.
+
+### Demos
+
+- **Blockworld, a Minecraft-style block world for agents**
+  (`projects/samples/demos/worlds/environments/blockworld.omniworld`, guide
+  `docs/guide/blockworld-agent-environment.md`, 2026-09-07). A 32 × 32 field
+  of one-metre cubes — grass, dirt, stone, ore, six trees, one dynamic probe
+  ball — where every block is its own static Solid named by grid coordinate
+  (`DEF B_x_y_z`, name `b_x_y_z`), so an agent mines and builds over the
+  harness: `GET /scene/node/B_x_y_z`, `POST /scene/delete` and `/scene/spawn`
+  with `{"physics": "rebuild"}`, `GET /sim/contacts`, `POST /world/screenshot`.
+  No robot and no keyboard: the agent is the player. Generated by
+  `gen_blockworld.py` (seeded value noise; same inputs → byte-identical
+  output). Measured through the harness (CPU `mj_step`): light load 10.7 s,
+  5,343 nodes, 2,667 statics on the world body; 120 steps in 148 ms wall;
+  delete + rebuild 4.6 s round trip (the probe fell one block, 3.30 → 2.30);
+  `run-headless --until-finalized --fail-on-warning` PASS, finalised 7.7 s
+  after launch. It is the demo of the world-body statics change and would not
+  load at all without it.
+- **Three Agent Build Film flagship worlds ship** (2026-09-09/11;
+  `flagship/husky_one_passage.omniworld`, `two_robots_tower.omniworld`,
+  `two_robots_100_boxes.omniworld`; the flagship count moves 25 → 26). Four
+  Huskies sharing a 1.10 m passage — the film measured three coordination
+  mistakes: independent entry, symmetric proximity yielding, releasing a shared
+  approach too soon; two physical Cartesian builders with friction-only grips
+  stacking free dynamic blocks, where the wider-base design reached 20 blocks,
+  17 layers, 1.6868 m hands-off; and Part Two, two gantry robots (x / y / z
+  sliders and a two-finger gripper, the fingers supplying all grip force) on
+  either side of a plinth with one hundred free boxes at `basicTimeStep 8`
+  with compound colliders, elliptic cones and raised constraint caps, driven
+  by `tower100_builder` / `tower100_director`. The passage Husky variants live
+  beside the stock Husky as `husky_passage_{A,B,C,D}.urdf` with `package://`
+  mesh references, and every texture ships under
+  `projects/samples/demos/worlds/textures/` by `omnisim://` URL, so the worlds
+  load anywhere (they had pointed at absolute paths on the authoring machine).
+- **BattleBots realism pass**
+  (`projects/robot_combat/battlebots/worlds/hydra_vs_gravedigger.omniworld`,
+  2026-09-09). The spec sheet is re-derived — a 108 kg Hydra with a
+  2500 N·m / 55 rad/s ram that throws a heavyweight 2–3 m; a 113 kg
+  Gravedigger with a 30 kg bar at 160 rad/s, tip 80 m/s, 32 kJ stored.
+  `contactProperties` (never read on Newton) gives way to `newtonGroundMu 0.9`,
+  `newtonContactKe` / `Kd` 111000 / 667 — a 3 ms contact, still critically
+  damped; the stock 20 ms cushion let the bar sink 66 mm and swallow ~98 % of
+  a hit's energy — and `newtonSubsteps 12` so the bar tip moves under 3 cm per
+  sub-step. `battlebot_brain --tune KEY=VALUE` overrides one tuning value for
+  one bot (repeatable) and `weapon_hold` replaces a hard-coded spin throttle;
+  `OMNISIM_DAMAGE_TRACE=<path>` writes one JSON line per contact tick (default
+  OFF) and `scripts/dev/combat_realism_report.py` scores a configuration from
+  it.
+- **OmniTug 500 MCL dataset recorder**
+  (`projects/robots/omnisim/omnitug500/worlds/omnitug500_mcl_record.omniworld`):
+  the lidar-patrol arena with a recording controller. The rover drives the
+  same elliptical loop for 60 s and writes, at 5 Hz, ground-truth pose, noisy
+  wheel odometry and one 512-beam scan per tick, plus a kidnapped-robot
+  teleport at t = 30 s that leaves odometry untouched. Seeded, so two runs of
+  one build give identical files.
+- **Evaluation-only trace hooks, both off by default.** `PICK_PHASE_TRACE=1`
+  on `omniarm6_real_pick_place` records the simulation-time boundary of every
+  phase (ready, approach, pre-grasp, grasp commanded, lift, carry, released,
+  settled) as a `phase_trace` list on the result JSON;
+  `OMNISIM_MOBILE_TRACE_PATH=<file>` on the mobile bridge writes one JSON line
+  per tick with the commanded body and wheel targets next to the ACHIEVED
+  wheel rates (differentiated from the joint sensors, not the target echoed
+  back). And the two ladder0 OmniSim-arm controllers still imported from
+  `controller`, the alias deleted in 8.x, so every ladder run failed before
+  its first step — fixed, with `LADDER0_DURATION_OVERRIDE` for evaluations
+  that must hold a rung longer than the benchmark contract.
+
+### Cinema
+
+- **An action opening for the Agent Build Films, brand typography, and plate
+  segments with sources** (2026-09-08). `editorial.opening` selects
+  `signature` (the silent 10 s intro, still the default) or `action`: picture
+  and narration start at second zero, the AI-production disclosure rides the
+  first simulator shot as an overlay, there is no intro or outro, and the
+  score is an original synthesized bed with more movement through the
+  decisive run; action edits keep their source grade. A `kind: "plate"`
+  segment may carry a `source` video (an authored diagram) with the same
+  media-range, hash and delivery checks as a clip, and stays out of the
+  real-footage ratio. Films now end on the story. Space Grotesk (variable,
+  300–700), the brand-book display and body family the overlays render with,
+  ships under `resources/branding/omnisim/fonts/` under the SIL OFL 1.1 with
+  its licence text and a provenance README; `NOTICE` and
+  `THIRD_PARTY_NOTICES.md` gain the entry.
+
+### Tooling
+
+- **The pre-push smoke gate tolerates parallel engines** (2026-09-08).
+  Engines coexist by design — each takes the first free port in
+  [1234, 1294] — but the gate assumed it owned the machine: `test_suite.py`
+  required the literal pair "1234" and "1235" on one stderr line to prove its
+  engine had fallen back, so with a foreign engine on 1235 it reported a
+  correctly-behaving engine as a failure; and `run_smoke.py` exited 2 before
+  launching anything when 1234 was busy. Both now match the engine's own
+  port-fallback message (`... on port 1234. ... Using port N instead`) and
+  proceed; verified by a push that ran with four foreign engines up and 1234
+  held.
+
+## [v8.3.0] — 2026-09-03
+
+The optimization and housekeeping round, plus the first release whose headline
+fixes were all found by people outside the project. Every number is measured on
+machine `9722d23d12a3` (RTX 3060 laptop, Windows, CPU `mj_step`); every engine
+change carries a value-parsed revert switch.
+
+### Reported by beta testers
+
+Three fixes that came from outside reports, each reproduced here before it was
+changed, and each measured on machine `9722d23d12a3`.
+
+- **The parked Mavic no longer slides away** (#14). With rotors off and
+  `mode=idle` the airframe settled and then slid steadily along its own
+  heading at 0.056–0.075 m/s — 3.4–4.5 m per simulated minute, unattended — so
+  any measurement taken a few seconds after world load started somewhere
+  unintended. Bisected with a probe controller that reproduces one piece of the
+  bridge's init at a time: the propeller motors commanded exactly as `mode=idle`
+  does drift not at all, the device enables drift not at all, no controller at
+  all drifts 1 mm over 491 s, and **the camera-pitch gimbal servo alone
+  reproduces the full 4.5 m**. The servo's small sustained horizontal reaction
+  was not being held by the ground. Fixed in the world with
+  `newtonGroundMu 1.5`; the number is not arbitrary, because unset and an
+  explicit `1.0` drift *identically* (`+0.394, -7.471` after 60 s — the same
+  values to three decimals, so the documented 1.0 default applies correctly and
+  simply is not enough here), while 1.5 parks it: pose byte-identical from
+  t=18 s to t=61 s, residual 0.0009 m/s. Flight is unchanged — hover settles at
+  1.016 m, climb to 1.5 m at 1.515 m, steady-state error +0.015 m. ⚠ Two things
+  this does **not** claim: spawning at the ~0.04 m resting height instead of 0.1
+  starts the collider inside the contact margin and flips the airframe
+  (roll → −π), so the 6 cm drop stays; and the mechanism is unexplained — a
+  servo holding a 43 g camera needs micro-newton-metres, not the ~10 N it takes
+  to slide a 1.03 kg body against µ=1.0, which points at solver-level energy
+  injection at `basicTimeStep 8` and is logged as an open engine question.
+- **A wedged aircraft says so** (#14). A 17-flight waypoint campaign measured two
+  flights that pinned themselves against an obstacle and sat there for 212 s and
+  40 s while the bridge still reported `mode=goto` and `fault=None`. The Mavic
+  bridge now tracks closest approach and sets `fault="no_progress"` when it has
+  not improved by 0.25 m for 12 s of sim time, clearing itself if progress
+  resumes. **Report only** — the mode is untouched, because `goto_waypoint` is a
+  position setpoint with no planner behind it and giving up is the operator's
+  call. The check is skipped inside `WAYPOINT_REACH_TOL_M`: holding a hover at
+  the target makes no progress by definition, and the first version would have
+  called every stationary hover a fault. `stall_verdict` is a pure function with
+  6 unit tests; a real 9 m goto reports `fault=None` across all 51 samples.
+- **The IPC handshake budget is 300 s, and it announces itself while waiting**
+  (#15). A tester's cold load to finalize took 31.1 s against the old 60 s
+  budget — half of it, with nothing wrong. The engine writes its hello when it
+  *accepts* the connection, so a controller spawned early waits out the rest of
+  the world load, and a machine ~2× slower reaches 60 s while healthy and is
+  then told it has a build mismatch. The timeout only fires when no bytes ever
+  arrive (a real mismatch is caught by the magic/version checks the instant the
+  hello lands), so the longer budget slows no real failure down; the override
+  ceiling moved to 900 s so the default is still raisable. The wait is sliced,
+  so every 30 s the controller says what it is waiting for instead of looking
+  hung.
+- **And the message that sent that reporter down the wrong path is fixed.**
+  libController's scheduler already distinguished four handshake failures —
+  unrecognised hello bytes, protocol-version mismatch, a stale-pipe nonce
+  crossing, and a timeout — but `robot.c` wrote one generic "engine and
+  libController are different builds" line into the durable sidecar for all
+  four, and only two of them are build mismatches. A timeout therefore read as
+  an ABI mismatch and pointed at `doctor`, which then reported the builds
+  compatible — a closed loop. The sidecar now names the check that failed, with
+  its values.
+
+### Performance
+
+- **PROTO-heavy worlds parse and construct faster.** Two per-instance costs
+  in the PROTO machinery are gone: the model constructor compiled a regex per
+  (token, field) to find template-regenerator fields (now once per field, and
+  tokens that cannot name a field are skipped), and every instance re-lexed
+  its body text character by character (tokens are now cached per exact body
+  text and deep-copied). Stage timings under `OMNISIM_RELOAD_PROFILE=1`, same
+  machine, interleaved: city_traffic PROTO model reads **510 → 195 ms**, parse
+  stage **~1000 → ~700 ms**, per-instance tokenize **1.0–1.6 s → 0.35 s**;
+  warehouse_industrial model reads 100 → 33 ms, parse 545 → 455 ms.
+  `OMNISIM_PROTO_TOKEN_CACHE=0` reverts the token cache.
+- **`omniworld validate()` parses a 1 M-token world 2.8× faster** (Mars: 3.2 →
+  1.07 s cold, 0.09 s on a repeat text): a `str.find`-driven tokeniser with one
+  C-level `findall`, direct-index bracket loops, a memoised placement scan and
+  an asset-locality verdict that no longer splits 8 MB into lines. Proven pure
+  on all 8,381 tracked worlds/PROTOs (identical token streams, trees and
+  placements). With that, the engine-free lane is **50 s of pytest (57 s
+  wall) for 1,255 tests**, down from 5 min 05 s this morning.
+- **The engine-free test lane runs in 71 s instead of 5 min 05 s** (1,229 tests,
+  same assertions): the Mars generator hashed 2.9 M lattice corners for 3,000
+  distinct keys (a bounded `lru_cache` on the pure hash takes `omniworld
+  generate mars` from **6.73 → 1.58 s**, forest 0.66 → 0.12 s, desert
+  1.24 → 0.23 s, byte-identical output); generated worlds are shared per
+  `(recipe, seed, params)` across tests; a 15 s hot-reload test waited on a
+  knob it never lowered (now 0.2 s); the roll-check corpus scan enumerates
+  tracked worlds and skips files that name no joint (10.3 → 0.8 s).
+- **PROTO template evaluation compiles less JavaScript.** Static VRML
+  stretches are handed to the engine as data instead of being pasted into the
+  compiled module: city_traffic's filled templates shrink from 2,321 to
+  1,312 KB and `importModule` from ~2.25 to ~2.05 s, with an order-sensitive
+  result hash proving byte-identical output on both arms. Two heavier ideas
+  were measured and refuted the same day (a per-instance syntax-pass cache;
+  one shared `QJSEngine`, whose apparent 2× turned out to be three test lanes
+  loading the machine). `OMNISIM_TEMPLATE_CHUNK_HOIST=0` reverts.
+- **A Camera or RangeFinder on a big scene steps 2.0× faster.** Every
+  camera-family device rebuilt its whole draw list on every rendered frame
+  (the Solid walk, dynamic_casts, ambient/uv fills, texture lookups) while the
+  main view had cached its list since the wgpu flip. Devices now keep one
+  cached list each, refreshed in place and rebuilt on the main view's hooks.
+  Measured with a 320×240 camera enabled every step, interleaved arms: on
+  `city_traffic` (4,587 draws) the per-frame collect drops **32.3 → ~4 ms** and
+  the engine step **103 → 52 ms**; on the fleet arena (105 draws) it is a
+  wash because that scene is controller-bound. `OMNISIM_WGPU_SENSOR_DRAW_CACHE=0`
+  reverts; `OMNISIM_WGPU_REPORT=1` prints the per-device collect telemetry.
+- **World loads are self-describing under `OMNISIM_RELOAD_PROFILE=1`.** The
+  "construct" stage is now attributed to the PROTO machinery per phase
+  (model reads, template engine, tokenize, syntax, readNode, aliasing) and
+  the JavaScript template path is split further. On the city the finding is
+  that `QJSEngine::importModule` compiling each filled template is 2.3 s of
+  the 6 s construction (60 calls, ~38 ms each); a shared engine is ruled out
+  because `wbrandom.js` keeps module state, so this is recorded as the next
+  lever rather than taken.
+- **A headless load check is 21–40% faster.** `python -m omnisim run-headless
+  <world> --until-finalized`, best of 2: husky_fleet_arena **8.03 → 4.81 s**,
+  warehouse_industrial **8.83 → 6.35 s**, newton_cloth_drape **7.01 → 5.52 s**;
+  engine-only process-start → first physics step 5.95 → 3.91 / 6.4 → 5.25 /
+  5.4 → 4.7 s. Same PASS, same sidecar. Five levers:
+  - every Python controller start ran two synchronous `python -c` probe
+    subprocesses (~80 ms each) and never cached the answer — 11 controllers on
+    the fleet arena spent 1.63 s serially re-probing one interpreter between
+    parse and the first step. `OmLanguageTools::pythonCommand` now caches per
+    (command, PATH, PYTHONHOME, PYTHONPATH). `OMNISIM_PYTHON_PROBE_CACHE=0`
+    reverts.
+  - a `--no-rendering` run still drew one full main-view frame on its first
+    paint, lazily initialising wgpu-native (~300 ms) and launching the
+    OmniLight probe bake (11,200 probes, ~450 ms trace) for a run that never
+    shows a pixel. The main view now declines while the process was started
+    with `--no-rendering` and rendering is off; screenshots and camera devices
+    use their own paths and are unaffected.
+  - `OmCudaContext` is lazy (first GranularGroup / CUDA-smoke use) instead of
+    being probed on the main thread before the world file is opened (~250 ms;
+    Newton/warp has its own CUDA init). `OMNISIM_CUDA_EAGER_INIT=1` restores
+    the eager probe and its log line.
+  - the Newton preload blocks `pxr` before `import newton`, so newton takes
+    its documented no-USD branch: the Pixar USD stack was 240–330 ms of the
+    ~1.5 s import for an authoring path the engine never calls.
+    `OMNISIM_NEWTON_USD=1` keeps it importable.
+  - `--until-finalized` stops `--settle-after-step` (0.5 s) after the first
+    physics step lands and polls the log at 100 ms, instead of sitting out the
+    fixed 2 s `--completion-grace` after finalize (the engine reaches step 1
+    ~50 ms after finalize on a CPU world; the runner then waited ~2 s).
+- **The engine edit loop is shorter.** `src/omnisim/Makefile` ran ~10
+  `$(shell)` toolchain probes at parse time on every invocation (~1.1 s on
+  MSYS, where a process spawn is ~40 ms). `build_probes.sh` answers them in
+  one spawn and caches a makefile fragment keyed on PATH, CXX, OSTYPE and the
+  toolchain binaries' mtimes. No-op `make release` **1.64 → 1.03 s**,
+  touch-one-TU + relink **2.69 → 2.29 s**; `make -n` output byte-identical
+  either way. `OMNISIM_PROBE_CACHE=0` runs the probes inline.
+- `OmProtoManager` no longer re-reads and regex-scans the parent world file
+  for every PROTO instance; declarations are tabled once per (file, mtime,
+  size). Within noise even on `city_traffic` (a quadratic pattern removed, not
+  a measured second); `OMNISIM_EXTERNPROTO_SCAN_CACHE=0` reproduces the scan.
+
+### Fixed
+
+- **A stale `WEBOTS_HOME` no longer becomes the install root.** Windows keeps a
+  machine-level `WEBOTS_HOME` after Webots is uninstalled, and every
+  legacy-alias site adopted it verbatim whenever `OMNISIM_HOME` was unset. The
+  install root then became a directory that is not there: a standalone `make`
+  in a controller directory failed with a bare "No rule to make target
+  'C:/Program Files/Webots/resources/...'", and qt_utils resolved every
+  robot-window resource under the phantom path. That is the normal state of a
+  machine migrating from Webots, not an exotic one. All twelve adoption sites
+  now check the directory exists first and otherwise behave exactly as if the
+  variable were unset: `resources/Makefile.include` and
+  `resources/Makefile.os.include` inline, the ten leaf Makefiles that must
+  resolve the root before they can include anything from it via one shared
+  `OM_LEGACY_HOME` line, and `StandardPaths.cpp` at runtime. The test is
+  `test -d`, not `$(wildcard)`, which splits on spaces and would report a real
+  `C:\Program Files\...` install as missing. A `WEBOTS_HOME` naming a real
+  directory is still adopted, and `doctor` now reports a stale one as clutter
+  rather than a landmine, with the exact removal command.
+
+- **The main view no longer crashes on a scene whose textures exceed the VRAM
+  budget.** `environments/city.omniworld` (159 textures, 750 MB) aborted with a
+  wgpu panic -- "TextureView does not exist", then "BindGroup is invalid" --
+  the moment the main view rendered it: in the GUI, under the harness flags and
+  in every capture, while passing every headless load check. Two causes, both
+  in the 512 MB budget path: `OmWgpuTextureCache::acquire()` ran the LRU
+  eviction synchronously, releasing views that draws collected earlier in the
+  same frame still referenced; and the render target's texture+shadow bind
+  groups are keyed by raw view handles, which wgpu recycles, so a new view
+  could alias a dead one. Eviction now runs only at a draw-list rebuild point
+  (`OmWgpuTextureCache::evictStale()`), never inside `acquire()`, and releases
+  only entries nothing has touched since the previous rebuild; when it releases
+  anything the owner flushes the view-keyed bind groups. An over-budget scene
+  keeps its working set resident and says so once in the log instead of
+  re-uploading it. The city now runs 75 s under `--batch --mode=fast
+  --minimize` with zero panics; it aborted in under 5 s before.
+
+- **`physicsBackend "ode"` no longer leaves a Solid with no physics -- the
+  ODE stub layer is gone.** Since ODE's deletion (`bdc02139`) a Solid or
+  world pinned to `"ode"` resolved to an inert `OmOdeBackend` stub and was
+  registered with NO solver -- no gravity, no contacts -- while the world
+  loaded clean. Every backend value now resolves to Newton; a retired value
+  warns once per world, naming the first offender. Proven on a throwaway
+  world: a 1 kg box pinned to `"ode"` fell 1.997 -> 0.832 -> 0.099 m over
+  60 steps and rested on the floor, with the warning printed once. Deleted
+  with it: `OmOdeBackend` (278 lines), `src/omnisim/ode/` (362),
+  `OmSimulationCluster` (157), the ODE-keyed contact-sound subsystem, the
+  ~186 always-NULL `dBodyID`/`dGeomID`/`dJointID`/`dMass` members across 67
+  files and every branch they guarded, the `OMNISIM_PROBE_BACKENDS` probe,
+  the Makefile's `ODE_*` variables and `ode/` rules, and six env vars that
+  selected nothing (`OMNISIM_FORCE_ODE`, `OMNISIM_LEGACY` physics arm,
+  `OMNISIM_ALLOW_ODE_FALLBACK`, `OMNISIM_NEWTON_SKIP_ODE_PASS`,
+  `OMNISIM_NEWTON_MESH_TO_ODE` -- which routed mesh-collider articulations
+  to no physics -- and `OMNISIM_NEWTON_CONTACTS_CMP`). Net under
+  `src/omnisim`: +563/-3,557 lines. Fixed on the way: every `Hinge2Joint`
+  warned "can only connect Solid nodes that have a Physics node" (the check
+  keyed on ODE bodies that never existed), and the ALT+click force/torque
+  drag keyed on an ODE body merger, so it could never engage.
+- **Both CI workflows are green again.** `linux-build` had been red since the
+  2026-09-02 round-one push: its smoke greps the main view's lazy
+  `wgpu-native init OK` line as proof the build has a renderer, and a
+  `--no-rendering` run stopped drawing that frame. `OMNISIM_RENDERER_PROBE=1`
+  restores the first frame on request and the Linux smoke sets it (an ordinary
+  load check keeps the ~1 s saving: 4.93 s with the probe vs 3.87 s without on
+  the smoke world). `Licence and provenance` had been red since before the
+  session: eight tracked pilot artifacts under `social/launch/pilots/` had no
+  provenance record; two `PROVENANCE.md` files now name them as OmniLink's own
+  generated outputs.
+- The `public` remote no longer embeds a GitHub token in `.git/config`; the
+  publish script builds its own remote from `PUBLIC_REMOTE` and `GITHUB_TOKEN`,
+  so nothing depended on it. Rotate that token.
+- `publish_snapshot.sh` bumps every version site through `bump_version.py` in
+  one commit instead of four sed+commit blocks (whose blanket `sed` rewrote
+  prose that merely mentioned a version).
+- Four of the six direct Qt includes owed after the ratchet re-baseline were
+  drained (each claim checked against the Qt headers); the two that remain
+  need the complete type and carry a dated comment. Ratchet total 387 → 384.
+- A healthy run could FAIL `run-headless` with "libController recorded
+  connect/handshake failures for this run": libController's
+  `<log>.connect_error.txt` is append-only and tagged `run=<engine pid>`, and
+  Windows reuses pids, so entries another session appended hours earlier under
+  the same pid read as this run's. `OmLog` now drops that sidecar when it
+  truncates the log, as it already did for `.newton.json`.
+
+### Agent-facing
+
+- **`python -m omnisim run-headless <world> --profile`** prints the engine's
+  own load attribution after the run (stage split, PROTO phases, the
+  template-engine split, the Newton preload and how long the main thread
+  blocked on it) and stamps every log line with `[t+<ms>ms]`
+  (`OMNISIM_LOG_TIMESTAMPS=1` on its own does the stamping). Until now the
+  timeline of a load could only be reconstructed by polling the log file
+  from outside.
+- **`python -m omnisim doctor` reports CI.** A new advisory `ci` row asks
+  `gh` for the newest run per workflow on the current branch and prints
+  `N/M workflows green on <sha>` (or which ones are red / in flight, how far
+  behind HEAD the newest run is, and the `gh run view --log-failed` command).
+  It cost the project a day of red CI that no local gate showed; the row is
+  capped at 1.5 s and reads `unknown (<reason>)` offline or without `gh`.
+- **The startup-race stress workflow ran for real:** dispatched once on
+  2026-09-02, two rounds of two concurrent launches, zero races, zero
+  failures, 18 minutes.
+- **`POST /world/load` runs LIGHT by default.** The documented rule was "load
+  with `light: true` or the harness is slower than the thing it replaces", and
+  an agent that forgot the flag got the slow path. A request that names
+  neither `light` nor `tracking` now injects the light supervisor; an explicit
+  `light: false` or a `tracking` object keeps the trackers, the response says
+  `default_applied: true` with the way back, `GET /capabilities` reports the
+  default, and `OMNISIM_HARNESS_LIGHT=0` restores the old default
+  process-wide. A consumer audit found no shipped caller that silently loses a
+  tracker. Measured on the fleet arena with the 2026-09-02 engine: load 5.2 →
+  4.65 s, `/sim/step 1` 54 → 23 ms (the August figures of 12.1 s vs 4.1 s and
+  17–47× predate the controller-probe cache and immediate-burst fixes and
+  are now quoted only as history).
+- **One command bumps the version.** `scripts/release/bump_version.py X.Y.Z`
+  rewrites the five version sites (the four the consistency test pinned plus
+  `scripts/packaging/omnisim_version.txt`) in one commit; a release used to be
+  four separate bump commits and the strings had drifted once. A weekly
+  `launch-race-stress.yml` workflow runs the startup-race stress script that
+  had no CI lane (not yet run in CI; its header says what to check first).
+- **Every `OMNISIM_*` environment variable is documented in one generated
+  page**, `docs/reference/environment-variables.md` (437 variables, 1,483 read
+  sites, kind = presence / value / int / string, read locations, harvested
+  description), produced by `scripts/dev/gen_env_reference.py` and pinned by a
+  docs test that fails when the page drifts from the source. 191 variables
+  were documented nowhere before. Three boolean hatches that were
+  presence-gated (so `=0` ARMED them) now parse their value:
+  `OMNISIM_EAGER_TEXTURE_DECODE`, `OMNISIM_NO_WINDOW`, `OMNISIM_NO_GL`.
+- **The engine's most-hit warnings name their consequence and fix.** 73
+  message strings across 30 files (Physics/inertia, collider rejections,
+  motor clamps, feedback preconditions, unknown nodes, URDF open, the Newton
+  readback plumbing lines) were rewritten to say what breaks and what to set
+  or run; every substring a matcher greps for was preserved. Actionable
+  messages 117 → 183 of 677 by the census in the commit.
+- **`make tests-unit` is green: 1,211 passed, 0 failed, 5 min 05 s** (it was
+  7 failed at 7 min 10 s). The seven failures were all stale pins — the
+  `#OMNISIM` header, the runtime's licence header, a `.wbt→.omniworld`
+  digest, a WSL reparse point crashing a corpus walk, the roll-check baseline,
+  a retired `doctor --strict` contract, and a Qt-include ratchet that counted
+  a WREN-deletion file move as new dependence (re-baselined with an
+  engine-wide `TOTAL` assertion).
+- `python -m omnisim doctor` gained seven advisory rows: vendored-runtime
+  staleness (the bundle copy of `omnisim_newton_runtime.py` vs `src/`; gating),
+  renderer DLL beside the binary, Pillow, `core.hooksPath`, ffmpeg, running
+  engines with their worlds, and whether port 6789 is a harness and on which
+  world.
+- `omnisim-mcp` exposes a tool for every harness route (damage group,
+  `read_bench`, `scene_node_particles`) and its descriptions match the
+  2026-09-01 harness (HTTP/1.1, `physics: "rebuild"` on spawn/delete, the
+  light-mode rule and `tracking` toggles, `frame` before `screenshot`).
+- `docs/developer/README.md` indexes fifteen plans and notes nothing else
+  linked to; `DEMOS.md` lists six launchers the catalogue was missing.
+- **AGENTS.md is a bootstrap again: 198 KB (~50k tokens) → 48 KB (~12k),
+  loaded into every agent session and subagent.** Every long table cell and
+  hard-won rule moved VERBATIM into `docs/developer/agents-first-moves.md`,
+  `agents-hard-won-rules.md`, `harness-endpoint-reference.md` and
+  `agents-reference-sections.md`, each summarised in one line with a link; a
+  mechanical inventory check (numbers, env vars, commit hashes, code spans,
+  links, paths) preserved 2110/2141 items, the 31 misses being the 13 stale
+  `#Lnnn` line anchors that were corrected to symbol names. Contradictions
+  resolved in the summaries (`--until-finalized` vs `--duration` budgets, the
+  light-mode step cost, BallJoint/TouchSensor marked RESOLVED, one harness
+  spelling); seven CLI verbs AGENTS.md never named are listed.
+- `GET /capabilities` → `not_supported` told the truth again (the
+  BallJoint/Hinge2 entries still said "gated OFF … UNIMPLEMENTED"; every
+  `source` cites a symbol instead of a rotted line number; a
+  `track.propulsion` entry added). Every one of the 56 harness diagnostic
+  codes now carries a next-action `hint` (31 had none), served through
+  `hint_for()`.
+- **An engine-free test lane exists: `make tests-unit`** (`pytest -m "not
+  engine"`, ~7 min, 1204 tests; the `engine` marker is applied at collection by
+  `tests/conftest.py`), plus a bring-up skip cap: a session whose Newton
+  bring-up skips exceed `OMNISIM_BRINGUP_SKIP_CAP` (default 2) fails instead
+  of reading green. `tests/test_version_consistency.py` pins the four version
+  sites to one value; `tests/dev/test_headless_runner_verdicts.py` pins the
+  runner's verdict functions against synthetic logs. `tests/README.md`
+  describes the real lanes (it was upstream-era).
+- `python -m omnisim doctor` no longer dies with a `UnicodeEncodeError` when a
+  commit subject, path or world name carries a character the Windows console
+  codepage cannot encode (it printed a traceback and exited 1).
+
+### Housekeeping
+
+- **The tree now holds only what the product, its tests and its cited evidence
+  reach.** Everything removed is recorded in [docs/ARCHIVE.md](docs/ARCHIVE.md)
+  with the commit that still holds it (`git show <sha>:<path>`), and each class
+  was deleted only after a reachability check, not on a name pattern: 113 stale,
+  duplicated, campaign-log and finished-plan documents; 208 unreferenced media
+  and image-source files; ~7.5k lines of Python no tracked file imports (27
+  files, plus the 10.5k-line duplicate of the deploy runtime under
+  `projects/policies`); 345 files and 105 MB of `projects/` residue (robot
+  descriptions no world reaches, meshes no URDF names, PROTOs nothing
+  instantiates, controllers no live world names, training artefacts and ghost
+  lookup tables); 145 regenerable benchmark result files nothing cites; and 7
+  one-off pod drivers. The measured effect on the working tree:
+
+  | | before | after |
+  |---|---|---|
+  | files | 12,746 | 11,884 |
+  | size | 1,239.7 MB | 1,072.6 MB |
+  | Markdown files | 728 | 617 |
+  | `docs/*.md` | 383 | 291 |
+  | `docs/` | 1,001 files, 172.1 MB | 698 files, 108.3 MB |
+  | `projects/` | 4,216 files, 854.2 MB | 3,842 files, 752.9 MB |
+
+- **An agent's searches return far less that is not engineering.** `.rgignore`
+  keeps ripgrep out of the two non-engineering workspaces (`social/`, the
+  evaluation results), and the deletions above removed the rest. Files matched
+  by the canonical agent queries, ripgrep over the whole tree, before and after:
+  `newtonSolver` **1,252 → 591**, `wgpu` **534 → 287**, `harness` **739 → 604**,
+  `OMNISIM_NEWTON` 450 → 376, `URDFRobot` 456 → 425, `Camera` 513 → 478,
+  `physicsBackend` 298 → 259, `run-headless` 157 → 127, `simulationQuit`
+  161 → 135. Two searches an agent runs constantly now return half as many
+  files, and the ones that remain are code, worlds and reference docs.
+
+- **Every authored world is catalogued or archived.** 122 worlds that loaded but
+  were listed nowhere are now in [DEMOS.md](DEMOS.md); the 4 that could not load
+  were archived. The rule an agent can rely on: a world not in the catalogue
+  does not exist.
+
+- 33 stale engine-binary variants (`omnisim-bin-*.exe`, `.bak`, `.inuse-*`,
+  dated copies; none referenced, none newer than 2026-08-15) were removed
+  from the runtime directory; the live binary, its launchers and every
+  referenced or recent variant stay. Most of the remaining copies are
+  hard-linked into the AgentBench A/B worktrees and free nothing until those
+  are retired.
+- `_scratch/` went from 4.2 GB to 0.6 GB: an audit classified all 1,907
+  top-level entries (build input, referenced by tracked docs or scripts,
+  recent, regenerable, stale, unsure), and only the regenerable and stale
+  classes were deleted (1,752 entries plus 82 warp-cache tags older than a
+  week); `wgpu-native`, everything a doc or script names, anything touched in
+  the last seven days and 47 unsure entries were kept.
+- ~62 MB of ignored residue removed from the tree (dead Codex session dirs,
+  stackdumps, 79 leaked `.harness_*` scratch worlds, 122 `__pycache__` dirs in
+  source trees, 43 empty directories); `.gitignore` consolidated (18 subsumed
+  or producer-less rules removed, `/.tmp-*/`, `/.tmp_*`, `.benchmarks/` added);
+  three self-declared dead scripts retired; stale ODE/WREN references fixed in
+  two docs, one script, one test and seven comments; `git gc` took `.git`
+  from 7.8 GB to 2.9 GB (5,717 loose objects, 16 garbage files); three
+  dangling remote-tracking refs and one fully merged branch deleted.
+
+## [v8.2.0] — 2026-09-01
+
+The performance release. Every number below is measured on machine
+`9722d23d12a3` (RTX 3060 laptop, Windows) with interleaved A/B arms; every
+change carries an exact-revert switch or is disclosed in the API response.
+
+### Performance
+
+- **Supervisor reads are ~12× faster on busy scenes.** The engine served one
+  controller request per Qt event-loop wakeup, and the per-packet completion
+  check walked every controller — so a supervisor read walk on the 10-Husky
+  fleet arena (309 nodes, 11 controllers) paid **3.4–7.4 ms per read**, which
+  is what priced `GET /scene/tree` at 4.4 s and `GET /robots` at 7.1 s per
+  call. The engine now drains a controller's immediate-request burst at pipe
+  speed (bounded linger, one completion check per drain): **~0.6 ms per read**
+  on the same scene. `GET /debug/read_bench` measures it on any live session;
+  `OMNISIM_IMMEDIATE_BURST=0` reverts.
+- **The harness speaks HTTP/1.1 with keep-alive** — and so do all the robot
+  bridges, whose shared base classes got the same two attributes. Measured on
+  the flip (229 requests): connection reuse 0/229 → 229/229, `TIME_WAIT`
+  growth +221 → +6, `GET /healthz` **5.09 → 0.31 ms** (196 → 3222 req/s). A
+  50 Hz ROS 2 publish loop no longer exhausts the Windows ephemeral-port
+  range. `OMNISIM_ROS2_KEEPALIVE=0` reverts the ROS client for A/Bs.
+- **The Newton runtime's step path is leaner**, each change A/B'd off-engine:
+  `get_contacts()` memoized per step so its three per-tick consumers share
+  one build (206 → 107 µs/call at 30 contacts), constraint readbacks
+  vectorized (72.7 → 16.2 µs at nefc=240), touch capture idles out after the
+  last read instead of running for ever, raycast marshalling vectorized
+  (inputs byte-identical), 11 per-tick env-var gates cached
+  (12.3 → 0.6 µs/tick), and warp kernels compile forward-only.
+- **Headless loads skip texture decode when nothing will read a pixel** (no
+  Camera, no infra-red DistanceSensor, no Pen — the three genuine headless
+  consumers): warehouse_industrial wall time **16.4 → 10.1 s (−39%)**,
+  husky_maze **10.6 → 7.7 s (−28%)**. One INFO line names the skip;
+  `OMNISIM_EAGER_TEXTURE_DECODE=1` is the exact revert.
+
+### Harness
+
+- **Per-tracker toggles** (#4): `POST /world/load` takes
+  `{"tracking": {"contacts": false, "joint_limits": false, "grips": false}}`
+  — each flag drops exactly one per-step tracker (`light` still drops all
+  three; dropping contacts implies dropping grips, whose tracker consumes the
+  contact pairs). `GET /capabilities` reports the suppressed event types for
+  any combination and the load response's `tracking.mode` reads
+  `light`/`partial`/`full`. Measured on the 10-Husky world: partial mode
+  steps at light-mode cost (~10 ms vs ~600 ms full) while keeping the tracker
+  you asked for. Every load response also names the mode and its measured
+  cost, and errors across the surface now carry structured codes.
+- **Mid-run physics rebuild** (W1.7): `POST /sim/rebuild_physics` (or
+  `{"physics": "rebuild"}` on `/scene/spawn`/`/scene/delete`) tears down and
+  re-registers the Newton world at current poses in **97–267 ms**, so runtime
+  spawns and deletes finally reach the solver — a spawned box lands
+  bit-identically to its authored control, a deleted floor genuinely stops
+  colliding, an 8-Husky world drives through it at unchanged speed. Refused
+  (`409 REBUILD_REFUSED`) on Cloth/SoftBody/GranularBed worlds; engaged welds
+  are dropped with a loud warning; default spawn/delete behaviour unchanged.
+  Also exposed as the MCP server's 31st tool.
+
+### Engine and devices
+
+- **`Gyro` and `Accelerometer` are alive on URDF-imported robots.** Both read
+  their folded carrier's body now (the importer's nested IMU carrier owns no
+  Newton body of its own), so the ROS 2 sidecar publishes real
+  `angular_velocity` / `linear_acceleration` on `sensor_msgs/Imu` for the
+  first time instead of the `-1` "not available" covariances.
+- A motor with no authored limits is **promoted to a position servo** when
+  `setPosition()` is called on it (it was silently a velocity wheel that
+  ignored the call), and a `particle-stats` supervisor verb makes
+  cloth/FEM/granular states measurable.
+- Crash and correctness fixes: the GUI's Mass tab no longer crashes
+  (`inertiaMatrix()` NULL since the ODE deletion), a physics-pane
+  out-of-bounds read is gone, propeller inflow and granular colliders are
+  corrected.
+
+### Measurements
+
+- The OmniBench lane-4 capability matrix moved **77% → 96%** over the day —
+  each flipped row re-measured on the current binary, including the
+  motorised `BallJoint` verdict (the old `broken` was the probe commanding a
+  zero-lever-arm axis; the corrected probe measures it working).
+
+## [v8.1.17] — 2026-08-31
+
+### ROS 2
+
+- **Nav2 has been brought up against OmniSim** — the first time, and by an
+  outside contributor (@luisxavierxd, #12). A full Nav2 stack (ROS 2 Jazzy)
+  drove the Husky autonomously to a `NavigateToPose` goal, shipped as the new
+  [`packages/omnisim-ros2/src/omnisim_ros2_nav2/`](packages/omnisim-ros2/src/omnisim_ros2_nav2/)
+  colcon package: params reconciled to OmniSim's measured ROS surface, a lean
+  five-server launch (Jazzy's stock bringup aborts on unconfigured optional
+  nodes), SLAM launch, runbook, and a 19-finding beta report. Scope it exactly
+  as its own README does: **planning + goal execution on the all-in-WSL path**,
+  not a localization or obstacle-avoidance benchmark. The engine stays
+  ROS-free; the package layers on the Tier-2 sidecar and adds no OmniSim
+  surface.
+- **The harness can run in real time**: `--engine-mode {fast,realtime}` /
+  `OMNISIM_HARNESS_ENGINE_MODE` (#13, filed from that bring-up — the harness
+  pinned a literal `--mode=fast`, and at ~13× real time the `/clock` cadence
+  breaks `slam_toolbox`'s scan↔TF alignment). Flag beats env var; unknown
+  values warn and fall back to fast; every supervised `/world/load` response
+  now reports `engine_mode`. Measured: realtime paces at 1.00× wall clock,
+  the default at 12.51×.
+
+## [v8.1.16] — 2026-08-31
+
+### Windows installer
+
+- **Two more payload gaps, found by the same beta tester who caught #9** (#11).
+  The install-conformance gate's `omniworld_determinism` canary runs
+  `scripts\dev\omniworld.py` — shipped — whose first import is the
+  `omniworld` package from `src\python\omniworld` — never shipped — so every
+  clean install failed its first-run gate with a `ModuleNotFoundError` before a
+  demo could start. And installed robot windows 404'd on `RobotWindow.js`:
+  only `resources\web\wwi\protoVisualizer` was listed, not the shared WWI
+  runtime the windows load at run time. Both directories now ship
+  (`[recurse]`), both are pinned in `tests/packaging/test_onboarding_payload.py`,
+  and the release build's payload assertion greps the generated installer
+  script for `omniworld\cli.py` and `RobotWindow.js` — the same check class
+  that caught #8 and #9 — so this genre of gap now fails the build instead of
+  reaching an installer. Engine and demos are unchanged from v8.1.15.
+
+## [v8.1.15] — 2026-08-31
+
+### Demos
+
+- **The Mavic demo flies** (#10). It could not leave the ground: the bridge's
+  rotor model kept the legacy PROTO's `k_thrust 0.00026` while flying the
+  1.0333 kg URDF airframe, so hover thrust at the controller's own setpoint was
+  4.88 N against 10.14 N of weight — exactly the reporter's arithmetic. Behind
+  that first wall sat six more defects, each measured and fixed in turn:
+  thrust was computed from the *commanded* motor speed, unclamped and unsigned
+  (a mixer spike produced ~1900 N and a 37 m "rocket"; now `k·u·|u|` clamped to
+  the URDF's 576 rad/s motor limit); the craft rested on two 7 mm-proud
+  propeller collision discs and flipped upside down while *idle* (prop links
+  no longer carry colliders; the world opts into `newtonRobotColliders` so the
+  belly box is the ground contact instead of a 1 mm placeholder sphere); the
+  prop anchors' thrust centroid sat 6.1 cm behind the CoM, a standing
+  ~0.6 N·m nose-up torque beyond the stabiliser's whole authority (the force
+  anchors are now centroid-balanced — an inertial-origin offset in the URDF
+  explodes the imported body at rest, so the correction lives on the force
+  side); the attitude loop had NO damping, because the `Gyro` device reads a
+  constant zero under Newton — rates now come from IMU differencing per sim
+  tick, with yaw-rate damping added; the vertical law gained rate damping, a
+  clamped integrator and a linear P (the classic cubed-P + 0.6 m offset parked
+  the craft 0.25 m high, then 0.34 m low); and the far-field
+  turn-then-dash navigation — which flew a 12 m hop 44 m the wrong way — is
+  replaced by one clamped error+velocity tilt law at every distance, active
+  through landing (descent used to drift 6 m sideways).
+  **Measured after** (CPU `mj_step`, `--mode=fast` and realtime): hover at
+  1.0 m settles at 1.019±0.003 m; climb to 1.5 m settles at 1.515±0.002 m —
+  steady-state altitude error **+0.015 m**, the number the beta task asks
+  for — max tilt 0.048 rad, drift bounded at 0.73 m; a 12 m `goto_waypoint`
+  arrives 0.40 m from target; `land` touches down upright 0.9 m from its mark.
+  The bridge's no-camera error now names `OMNISIM_URDF_USE_SENSORS=1`.
+
+## [v8.1.14] — 2026-08-29
+
+### Windows installer
+
+- **`omnisim.bat demo` no longer dies in three "DLL not found" dialogs** (#9,
+  v8.1.12 on a Dell Latitude 5310: `doctor` READY, `demo` blocked, empty
+  startup logs; v8.1.13 has the same layout). The installer put
+  `libstdc++-6.dll`, `libgcc_s_seh-1.dll` and `libwinpthread-1.dll` only under
+  `msys64\mingw64\bin\cpp` — a layout inherited from upstream Webots, whose
+  exe launcher prepends that directory to `PATH`. Every other way of starting
+  the engine spawns `omnisim-bin.exe` directly: the conformance gate behind
+  `demo`, `run-headless`, the HTTP harness, the capture service, the MCP
+  server. On a stock install those all hit `0xC0000135` before a log line was
+  written; the dev tree never showed it because the toolchain's copies sit in
+  `mingw64\bin` there. The three DLLs now ship beside `omnisim-bin.exe` as well
+  (the application directory is first in the Windows DLL search order, so this
+  holds whatever `PATH` says), the payload assertion checks for them there, and
+  the headless runner also adds `bin\cpp` to the engine's `PATH` for installs
+  that already exist. The GUI path through `omnisimw.exe` was never affected,
+  which is why #8's confirmation on v8.1.12 and this report are both true.
+
+### Containers
+
+- **`ghcr.io/omnilink-tech/omnisim` is published for the first time.** The
+  runtime-image job had never got past its first smoke: the entrypoint
+  `exec`'d `xvfb-run` into PID 1 and the container never exited (measured: with
+  `tini` as PID 1 the doctor exits in 0 s; without it every xvfb-run arrangement
+  hangs before running anything). Behind that sat three more latent defects,
+  each reachable only once the previous one was fixed: no shared `libpython` in
+  the runtime stage (exit 127; now `libpython3-dev` plus a build-time `ldd`
+  check), `USER` unset (one `ERROR` line, which fails every log verdict), and a
+  smoke world on the GPU solver. Measured on the GPU-less runner: a CPU-solver
+  world finalises and steps with `degraded: false`, and wgpu selects
+  Vulkan / llvmpipe with instance, adapter, device and queue all OK. The job
+  now has a 75-minute ceiling and kill-proof per-step timeouts.
+
+## [v8.1.13] — 2026-08-29
+
+### Engine
+
+- **The startup race is attributed and fixed, and it was never Qt's** (#3).
+  The 0-of-80 of v8.1.10 was measured with engines started one *after*
+  another; started *against an engine already running* (`launch_race_stress.py
+  --concurrent 2 --stagger 12`) it came back at 3 of 7 rounds, with 0 of 8
+  when the engine's stdout was a pipe. On Windows `omnisim-bin.exe` attached
+  to its launcher's console whenever its stdout was not a pipe -- the null
+  device and a FILE both qualified -- so it threw the handle it was given away
+  for a console it did not own, the file received nothing, and an engine
+  could find its fd 1 dead by the time the embedded interpreter first wrote
+  to it: warp's greeting raised `[Errno 9] Bad file descriptor` out of
+  `newton.ModelBuilder()`, the FFI smoke called the runtime broken, FATAL,
+  exit 1. The Qt teardown marks are what any `exit(1)` mid-startup prints.
+  Fixed twice over: the engine keeps any stdout it was given and attaches
+  only when it has none (`main.cpp`), and the interpreter's stdio probe is a
+  real `os.fstat()` instead of a zero-length write that could not fail
+  (`OmNewtonBackend.cpp`); the FFI smoke's first-attempt error is now logged
+  with its traceback instead of cleared. `launch_race_stress.py` gained
+  `--concurrent`, `--stagger`, `--stdio {devnull,pipe,file}` and per-engine
+  port recording, and the log opens with a `[main] stdio:` line naming the
+  branch taken. What is *not* covered by this: a running engine dying when
+  another lane starts one. That was measured five times the same day and
+  was a kill, not a race -- see the capture entry below.
+
+### Capture
+
+- **`detect_orphan_sim()` returns orphans only, never another session's live
+  engine.** It listed every `omnisim-bin` on the host and its refuse-and-tell
+  message said "kill the specific PID(s) and retry", so a second agent lane
+  starting a capture `taskkill /F`'d the first lane's live engine -- exit
+  code 1, nothing in the victim's log, indistinguishable from a crash
+  (measured: five 15-minute headless epochs lost that way on 2026-08-29).
+  An engine whose launcher is alive is a session; running engines coexist by
+  contract (AGENTS.md §3e now carries the rule, and the
+  `taskkill /F /IM omnisim-bin.exe` advice is gone).
+
+### Linux runtime image (`docker/Dockerfile.runtime`, `runtime-image.yml`)
+
+- **The image builds, runs and exits.** Four fixes measured on the CI runner:
+  `tini` as PID 1 (the entrypoint `exec`'d `xvfb-run` into PID 1, which drops
+  every signal it has no handler for, so `docker run <image> doctor` never
+  returned -- six hours until GitHub killed the first run); `libpython3-dev`
+  in the runtime stage (the engine is linked against a shared libpython the
+  `python3` package does not carry -- `error while loading shared libraries:
+  libpython3.12.so.1.0`, exit 127); `USER` set in the image env (its absence
+  is one ERROR line, which alone fails every log-verdict lane); and the
+  Newton smoke runs the CPU-solver sibling copy of `warehouse_husky` that
+  `linux-build.yml` uses, because the world declares `mujoco_warp` and the
+  runner has no GPU. The workflow carries a 75-minute ceiling and per-step
+  timeouts, the doctor gate bypasses `xvfb-run` (the doctor needs no
+  display), and the five-row PID-1 probe matrix reads `PIPESTATUS[0]` so a
+  killed row is reported as killed rather than "exited normally".
+
+## [v8.1.12] — 2026-08-29
+
+### Containers
+
+- **The training image (`omnisim-train`) now installs wgpu-native before the
+  build**, as the runtime image already did. Every training image published
+  before this one carried a binary with the wgpu backend compiled out — no
+  renderer, no Camera device — the same omission as the Windows installer in
+  v8.1.11 (#8). The Makefile guard from #7 refused that build for v8.1.10 and
+  v8.1.11; this release lets the image build again, with the renderer, and
+  asserts `libwgpu_native.so` was staged. The engine source is unchanged from
+  v8.1.11.
+
+### Windows installer
+
+- **v8.1.11 has no installer asset**: its build compiled the renderer in and
+  the packager's own check saw `wgpu_native.dll` beside the binary, but the
+  new payload assertion then failed on its own grep (it anchored a leading
+  backslash the packager's relative `Source:` line does not carry). The grep
+  is corrected; this release carries the first installer with a renderer since
+  v8.1.4.
+
+## [v8.1.11] — 2026-08-29
+
+### Windows installer
+
+- **Every installer from v8.1.5 to v8.1.10 shipped WITHOUT a renderer** (#8,
+  reported from an Intel UHD 620 laptop as a white viewport with
+  `[render] wgpu-native is UNAVAILABLE` on every world). The release workflow
+  never ran `scripts/dev/setup_wgpu_native.sh`, so the engine was compiled with
+  the wgpu backend out and no `wgpu_native.dll` was packaged — the exact
+  configuration #7 described, in production. Placing an upstream
+  `wgpu_native.dll` next to the binary cannot help such a build: the code that
+  would load it was never compiled. The v8.1.10 release build was the first to
+  **fail** on this, because of the Makefile guard added for #7; it produced no
+  installer. This release restores the renderer: the workflow installs
+  wgpu-native before building, the packager refuses (under
+  `OMNISIM_REQUIRE_RENDERER_BUNDLE=1`) to write an installer without
+  `wgpu_native.dll` beside `omnisim-bin.exe`, and the payload assertion greps
+  the generated `.iss` for it. The two remaining "falling back to WREN" log
+  strings in the wgpu backend now say there is no other renderer.
+
+## [v8.1.10] — 2026-08-29
+
+The first five issues filed on the public repository (#3–#7), each reproduced
+before anything was changed. Two were real defects; three were our own stale
+documentation being quoted back at us. Every number below names its machine
+(`9722d23d12a3`, RTX 3060 laptop, Windows) and its binary date (2026-08-29).
+
+### Build
+
+- **A build without wgpu-native is now refused, not silently produced** (#7).
+  Since the WREN deletion there is no second renderer, yet `make release` with
+  `WGPU_NATIVE_HOME=` empty, `OMNISIM_WITH_VULKAN=OFF`, or a clone that never
+  ran `setup_wgpu_native.sh` dry-ran green with zero `-lwgpu_native` — a binary
+  that runs physics and draws nothing. `src/omnisim/Makefile` now `$(error)`s
+  at parse time with the setup command in the message. The compute-only build
+  stays available by name, `make release OMNISIM_RENDERERLESS=ON`, which also
+  defines `-DOMNISIM_RENDERERLESS` so the binary logs
+  `THIS BINARY WAS BUILT WITHOUT A RENDERER` on its first render request.
+  `clean`, `linker-info` and `bundle-newton-runtime` are exempt.
+
+### Headless runner
+
+- **An early engine exit now names its cause** (#6). The Qt platform-plugin
+  abort (no display or a partial libxcb set on Linux; a stale
+  `QT_QPA_PLATFORM` anywhere) is recorded only in the engine log —
+  `omnisim-bin.exe` is a GUI-subsystem binary, so its stderr is discarded — and
+  `run-headless` printed only `simulator exited early with code 3`. It now
+  surfaces the log's `Qt Fatal:` / `FATAL:` / `ERROR:` lines and, for this
+  signature, the fix (`xvfb-run -a`, `linux_bootstrap.sh deps`). The harness
+  classifier gained a `Qt Fatal:` header and a `QT_PLATFORM_PLUGIN_FAILED`
+  code. The "launcher still exits 0" sentence in `docker/` was measured one day
+  before `03e988c58` made the runner fail this case; it is corrected in all
+  five places, and both raw launchers were verified to propagate the engine's
+  exit status.
+- **`--no-window` does not deadlock Newton** (#5). The claim dated from a
+  2026-05-28 XPBD-era measurement and had been copied into six documents while
+  the Linux CI smokes ran under `OMNISIM_NO_WINDOW=1`. Measured: the 8-Husky
+  swarm (40 dynamic bodies, 9 controllers) and the G1 humanoid finalise and
+  step under `--no-window` with the same finalize/step lines as the
+  `--minimize` control. All six documents retracted; `--minimize` stays the
+  default only as the longer-trodden desktop path.
+- **The startup race did not reproduce on this binary** (#3): 0 of 80 launches
+  (raw back-to-back, raw with overlapping teardown, via the runner with a
+  pinned port, via the runner rotating heavier worlds) against "1 in 3"
+  (2026-07) and 3-of-10 (2026-08-15) on the same machine. The rate is
+  build-dependent and the root cause unattributed, so the retry stays. New:
+  `scripts/dev/launch_race_stress.py` measures the rate and prints the binary
+  sha256 and machine with every summary, so numbers from two boxes can be
+  compared.
+
+### Harness
+
+- **The 790× tracking figure was stale** (#4). Re-measured on the same
+  10-Husky world (309 nodes, CPU `mj_step`): full-mode `/sim/step 1`
+  573–606 ms vs 6–35 ms light (~17×), 10 steps 2855–3187 ms vs 48–67 ms
+  (~47×), load 12.1 s vs 4.1 s — the 27 s / 790× predates `3b952b61d`. Every
+  supervised `POST /world/load` response now carries a `tracking` block naming
+  the mode and this cost (PROTOCOL.md). The default stays full: it is the only
+  mode that produces `contact.*` / `grip.*` / `joint.limit_hit` events.
+
+### Metazoa
+
+- Rudder steering measured on the engine: a single head rudder at 0.5 rad
+  turns and 1.0 rad anchors; a rudder **pair** at the head gives 3× the yaw rate
+  and a 0.3 m turn radius, with wall back-off sized to it. Tail docking and
+  off-axis recruit docking are verified on the engine; bodies divide at 8+
+  cells with the rear half reversed; seed genomes come from the measured walker
+  and free cells seed nose-inward. The catalogued watch world is registered as
+  a demo.
+
+### Licensing
+
+- Apache headers on the 63 OmniLink-authored files the public provenance gate
+  flagged.
+
+## [v8.1.9] — 2026-08-28
+
+### Linux
+
+- **Ubuntu 22.04 is supported again — by fixing it, not by refusing it.** The
+  system python3 there is 3.10, where `newton` 1.5.0 raises
+  `TypeError: Union[arg, ...]: each arg must be a type. Got wp.array[wp.bool].`
+  at `ModelBuilder()`; the annotation is byte-identical in 1.5.1, so no version
+  bump helps, and patching a vendored solver is not a road we maintain. What
+  nothing forced was embedding *that* interpreter. `linux_bootstrap.sh` gained a
+  `python` phase that installs 3.12 from deadsnakes when the system python3 is
+  <3.11 (a no-op on 24.04); the `build` phase passes `PYTHON_CONFIG` so the
+  engine embeds it and then asserts the link on the produced binary with
+  `ldd`; the `gpu` phase already targeted wheels at the linked interpreter. The
+  system `python3` keeps running controllers and the CLI — fine at 3.10, since
+  controllers never import newton. `src/omnisim/Makefile` honours an explicit
+  `PYTHON_CONFIG`.
+- The pip for that interpreter comes from `get-pip.py`, never `ensurepip`:
+  measured on the 22.04 CI image, `python3.12 -m ensurepip --upgrade` as root
+  half-replaced the pip the system 3.10 also reads through the shared
+  `dist-packages`, breaking both — and the wreckage surfaced two phases later
+  inside `make`, in the Qt fetch. The phase now verifies the system pip
+  survived and repairs it if not.
+- The bootstrap smoke uses `--until-finalized` with a real ceiling instead of
+  a fixed 45 s and a heuristic retry. A cold `mujoco_warp` kernel compile can
+  take minutes; the fixed window declared "Newton did NOT drive this run" on
+  an install where the embedded interpreter had just logged the runtime up.
+- `linux-build` runs a full **ubuntu-22.04** leg alongside 24.04, driving the
+  same phases a user runs; `physics-runtime-check`'s 22.04 leg **gates green**
+  now instead of being a permanently red "expected failure", and asserts the
+  3.10 floor in the inverted direction — the day newton runs on 3.10, it goes
+  red and says the docs are stale.
+- `omnisim doctor` (and the fingerprint) probe the interpreter the binary
+  **links** rather than assuming `python3`, so a deadsnakes install no longer
+  reports its wheels missing while the engine is healthy.
+- **A ten-round CI mystery, resolved with a thread name.** The 22.04 runner
+  produced no physics for the warehouse demo in ten minutes while a real
+  22.04 machine finished it in half a second. Per-thread sampling on the
+  runner (no ptrace there) showed the engine's main thread waiting in
+  `wgpuDevicePoll` on the render queue while `llvmpipe-0`/`llvmpipe-1` --
+  lavapipe, Mesa's software Vulkan, 23.2 on jammy -- burned both vCPUs on the
+  world's first frame. Headless physics smokes on GPU-less hosts now run with
+  `OMNISIM_NO_WINDOW=1` (no main view; cameras still render offscreen), and the
+  caveat is documented for 22.04 machines without a GPU. Along the way the
+  bootstrap gained a `wgpu` phase (the recipe had shipped no renderer), a
+  `python` phase (deadsnakes 3.12 on 22.04), the versioned-`-config` and
+  stale-`libpython` fixes, and a smoke that asserts the renderer came up.
+
+## [v8.1.8] — 2026-08-28
+
+### Linux
+
+- **The engine no longer aborts at startup on a headless Linux host.** It passed
+  a zero-initialised `WGPUInstanceDescriptor` under a comment claiming that
+  selects only the native backends; `wgpu.h` documents the opposite —
+  `WGPUInstanceBackend_All` is `0`, is "the default when zero-initialized", and
+  includes GL. So every platform enumerated a GLES adapter, and with no usable
+  EGL display wgpu-hal panicked (`egl.rs:182`, `BadAccess`). A non-unwinding
+  Rust panic crosses the C FFI as `abort()`, so the process died outright and
+  none of the backend's degradation paths ran. The instance is now restricted
+  to the primary backends (Vulkan / Metal / DX12); Windows and macOS are
+  unaffected, and Linux selects Vulkan — lavapipe on a GPU-less host.
+  `OMNISIM_WGPU_BACKENDS=all|primary|vulkan|gl` overrides it.
+- `linux_bootstrap.sh` asserts the **renderer** came up, not only that physics
+  drove the world. Those two have failed independently here: the
+  `libwgpu_native.so` check passed on every run that then died inside the GLES
+  adapter. On failure it names the remedy (software Vulkan driver) and how to
+  A/B it.
+- With both, `linux-build` is **green for the first time**, and the run verifies
+  wgpu reaching instance + adapter + device and the main view rendering through
+  it, on Ubuntu 24.04 with software Vulkan.
+
+### Tools
+
+- `omnisim validate-urdf` — checks a robot description is physically
+  realisable and exits non-zero when it is not.
+
+## [v8.1.7] — 2026-08-28
+
+### Onboarding
+
+- The Windows package now contains the `omnisim` CLI. `README.md` and `BETA.md`
+  both open with `python -m omnisim doctor`, which failed on the installer with
+  "No module named omnisim" because the CLI lived only in a git clone.
+  `scripts/packaging/files_core.txt` now ships `omnisim/`, `scripts/dev`,
+  `scripts/harness`, `scripts/capture`, `scripts/cinema`, the first-launch world
+  list `projects/guided_tour.txt`, and the entry-point documents `AGENTS.md`,
+  `PROTOCOL.md`, `DEMOS.md`, `README.md` and `LICENSE`.
+- Added `omnisim.bat` to the Windows package. The package bundles CPython 3.12
+  at `msys64/mingw64/bin/newton-runtime/python.exe` but puts no interpreter on
+  `PATH`, and on a clean Windows box `python` opens the Microsoft Store — so the
+  documented first command failed without ever naming OmniSim. The launcher
+  resolves an interpreter (system first, bundled as fallback, Store alias stub
+  rejected) and sets `PYTHONPATH`, so it works from any directory.
+- The MCP and Codex on-ramp now ships in the package:
+  `packages/omnisim-mcp`, `packages/omnisim-bridges`, `plugins/omnisim` and a
+  repo-root `.mcp.json`. The README told a package user to connect the MCP
+  server and use the plugin, and both links resolved to nothing on an installed
+  tree. The `.mcp.json` registers the server for Claude Code with no install and
+  no `claude mcp add`; it spawns `python -m omnisim_mcp` rather than the console
+  script, which only exists after a `pip install` and lands where an MCP client
+  often cannot see it on Windows. The packaging ignore rules now drop `dist/`,
+  `*.egg-info` and tool caches so a local `make distrib` cannot ship what a CI
+  build never had.
+- `omnisim doctor` now ends with a **VERDICT** line naming the next command, and
+  exits non-zero when the install cannot run a controller-driven world. It
+  previously reported facts, ended on a git log, exited 0 on a fatal install,
+  and printed the answer it had already computed only under `--strict` — a flag
+  no document names.
+- `omnisim doctor` now checks for the physics runtime, and treats its absence as
+  fatal. The README already claimed it did. The probe existed behind
+  `--fingerprint` and could not have worked on Linux at all, because
+  `newton_runtime_present()` tested the Windows bundle layout only. Both
+  platforms now resolve properly — the bundle on Windows, `importlib.util.find_spec`
+  in the system `python3` on Linux, which answers without importing warp and
+  paying for CUDA init. An absent runtime is not a degraded mode: nothing falls.
+- Added `omnisim demos` and `omnisim demo`. There was no route from "installed"
+  to "a robot moved" that did not involve pasting a 63-character world path.
+  `demos` lists all 50 from the launcher's own `demos.json` — the same catalogue
+  the in-sim gallery reads — and `demo <id>` runs one; bare `demo` runs the
+  flagship, which was missing from `demos.json` entirely.
+- `python -m omnisim` with no arguments was an argparse error with exit code 2.
+  It now prints three facts and four commands.
+- `scripts/install/linux_bootstrap.sh` gained a `wgpu` phase, included in `all`.
+  `src/omnisim/Makefile` auto-discovers `WGPU_NATIVE_HOME` from exactly one path,
+  `$OMNISIM_HOME/_scratch/wgpu-native`, and only `setup_wgpu_native.sh` creates
+  it — so the documented Linux recipe produced a green build with **no renderer
+  at all**: no screenshots, no capture service, no Camera device. `linux-build.yml`
+  knew this and worked around it privately; it now drives the bootstrap phase, so
+  the two recipes cannot diverge, and the build asserts `libwgpu_native.so`.
+- The Linux apt list gained `libdbus-1-dev` / `libdbus-1-3` (the vendored
+  `libQt6DBus` needs it at link time; the build otherwise dies after ~6 minutes
+  of compiling) and `libvulkan1` / `mesa-vulkan-drivers`, so wgpu-native has a
+  software adapter on a GPU-less host. `torch` now defaults to AUTO rather than
+  always installing — ~2.5 GB from the CUDA index for a package the engine never
+  imports.
+- Added a runtime container, `docker/Dockerfile.runtime`, with a workflow that
+  smoke-tests the image before pushing it. It is **not published**:
+  `runtime-image.yml` has never run and there is no `ghcr.io/omnilink-tech/omnisim`
+  tag, so build it locally with
+  `docker build -f docker/Dockerfile.runtime -t omnisim:local .`. See
+  [`docker/README.md`](docker/README.md) for what it covers and what it does not.
+
+---
+
+## [v8.1.6] — 2026-08-25
+
+### Capture and presentation
+
+- Replaced the README hero media with a reproducible 1080p Universal Pick
+  capture showing OmniArm 6 moving arbitrary depth-observed shapes from its
+  source bin into the output tote.
+- Fixed target-based capture paths to preserve OmniSim's Z-up camera frame and
+  keep the horizon level. The old shortest-arc look-at aimed at the right point
+  but left camera roll unconstrained, which visibly tilted the previous hero
+  video.
+- Added regression coverage that checks both the marketing camera pose and the
+  canonical `omniworld.viewpoint.look_at` implementation.
+- No engine or physics behaviour changed from v8.1.5.
+
+---
+
+## [v8.1.5] — 2026-08-25
+
+### Release engineering
+
+- Made the Qt translation package an unconditional Windows build dependency.
+  Fresh GitHub runners now contain every `qt_*.qm`, `qtbase_*.qm`,
+  `qtdeclarative_*.qm`, and `qtwebsockets_*.qm` file declared by the installer
+  manifest instead of relying on an upgrade-only helper to add them.
+- Added a regression test that keeps the translation package in the base MSYS2
+  dependency set.
+- No simulator behaviour changed from v8.1.4. The v8.1.4 engine and Newton
+  runtime built successfully, but Inno Setup correctly rejected the incomplete
+  translation payload; use v8.1.5 for the public beta package.
+
+---
+
+## [v8.1.4] — 2026-08-25
+
+### Release engineering
+
+- Fixed distribution assembly for worlds that intentionally have no saved GUI
+  perspective. Such worlds now ship on their own and open with OmniSim's
+  default view; an existing `.omniperspective` or legacy `.wbproj` remains
+  bundled, with the canonical format preferred.
+- Added regression coverage for both an absent optional perspective and the
+  canonical-over-legacy preference.
+- No simulator behaviour changed from v8.1.3. The v8.1.3 packaging run passed
+  mixed-encoding URL rewriting and Newton bundle verification, then stopped
+  because it manufactured a missing perspective path. The v8.1.4 run passed
+  that stage but did not publish an artifact because the fresh runner lacked
+  the Qt translation package; use v8.1.5 for the public beta package.
+
+---
+
+## [v8.1.3] — 2026-08-25
+
+### Release engineering
+
+- Fixed Windows installer assembly for mixed-encoding world, PROTO, controller,
+  and robot-window sources. The packaging URL rewriter now replaces its ASCII
+  URLs as raw bytes, preserving every unrelated byte instead of depending on
+  the runner's legacy CP-1252 default encoding.
+- Added a regression test covering UTF-8 text, a byte that CP-1252 cannot
+  decode, and CRLF preservation in the same source file.
+- No simulator behaviour changed from v8.1.2. The v8.1.2 engine and Newton
+  runtime built and verified successfully, but installer assembly stopped at
+  the encoding error; use v8.1.3 for the public beta package.
+
+---
+
+## [v8.1.2] — 2026-08-25
+
+### Release engineering
+
+- Fixed Windows linking against the `actions/setup-python` layout. Its install
+  directory ends in `x64`, so deriving the import library from the directory
+  name incorrectly produced `-lx64`; the workflow now derives `-lpython312`
+  from the running interpreter and verifies the matching `.lib` before build.
+- Added bounded retries around MSYS dependency installation so one slow mirror
+  does not invalidate an otherwise reproducible release build.
+- No simulator behaviour changed from v8.1.1. Use v8.1.2 for the verified
+  installer and public beta.
+
+---
+
+## [v8.1.1] — 2026-08-25
+
+### Release engineering
+
+- Fixed the Windows release runner's MSYS environment so the Python installed
+  by `actions/setup-python` remains on `PATH` and its `Python.h` is available to
+  the Newton backend build. The workflow now fails immediately if that header is
+  absent, before spending time compiling the engine.
+- No simulator behaviour changed from v8.1.0. The v8.1.0 source tag remains as
+  the immutable record of its failed packaging run; use v8.1.1 for the verified
+  installer and public beta.
+
+---
+
+## [v8.1.0] — 2026-08-25
+
+### Highlights
+
+- **The first distribution release.** Tagged releases now build and attach a
+  Windows 10/11 installer with the complete pinned Newton runtime. The workflow
+  refuses to package when that runtime is missing: a clean install cannot
+  silently become a renderer-only shell. Linux remains the verified source-build
+  path; macOS physics is still unverified and no macOS binary is advertised.
+- **A focused public beta instead of a generic launch.** [`BETA.md`](BETA.md)
+  gives the first ten external testers a 20-minute install, demo, agent-edit,
+  and feedback challenge. A structured Request-a-Sim issue form and
+  [`SUPPORT.md`](SUPPORT.md) route failures and capability requests without
+  pretending every request belongs in the engine.
+- **Current, reproducible launch footage.** The README now shows the wgpu/Newton
+  OmniArm 6 real-contact pick-and-place demo rendered from the shipped world.
+  The block is ineligible for the bridge's kinematic attachment path and its pose
+  is never written by the controller.
+
+### Build / packaging
+
+- Package filenames and installer metadata now follow OmniSim's SemVer tag
+  (`v8.1.0`) instead of retaining the inherited `R2025a` Webots label.
+- The release script updates the C++ version, Python package version,
+  distribution-package version, and training-image pins from the same tag.
+- The old dormant Linux/macOS/Windows matrix was replaced by the one platform
+  the project can presently certify as a downloadable package. The release
+  workflow installs the build toolchain, builds OmniSim, vendors the pinned
+  CPython/Newton runtime, verifies imports and a live engine run, and only then
+  creates the installer and GitHub Release.
+- Packaging diagnostics no longer say a missing Newton bundle falls back to
+  ODE. ODE is gone; the correct consequence is no working physics backend.
+
+### Documentation
+
+- Added an AI-tools contribution policy, one support front door, and explicit
+  public contact identity (`OmniLink <info@omnilink-agents.com>`).
+- Corrected three public setup statements, including the Linux command that
+  could not work as written.
+
+---
+
+## [v8.0.0] — 2026-08-24
+
+> ⛔ **READ THIS IF YOU HAVE A WORLD, A ROBOT PACKAGE, OR A SCREENSHOT PIPELINE. This release
+> deletes the WREN renderer and replaces every vendor-derived robot package.** Eight things stop
+> working or change behaviour, each listed with its fix under **Removed** and **Changed**:
+>
+> 1. ⛔ **WREN IS DELETED. wgpu-native is the only renderer.** `src/wren` (106 files), `include/wren`
+>    (33), `src/omnisim/wren` (62) and 86 shaders are gone — ~31k lines across the campaign.
+>    `renderBackend "wren"` **still parses** (an undeclared field is a hard load ERROR — the
+>    `Solid.immersionProperties` precedent) but it is a **warned no-op that renders wgpu anyway**.
+>    *No fix needed for a world that loads;* delete the field or write `"wgpu"` to silence the warning.
+> 2. ⛔ **A host whose wgpu-native cannot initialise now has NO renderer.** There is no fallback tier
+>    left. One loud log line names the condition; physics and controllers are unaffected and the
+>    session continues. *Fix:* install wgpu-native (`scripts/dev/setup_wgpu_native.sh`).
+> 3. ⚠️ **`Camera`, `RangeFinder` and `Lidar` `renderBackend` now default to `"wgpu"`** (`Viewpoint`
+>    flipped on 2026-08-19). **Every camera-family device's image now comes out of a different
+>    renderer, so its pixel values changed.** *Fix:* re-golden any pinned pixels — we did, and each
+>    old value is recorded in-comment beside its replacement.
+> 4. ⚠️ **The `Skin` node is deleted.** A world declaring `Skin {}` now logs `Missing declaration for
+>    'Skin', unknown node.` + `Skipped unknown 'Skin' node or PROTO.` — **2 errors, headless exit 1** —
+>    with that node skipped and the rest of the world still parsing. Same failure class as
+>    `Radio`/`Microphone` in v7.0.0. Zero in-tree worlds affected. ✅ The `wb_skin_*` C ABI and
+>    `WB_NODE_SKIN` (ordinal 58) are **kept and still exported**.
+> 5. ⚠️ **The `Helmet` and `Telephone` PROTOs are deleted** — a licence defect, not a cleanup. A world
+>    declaring either now fails to resolve its EXTERNPROTO. *Fix:* the PBR sample is rebuilt around the
+>    own-authored `PbrMaterialSpecimen.proto`; there is no drop-in replacement for `Telephone`.
+> 6. ⚠️ **Every vendor-derived robot package is gone, replaced by OmniSim's own.** Package paths, world
+>    paths, controller directories, `DEF` names, robot `name` fields, the arm bridge's `--robot` id, one
+>    agent id and one skill id all changed. **Physics is unchanged** — mapping table under **Changed**.
+>    *Fix:* rename in your worlds, launchers and scripts.
+> 7. ⚠️ **The arm bridge's vendor hardware backend is removed**, with its operator doc, wiring test and
+>    the `--hardware-backend` value that selected it. The generic `HardwareBackend` plug-in mechanism is
+>    unchanged — `--hardware-backend <name>` still resolves a sibling `<name>_backend.py` — but **no
+>    backend ships**, so this tree has no path to a physical arm. Said plainly rather than implied.
+> 8. ⚠️ **`VirtualRealityHeadset` is removed and eight renderer env hatches are retired.** No `.wrl`
+>    schema ever existed for the VR node, so **no world breaks**; the View menu entry and the three
+>    `wb_supervisor_virtual_reality_headset_*` calls are inert (the C ABI is kept and answers locally
+>    with exactly what the pre-existing no-headset path returned). Retired because their `=0` arm
+>    selected deleted code: `OMNISIM_WGPU_NATIVE_MESH` / `_PRIMITIVES` / `_CADSHAPE`,
+>    `OMNISIM_LIDAR_WGPU`, `OMNISIM_RANGEFINDER_WGPU`, `OMNISIM_WREN_POSTFX`, `OMNISIM_WGPU_VIDEO`,
+>    `OMNISIM_NEWTON_SKIP_WREN`. `OMNISIM_FORCE_WREN` and `OMNISIM_LEGACY`'s render arm are warned
+>    no-ops, mirroring the retired ODE selectors.
+>
+> **What does NOT break, and will not: the controller API, in both languages.** Nothing moved this
+> release — no namespace change, no header change, no environment-variable change. C and C++
+> controllers built against v7.0.0 keep linking and keep running. The `.wbt` / `.omniworld` dual-read
+> policy is untouched. And **the physics of every renamed robot is unchanged**: every joint origin,
+> axis, limit, effort, mass, CoG, inertia tensor and collision shape is identical, verified by parsing
+> the new XML against the originals.
+
+### The renderer — WREN deleted, wgpu is the only renderer
+
+The migration running since v3 finished. wgpu became the default main view on 2026-08-19
+(`adf2aa075`, an explicit owner decision), the last WREN selector became unreachable on 2026-08-23
+(`35148ad65`), and the tree went the same day (`976b9449d`). What made that order possible was a
+**measurement instrument, not a judgement**: `scripts/dev/wren_readiness.py` and
+`scripts/dev/wren_deletion_audit.py` reduce "is it safe to delete WREN" to eight re-runnable checks
+and a blocking/retirable count, which went **322 → 0** before a line was removed.
+
+Every figure below is machine `9722d23d12a3` (RTX 3060 laptop, Windows 11), on the `city_traffic`
+world at 1896×1113 or on the Beauty Bench, as named.
+
+#### Added — the realism campaign that had to land first
+
+- **A physically-scattered sky that FEEDS the lighting, at zero per-frame cost.** Rayleigh + Mie +
+  ozone with the engine's own earth/mars constants, a sun disc whose spectrum is the *transmitted*
+  illuminance so it reddens at the horizon by physics, a ground-albedo term, and a night kit (stars,
+  Milky Way, moon). The march runs in a 128×64 sky-view LUT plus a 128×1 transmittance strip, re-baked
+  only when the sun moves, so the dome pays **one texture sample per pixel — cheaper than the palette
+  maths it replaced**. Phase 2 is the point: a CPU port of the same march derives the hemisphere
+  ambient and the IBL env palette, so shadow fill and metal reflections track the actual sky. City
+  renderMs **7 steady**. `OMNISIM_WGPU_SKY_SCATTER=0` reverts pixel-identically.
+- **Procedural clouds** — a 2-scale fBm sheet at ~1.5 km lit by the transmitted sun sampled from the
+  transmittance strip, so it goes amber at sunset and dark at night by physics. Landed with a pass
+  reorder that makes **sky cost scale with visible sky** rather than the whole frame, verified
+  pixel-identical before any cloud work.
+- **⭐ OmniLight — baked global illumination.** A deterministic multithreaded CPU path tracer over the
+  *actual* render triangles bakes an irradiance probe volume (L1 SH per probe) whenever the light rig
+  or scene changes; per frame the lit shader replaces the flat hemisphere ambient with one trilinear
+  3D-texture sample. It traces sky radiance from the same scattered atmosphere the dome renders — so
+  GI and sky cannot disagree — plus transmitted-sun direct light with shadow rays, material albedo,
+  **emissive surfaces as lights**, two bounces. Then static point/spot lights bake in with real
+  occlusion and their leaky real-time versions crossfade out, so the night scene's visible lie —
+  light shining through walls — is gone; and a traced 64×64 specular cubemap with a 3-mip roughness
+  ladder, parallax-corrected, so metals and glass mirror the actual scene. ⚠️ **Static-scene GI by
+  design** — moving robots deliberately do not retrigger a bake.
+- **Volumetric light shafts, PCSS contact-hardening shadows, and screen-space reflections.** Sun
+  visibility bakes into the probe volume's spare alpha slab (6 jittered shadow rays per probe, zero
+  new textures); at runtime a 16-step jittered march accumulates height-falloff fog × baked visibility
+  × a Henyey-Greenstein phase. PCSS estimates blocker distance over a 16-tap search and sets the PCF
+  spread from the receiver–blocker gap *in metres*, so shadows are razor-sharp at contact and soften
+  with caster distance. SSR reconstructs position and normal from the scene's own MSAA depth (no
+  G-buffer). Both on: city renderMs **7–8**, inside the established band.
+- **Cascaded shadow maps merged into the one true render** (3 fitted cascades, extent stabilisation
+  and texel-grid snapping), **analytic specular IBL** (the "copper looks copper" fix), **HDR bloom**
+  with real threshold semantics in linear luma units, **GTAO** ported from WREN's own shaders, **TAA**
+  (Halton jitter + reprojection + 3×3 neighbourhood clamp), and a **camera pass** — auto-exposure
+  easing toward a mid-grey target, vignette, deterministic photographic grain.
+- **The linear-light HDR pipeline is ON BY DEFAULT.** The old verdict "AgX reads milky at 1.0 and
+  blown at 2.5" was a diagnosis of the shading *underneath*, which was display-referred: a filmic
+  transform was re-compressing an already-final image. `OMNISIM_WGPU_AGX=0` returns to the legacy LDR
+  path and was verified **sha256-equal** against the pre-change binary.
+- **The Beauty Bench** (`projects/samples/rendering/beauty_bench.omniworld`) — the standing
+  render-quality benchmark, agreed with the owner as the replacement for the too-big city when judging
+  *look*. The city stays the *performance* baseline.
+- **Linux can present without WREN.** `OmWgpuSurface` created only a Windows HWND surface source, so
+  on Linux only the GL read-back-and-blit fallback was reachable — and that fallback lived inside
+  `src/omnisim/wren/`, which is why the tree could not be deleted. Xlib, XCB and Wayland surface
+  sources are added with **zero new includes and zero link flags**; platform detection is at
+  **runtime**, because one binary must serve both xcb and wayland.
+
+#### Changed
+
+- **The main-view render throttle was pacing frame *starts* wrong, and fixing it was worth more than
+  any shader.** It restarted its timer *after* the render returned and gated on `elapsed > 1000/FPS`,
+  so the frame period was `renderTime + budget` — every millisecond of render cost charged on top of
+  the budget — and a step quantum just under it (the city's `basicTimeStep 32` against `FPS 30`)
+  systematically missed the first eligible boundary and halved the authored rate **for both
+  renderers**. Now paced against an absolute due time. Measured (interleaved binary A/B, 75 s arms,
+  GUI): **FAST** — WREN 9.4 → 21.3 mainFPS (2.26×), wgpu ~9.4 → ~15.6 (1.66×). **REALTIME
+  head-to-head, post-fix** — wgpu **23.2 FPS at 0.858× realtime** against WREN **20.0 FPS at 0.648×**.
+- **Two renderer optimisations worth ~30% between them.** Per-frame uniform staging is gone: the
+  texshadow path staged and uploaded ~4.7 MB **every frame**. Those values moved into `LightU` and the
+  Scene slots into a delta-detected, coalesced-upload buffer, so **a static scene uploads zero bytes
+  per frame** — city renderMs **12 → 8–9**. Plus bounding-sphere culling against the shadow box and
+  camera frustum, and redundant vertex/index bind dedup. Beauty Bench dumps verified
+  **pixel-identical** across the staging change.
+- **Screenshots, thumbnails, `--stream` frames and movie recording all come from wgpu now.** The GUI
+  screenshot action, thumbnails and the mjpeg feed read the GL buffer via `glReadPixels`, which the
+  wgpu present path never fills — so under a wgpu main view every capture was **stale GL content**.
+  `grabWindowBufferNow` is now virtual and re-renders one synchronous wgpu frame with readback.
+- **The capture / cinema service renders wgpu.** It writes `renderBackend` explicitly, and that pin
+  was `"wren"` — so every still and every cinema frame the service had ever produced came out of the
+  legacy renderer, *without* the scattered sky, OmniLight GI, PCSS, SSR, TAA or the camera pass the
+  main view has had since 2026-08-19. Measured on the Beauty Bench, the WREN capture and the wgpu main
+  view of the same world and camera differed on **98.6% of pixels** (mean 169/765) — a different
+  image, not a slightly older look. `OMNISIM_CAPTURE_BACKEND` remains for A/B.
+- **The main-view mouse hit test is `gui/OmScenePicker`**, replacing WREN's GL picking render. One
+  depth-tested wgpu ID render over the same draw collector, with gizmo handle triangles appended as
+  transient draws — so **drawn == draggable stays one triangle set** rather than two formulas that
+  happen to agree. ⚠️ Recorded deviation: selection granularity is now the collector's per-draw `Solid`.
+
+### Highlights
+
+**A hardware-in-the-loop aircraft lane.** OmniSim had no aerodynamics and no aircraft of any kind.
+[`packages/omnisim-hil/`](packages/omnisim-hil/) adds the simulator half of a HIL rig: a 1.4 m
+fixed-wing delivery aircraft flown by real MAVLink from flight software in a separate process, so a
+PX4 or ArduPilot — SITL or a board on a bench — is a substitution rather than a rewrite.
+
+**Every vendor-derived robot package is replaced by OmniSim's own, and every tracked binary asset now
+has a licence trail.** 3,272 assets: 3,186 covered by a licence or provenance file, 86 recorded as
+own work, **0 uncovered and 0 baselined debt** — that number was 1,899 uncovered when the audit
+started.
+
+**Every external force was silently dropped for 16 days, and now works.** Three call sites gated on an
+ODE field that has been NULL since the ODE deletion: `wb_supervisor_node_add_force`,
+`..._add_force_with_offset`, and propeller thrust. The failure read as success — worlds loaded,
+stepped, logged no ERROR and exited 0 while three helicopters in a shipped sample sat unchanged to
+three decimal places for 491.5 s of simulated time.
+
+**The flagship G1 demo had been dead for ten days and nothing caught it.** The newton 1.5 runtime
+upgrade in v7.0.0 was migrated version-tolerantly in the *engine* and left `projects/policies/`
+behind, so the in-engine hook threw on 100% of ticks and applied not one joint target — while the
+engine log read `0 errors`, the sidecar read `finalised: true`, `--require-newton` passed, and the
+launcher printed PASS on a robot lying face-up.
+
+**The harness can command robots, not just read them.** `POST /robot/<def>/joints/set` writes joint
+targets with settle-and-verify semantics, and `POST /robot/<def>/ik` runs the engine's batched IK
+against the exact model the solver steps, as a pure preview.
+
+### Added
+
+- **⭐ `packages/omnisim-hil/` — hardware-in-the-loop for a fixed-wing aircraft.** `aero.py` is a
+  component build-up over lifting surfaces (stall blend, rate damping, adverse yaw, and a propeller
+  whose thrust falls with advance ratio — the term OmniSim's own `Propeller` node still lacks);
+  `mavlink.py` is a stdlib-only MAVLink v2 codec byte-verified against pymavlink and importing nothing
+  at runtime; `frames.py` is the **one** place ENU/FLU becomes NED/FRD; `autopilot/` is the flight
+  software; `run_hil_demo.py` is one command — engine + autopilot + a measured report. PROTOCOL.md
+  gains **section 17** for the MAVLink surface, the one OmniSim surface that is neither HTTP nor JSON.
+  - **Measured, machine `9722d23d12a3`, CPU `mj_step`, n=1:** 3 of 3 waypoints, **834.1 m**, still
+    airborne at the end; altitude error **0.61 m mean settled, 2.58 m worst**; **13,751 rx / 6,649 tx
+    MAVLink messages, 0 bad CRC, 0 resync bytes**; in 4 m/s wind, 3 of 3 waypoints over 845.6 m at
+    0.64 m mean error; payload envelope flies at 2.5 kg, degrades at 4.0 kg, cannot fly at 5.5 kg.
+  - ⚠️ **Real-time pacing is measured because a HIL rig needs wall clock and nothing had checked it.**
+    **1.0005× at `basicTimeStep 20`, but 0.516× at 8** — the wall interval pins to the ~15.6 ms Windows
+    timer quantum, and the same scene steps in 0.561 ms under `--mode=fast`, so that is idle wait
+    rather than scene cost. ⛔ **A fractional `basicTimeStep` truncates into `QTimer::start(int)` and
+    paces permanently fast** (20.5 ms measured **1.0255×**) with no diagnostic and exit code 0.
+  - **178 offline tests, no engine and no GPU**, asserting physical properties rather than recorded
+    numbers. They caught two model bugs before anything flew and one after: a frame conversion using
+    one matrix where two were needed, which put the aircraft's nose onto its right wing. That one
+    passes every involution, orthonormality and round-trip property, so **only an assertion in
+    physical units could catch it**.
+  - ⚠️ **Scope, declared:** the software-in-the-loop tier is complete and this is the simulator half of
+    HIL. **No hardware has been attached**, and the autopilot reads attitude from simulator ground
+    truth, so a real EKF is not under test. The flight model is a build-up, not CFD.
+- **⭐ `POST /robot/<def>/joints/set` — the harness commands joints.** A supervisor
+  `Node.setJointPosition` is a **PD setpoint that converges over ticks**, not a teleport, so the verb
+  applies targets, advances `settle_steps` (default 16) and then **measures**: per joint `{requested,
+  commanded, clamped, position_before, achieved, error, moved, position_controllable, limits, note}`,
+  never the argument echoed back. Live-verified: commanded 0.6 → achieved **0.5999995**; a 2.5 command
+  on a ±1.0 joint clamps and is flagged; a limit-less wheel commanded 2.0 achieves **5.6e-14** and
+  reports `position_controllable: false` with the mechanism named. ⚠️ **Measured and disclosed:** an
+  active bridge in hold mode re-asserts its own targets every tick and **wins** (residual 0.42–0.70 rad
+  on the UR5e) — command bridge-owned robots through their bridge. PROTOCOL.md §7.33.
+- **⭐ `POST /robot/<def>/ik` — the engine's batched IK, wired end-to-end.** `World.solve_ik` landed in
+  v7 with zero callers; it now has one, through harness route → supervisor verb → a **new
+  controller-ABI function** `wb_supervisor_node_solve_ik` (wire opcode 104, **appended** — an ABI
+  addition only, nothing moved) → engine decode → `OmNewtonBackend::solveIk`. **Pure preview: nothing
+  moves.** Live closed loop on a passive 2R rig: residuals **3.1e-06 / 1.7e-06 / 1.2e-07 m**, Cartesian
+  errors **5.4e-05 / 2.2e-04 / 1.0e-05 m**; an unreachable target reports its true **0.9000 m** residual
+  (geometrically exact) and is not applied. ⚠️ First call in a fresh world compiles a warp kernel —
+  **2368.7 ms warm disk cache, 8.3 s truly cold, 106–116 ms after** — disclosed in
+  `verification.warmup`. `mujoco_warp` is documented **unverified**, not blocked. PROTOCOL.md §7.34.
+- **`POST /servo_joint_positions` on the arm bridge — the non-blocking, superseding setpoint lane.**
+  The goal verbs treat a joint command as a goal, so a trajectory controller's stream lands **in
+  pieces** against their 409 — the measured MoveIt blocker recorded in v7.0.0. The servo verb returns
+  at dispatch, is last-write-wins, preempts an in-flight goal and names it in `preempted`, and **never
+  echoes the command as an achievement**. Verified live: **24 setpoints at ~18 Hz, 24/24 accepted, zero
+  409s, parked max |error| 0.011 rad**. PROTOCOL.md §6.1.
+- **⭐ Synthetic-data generation — aligned RGB / depth / instance dumps with seeded domain
+  randomization.** `OMNISIM_WGPU_SYNTH_DUMP=<dir>` writes one ground-truth sample per trigger frame:
+  rgb, uint16-millimetre depth, per-`Solid` instance ids (flat pick shader, sRGB off for exact byte
+  round-trip) and a `meta.json` with intrinsics, extrinsics, light rig and id → node map. The GT passes
+  reuse pre-existing render-target paths with a standard view-projection, so they are **pixel-aligned
+  with the RGB by construction**. Measured: **12/12 samples, zero retries, ~11 s/sample**, instance map
+  pixel-accurate at 46 instances. ⚠️ Needs a desktop session, and it is an **offline** generator.
+- **⭐ A smart house, run by an OmniLink agent.** A physics-backed four-room home — thermal model,
+  energy metering, hinged front door, six lights, oven/TV/coffee maker — over a 19-tool hub surface,
+  plus a benchmark measuring interactive-only against persistent (hourly-wake) operation from
+  `/scenario/metrics` only. Verified live 2026-08-19: parity scenario byte-identical between tiers;
+  oven-left-on **60 vs 480 house-minutes, 5.47 vs 19.69 kWh, kitchen 31.5 vs 45.9 °C**; door breach
+  **50 vs 285 house-minutes**. ⚠️ **Standing orders register but the hosted tick is disabled** —
+  documented, not claimed.
+- **`scripts/dev/thermal_guard.py`** — enforces the laptop temperature ceiling instead of intending to.
+  The full post-deletion 148-world sweep peaked at **66 °C** under it.
+- **Three new OmniBench lane 4 probes** — `phenomenon.supervisor_external_force`,
+  `device.propeller_thrust`, `device.propeller_inflow` — so the external-force defect cannot regress
+  unnoticed.
+- **`<omnisim roughness="" metalness="" />`, an optional child of URDF `<material>`.** `OmUrdfImporter`
+  **hardcoded roughness 0.5 / metalness 0** for every visual, so no URDF robot could look metallic
+  however good its mesh. Negative means unset, so **every URDF that does not opt in emits those same
+  constants byte-for-byte.**
+
+### Fixed
+
+- ⛔ **Every external force was silently dropped from 2026-08-08 until now.** `OmSolidMerger::mBody` is
+  assigned NULL in the constructor and written nowhere else — the ODE deletion removed its only writer
+  — and three call sites still read it as a liveness test. All three now gate on the Newton
+  `bodyHandle()`, which is what `C_SUPERVISOR_NODE_ADD_TORQUE` had already been migrated to — **that
+  asymmetry is exactly why torque worked and force did not**. Measured: `test_newton_external_wrench.py`
+  **RED (v = 0.000000) → 2 passed**; lane 4 `phenomenon.supervisor_external_force` **broken → works**;
+  `device.propeller_thrust` **broken → works**, acceleration ratio 1.0000155; the Mavic's wrenches
+  **0 → 63,350 over 15,837 ticks**; the BLUE helicopter in `propeller.omniworld` **frozen → 355.3 m
+  travelled**. ⚠️ **The documented revert hatch `OMNISIM_NEWTON_NO_EXT_FORCE` was itself inert** — it is
+  read inside `applyExternalForceNewton`, which the dead gate prevented reaching, so an A/B against it
+  would have measured "no movement" in both arms and concluded the feature worked.
+- ⛔ **The flagship G1 walk had been dead for 10 days, and every guard passed on a fallen robot.**
+  newton 1.5.0 removed `Control.joint_target_pos` / `joint_target_vel`; v7.0.0 migrated the **engine**
+  version-tolerantly and left `projects/policies/` behind. Measured (`mujoco_warp` on `cuda:0`): the
+  in-engine hook threw `AttributeError` on **2,210 ticks — 100% of them, from the very first** — and
+  applied not one joint target. **Why nothing caught it:** the hook writes pymod exceptions *only* to
+  `$OMNISIM_INENGINE_MPC_LOG`; the engine log read `0 errors, 7 warnings`, the sidecar read
+  `finalised: true`, and the GUI branch of `run_walk_rl.sh` ran **no** deploy verification at all.
+  Fixed across 33 files / 108 sites behind a `_ctl_target_pos(world)` shim mirroring the engine's
+  `getattr` resolution; `verify_deploy_hook()` now asserts the hook actually **ran**, proven
+  red-capable against a synthetic broken log before being trusted.
+  - **After the fix, same world and solver:** x = **+12.90 m** forward, z = 0.734 upright, still walking
+    at 115.3 s of sim time. ⚠️ **Still the weight-bearing λ=0.9 balance harness — NOT free-standing** —
+    and it curves (−0.208 rad yaw, 1.24 m lateral drift over 12.9 m).
+- ⛔ **Every terrain and every visual `Cone` was silently absent from every wgpu render for one commit.**
+  The default branch of `acquireGeometryMesh` claimed in its own comment to serve "IndexedFaceSet, Mesh,
+  ElevationGrid, Cone, …" and only ever handled `OmTriangleMeshGeometry` subclasses — `OmElevationGrid`
+  and `OmCone` are bare `OmGeometry`, so the `dynamic_cast` returned null. Pre-deletion they fell
+  through to the WREN static-mesh readback; deleting it **converted the stale comment into a silent
+  hole**. Measured: `inf` received where an `ElevationGrid` obstacle stands at 2.0 m. **The mechanism
+  generalises: a fallback is what lets stale coverage comments survive.**
+- ⛔ **`Cloth`, `SoftBody` and `GranularGroup` were invisible to every wgpu-rendered `Camera`,
+  `RangeFinder` and `Lidar`** — a regression against WREN, not a missing nicety. All three hang off
+  `OmBaseNode`, not `Solid`, so the collector never walked them. The fix is structural because the
+  failure was: `collectDynamicDraws()` is now the one entry point for non-Solid per-step-varying
+  content. A second defect, which wiring the sensors alone would have shipped: the "do I need to
+  re-upload the vertices?" decision lived in a function-local `static` keyed on the simulation clock,
+  correct with one caller and wrong the instant there are two.
+- **The dark aura around robots was the GTAO kernel, and the first attempt blamed the wrong subsystem.**
+  WREN's `gtao.frag` used its projected radius unclamped; the wgpu port added a 64-pixel clamp as a perf
+  guard and left the window derived from the **authored** radius, so every sample landed far inside the
+  falloff start and was taken at full weight. Measured (static probe world, so the run-to-run noise floor
+  is 0 px over threshold): halo pixels **17,064 → 620, a 27× reduction**, mean barely moving.
+  - ⚠️ **The wrong turn is recorded in place, because the method matters more than the fix.** The
+    2026-08-22 pass attributed the aura to OmniLight's probe spacing on the strength of **a single
+    `OMNILIGHT=0` arm** — which moves *more* pixels (72,701) and is not the aura at all. Three avoidable
+    errors produced it: one arm with no alternatives, no noise floor (controllers were live, so poses
+    differed between runs), and **a pixel count read as a diagnosis**.
+- **`Track` animation had been dead on both renderers since the ODE deletion.** `prePhysicsStep` gated
+  the whole update on `mBodyID`, a `dBodyID` NULL since `bdc02139`, so belt elements, wheel spin, texture
+  scroll and the `PositionSensor` were all frozen. ⛔ **The animation works again; the PROPULSION does
+  not** — see Known limitations.
+- A plain `Material`'s `emissiveColor` reaches wgpu sensor images again; **out-of-range now returns
+  `+INFINITY`** on the no-noise wgpu range paths per the documented contract; appearance-less `Shape`s
+  exist again; Lidar and RangeFinder range noise, resolution and motionBlur are ported to the wgpu
+  readback; the `Pen`'s paint reaches a wgpu `Camera` image. Device HUD insets, supervisor labels and
+  the manipulator gizmo are drawn again — from the *same* accessors the GUI hit-tests.
+
+### Changed
+
+- **⭐ The vendor-derived robot packages are replaced by OmniSim's own, with kinematics and inertials
+  unchanged.** Worlds, controllers, bridges and trained policies that drove the old packages drive the
+  new ones:
+
+  | robot | what it replaced | path | robot id | DEF |
+  |---|---|---|---|---|
+  | **OmniArm 6** | a vendor-derived 6-axis cobot package | `projects/robots/omnisim/omniarm6/` | `omniarm6` | `OMNIARM6` |
+  | **OmniArm 7** | a vendor-derived 7-axis cobot package | `projects/robots/omnisim/omniarm7/` | `omniarm7` | `OMNIARM7` |
+  | **OmniTug 500** | a vendor-derived 4-wheeled ground tug package | `projects/robots/omnisim/omnitug500/` | `omnitug500` | `OMNITUG500` |
+  | **OmniQuad** | the Boston Dynamics Spot package | `projects/robots/omnisim/omniquad/` | `omniquad` | `OMNIQUAD` |
+
+  ⚠️ **The three vendor-derived packages are not named here, and that is deliberate.** Their
+  publication permission was withdrawn, so this repository does not carry the vendor's or its
+  products' names — and because **v8.0.0 is published as the only version of this repository**,
+  there is no public predecessor to migrate a world *from*, which is the only thing a rename map
+  would have been for. Spot is named because it is a different vendor and the reasoning for
+  removing its geometry is a compliance record worth publishing: see
+  `docs/developer/spot-provenance-research.md` (archived 2026-09-02, see [docs/ARCHIVE.md](docs/ARCHIVE.md)).
+
+  66 worlds and 15 demo controller directories were renamed with the packages; the arm bridge's
+  `--robot` id is now `omniarm6`, the warehouse courier agent is `omnitug500_warehouse`, and the
+  skill `spot_walk` is `omniquad_walk`. **OmniTug 500 remains a visual-only prop** — one link, no
+  `<collision>` and no `<inertial>` — so worlds needing it to collide pair it with a companion `Robot`.
+  - **Why the geometry had to go, not just the name.** The shipped `.glb` files still carried the
+    vendor's internal drawing numbers in their embedded headers; the tug was a raw 347k-triangle CAD
+    tessellation with the product's livery transcribed into the URDF as eight material colours; and the
+    publication grant existed only as prose in a commit message, which the squashed public snapshot
+    never carried anyway. Spot's 13 meshes each named their geometry object
+    `02-042137-001-A00 TOP LEVEL DEFEATURED - NOT FOR PRODUCTION.<nnn>` — a manufacturer part number
+    with a CAD release annotation carrying Blender's duplicate suffix: **one imported CAD assembly split
+    13 ways, not 13 modelled parts**. Both ledgers had asserted the opposite in writing, and a wrong
+    statement in a legal notice is worse than an honest uncertainty.
+  - **The restyle is provably cosmetic on the arms and the tug**, verified by parsing the new XML against
+    the originals: every joint origin, axis, limit, effort, mass, CoG, inertia tensor and collision shape
+    identical across all 8 URDFs.
+  - ⚠️ **Spot's collision geometry drives physics, so that one was MEASURED, not argued.** Colliders were
+    *fitted*, each minimising voxel symmetric difference against the convex hull MuJoCo actually used
+    (volume ratios 0.977–1.013). Interleaved A/B on one binary, control arm loading the old CAD colliders
+    through the identical world / controller / policy / env: the velocity-conditioned RL walk produced
+    **max |Δpos| = 0.00000000 m over ~11,000 steps**, 24.601 m travelled in both arms. *(That is a
+    same-config A/B of two collider sets, not a determinism claim.)* ⚠️ **One scenario changed and is
+    reported as a finding, not sold as a win:** the get-up policy now recovers where it previously
+    flipped. Get-up is the one scenario whose contact set *is* the substituted colliders.
+  - **All robot geometry is authored in this repository.** Visual shells come from committed generators
+    with `--check` drift gates; collision geometry is primitive cylinders and boxes. **Zero binary
+    geometry assets remain** — 46 MB of arm/tug meshes out and 484 KB of text in; Spot 20 MB → 145 KB;
+    Robotiq 2F-140 3.0 MB → 13 KB. OBJ is a deliberate choice over a binary mesh: a reviewer can diff it,
+    and `--check` proves byte-for-byte that what ships is what the committed generator emits.
+- **ROS 2 joint commands select the bridge verb from `/capabilities`**, on both tiers. Verified live on
+  Tier 2 (WSL Humble → Windows engine): **60 joint_command messages at 15 Hz, zero 409s, arm settled
+  0.0185 rad from target**. ⚠️ **Tier 3's servo path is compile + unit verified only** — no live
+  `controller_manager` run — **and MoveIt has still never been brought up.**
+- **`/scene/spawn` and `/scene/delete` now disclose `RUNTIME_MUTATION_NOT_IN_SOLVER`.** The
+  Newton/MuJoCo model is frozen at `finalizeWorld()`, so a mid-run spawn never reaches the solver (a
+  dynamic body will not fall, a static body will not collide) and a delete leaves phantom colliders in.
+  Both were measured in v7 and both succeeded **silently**. Every successful response now carries a
+  `physics_warning` block naming the consequence and the reload fix, one `world.warning` event fires per
+  verb per world-load, and `GET /capabilities` lists `scene.runtime_mutation_physics` under
+  `not_supported`. **The engine is unchanged — this is honest reporting of an open gap, not a fix.**
+
+### Licensing, provenance and redistribution
+
+This release is the first that a third party can redistribute with the whole licence trail in the box.
+
+- **Every tracked binary asset now has a licence trail.** 3,272 assets: **3,186 covered** by a licence
+  or provenance file at or above them, **86 recorded as own work**, **0 uncovered, 0 baselined debt**.
+  It was 1,899 uncovered when the audit started.
+  - ⚠️ **That count grew because the gate had been looking at the wrong set, not because assets were
+    added.** `ASSET_EXTENSIONS` named no `.npz`, `.svg`, `.gif`, `.ico`, `.exr`, `.mp4` or `.pdf` — and
+    an extension the set does not name is not merely unchecked, it is **invisible**: the gate can
+    report "0 uncovered" while an unattributable file sits in the tree, because it never looked. Widening
+    it surfaced 21 previously-invisible files (20 `.npz` and an `.ico`). None was a real licensing
+    problem — but that was luck, and the reason it was luck is that nothing would have said otherwise.
+    Five missing `PROVENANCE.md` records were written so the wider set still reads 0 uncovered.
+- **Three gates enforce it, and they run in CI** —
+  [`.github/workflows/licence-provenance.yml`](.github/workflows/licence-provenance.yml), deliberately
+  unfiltered by path: [`test_license.py`](tests/sources/test_license.py) (source headers; its exemption
+  baseline is **empty and stays empty** — an entry there is debt, not permission),
+  [`test_asset_provenance.py`](tests/sources/test_asset_provenance.py) (every binary needs a trail), and
+  [`test_licence_pointers.py`](tests/sources/test_licence_pointers.py) (every path cited by `NOTICE` or
+  `THIRD_PARTY_NOTICES.md` resolves — an attribution pointing at a deleted file has silently stopped
+  being made). **The existing sources suite had never run in CI at all.**
+  - The pointer gate now also classifies a third case: a component **held from the public snapshot**,
+    whose licence text is removed *together with* the material it attributes. That is correct rather
+    than broken — but the exemption list is checked against the real deny-list by its own test, so it
+    cannot become a place to hide a deletion.
+- ⛔ **The brand artwork was inside the Apache grant, and now is not.** `TRADEMARKS.md` reserved the
+  *marks*; nothing reserved the *copyright in the image files*, and Apache-2.0 §6 does not reach them —
+  on the face of the repository, anyone could copy, alter and redistribute the orb and wordmarks so
+  long as they stopped short of using them *as* marks. Now reserved explicitly in
+  [`resources/branding/LICENSE`](resources/branding/LICENSE), in carve-out item 5 of both attribution
+  documents, and in a `TRADEMARKS.md` section that separates the two rights. ✅ **Reproducing the assets
+  unmodified to refer factually to OmniSim needs no permission** — that was always the intent and is now
+  written down.
+- **`NOTICE` now opens with what a redistributor must actually carry** — Apache-2.0 §4's four
+  obligations in this project's concrete terms, plus the two things the licence does *not* give you.
+- **`THIRD_PARTY_NOTICES.md` was missing its `## 3.` heading entirely**, jumping §2 → §4, which is why
+  glad, GLM, stb, SipHash, Qt 6, wgpu-native, OpenAL Soft and the rest had no rows while `NOTICE`
+  listed them. The section is restored and populated, including the LGPL components and the linkage
+  posture that keeps their obligations satisfiable.
+- **Corrections to claims that were simply wrong**, each re-measured rather than re-copied: the PROTO
+  census (453/260 → **452/259**), a bundled component that is not in the tree (SVOX Pico), "Spot" still
+  listed among marks used nominatively, a carve-out asserting an Assimp obligation was undischarged when
+  it had been discharged, and a `template.proto` claim the file itself contradicted.
+- **Contribution provenance is enforced, not just documented.** DCO sign-off now has a
+  `pull_request`-scoped check, and the PR template carries a provenance checklist whose central question
+  is the one that found the Boston Dynamics, Robotiq and Orbbec geometry: **is the licensor the design
+  owner?** A vendor's permissively-licensed ROS package does not cover another manufacturer's CAD inside
+  it.
+
+### Removed
+
+- ⛔ **The WREN renderer** — see the banner and the renderer section above.
+- ⚠️ **The `Skin` node** (1,230 LOC, its `.wrl` schema and its Add-Node icon). A commit four days earlier
+  had **refused** this deletion, and that refusal was correct on the question it asked: it measured Skin
+  working on Newton in both documented modes and kept it rather than delete a working documented feature
+  on "our corpus does not use it". This supersedes it on a **different** question, with owner approval:
+  `OmSkin.cpp` carried **108 live `wr_*` call sites**, the largest single-file concentration outside
+  `src/omnisim/wren`, and mesh deformation in the render path is exactly what has no home once WREN goes.
+  The schema had to go in the *same* change as the factory entry, because `readAllModels()`
+  directory-scans `resources/nodes/*.wrl` — a surviving `.wrl` would make the parser accept a node the
+  factory then returns NULL for. ✅ **The public ABI is untouched**: `include/controller/` and
+  `src/controller/` have a **zero-line diff**, `WB_NODE_SKIN` stays mid-enum at index 58 because it is
+  positional public ABI, and all six public `wb_skin_*` functions guard on the NULL that
+  `skin_get_struct()` now returns.
+- ⚠️ **`Helmet.proto` and `Telephone.proto`.** Both declared MIT citing Khronos `glTF-WebGL-PBR` — MIT is
+  that repository's **code** licence, and the DamagedHelmet model is **CC BY-NC**, which cannot ship
+  under Apache-2.0 at all.
+- ⚠️ **`VirtualRealityHeadset`** — a Windows-only OpenVR/SteamVR node rendered entirely through WREN with
+  **zero consumers**: no `.wrl` schema, no PROTO, no world and no controller referenced it. Because there
+  was no schema, **no world file can break**.
+- ⚠️ **The Valkyrie and Digit robot packages** (161 files, 33 MB). Neither had a valid grant: Digit's
+  upstream is one academic's Julia package with no LICENSE on any branch, and Valkyrie's NOSA v1.3 file
+  was an **unfilled template** with every blank — including the name of the government agency — left as
+  `_____`, so it did not satisfy its own section 3. Both were already publish-denied; they were **deleted
+  because a deny-list depends on a file staying correct forever and deletion does not.**
+- ⚠️ **The arm bridge's vendor hardware backend**, its operator doc, bring-up checklist, wiring test and
+  the `--hardware-backend` value that selected it.
+- **~46 MB of third-party mesh data plus a further ~62 MB of unlicensed or orphaned assets**: 190 orphaned
+  sky cubemaps, the Orbbec Astra sensor mesh inside the ROBOTIS package loaded by nothing, 4 Spot foot
+  collision STLs referenced by no URDF, 6 unlicensed splash renders of other manufacturers' robots that
+  nothing displayed, and 9 orphan textures byte-identical to upstream assets under a product-scoped grant.
+  - ⚠️ **Where the suspicion was NOT borne out, that is recorded too.** Binary forensics over 1,104 files
+    found zero trace of any texture marketplace, so `projects/appearances/` (333 files) is clean and now
+    says so.
+  - **`compilation_timestamp.h` was assembled from Stack Overflow answers (CC BY-SA) with no licence.**
+    Replaced with a clean-room implementation, proven identical over 1,463 date cases.
+  - **Blender's Suzanne was replaced** by a committed-generator torus knot. Blender's manual says the GPL
+    covers the application, "not the artwork you create with it" — but Suzanne is not artwork a user
+    created, it is a coordinate table shipped **inside** GPL source.
+  - **The LAFAN1 motion-data cascade.** CC BY-NC-ND 4.0 has two independent blockers, either fatal: §2(a)(1)
+    grants the right to reproduce "but not Share, Adapted Material", and NC is incompatible with Apache-2.0.
+    43 ghost/checkpoint entries are denied in three labelled classes, the second-order re-recordings
+    **precautionary** with the argument set out both ways rather than asserted. ✅ The flagship G1 walk rides
+    a Unitree-lineage ghost (BSD-3, licence in-tree) and is untouched. ⚠️ The old deny entry said in its own
+    words that the terms "were never verified", then sat unchanged while nobody verified them. **It took
+    twenty minutes; the licence was a file in the root of a public repository the whole time.**
+
+### Known limitations — read before quoting any result
+
+By the tree's own executed measurement (OmniBench lane 4, machine `9722d23d12a3`), the matrix reads
+**48 probes: 34 works / 5 degraded / 5 broken / 4 absent / 0 inconclusive — 77%**, against 45 probes and
+78% at v7.0.0. ⚠️ **That is three probes ADDED, not a regression:** two of the new rows are `works`
+(external force and propeller thrust, both previously untestable because the capability was dead) and one
+is `broken` by design. No existing verdict moved. Where prose disagrees with
+[the generated matrix](docs/benchmarks/lane4-capability-matrix.md), **the matrix is the measurement**.
+
+- ⛔ **`Propeller` thrust does not decay with airspeed.** `OmPropeller.cpp` pins the speed-of-advance term
+  to `V = 0.0`, so `thrustConstants[1]` has no effect. Measured: the airframe went from 1.11 to 12.30 m/s
+  of axial airspeed and the descent acceleration did not move (4.8100 → 4.8100 m/s², ratio 1.000).
+- ⛔ **`Track` PROPULSION is dead under Newton.** The animation was repaired this release; the propulsion
+  was not. `contactSurfaceVelocity()` has **zero readers** — it was consumed by ODE's
+  contact-surface-velocity mechanism and nothing replaced it. A tracked robot's belt animates and its
+  chassis does not move.
+- ⛔ **A motorised `BallJoint` still does not actuate**, while its angle readback travels — so a controller
+  polling `getPosition()` is told it is moving. Hinge2 works. Unchanged from v7.0.0.
+- ⛔ **A node deleted at runtime keeps colliding, and a node spawned at runtime never reaches the solver.**
+  Same frozen MuJoCo model, opposite symptoms. Now **disclosed on every response**, but not fixed.
+- ⛔ Unchanged from v7.0.0: `ContactProperties.bounce` is declared-but-never-read, every triangle-mesh
+  collider is silently convexified, a compound `boundingObject` registers only its first child by default,
+  closed kinematic chains build no world at all, `setPosition()` is silently ignored on a motor with no
+  declared limits, and no deformable has a readback surface.
+- ⚠️ **Bitwise reproducibility remains scoped to the CPU `mj_step` path and is REFUTED on the GPU
+  `mujoco_warp` path.** Nothing here changes that, and no cross-machine bitwise claim exists.
+  [docs/benchmarks/determinism-scope.md](docs/benchmarks/determinism-scope.md) is the source of truth.
+- ⚠️ **Every humanoid result in this tree runs on a weight-bearing balance harness (λ=0.9,
+  `HARNESS_KZ=2000`, up to ≈700 N of lift plus ±350 N·m of attitude authority) — a durable free-standing
+  humanoid walk remains an OPEN problem.** Quadrupeds carry no harness. The stair climb is the one
+  exception (`HARNESS_KZ=0`), and its 3 cm riser is a measured ceiling, not a config choice.
+- ⚠️ **No sim-to-real, and this release moved further from it, not closer.** With the vendor hardware
+  backend removed, this tree has **no path to a physical arm**. The HIL lane has had **no hardware
+  attached**. macOS remains untested and, with no fallback solver and now no fallback renderer, has no
+  verified physics *or* rendering path.
+
+---
+
+## [v7.0.0] — 2026-08-17
+
+> ⛔ **READ THIS IF YOU HAVE A CONTROLLER. This release completes the removal of the name "webots"
+> from the shipped OmniSim controller API, and one of the four breaks is an ABI break.** In total,
+> four things stop working, listed with their fixes under **Removed** below:
+>
+> 1. **`#include <webots/robot.h>`** — the 91 `webots/` forwarder headers are deleted. *Source break.*
+>    Rewrite `webots/` to `omnisim/` in the include line.
+> 2. **`from controller import Robot`** — the Python `controller` shim is deleted. *Source break.*
+>    Rewrite the import to `from omnisim import Robot`.
+> 3. **`WEBOTS_CONTROLLER_URL`, `WEBOTS_HOME`, `WEBOTS_LIBRARY_PATH`** and their siblings — the
+>    `WEBOTS_*` runtime environment variables are warned about once and then **ignored**. *Environment
+>    break.* Rename them to `OMNISIM_*` wherever they are set. (`WEBOTS_HOME` still works at *build*
+>    time.)
+> 4. ⛔ **`using namespace webots;`** — the C++ classes are now in **`namespace omnisim`**. **This one
+>    is an ABI break, not a source break:** the namespace is part of every mangled C++ symbol, so
+>    **every C++ controller must be RECOMPILED**, and an already-built one fails at load rather than
+>    misbehaving. There is **no** `namespace webots = omnisim;` alias, deliberately.
+>
+> **What does NOT break, and will not:** the **C API**. `wb_*` functions (497 exports), the `Wb*`
+> types and the `wbu_*` utilities are untouched — none of them contains the string "webots", so none
+> of them blocked the goal. **C controllers keep their symbols and need no recompile; only C++ ones
+> do.** The `webots-<id>` tmp folder and `\\.\pipe\webots-…` IPC names are also unchanged, and
+> Cyberbotics copyright headers, `NOTICE`, `THIRD_PARTY_NOTICES.md` and `TRADEMARKS.md` are untouched
+> — Apache-2.0 §4 attribution is independent of this migration.
+>
+> Separately, and unrelated to the naming work: the **`Radio` and `Microphone` nodes are deleted**
+> after being measured inert, so a world declaring one now exits 1. **`Skin` was proposed for the
+> same retirement and was KEPT** — it was measured working.
+
+### ROS 2 — a declared non-goal, reversed and shipped in three tiers
+
+#### Added
+
+- **⭐ ROS 2 Tier 3 — a `ros2_control` hardware interface, so stock controllers drive an OmniSim
+  robot.** [`packages/omnisim-ros2/src/omnisim_ros2_control/`](packages/omnisim-ros2/src/omnisim_ros2_control/)
+  ships `omnisim_ros2_control/OmniSimSystem`, a C++ `hardware_interface::SystemInterface`.
+  `controller_manager` sees ordinary hardware: **state** comes from the harness's
+  `GET /robot/<def>/joints` (position + velocity interfaces), **commands** go to the robot's own
+  bridge — `POST /set_velocity` for a differential-drive base, `POST /set_joint_positions` for an
+  arm. Both endpoints already existed, so **no OmniSim-side surface was added and the engine is
+  untouched.** A `diff_drive_controller` command is folded back into a body twist by the exact
+  algebraic inverse of the controller's own wheel kinematics, which round-trips bit-for-bit when
+  `wheel_radius` / `wheel_separation` match the bridge's (verified live at DEBUG:
+  `left=0.302847 right=0.302847 r=0.165100 b=0.570800 -> linear=0.050000 angular=0.000000`).
+  Worked example in one command: `ros2 launch omnisim_ros2_control husky_diff_drive.launch.py`.
+  Dependency-free — a ~200-line JSON reader and a POSIX-socket HTTP client rather than
+  `nlohmann/json` and libcurl, so `colcon build` needs nothing that `ros-humble-desktop` +
+  `ros2_control` does not already provide. 10 gtest cases (9 pass, 1 skips for want of a
+  comma-decimal locale) cover the two things that fail *silently*: the JSON reader, where a
+  mis-parse looks like a stationary robot and a `null` velocity read as `0.0` looks like a stopped
+  joint, and the diff-drive fold, where a wrong sign looks like a robot that turns instead of
+  driving.
+- **Tier 3 verified against the simulator, not against the command.** Machine `9722d23d12a3`
+  (RTX 3060 laptop, CPU `mj_step`, binary `13906cc6f12451eb`), ROS 2 Humble + `ros2_control` 2.54.0
+  in WSL2: `ros2 control list_hardware_interfaces` reports four claimed `velocity` command
+  interfaces and eight `position`/`velocity` state interfaces; `joint_state_broadcaster` and
+  `diff_drive_controller` both report `active`; and a `cmd_vel_unstamped` publish drove the Husky
+  from `x = -0.00000` to `x = +5.59211` — **5.5921 m over 195.22 s of simulated time**, with the
+  pose and the clock read out of the simulator. Three alternating A/B repetitions against a control
+  arm that posts `/set_velocity` directly with ROS removed entirely agree to within ~4%
+  (0.0380/0.0374/0.0440 m/s vs 0.0428/0.0409/0.0402 m/s for a commanded 0.05), so the 12-25%
+  shortfall is **the robot and its bridge, not the ROS layer** — it is present with ROS absent.
+- **ROS 2 sensor topics — `sensor_msgs/Imu`, `LaserScan` and GPS (Tier 2).** The blocker was never
+  the ROS side: `GET /robot/<def>/sensor/<name>` on the harness is a deliberate 501, because a
+  supervisor cannot honestly read a device it does not own, and **no shipped bridge implemented the
+  optional `/read_sensor` verb** ([PROTOCOL.md §6.6](PROTOCOL.md)). So the source was built first.
+  `omnilink_mobile_bridge` now serves `/read_sensor` + `/list_sensors`, marshalling every device
+  read onto the sim thread (the controller API is not thread-safe) and enabling devices lazily,
+  reporting `warming_up` for the window before the first sample rather than substituting a zero.
+  A new `sensor_node` publishes `/imu/data`, `/scan` and `/gps/local`, with sensor frames latched
+  onto `/tf_static` from **supervisor-measured** mount poses (`base_link → base_laser` at
+  `0.2012, 0, 0.505`), not assumed identities. §6.6 was underspecified — it defined only a scalar
+  `value` + `unit` — so it now carries per-type payload shapes, a `layout` block for lidar, the
+  mandatory GPS `coordinate_system`, the `null` no-return encoding and the warm-up contract.
+  **Verified with values that change under motion**, not merely present: GPS `x` `0.0000 → +5.5918`
+  over a drive, lidar finite returns `541 → 190`, and IMU yaw `+0.1300` matching the bridge's own
+  `0.1300` after a turn.
+- **Partial by measurement, and declared as such.** ⛔ OmniSim's **`Gyro` reads a constant
+  `[0,0,0]`** while the robot is demonstrably rotating, and its **`Accelerometer` never produces a
+  sample at all** — not even gravity — while the `InertialUnit` emitted into the *same* carrier
+  Solid tracks yaw to 4 decimals, so the defect is device-type-specific rather than a URDF-import
+  artefact. `sensor_msgs/Imu` therefore ships a real orientation with
+  `angular_velocity_covariance[0]` and `linear_acceleration_covariance[0]` set to **`-1`**, the
+  ROS convention for "not available", instead of zeros that read as measurements. No robot in the
+  tree has a camera, so no `Image`/`CameraInfo` was shipped. A local GPS is published as
+  `PointStamped`, not `NavSatFix`, because its values are metres and not degrees.
+- **Husky URDF gained a lidar** — a SICK LMS111 on the sensor arch (270°, 541 samples, 0.1–20 m),
+  so the `LaserScan` path could be verified against a real device rather than shipped untested.
+  ⚠️ It is **inert** unless the world is loaded with `OMNISIM_URDF_USE_SENSORS=1`: the importer
+  parses `<gazebo>` sensor blocks always and drops them at emit time when that is unset. Verified
+  by a control run — the same world reports `devices: []` without the flag, and 5 devices with it.
+  That flag is also the single most likely reason a URDF robot appears to have no sensors; its own
+  source comment claiming the emission path crashes device registration is **stale**.
+
+#### Changed
+
+- **ROS 2 HTTP transport now reuses connections — measured 7.9× and zero socket churn.** The bridge
+  sets `protocol_version = "HTTP/1.1"` (safe because every response already carried an accurate
+  `Content-Length`, with error paths closing the connection since several of them reject *before*
+  reading the request body), and the client replaced `urllib.urlopen` — which opens a new socket per
+  request and offers no way to reuse one — with a pooled `http.client` connection. Measured A/B,
+  300 requests against the live bridge, machine `9722d23d12a3`: **114.8 → 908.8 req/s** and
+  **+300 → +0** sockets left in `TIME_WAIT`. That matters more than the speed: each closed socket
+  holds an ephemeral port for 120 s against Windows' 16,384, which is how a ~50 Hz bringup
+  previously reached 17,487 sockets in `TIME_WAIT` and `WinError 10048`. ⚠️ The **World Harness
+  still speaks HTTP/1.0**, so harness-facing nodes still pay a connection per request; the pool
+  detects that peer and degrades automatically. `OMNISIM_ROS2_KEEPALIVE=0` reverts the client.
+
+- **⭐ ROS 2 support — reversing a declared non-goal.** OmniSim now implements the ROS 2
+  [`simulation_interfaces`](https://github.com/ros-simulation/simulation_interfaces) standard
+  (v2.1.0) — the same one Gazebo, Isaac Sim and O3DE implement — plus a live robot surface, as a
+  **sidecar package** at [`packages/omnisim-ros2/`](packages/omnisim-ros2/). ROS 2 had been a
+  *documented non-goal* since 2026-07-10; the project owner reversed that decision.
+  **Tier 1:** 15 services + the `SimulateSteps` action, each mapped onto a harness endpoint that
+  already existed. **Tier 2:** `/clock` (with `use_sim_time`), `/tf` + `/tf_static` as a real
+  transform tree, `<robot>/joint_states`, `nav_msgs/Odometry` on `/odom`, and `cmd_vel` +
+  `joint_command` routed to the robot's own bridge — **never** the harness, because the supervisor
+  can teleport a body but cannot drive a motor it does not own (the same reason
+  `GET /robot/<def>/sensor/<name>` is a 501). ⛔ **Tier 3 (`ros2_control`) was NOT implemented at
+  this point in the log; it landed separately (see the Tier 3 entry above), and MoveIt is still
+  out of reach.** ✅ **The engine is unchanged**: no `rclcpp` in
+  `src/omnisim/`, no ROS in the engine Makefiles, and a non-ROS user's build is byte-identical.
+  90 unit tests need neither ROS nor a simulator. Full story, limitations and the reversed-decision
+  history: [docs/developer/ros2-integration.md](docs/developer/ros2-integration.md).
+- **`packages/omnisim-ros2/tools/wsl_harness_link.py`** — a Windows↔WSL2 transport needing no
+  Administrator rights. OmniSim's engine is Windows-primary and ROS 2 is Linux, but WSL2 cannot dial
+  a Windows-host service without a firewall rule; this inverts the direction (Windows dials into
+  WSL and parks connections as return paths). A byte pump, not an HTTP proxy, so every present and
+  future harness endpoint works unchanged.
+
+#### Known limitations — read before quoting any ROS 2 result
+
+- **⛔ Tier 3 covers velocity-commanded bases only — MoveIt is still out of reach, and the blocker
+  is OmniSim's arm bridge, not ROS.** `omnilink_arm_bridge` treats a joint command as a **goal**,
+  not a setpoint. Measured on `omnilink_ur5e.omniworld`, three commands 50 ms apart:
+  `#1 HTTP 200 accepted=True`, `#2 HTTP 409 accepted=False error='busy'` ("this
+  set_joint_positions was NOT applied"), `#3 HTTP 200 accepted=True` once the previous
+  interpolation had finished. A trajectory controller writes a setpoint every cycle, so its stream
+  would land **in pieces** — worse than failing outright. `command_mode: joint_positions` is
+  implemented and logs that exact mechanism on a 409 instead of retrying, but nothing in the tree
+  can serve it until a bridge grows a non-blocking, superseding servo verb. That is an OmniSim-side
+  change.
+- **⛔ Nav2 has never been brought up against OmniSim.** `/odom`, `/cmd_vel`, `/tf`, `use_sim_time`
+  and now `ros2_control` all exist, which is everything a Nav2 bring-up consumes — but nobody has
+  run one. Treat it as *unblocked*, not as *working*. OmniSim is also still absent from the
+  `ros2_control` simulator registry.
+- **⚠ `update_rate` is not the actuation rate, and the ceiling is OmniSim's supervisor round trip,
+  not TCP.** `read()`/`write()` do no I/O — they swap values with a snapshot under a mutex, so any
+  `controller_manager` rate is safe — and one background thread owns the HTTP at `comms_rate_hz`.
+  Measured with `omnilink_husky.omniworld` loaded `light`: `GET /robot/HUSKY/joints` costs
+  **21.01 ms** (47.5 req/s) against **4.48 ms** (221.8 req/s) for a bare `GET /healthz` on the same
+  server — 4.7×, because the joint read is a supervisor RPC serviced at an engine step boundary.
+  One read + one write is ~22 ms, so the **hard ceiling is near 45 Hz**; the shipped default is
+  25 Hz. The ephemeral-port budget is a *second*, looser ceiling near 136 Hz, so latency binds
+  first.
+- **⚠ `cmd_vel_timeout` is evaluated on the SIMULATION clock, and the failure is silent.** Under
+  `use_sim_time: true` — which this stack needs, because the harness runs worlds at ~13× realtime —
+  the stock 0.5 s expires between consecutive messages from a 20 Hz *wall-clock* publisher.
+  Measured: the Husky moved **0.0000 m** against a commanded 0.2 m/s while
+  `/diff_drive_controller/cmd_vel_out` published all zeros, the controller reported no error and
+  the hardware plugin reported 0 failures at its full 19.99 Hz. The only way to see it was to read
+  the robot's pose out of the simulator. The shipped config uses 2.0 s and explains how to scale it.
+- **⚠ Position commands are silently ignored on an unlimited OmniSim motor, so the plugin refuses
+  to activate one.** A motor with no `minPosition`/`maxPosition` is built as a velocity wheel with
+  `ke = 0` and `setPosition()` on it does nothing — the Husky's four wheels are exactly that, and
+  the engine says so per device. Rather than falling back to velocity control and reporting
+  success, the plugin reads the harness's own `lower`/`upper` and fails activation, naming the
+  joints. There are no effort interfaces at all: OmniSim exposes no joint effort on any surface, so
+  a URDF asking for one is rejected instead of being handed a fabricated zero.
+- **⚠ Never read the simulation clock and a pose from two different harness calls.**
+  `GET /sim/state` and `GET /robots` are two supervisor RPCs serviced at *different* engine step
+  boundaries; under `--mode=fast` the gap between them is seconds of simulated time and it moves
+  with HTTP load. The same 10-second drive measured **+50.6%** and **−21.8%** of its commanded speed
+  depending only on how busy the harness was — both artefacts. Take the clock and the pose from one
+  response, and remember that **a wheel cannot exceed its own velocity setpoint**: an achieved value
+  that beats its command is a bad denominator, not a fast robot.
+- **`EntityState.twist` and `.acceleration` are returned as ZEROS** because the harness measures no
+  body velocity. They are *unmeasured*, not observed-to-be-zero — do not read a zero twist as "this
+  object is at rest". Real velocities are on `/odom` and in `JointState.velocity`.
+- **There is no pause.** The engine free-runs, so `SIMULATION_STATE_PAUSE` is not advertised and
+  `StepSimulation` means "advance at least N basic steps", not "exactly N from a frozen state".
+- **⚠ A wall-clock `cmd_vel` duration is not a distance.** Measured on machine `9722d23d12a3`, the
+  harness advanced simulation time **39.920 s in 3.015 s of wall time — 13.24× realtime**. The same
+  trap bites `get_clock()`: under `use_sim_time` it returns *simulation* time, which is the wrong
+  clock for a wall-clock watchdog.
+- **⚠ Publish rates cost TCP connections.** Neither the harness nor the per-robot bridges set
+  `protocol_version`, so both speak **HTTP/1.0 and close after every response** — no keep-alive, one
+  socket per tick. Measured: a 50 Hz bringup drove Windows to **17,487 sockets in `TIME_WAIT`
+  against a 16,384-port ephemeral range**, after which `connect()` failed with `WinError 10048` —
+  which reads like a bind conflict but is exhaustion, and surfaces as nodes reporting a perfectly
+  healthy harness as unreachable. The launch defaults (~45 requests/s) sit inside that budget.
+
+### Highlights
+
+**OmniSim simulates things that are not rigid bodies.** A `Cloth` node on Newton's `SolverVBD`,
+coupled to the rigid `SolverMuJoCo` scene over one shared model, and a volumetric tet-FEM
+`SoftBody`. A gripper picking up a T-shirt is **measured against a negative control** — tracking
+error −1.50 mm and slip 4.17 mm on 616 particles, against −173.06 mm for a control whose jaws never
+close, corroborated by a second instrument (commanded-vs-measured jaw gap) that cannot be confounded
+by which particles are labelled "gripped". Closing on the hem **misses**, and is reported as a miss.
+⚠️ Read the disclosures with the numbers: the garment's shoulders are pinned, so these are *tracking*
+figures rather than *load-bearing* ones; self-contact must be off to grasp and on to drape; and the
+composed **fold** is **not** demonstrated. See [cloth-simulation.md](docs/developer/cloth-simulation.md).
+
+**Terrain is real.** `ElevationGrid` is a native Newton heightfield collider — OmniBench lane 4
+flipped it `broken → works`.
+
+**The engine got 2.1–3.6× faster per step**, and the cause was not where a code reading put it:
+warp defaulted to `cuda:0`, so Newton's state arrays lived on the GPU while `mj_step` ran on the CPU,
+and every tick paid a PCIe round trip for a simulation that never touched the GPU. Measured on machine
+`9722d23d12a3`: 5 boxes 1.582 → 0.446 ms/step, 50 boxes 2.287 → 1.110, an 8-Husky motorised world
+2.083 → 0.827 — physics-neutral, with trajectories identical and determinism still bitwise on the CPU
+solver.
+
+**The Newton runtime moved to newton 1.5.0 / warp 1.16.0 / mujoco 3.11.0**, migrated
+version-tolerantly across four API breaks. Physics identical; the CPU path ~20% faster per step.
+
+**A world that builds no physics now FAILS instead of printing PASS.** A fatal Newton finalize
+failure was logged at WARNING, so a loop-closing `SolidReference` or a `Cone` collider produced a
+world frozen at its authored pose while `run-headless` reported `0 errors … PASS`, exit 0. It is an
+ERROR now, and the first thing it caught was one of our own shipped sample worlds.
+
+**The README states its case in a table** — agent-native surface, hardware floor and footprint,
+deformables, Newton maturity and licence, against Webots, Gazebo, Isaac Sim and Isaac Lab. Every
+OmniSim cell is measured on one named machine and every competitor cell is their own dated
+documentation. Where we lose — ROS 2, photorealism, sim-to-real, free-standing humanoid walk — is in
+the same table.
+
+### Added
+
+- **`WorldInfo.newtonNoslipIterations`** — MuJoCo's `mjOption.noslip_iterations`, reachable from a
+  world file for the first time. It is a Gauss-Seidel pass over the **friction constraints only**,
+  run after the main solve, and it removes the tangential *drift* a soft friction constraint
+  accumulates under sustained load — the failure where a gripper holds its commanded normal force
+  and the part still creeps out. `SolverMuJoCo` has no kwarg for it and calls `mujoco_warp.put_model`
+  unconditionally (which **raises** on a non-zero noslip), so the engine writes `mj_model.opt` after
+  solver construction; on `newtonSolver "mujoco_warp"` the request is declined with one WARNING
+  rather than silently ignored. Default `0` is MuJoCo's own stock value, so **every existing world is
+  byte-identical** — verified: the ladder0 rung-8 scene reproduces all six measurements to the last
+  digit on the new binary. Hatch: `OMNISIM_NEWTON_NOSLIP` (value-parsed, `=0` forces it off). The
+  finalise line, the `.newton.json` sidecar and `OMNISIM_NEWTON_DUMP_MJMODEL` all now carry it, so a
+  run says whether it was on.
+  - ⚠ **It is not a general grasp fix, and it was measured before being described as one.** On
+    ladder0 rung 8 (0.2 kg part, 3 N per pad at µ = 3 — 9× the Coulomb bound) it moved `carry_rel`
+    from 0.4747 m to 0.4796 m and the payload was dropped either way, while `newtonCone "elliptic"`
+    + `newtonImpratio 10` took the same scene to 0.0026 m. On bare MuJoCo's stock `solref` the same
+    pass fixes the same scene outright. Try it when a grasp creeps; do not assume it.
+
+- **`Cloth` — deformable fabric on Newton's `SolverVBD`.** Two authoring modes: a parametric grid
+  patch (`dimX`/`dimY`/`cellX`/`cellY`) and a mesh garment (`url`), the latter with a mandatory mesh
+  clean because orphan vertices become mass-0 immovable nails. `SolverMuJoCo` keeps every rigid body
+  and joint — so the arm keeps the exact PD servo, armature and friction cone it was tuned for — while
+  particles go to `SolverVBD`, exchanged by `SolverCoupledProxy` over one Newton `Model`. A
+  `newtonClothSelfContact` world field, because there is no correct default: draping needs it on,
+  grasping needs it off, and getting it wrong costs 24× on tracking error. Measured on machine
+  `9722d23d12a3`: a 289-particle drape at 1.52–2.82 ms/step (2.7–5.3× real time); a 37,650-particle
+  hero garment ships. ⚠️ Cloth is a **GPU** feature — on CPU the same drape runs at 6.7 fps.
+- **`SoftBody` — volumetric tet-FEM deformables.** Measured: a pinned face holds 1.500000 exactly
+  over 5 s while the free end sags 43.7 mm; a block dropped from z=0.5 rests with its lowest particle
+  at z=0.009284, on its own 0.01 particle radius, with no tunnelling; and a 15.6 kg soft block presses
+  a 2 kg **dynamic** box from 0.060000 to 0.059385 and holds — genuine two-way soft→rigid coupling.
+- **`ElevationGrid` is a native Newton heightfield collider.** Previously scored `broken` by
+  OmniBench lane 4; re-measured `works`.
+- **Batched inverse kinematics on the live model**, in OmniSim joint slots.
+- **Worlds have their own extension, `.omniworld`.** The policy is **dual-read, single-write**: the
+  engine, harness, tests and every script accept `.omniworld` and `.wbt` interchangeably and
+  indefinitely — external forks exist and a `.wbt` world must keep working — while everything newly
+  written gets `.omniworld`. 661 worlds migrated. It is a capability signal, not a rebrand:
+  `URDFRobot`, `Cloth`, `SoftBody`, the `omnisim://` scheme and every `newton*` field are unloadable
+  in Webots, and `Fluid`/`immersionProperties` now hard-error here.
+- **`POST /world/sync`** — the default agent edit loop. It diffs the file against the snapshot that
+  produced the running world and auto-selects a live pose batch (325 ms) or a full hot reload
+  (2818 ms) against a 6.37 s headless floor, so the agent no longer has to classify its own edit.
+- **`run-headless --until-finalized`** — stops the moment Newton finalises and the sidecar exists,
+  instead of sleeping out a guessed `--duration`. 15.52 s → 6.37 s, same PASS, same sidecar.
+- **`scripts/dev/batch_validate.py`** — one engine process hot-reloading N worlds instead of N fresh
+  engines. Measured on 19 worlds: 174 s → 34.6 s at `-j4`. It also dodges the engine startup race —
+  the fresh-process baseline scored 18/19 while every reuse configuration scored 19/19.
+- **`NEWTON_WORLD_NOT_BUILT`** harness diagnostic code, distinct from `NEWTON_RUNTIME_BROKEN`: the
+  runtime is fine, the *world* was refused.
+
+### Fixed
+
+- ⛔ **A total physics failure was a WARNING, so `run-headless` printed PASS and exited 0.** A
+  loop-closing `SolidReference` or a `Cone` `boundingObject` makes `SolverMuJoCo` construction raise,
+  and the world then gets **no Newton world at all** — every body frozen at its authored pose. Because
+  `reportPyError` logged at warning level, the run reported `0 errors, 1049 warnings … PASS`. The
+  finalize path now reports fatally: same world, `1 errors, 1 warnings … FAIL`, exit 1. The ~60 other
+  `reportPyError` call sites are untouched — each is one feature declining, not a void world — and the
+  report is latched so a per-tick retry cannot flood the log. Red-capability was **proven, not
+  assumed**: the engine was rebuilt with the old call, 3 of 4 cases went red and the control stayed
+  green, then restored. ⚠️ This immediately exposed a shipped sample
+  (`projects/samples/devices/worlds/coupled_motors.omniworld`) that has had zero physics since ODE was
+  deleted.
+- **The `coupled_motors` device sample had no physics at all, and is now a working sample.** Each
+  finger was a four-bar parallelogram whose passive rocker closed a loop back onto the fingertip, so
+  `SolverMuJoCo` raised `Body 8 has multiple parents in this articulation` and the **entire world** —
+  not just the gripper — got no Newton world. It shipped that way since the ODE deletion; the ERROR
+  change above did not break it, it stopped it lying. Fingers are open chains now (jaws pivot rather
+  than staying parallel — the trade is recorded in both a header comment and `WorldInfo.info`, so it
+  survives an engine re-save). Two further defects surfaced only once the world could step, each of
+  which would have left a green PASS teaching nothing: **no motor declared `minPosition`/`maxPosition`**,
+  so all three were configured as velocity wheels and every `setPosition()` the controller issued was
+  ignored; and **`newtonCompoundColliders` defaults FALSE**, so the jaw pad — the second child of a
+  `Group` `boundingObject` — was silently never registered and the jaw swept through the block while
+  still reporting a full 0.42 rad travel. Now one `setPosition` on the left motor drives both at
+  +0.4200 / −0.4200 rad and the block is picked up and set down every cycle.
+- **`Accelerometer`, `Gyro` and `GPS` published uninitialised stack memory** as sensor values.
+- **Compound colliders dropped cylinder length**; **collider rotations were dropped**; **capsules
+  substituted for cylinders lost their length**; **prismatic joints reached the solver with no travel
+  limits**; and **`getContactPoints` published body-local points as world coordinates**.
+- **49 worlds silently loaded with no robot at all**; 33 Windows demo launchers pointed at worlds that
+  no longer exist; 37 policy launchers computed the wrong repo root and none found its world.
+- **OmniBench lane 4 scored cloth `absent` on a mis-authored probe.** The probe declared `size 0.5 0.5`
+  — never a `Cloth` field — and its `absent_markers` matched the engine's *field* complaint, scoring it
+  as a *missing node*. It survived a doc audit because the recorded doc claim ("no cloth solver is
+  compiled in") agreed with the wrong measurement: **a probe and a doc can be wrong together**, so a
+  `doc_mismatch_count: 0` is not proof of currency. Now `degraded` on 441 registered particles —
+  `degraded` rather than `works` because particle state has no supervisor accessor, and a registration
+  line is an engine self-report, not physics.
+- **`python -m omnisim policy` forwarded fifteen skill-library verbs it never advertised**, so
+  `--help` listed six and anyone who checked first concluded the documented commands did not exist.
+  Both front doors now build their parser from one shared verb table, pinned by a test.
+
+### Changed
+
+- **[docs/guide/friction-grasp.md](docs/guide/friction-grasp.md) re-derived against measurement.**
+  Two of its five recipe fields were contradicted by two independent benchmark arms, and its
+  controller section contradicted its own root-cause paragraph 50 lines above it (it told the reader
+  to hold a grip with `setForce`, which does **not** put a Newton joint in force mode). The page now
+  separates the fields that decide whether a grip holds from the ones that do not, states the scale
+  each measurement was taken at, and gives the position-interference recipe with its algebra.
+
+### Removed
+
+- ⛔ **BREAKING (ABI) — the C++ controller API has left `namespace webots`. It is `namespace omnisim`,
+  and EVERY C++ CONTROLLER MUST BE RECOMPILED.** This is the final step of the naming migration and
+  the only one that is not source-only. `using namespace webots;`, `webots::Robot`, and every
+  other `webots::`-qualified name stop compiling; the canonical spellings are `using namespace omnisim;`
+  and `omnisim::Robot`.
+  - **Why this one breaks the ABI when the others did not.** A C++ namespace is part of the mangled
+    name of every symbol declared inside it, so renaming it changes the identity of the whole exported
+    C++ surface — nothing is added or removed, but nothing matches either. Measured on the pre-rename
+    libraries in this tree: **1009 distinct mangled names carrying `6webots` in
+    `lib/controller/CppController.lib`** (2018 archive symbol-table entries once the `__imp_` import
+    thunks are counted — that is the origin of the "~2018 exports" figure), plus **44 in
+    `CppDriver.lib`** and **19 in `CppCar.lib`**.
+  - **What you must do: rebuild, not just re-edit.** Rewrite `webots` to `omnisim` in the `using`
+    directive and in any `webots::`-qualified name, then **recompile and relink**. Editing the source
+    alone is not enough and skipping the rebuild is not a survivable shortcut: an already-built
+    controller imports `_ZN6webots…` from a library that now exports `_ZN7omnisim…`, so it fails at
+    **load** with a missing-entry-point / undefined-symbol error. It does not run subtly wrong — it
+    does not start. The shipped [`resources/templates/controllers/template.cpp`](resources/templates/controllers/template.cpp)
+    now writes `using namespace omnisim;` and says why in a comment.
+  - ⛔ **There is deliberately NO compatibility alias.** `namespace webots = omnisim;` was considered
+    and refused: it would put the literal string "webots" straight back into a shipped public header,
+    which is the entire reason this change exists. The break is clean and announced rather than
+    softened, and no future release will reintroduce the alias.
+  - ✅ **What does NOT break: the C API, and it is untouched on purpose.** The C ABI is `wb_*`-prefixed
+    and **not one of its 497 exported functions contains the string "webots"**, so nothing there
+    blocked the goal and nothing there was renamed. `wb_*` functions, the `Wb*` types (`WbDeviceTag`,
+    `WbNodeRef`, `WbFieldRef`, …) and the `wbu_*` utilities all keep their names and their symbols.
+    **C controllers keep linking and do not need recompiling** — only C++ ones do. Renaming the C
+    surface as well would have doubled the blast radius for zero progress on the string, so it was
+    ruled out rather than deferred.
+  - **Documentation moved with it.** All 32 C++ device pages under `docs/reference/` and the three
+    C++ pages under `docs/guide/` (`controller-programming`, `cpp-python`, `supervisor-programming`)
+    now show `namespace omnisim` — 162 occurrences. Five stale C++/C include lines the previous
+    sweep's pattern could not see (`#include "<webots/Emitter.hpp>"` ×4, `#include "<webots/Gyro.hpp>"`,
+    and `"webots/supervisor.h"` in the field-type prose) were repaired in the same pass; they had
+    documented a header path deleted in the entry below.
+
+- ⚠️ **BREAKING (source only) — the legacy `webots/` controller-include path and the `controller`
+  Python module are gone.** Deleted: all 91 one-line forwarder headers under
+  `include/controller/c/webots/` and `include/controller/cpp/webots/`, the 75-line re-export shim at
+  `lib/controller/python/controller/__init__.py`, and the generator that produced the headers
+  (`scripts/dev/make_omnisim_header_forwarders.py`). `#include <webots/robot.h>` and
+  `from controller import Robot` no longer resolve; the canonical `<omnisim/robot.h>` and
+  `from omnisim import Robot` are now the only spellings.
+  - **This deletion, on its own, is NOT an ABI break** — ⚠️ but do not quote that as a statement about
+    the release: the namespace entry above *is* one, and a C++ controller must be rebuilt regardless.
+    For this bullet alone: no exported symbol moved. The C API is `wb_*`-prefixed and not one of its
+    497 exported functions contains the string "webots"; the `Wb*` types and `wbu_*` utilities are
+    untouched. A controller already compiled against the old *include spelling* keeps linking — only
+    *recompiling* one against it fails, and the fix is a one-line rewrite of the include or the
+    import.
+  - ⚠️ **Retained at the time, and no longer:** this entry originally recorded the C++
+    `namespace webots` as deliberately kept, because renaming it *would* be a real ABI break. It was
+    then renamed anyway, on purpose and with the break accepted — see the namespace entry above.
+    Cyberbotics copyright headers, `NOTICE`, `THIRD_PARTY_NOTICES.md` and `TRADEMARKS.md` **are**
+    untouched — Apache-2.0 §4 attribution is independent of this migration and was never in scope.
+  - **Also fixed here, a latent release-time defect this deletion exposed:**
+    `scripts/packaging/files_core.txt` enumerated *only* the `webots/` forwarders and the
+    `controller/` Python shim, and never listed the canonical `include/controller/{c,cpp}/omnisim/`
+    headers or `lib/controller/python/omnisim/`. Since the packager globs (a missing path expands to
+    nothing rather than erroring), a release would have silently shipped forwarders pointing at
+    headers that were never packaged, and a Python shim whose `from omnisim import ...` could not
+    resolve. All three file lists (Windows/Linux and the macOS `Contents/` variants) now point at the
+    canonical paths.
+
+- ⚠️ **BREAKING (environment) — the `WEBOTS_*` runtime environment variables are no longer honoured.**
+  `OMNISIM_*` is now both the only spelling this codebase writes and the only one its runtime reads,
+  on both sides of the engine↔controller contract at once. `OMNISIM_CONTROLLER_URL`,
+  `OMNISIM_ROBOT_NAME`, `OMNISIM_INSTANCE_PATH`, `OMNISIM_HOME`, `OMNISIM_LIBRARY_PATH`,
+  `OMNISIM_STDOUT_REDIRECT` / `OMNISIM_STDERR_REDIRECT`, `OMNISIM_LOG_PATH` and `OMNISIM_IPC_NONCE`
+  are the names; their `WEBOTS_*` twins are read no more. The engine additionally `remove()`s the
+  legacy twins from every child environment, so a stale shell value cannot shadow a canonical one.
+  - **What you must do:** rename the variable in whatever sets it — a shell profile, a CI job, an IDE
+    run configuration, a launcher script. `WEBOTS_CONTROLLER_URL` (extern controllers) and
+    `WEBOTS_HOME` are the two most likely to be set by hand.
+  - **It is warned about, not silently dropped, and that is the design — but the two warnings behave
+    differently, so know which one you are looking at.** Where a legacy name is set and its canonical
+    twin is not, one message naming the new spelling is emitted, then either:
+    - **warn and continue as if unset** — `WEBOTS_CONTROLLER_URL` and `WEBOTS_ROBOT_NAME`
+      (`robot.c getenv_omnisim()`), `WEBOTS_INSTANCE_PATH` (`system.c`), and `WEBOTS_LIBRARY_PATH`
+      (an engine `warn()`; its paths are **not** added to the controller's library search path); or
+    - **warn and FAIL** — `WEBOTS_HOME`, because without an install root there is nothing to proceed
+      with. The launcher's `get_omnisim_home()` returns false and refuses to start, and the Python
+      binding's `wb.py _omnisim_home()` raises `KeyError` with the same message. Do not expect a
+      degraded-but-running session here.
+
+    Silence was the real hazard the warnings exist to remove: without the message, a user with only
+    `WEBOTS_CONTROLLER_URL` set falls into extern-controller discovery, waits ~50 s and is then told
+    their *world file* is wrong.
+  - ✅ **`WEBOTS_HOME` still works at BUILD time, and that is not an oversight.** The top-level
+    `Makefile` exports it as an alias of `OMNISIM_HOME`, and 16 more Makefiles expand
+    `$(WEBOTS_HOME_PATH)` — a cross-Makefile contract variable, not a runtime name. Three engine-side
+    reads outside the controller contract also survive untouched: `WEBOTS_EMPTY_PROJECT_PATH`,
+    `WEBOTS_TMPDIR` and `WEBOTS_DEBUG`. None of them reaches a controller.
+  - ✅ **The on-disk rendezvous names did NOT change** — the `webots-<id>` tmp folder and the
+    `\\.\pipe\webots-…` name are a wire contract that the engine and libController each reconstruct
+    independently. Renaming one side alone is exactly the documented failure where every controller
+    hangs at zero ticks while a headless run still prints `PASS`.
+
+- ⚠️ **BREAKING (world files) — the `Radio` and `Microphone` nodes are deleted.** Both node classes,
+  the radio plugin and both `.wrl` schemas are gone (8 files, 817 LOC). A world still declaring
+  `Radio {}` or `Microphone {}` now logs `Missing declaration for '<node>', unknown node.` plus
+  `Skipped unknown '<node>' node or PROTO.` — **2 errors and a headless exit code of 1** — with that
+  node skipped and the rest of the world still parsing. Same failure class, and the same deliberate
+  choice, as `Solid.immersionProperties` in v6.0.0. Zero in-tree worlds are affected.
+  - **Measured inert before deletion, not assumed from usage.** `wb_microphone_get_sample_data()`
+    returned NULL **300 times out of 300** over 2.4 s of sim time, while `get_sample_size()` reported
+    a constant 4522061 out of an uninitialised `malloc`. `Radio` loads and can neither transmit nor
+    receive on any build of this tree. Both nodes parse, enumerate and survive finalize, which is
+    precisely why a bare `run-headless` PASS never noticed either of them.
+  - ✅ **`Skin` was proposed for the same retirement and is KEPT — the proposal was wrong about it.**
+    It works on Newton in **both** documented modes, verified across five headless runs each with a
+    differential control. `OmSkin.cpp` contains no reference to ODE, `dBody`, `dGeom` or physics of
+    any kind: it is mesh deformation in the render path, so the ODE deletion never touched it. It is
+    also 1,057 of the 1,600 LOC the three nodes were costed at, and it has a reference page, guide
+    imagery and test assets. Deleting a working documented feature on "our corpus does not use it"
+    was the error the measurement caught.
+  - ✅ **The controller ABI is untouched and still exporting.** `Controller.dll` still carries 27
+    `wb_radio_*`, 6 `wb_microphone_*` and 7 `wb_skin_*` symbols, and the positional device
+    enumerators survive unrenumbered at their original ordinals (`SKIN` 87, `MICROPHONE` 117,
+    `RADIO` 118) — they are positional public ABI and must never be removed or reordered. With the
+    node type gone, `wb_robot_get_device()` simply returns tag 0 and every `wb_radio_*` /
+    `wb_microphone_*` call takes its ordinary "invalid device tag" path, which controllers already
+    handle. `include/plugins/radio.h` was also kept deliberately: `src/controller/c/radio.c:99`
+    declares `struct WebotsRadioEvent` **by value** and the complete type exists only in that header.
+
+### Known limitations — read before quoting any result
+
+The Newton integration is complete for **rigid-body simulation with declared-geometry contact**, and
+shipping for cloth and soft bodies on the VBD path. It is **not** complete. By the tree's own executed
+measurement (OmniBench lane 4, 45 probes, one machine), **78% of implemented capabilities work**:
+31 works / 5 degraded / 4 broken / 4 absent / 1 no-result. The generated matrix at
+[docs/benchmarks/lane4-capability-matrix.md](docs/benchmarks/lane4-capability-matrix.md) is the live
+source, and where it disagrees with prose, **the matrix is the measurement**.
+
+✅ **75% → 78% IS a genuine ENGINE improvement — and it is exactly ONE probe, not two.** `2094660ef`
+flipped `OMNISIM_NEWTON_BALL_HINGE2` on, and `joint.hinge2_motor` went **`broken` → `works`**: a
+motorised `Hinge2Joint` commanded to 0.8 rad in a gravity-free world now tracks its target
+**exactly** (`joint_angle_travel_rad` = 0.8000) and carries the arm **0.1951 m**, where it previously
+moved 4.00e-04 m. Unlike the friction move below, the capability genuinely did not exist before and
+does now: the blocker was newton 1.2.0's d6 → MuJoCo actuator mapping, and the vendored upgrade to
+**newton 1.5.0** (`b56be84a0`) fixed it. ⛔ **The commit claimed the same for `BallJoint` and that half
+is REFUTED.** `joint.ball_motor` was re-measured on the same binary, same rig, gate on, and moved
+**2.67e-07 m** — 267 nanometres. It stays `broken`. The claim survived review because the commit's
+evidence, `tests/test_newton_ball_hinge2.py`, has a motorised *hinge2* arm but a **passive** ball arm
+(`PositionSensor` only), so nothing in the tree drives a motorised BallJoint. AGENTS.md is corrected
+in this release. ⚠️ The ball's **angle readback travels 5.805 rad while the body does not move**, so a
+controller polling `getPosition()` is told it is actuating.
+
+⚠️ **Both of those probes were ALSO repaired, and the repair is what made the engine change
+visible** — worth separating from the verdict move above. Both authored their motors with no
+`minPosition`/`maxPosition` and their joints with no `minStop`/`maxStop`, which
+`OmBasicJoint::newtonAxisSpec` builds as a **VELOCITY WHEEL** with `ke = 0`, where `setPosition()` is
+ignored *by design* and the engine warns per device. So both probes were measuring the still-open
+limit-less-servo defect, never the gate they claimed to test. The hinge2 probe carried a second bug:
+it declared `HingeJointParameters` in `jointParameters2`, a field whose declared type is
+`JointParameters`, so the engine refused the node, `axis2` fell back to its default `(0,0,1)` —
+equal to the authored axis 1 — and reported `Hinge axes are aligned: using x and z axes instead`. No
+assertion or threshold changed; only the scenes, so that they can express the capability under test.
+
+⚠️ **72% → 75% is a PROBE REPAIR, NOT AN ENGINE IMPROVEMENT — do not read it as progress.**
+`phenomenon.friction_declared_in_world` published `broken` from 2026-08-13 to 2026-08-17 and the
+probe was wrong: it dropped a **0.2 m cube** on a **55°** incline, and a block holds only if *both*
+µ ≥ tan θ **and** tan θ < b/h. A cube has b/h = 1.0 against tan 55° = 1.428, so it toppled at any
+friction and the scene was statically impossible before friction was ever consulted. Re-run in bare
+MuJoCo the same cube travels 23.30 m at µ=2, 23.46 m at µ=10 and **22.29 m at µ=100** — a verdict that
+does not move when the variable under test is raised fiftyfold was never measuring that variable.
+Rebuilt with a low-CoM slab (b/h = 10, topple angle 84.3°) the capability measures **`works`**, and a
+new **negative arm** — `phenomenon.friction_slides_below_coulomb_bound`, the same slab at µ=1.3, below
+the bound — slid **1.4402 m against the analytic 1.442 m (ratio 0.999)**. Declared friction reproduces
+the Coulomb bound to three significant figures. The `broken` claim was retracted from this file and the
+README in `1fc3b4b5a`; this release retires the probe that produced it and adds the failing arm that
+would have caught it, because a green that cannot go red is not evidence.
+
+⚠️ **Those rows are not all from one engine binary, and the matrix says so — it now names FOUR.**
+**39** rows come from `f3f003bf0304bc5e`, 2 — the cloth and soft-body probes — from
+`89e978269dc27a23`, **2 — the two friction probes above — from `6aac9ae1b461f567`**, and **2 — the two
+joint probes above, re-measured after the `BALL_HINGE2` flip — from `13906cc6f12451eb`**. Two things
+follow. The
+`89e97826` binary was built from a tree carrying uncommitted engine changes, so those two rows are
+**not reproducible from any commit**. And cloth forces MuJoCo onto the **GPU**, so they ran
+`mujoco_warp` where the other 43 ran CPU `mj_step` — which matters, because bitwise determinism is
+refuted on the GPU path. The campaign is **topped up, not re-swept**, and the summary row says so in
+its `deviations`. Read a row's own `machine` block in `results/coverage.jsonl` before quoting it.
+
+What is measurably broken, and would otherwise be found the hard way:
+
+- **A world can declare restitution and get none.** `bounce 0.8` predicts a 0.64 m rebound and
+  measures **−0.4 mm**. This is **not a plumbing bug and is not fixable**: MuJoCo has no coefficient
+  of restitution — the string appears nowhere in mujoco 3.11.0 — and models contact as a
+  `solref`/`solimp` spring-damper. Our defaults map to `solref (0.02, 1.0)`, exactly MuJoCo stock and
+  critically damped, which reproduces the −0.4 mm measurement in *bare* MuJoCo. Only e≈0 (today) and
+  e≈1 (zero damping) are stable; intermediate values create energy — one measured configuration
+  rebounds **661 m** from a 1 m drop. `ContactProperties.bounce` should therefore be treated as
+  **declared-but-never-read**. ✅ **The engine now says so**: a world that *authors* a `bounce` (as
+  opposed to inheriting the `.wrl` default of 0.5, which all 322 ContactProperties worlds do) gets a
+  one-shot warning naming the field and stating that there is no `newton*` field to migrate it to.
+  Fixed in the same change: the neighbouring `coulombFriction` warning still advised pinning
+  `physicsBackend "ode"`, which since `bdc02139` means the Solid is registered with **no solver at
+  all** — no gravity, no contact — so the engine's remedy for "my friction is ignored" was "have no
+  physics". A source scan now pins that the advice cannot come back.
+- ⚠️ **Retracted from an earlier draft of these notes: "declared friction is unreliable above ~45°."**
+  That claim came from lane 4's `phenomenon.friction_declared_in_world` probe, and **the probe is
+  invalid**. It drops a **0.2 m cube** on a **55°** incline. A block is in equilibrium only if both
+  µ ≥ tan θ *and* tan θ < b/h; a cube has b/h = 1.0 and tan 55° = 1.428, so it **topples at any
+  friction whatsoever**. The scene is statically impossible before friction is consulted. Checked in
+  bare MuJoCo: a low-CoM slab on the same 55° incline **holds** at µ = 1.4281 (= tan 55° to four
+  decimals) and slides at 1.3 — i.e. declared friction reproduces the analytic Coulomb bound to three
+  significant figures. ✅ **RE-MEASURED IN-ENGINE 2026-08-17 AND THE MATRIX NO LONGER CARRIES THE
+  `broken` VERDICT** — this bullet used to end "the probe's `broken` verdict stands in the shipped
+  matrix until it is re-measured in-engine", and that is now done. The probe was rebuilt on a low-CoM
+  slab (0.6 × 0.3 × 0.06, b/h = 10, topple angle 84.3° — so the slope can excite sliding and nothing
+  else), the 55° incline kept, and it measures **`works`**: slide **0.0008 m** at the declared µ=2.0.
+  A **negative arm** was added in the same change — `phenomenon.friction_slides_below_coulomb_bound`,
+  the identical slab at µ=1.3, *below* the bound and *above* the engine default of 1.0 — which slid
+  **1.4402 m against the analytic 1.442 m, ratio 0.999**. That arm exists because a green which cannot
+  go red is not evidence: it fails if the slab holds (friction silently delivered above what the world
+  declared) and it fails at the µ=1.0 rate (the declaration ignored), so it rules out both ways the
+  positive arm could pass for the wrong reason. The sharpest record of how wrong the old probe was:
+  in bare MuJoCo the cube still travels **22.29 m at µ=100**. *(A separate, real friction issue does
+  exist — tangential creep under sustained load in a pinch grasp, ~56 mm over a 1.5 s lift, which is
+  what `WorldInfo.newtonNoslipIterations` addresses. It is unrelated to inclines.)*
+- **`setPosition()` is silently ignored on a motor with no declared limits.** A limit-less
+  `RotationalMotor` is deliberately configured as a velocity wheel (`ke=0`). Declare
+  `minPosition`/`maxPosition` and it gets `ke = effortLimit * 10`. This is the single most common
+  robotics primitive and it fails quietly; our own benchmark author hit it and published a `broken`
+  verdict against the engine. ✅ **The warning is now PER DEVICE, not once per process.** Both guards
+  were `static bool`, so on any world with a wheeled robot in it the first wheel — a *correctly*
+  classified velocity motor — consumed the warning and every genuinely affected servo after it was
+  degraded in silence. ⚠️ **The classification itself is UNCHANGED and this is deliberate.** The full
+  fix is to promote `ke` when `OmMotor::isPIDPositionControl()` first goes true; the signal exists and
+  `pushNewtonMotorTargets` already branches on it every tick. What stops it is blast radius: **1680**
+  limit-less motorised joints across **189** files currently get `ke=0` from this branch. The 49
+  controllers using the `setPosition(inf)` idiom are safe by construction, but "safe for the idiom we
+  grepped" is not "safe", and a wrong default change is worse than a loud warning.
+- **A node deleted at runtime keeps colliding, for ever.** There is no remove path from a
+  supervisor-deleted `Solid` to the MuJoCo model — `removeBody`/`removeShape`/`unregister` do not exist
+  anywhere in the backend or the runtime. A deleted wall still stops a robot and a deleted floor still
+  holds a body up. Reload the world after removing collidable nodes.
+- **A compound `boundingObject` registers only its FIRST child by default.** A bin authored as a floor
+  plus four walls collides as one box; a `Chair.proto` collides as a floating seat slab with no legs.
+  **120** compound objects with ≥2 children across **91** files are in this state.
+  `WorldInfo.newtonCompoundColliders TRUE` opts in. ✅ **It is no longer silent**: a multi-child `Group`
+  boundingObject now warns once per node, naming the OWNING SOLID and how many shapes were dropped.
+  ⚠️ **The default is deliberately NOT flipped** — the same flag also selects the inertia source for
+  every dynamic multi-collider body, so flipping it would silently change the dynamics of far more than
+  the colliders. Decoupling those two is separate, larger work. ✅ Also fixed: the env override was
+  **presence-gated**, so `OMNISIM_NEWTON_COMPOUND_COLLIDERS=0` turned the feature **ON** — the same
+  trap `OMNISIM_REQUIRE_NEWTON` carries, and inconsistent with every neighbouring knob. It is now
+  value-parsed, and the collider and inertia branches read one shared helper so they cannot disagree.
+- **Every triangle-mesh collider is silently convexified.** A bowl, cup, tube or room shell is a solid
+  lump — measured, a ball rests at rim height, not on the cavity floor. This is MuJoCo's mesh path, not
+  ours. Build concave colliders from several convex pieces.
+- **Closed kinematic chains are unsupported.** `SolverMuJoCo` is a tree solver, so a loop-closing
+  `SolidReference` builds no world at all. As of this release that FAILS loudly instead of passing
+  silently. Newton ships `SolverKamino` for exactly this case; OmniSim does not drive it.
+- ✅ **RESOLVED — motorised `BallJoint` and `Hinge2Joint` DO actuate, and `OMNISIM_NEWTON_BALL_HINGE2`
+  now defaults ON.** This bullet used to say the flag "does **not** fix this". The blocker was real and
+  correctly attributed below us, to newton's d6 → MuJoCo actuator mapping for multi-DoF position
+  control — but that was measured against the then-vendored **newton 1.2.0**, whose own test suite
+  never drove d6 POSITION targets through `SolverMuJoCo`. The `b56be84a0` upgrade to **newton 1.5.0**
+  fixed it upstream: `tests/test_newton_ball_hinge2.py`'s hinge2 arm went `xfail` → **XPASS** on the
+  current binary (both axes inside 0.05 rad of command, no cross-axis drift, full 0.6 rad travel), so
+  the marker is gone and the default is flipped. `=0` remains the exact-revert hatch and the test
+  asserts it still reverts. ⚠️ **Remaining caveat:** the ball element is emitted `limited: False`, so a
+  `BallJointParameters`' per-axis `min/maxStop` are not enforced by the solver. Hinge2 axes are limited.
+- **The GPU solver is a different product.** Choosing `newtonSolver "mujoco_warp"` costs welds,
+  `TouchSensor` force, noslip, constraint readback, and the whole ray-sensor family. ✅ **Those ray and
+  contact readbacks no longer FREEZE at the build-time pose — they decline.** `raycast_batch` and
+  `get_contacts` read `solver.mj_data`, which newton only steps on its `use_mujoco_cpu` branch, and
+  neither carried the guard `weld_engage`/`touch_force` already had, so on the GPU they answered
+  confidently against the scene as authored at t=0. The decisive differential was run for this release
+  (laser `DistanceSensor` on a box in free fall, read at t=0.512 s): CPU control **10.0** = no hit,
+  GPU pre-fix **1.0000000447** = a hit at the authored t=0 distance, GPU guarded **10.0**. Rays now
+  decline (consumers keep their previous verdict) and contacts fall back to newton's own live narrow
+  phase — correct body pairs, support-point positions, depth 0 — both with a one-shot engine-side
+  warning. Determinism is **refuted** there: 0 bitwise of 24 same-config cold pairs, 9.152 m apart by
+  1000 steps. Bitwise reproducibility holds on the CPU `mj_step` path.
+  ([scope](docs/benchmarks/determinism-scope.md))
+- **`GranularGroup` particles cannot be read back, and nothing in a scene can push them.** The CUDA
+  solver is real and benchmarked (100k particles at 4.50 ms/step) but its robot↔particle coupling is
+  currently dead in both directions, and no demo world uses it.
+- **No deformable has a readback surface.** No supervisor, controller or harness endpoint can describe
+  a `Cloth`, `SoftBody` or `GranularGroup`; every verdict comes from out-of-band engine telemetry.
+  `getFromDef(...).getPosition()` returns the authored pose for ever. This caps every deformable row at
+  `degraded` regardless of how well the physics runs.
+- **Cables/rods, MPM granular, free particles and authored-tet soft bodies exist upstream in Newton and
+  have no OmniSim authoring path.** Newton ships 9 solvers; OmniSim drives 2.
+- **No sim-to-real.** Zero physical-robot transfer. Every humanoid result runs on a weight-bearing
+  balance harness; quadrupeds carry none. macOS is untested and, with no fallback solver, has no
+  verified physics path.
+
+## [v6.0.0] — 2026-08-10
+
+> ⚠️ **READ THIS BEFORE ANY OLDER ENTRY IN THIS FILE.** ODE is gone. Every entry below dated
+> before 2026-08-08 that describes ODE as a selectable backend, a supported CPU fallback, an
+> accuracy reference (a framing that was itself wrong — see
+> [docs/benchmarks/correctness-scope.md](docs/benchmarks/correctness-scope.md)), or a rollback
+> target — and in particular every entry offering
+> `OMNISIM_FORCE_ODE`, `OMNISIM_LEGACY`, `OMNISIM_ALLOW_ODE_FALLBACK` or `physicsBackend "ode"`
+> as an escape hatch (v4.0.0 and v5.0.0 both do) — was true when written and is **superseded**.
+> Those entries are kept as history, not as instructions. The measurements in them are still
+> measurements; the advice in them is not advice any more.
+
+### Removed
+
+- **BREAKING — ODE is DELETED. Newton/MuJoCo is the only physics backend** (commit `bdc02139`,
+  2026-08-08). `src/ode` and `include/ode` are gone — 106,283 lines. There is no second solver,
+  no CPU fallback tier, and no build flag or environment variable that restores one.
+  **What this changes for a user:**
+  - **The Newton Python runtime (`newton` / `warp` / `mujoco`) is now a hard requirement**, not a
+    capability. A binary that cannot import it through its embedded interpreter has *no physics at
+    all* — nothing falls, nothing drives. A stock `make release` bundles it on Windows
+    (`BUNDLE_NEWTON ?= 1`); on Linux, pip the wheels into the **system** `python3`.
+    `python -m omnisim doctor` is the check.
+  - **`Solid.physicsBackend` and `WorldInfo.defaultPhysicsBackend` still accept `"ode"`, but the
+    value no longer selects a working solver.** The enum entries are retained because an
+    *undeclared* field is a parse ERROR that takes a headless run's exit code to 1, and 21 tracked
+    worlds still carry the value. Reading the source: `OmOdeBackend::isAvailable()` is now `false`
+    and each of its operations returns `-1`, and `OmSolid::flushPendingNewtonRegistrations` skips
+    any Solid whose effective backend resolves to `"ode"` — so such a Solid is registered with no
+    solver and is **not simulated**. ✅ **The engine now warns once per such Solid** (any Solid that
+    declares a `boundingObject` or a `Physics` node): *"This Solid asks for physicsBackend "ode",
+    which no longer selects a physics engine … it is a visual-only body."* An **older log will not
+    have that line**, so on a world you did not just run, a frozen body or a prop that never falls is
+    still worth checking for `physicsBackend "ode"` first. Never write it into a new world.
+  - **`OMNISIM_FORCE_ODE`, `OMNISIM_LEGACY` and `OMNISIM_ALLOW_ODE_FALLBACK` are retired — now
+    warned about and ignored.** As of commit `2271e1f8`, `warnRetiredOdeSelectors()` logs one line
+    per variable set and backend resolution has no force-ODE branch at all, so the run is Newton
+    either way. Unset them regardless: a warning in the log is noise you do not need.
+    ⚠️ **Historical, and the reason they were neutralised rather than left alone:** before that
+    commit they genuinely did short-circuit resolution *and* make the Newton registration flush
+    return early, which was strictly worse than not setting them. Measured 2026-08-08 on
+    `tests/physics/worlds/contact_points.omniworld`: under `OMNISIM_FORCE_ODE=1` the run built no Newton
+    world, wrote no verdict sidecar, and left the scene **frozen at its authored pose for the whole
+    run**. That is no longer reachable.
+  - **`OMNISIM_REQUIRE_NEWTON` is NOT retired — it is the one selector that still does something,
+    and you should set it for any run whose result you intend to trust.** Newton is required
+    unconditionally, but a clone whose runtime is merely *absent* only gets one logged ERROR and a
+    motionless scene — which a batch job can miss entirely. This variable turns that into a FATAL
+    and a non-zero exit ([`OmNewtonBackend.cpp`](src/omnisim/physics/OmNewtonBackend.cpp), whose own
+    comment reads *"Still useful post-ODE"*). Set it for benchmarks, CI lanes and published
+    measurements, and assert the `.newton.json` verdict sidecar alongside it.
+  - **`OMNISIM_WITH_ODE=ON` is refused with an error.** `OMNISIM_WITH_NEWTON=OFF` still builds but
+    no longer produces "a pure-ODE binary" — it produces a binary with no physics implementation.
+  - **Nodes removed with the backend:** `Fluid` and `ImmersionProperties`, plus the
+    `Solid.immersionProperties` field. Buoyancy, Archimedes' thrust and fluid drag are **not
+    simulated**, and there is no replacement node. ⚠️ Unlike the retired-but-parsed fields below,
+    `immersionProperties` was removed from the schema outright, so a legacy world declaring it gets
+    a `Skipped unknown field` **ERROR** and a non-zero headless exit. The
+    `projects/samples/geometries/worlds/floating_geometries.wbt` sample is gone with it.
+    `WB_NODE_FLUID` / `WB_NODE_IMMERSION_PROPERTIES` remain in `omnisim/nodes.h` for ABI stability
+    but can never be returned.
+  - **Fields that still parse (so legacy worlds load) but are no longer read:** `WorldInfo.CFM`,
+    `ERP`, `physics`, `optimalThreadCount`, `physicsDisableTime`, `physicsDisableLinearThreshold`,
+    `physicsDisableAngularThreshold`, `broadphase`, `contactProperties` (the whole
+    `ContactProperties` node, including `coulombFriction`, `bounce`, `softCFM`, `softERP`,
+    `maxContactJoints` and the three contact-sound URLs), `defaultDamping`, and `Physics.damping` /
+    the `Damping` node. `OmSolidMerger::setOdeDamping()` and `setOdeAutoDisable()` are now empty
+    functions. **Use `WorldInfo.newtonGroundMu` / `newtonContactKe` / `newtonContactKd`** for
+    contact behaviour. There is no replacement for body sleep (Newton has none), for damping, for
+    restitution (`bounce`), for `rollingFriction`, or for contact sound.
+  - **Known broken rather than removed, and each fails silently** — do not report these as working:
+    motorised **`BallJoint` / `Hinge2Joint` do not actuate** (`OMNISIM_NEWTON_BALL_HINGE2` is
+    default OFF because the motorised path does not work either; motors are accepted and ignored
+    and position sensors read a frozen 0 — measured: axis 1 reads 0.0000 rad when commanded 0.4);
+    **force-type `TouchSensor` reads 0 N** (bumper type works); **contact sound** produces nothing;
+    the **contact-points GUI overlay** produces nothing.
+  - **No second IN-ENGINE path to cross-check the plumbing.** Note the narrower wording: lane 1's
+    oracle is **analytic ground truth** and it is unaffected, and bare `mujoco` and `pybullet` still
+    run as independent arms. Through the 2026-07-24 campaign `omnisim-ode` was best or tied-best on
+    6 of 7 analytic lane-1 scenes at dt = 4 ms — ⚠️ **a comparison of two integrations, not two
+    solvers.** Bare MuJoCo scored fine on those same scenes; the four defects that made our Newton
+    integration lose (friction cone, rolling inertia, momentum leak, spin loss) were ours, in the
+    layer between the scene graph and the solver, and all four were fixed in `e7b9fb11`. ODE's
+    values are **frozen** in `tests/goldens/ode_oracle_goldens.json` as a fixed regression datum.
+    What is genuinely gone is the ability to run one `.wbt` two ways and attribute a discrepancy to
+    plumbing vs solver — the instrument that found gravity was never plumbed. What should replace
+    it is an **open question**: [docs/benchmarks/correctness-scope.md](docs/benchmarks/correctness-scope.md).
+    Likewise, re-baselining `tests/physics/worlds/` against Newton is **outstanding work**.
+  - **The one comparative number worth carrying forward, as history:** measured same-harness on
+    2026-08-06 while ODE still shipped, ODE was *faster* per step at every scene size measured
+    (Newton/ODE 40.7× at 1 body → ~1.6–2.2× at 50–200), converging but never crossing. The old
+    "Newton is 17–33× faster than ODE" headline was a cross-harness artifact and was already
+    retired. Newton's case is **batching**, not per-step cost. Newton's per-step cost is now the
+    engine's floor; no post-deletion step-cost campaign has been run.
+
+- **BREAKING — the physics-plugin C ABI is deleted** (ODE-retirement manifest 1). A world's
+  `WorldInfo.physics` field used to name a user-compiled shared library implementing
+  `webots_physics_init` / `webots_physics_collide` / `webots_physics_step` and calling back
+  into the engine through the `dWebots*` host functions. That vocabulary **is** ODE's
+  (`include/plugins/physics.h` was a wrapper over `<ode/ode.h>`), so the feature could not be
+  carried to the Newton backend and dies with ODE rather than being ported. Deleted: the
+  public header `include/plugins/physics.h`; the engine class `WbPhysicsPlugin` and the
+  "New Physics Plugin" wizard; `resources/projects/plugins/physics/` (the `*Proc` glue object
+  every plugin linked against) and `resources/templates/plugins/physics/`; the channel-0
+  Emitter→plugin bridge in `OmReceiver`; and the four physics-plugin regression worlds with
+  their plugin and controller sources.
+  **Compatibility:** `WorldInfo.physics` stays **declared** in `WorldInfo.wrl` on purpose — an
+  *undeclared* WorldInfo field logs an ERROR that takes a headless run's exit code to 1, so
+  removing it would make every legacy world read as a crash. The field is parsed and
+  **ignored**; a world setting it to anything other than `"<none>"` gets one parse-time
+  warning naming the removal and the plugin it asked for. An out-of-tree plugin's own `make`
+  now fails immediately with `physics plugins were removed from OmniSim` instead of a
+  missing-header cascade. Port the behaviour to a `Supervisor` controller
+  (`wb_supervisor_node_add_force` / `add_torque`).
+
+### Changed
+
+- **Newton became the default solver's only shape, and four device paths went native + DEFAULT ON**
+  — the work that made deleting ODE survivable. `newtonSolver ""` / `"auto"` now resolves to
+  **`SolverMuJoCo`** (`7b431e81`, 2026-08-07); **XPBD was removed the following commit**
+  (`94f04222`) — zero of 725 tracked worlds ever selected it, newton's own docs say it does not
+  operate on articulations, it measured slower than CPU mujoco at every scale tried, and it drove
+  the shipped 10-Husky swarm 0.97 m where mujoco (and, then, ODE) agreed on 2.4 m. A world still
+  declaring `"xpbd"` gets the parser's invalid-value warning and the default. The field now selects
+  **CPU vs GPU**: `""` / `"auto"` / `"mujoco"` = reference CPU `mj_step` (deterministic, no GPU
+  needed); `"mujoco_warp"` = the same solver batched on the GPU, worth it **only** for parallel
+  training (at nworld=1 it measured 9.06× slower than CPU) and **not** run-to-run reproducible.
+  Four defaults flipped ON in `6eb35675` because with ODE gone there was no fallback left to
+  degrade to: the native **raycast service** (`mj_ray`, answering `DistanceSensor` / `Receiver` /
+  `LightSensor` / `Radar` / Camera recognition), **welds** (`Connector` / `VacuumGripper`),
+  **kinematic (mocap) bodies** for physics-less joint endpoints, and **BUMPER-type `TouchSensor`**
+  contact reads. Also on by default since 2026-08-07: **static colliders** (`newtonStatics`) and
+  **native contact readback** (`getContactPoints` / `/sim/contacts` / `/sim/grips`) — before those
+  flips a static floor collided with nothing (a ball dropped onto a floor topped at z = 0.55 settled
+  at **z = 0.0996** on an implicit z = 0 plane that was not in the file; with statics on it rests at
+  **0.6496**, exactly box-top + radius) and every Newton world was contact-blind (measured 1008
+  contacts on ODE vs **0** on Newton for the same scene). `OMNISIM_NEWTON_STATICS=0` /
+  `OMNISIM_NEWTON_NATIVE_CONTACTS=0` are exact-revert hatches and both parse their value.
+- **Mass and inertia are computed natively** (`fe35be64`), replacing ODE's `dMass` integrator. The
+  inertia tensors produced for primitive `boundingObject`s are **bitwise identical** to the ODE
+  values they replaced, which are frozen in `tests/goldens/ode_oracle_goldens.json`.
+
+- **Agent-edge validation programme revision 3** (`docs/developer/agent-edge-validation-plan.md`,
+  2026-08-01): the headline Phase W campaign becomes a **product-level comparison driven by
+  Claude Code** — pinned CLI version + model id recorded in every row, headless `claude -p`,
+  one fresh session per cell in a staged clean workspace that **excludes the benchmark's own
+  answer key** (plan §2.7; staging manifest published with the campaign; a contaminated cell
+  is INVALID). One condition per simulator, `claude_code`: the product as shipped — OmniSim
+  with its `AGENTS.md` counted deliberately as product surface; upstream Webots with its own
+  install + docs, the no-`AGENTS.md` asymmetry stated, not hidden. The **API-runner lane
+  (revision 2's conditions, Webots bridge, oracle guards) is retained** out of the headline
+  path as the mechanism-isolation follow-up — F-surface / conjunct (i) is decided there; the
+  product lane evaluates F-comparative only, best-vs-best degenerating to the single
+  `claude_code` condition per simulator. Lanes, tasks, graders, n, and the F arithmetic are
+  unchanged; the unfreezable-instrument trade (Claude Code cannot be byte-hashed; replication
+  means "at this version") is recorded as new threat §5.11. The pre-registration freeze is
+  re-executed as **freeze v2** (`tests/benchmarks/agentbench/preregister/`): supersedes v1
+  with v1's manifest hash recorded for the audit trail. **Zero scored runs existed at
+  amendment time** — a legal pre-run amendment, executed as a version bump rather than a
+  silent edit.
+- **The agent-edge validation programme is redesigned (revision 2 of
+  `docs/developer/agent-edge-validation-plan.md`)** — before any pre-registration freeze, so
+  the change is legal exactly once. What the v5.5.0 entry below quotes is revision 1's design
+  and is superseded: E1 is restated as a **cost-to-outcome** claim (completion is a gate, not
+  the headline — a strong model saturates completion, which is how the first A/B read
+  "identical"); the task set splits into three lanes (an authoring **control** lane where a
+  tie is the expected result, a closed-loop **decision** lane where the withdrawal rule F is
+  evaluated, and a **capability-frontier** lane reported as a capability table with its
+  numerics quarantined to that table, never aggregated into a throughput score); F is
+  re-specified **per conjunct at the SPEC's own repeat floors** — n = 5, and n = 10 for A1
+  (revision 1 cited an "n ≥ 3 floor (SPEC §3.5)" the SPEC does not contain) — replacing
+  the 6 tasks × 2 conditions × 3 repeats / 5-of-12-pairs design whose denominator included
+  structurally degenerate pairs: upstream Webots has no packaged tool surface, so its
+  `shell+tools` condition was undefined and half the pairs could never show the effect,
+  stacking the rule toward withdrawal regardless of the truth. The Webots `shell+tools`
+  condition is now defined: a bridge wrapping upstream's **entire** published Supervisor +
+  Robot function reference (exclusions countersigned), published for the 30-day correction
+  window, guarded by three pre-freeze oracle checks — granularity (the bridge may not be
+  chattier than the shell on any decision task), distinctness (judged by the non-OmniSim
+  reviewer before any scored run), and a stated consequence that never deletes a comparison.
+  The rule itself was hardened in-revision after an adversarial design review: survival of a
+  conjunct requires **both** evidence channels (completion at Δ ≥ +2, and cost at
+  R ≤ 0.85 gated on non-negative completion); a single channel yields only a narrow finding
+  with the adverse channel's table printed (two of the four pre-written narrow templates are
+  negative); best-condition selection is mechanical with near-ties breaking toward the
+  cheaper condition; denominators are pinned (cost ratios defined only at ≥ 3 passing runs
+  per side); and the SPEC §6.1 death condition is defined on aggregate totals so it can
+  actually fire. The V1–V5 validity table is refreshed against the tree (the standalone
+  runner, condition-in-row, and the Webots grading adapter are built and tested since 07-26;
+  no real-model row exists anywhere), the decision cost metric is frozen (`tool_calls`;
+  tokens reported separately, never summed; `t_agent_s` leads time), and a standing rule is
+  adopted: **no row, no result** — a number that exists only in a commit message is not
+  quotable, which the Webots FAIL 5/10 grading in `3c995c9c`'s message currently violates
+  and is therefore not a result. Scored-run count goes 216 → 420; citation repairs
+  throughout (the four-negative packaging sentence lives in `simulator-comparison.md` §8,
+  not `agent-native-api.md` §1.3; §9.2 now holds eight corrections, not six; "fairness
+  floor" is SPEC §6.2.2; the MCP registry is 18 tools, 22 with the shell set).
+
+### Fixed
+
+- **Five OmniArm 6 grasp worlds declared a contact friction that could not reach the solver.** Each
+  declared `ContactProperties.coulombFriction 5` — an ODE-path field Newton does not read — with no
+  `newtonGroundMu`, so a bare load ran the pinch at the engine default **1.0**, a fifth of the
+  declared value. Now declared where it is read, matching the five sibling worlds already repaired:
+  `omniarm6_anypick`, `omniarm6_anypick_line`, `omniarm6_bin_picking`, `omniarm6_declutter_train`,
+  `omniarm6_grasp_train` (the last two had no launcher at all, so they always ran at 1.0).
+  `lane1/translation_audit.py --sweep` over the demo tree goes 5 findings → 2. ⚠️ The two that
+  remain are deliberate, not defects: `omniarm6_physics_pick_place` is hand-tuned to
+  `newtonGroundMu 3`, and `granular_sand_demo` declares per-material frictions that a single global
+  value structurally cannot represent. ⚠️ Also unreconciled by design: the three flagship pick
+  worlds' PowerShell launchers export `OMNISIM_NEWTON_GROUND_MU=1.5`, which still wins over the
+  field, so a launcher run and a bare run are self-consistent but not identical to each other.
+- **`WorldInfo.coordinateSystem` finally reaches the solver** (`c77cbe98`) — and the blast radius
+  was a third of the corpus. The Newton builder was constructed with a hardcoded z-up axis and never
+  read the field, so every `NUE` / `EUN` (Y-up) world got two things wrong at once: `WorldInfo.gravity`
+  is projected onto the builder's up vector, and the projection of a Y-up world's `(0, -g, 0)` onto
+  `(0, 0, 1)` is **exactly zero** — so **nothing fell** (measured: a ball released at y = 3 read
+  y = 3.000 at step 15360) — while the implicit ground plane took its normal from the same wrong axis
+  and stood up as a **vertical wall** along the world's East axis. **210 of the 719 worlds in this
+  tree are `NUE`** and none of them pinned a backend; ODE masked the defect by being the fall-back
+  backend, and a headless PASS could not see it (all 140 `tests/api` worlds scored PASS because they
+  loaded, stepped and logged nothing). The field is now plumbed to `newton.ModelBuilder.up_axis`
+  *before* the implicit ground plane is created. `OMNISIM_NEWTON_COORD_SYSTEM` is value-parsed and
+  default on; `=0` pins the historical z-up so the pre-fix physics can be bisected, and re-running a
+  `NUE` world under it warns. Pinned by `tests/test_newton_coordinate_system.py`.
+
+---
+
+## [v5.5.1] — 2026-07-27
+
+**Patch: the Linux build could not unpack its own dependencies.**
+
+### Fixed
+
+- **`make release` on Linux died before compiling anything.** Four `tar` calls in
+  `dependencies/Makefile.linux` read `tar xfm --no-same-owner FILE -C DIR`. In the bundled `xfm`
+  cluster the `f` takes the NEXT argument as the archive name, so tar tried to open a file
+  literally called `--no-same-owner` and exited:
+  `tar: --no-same-owner: Cannot open: No such file or directory`. That is every dependency the
+  Linux build unpacks — Qt, OIS, assimp, openssl — so the dependency stage failed at
+  `Makefile:195 webots_dependencies` without reaching a single engine source.
+  `--no-same-owner` is correct and stays (it is what makes extraction work on an NFS
+  root_squash volume); it simply has to precede the option cluster, so the calls are now
+  `tar --no-same-owner -xmf FILE -C DIR`. Verified by reproducing the failure and the fix with
+  real tar.
+  **Why it went unnoticed:** `Makefile.linux` is gated behind `ifeq ($(OSTYPE),linux)`, so
+  Windows never touches it, and the last green Linux build predates the change that introduced
+  it. The v5.5.0 release triggered the GHCR training-image build — the first Linux build since —
+  which surfaced a break that had already been there.
+
+---
+
+## [v5.5.0] — 2026-07-27
+
+**The measure-your-own-claims release.** The first public release since v5.1.1 — the v5.2.0,
+v5.3.0 and v5.4.x milestones were prepared but never published, and all of them fold in here.
+
+The first half is capability. The harness became a mutation surface an agent can discover,
+drive and reset; the robot bridges gained an action-result contract that reports what was
+MEASURED rather than what was commanded; Shadowing went robot-general and BATON became a
+reusable library; the skill library learned to certify what it ships; the engine learned to
+run without a window, without a GL context, and — in the physics layer — without Qt at all;
+and the OmniLink platform boundary moved into this repository, so key and BYOK setup are
+terminal commands now.
+
+The second half is what happened when we pointed those same instruments at our own claims,
+and it did not go our way. The first A/B of our agent-facing surface against a bare POSIX
+shell was won or tied by the shell. A "GPU physics is bitwise deterministic" grade turned out
+to be measuring a stationary sun marker parked at z = 100000. A motion tool was found
+delivering 57% of the angle it reported. `run-headless` was certifying a world whose crate had
+left the planet. A benchmark assertion had been reading green for weeks while structurally
+incapable of failing. Every one of those is below with its number, its machine and its unfixed
+remainder — alongside a pre-registered rule that states, in advance, what result would make us
+withdraw the claim in public.
+
+### Highlights
+
+- **A certified quadruped turn skill, designed and verified in one day.** `go2_turn` went ghost
+  design → validator PASS → in-engine training → a 99.2 % never-fell certification (the two runs
+  that missed the 99 % bar are on the record too — a gate that cannot fail is not a gate) →
+  composed into the free-standing `go2_walk_turn_walk` BATON sequence: 3/3 headless runs, zero
+  falls, ~169° turn-in-place, no harness of any kind. Champion checkpoint ships
+  (`gpu_go2_turn_main`, `.pt` + self-contained `.onnx`).
+- **Shadowing beats its residual-RL incumbent on the Go2** — +12.6 % speed and 5× straighter on
+  the live deploy ruler (an incumbent-upgrade result; the from-scratch corridor-curriculum
+  variant reaches 0.370 vs the incumbent's 0.381 m/s). The round-2 champion ships (0.415 m/s,
+  99.7 % never-fell).
+- **BATON is a library, demonstrated.** One arbiter sequences the craned G1 (walk → carry →
+  corner → place, 3/3 zero falls at 91.8 s) and the free-standing Go2 — no world object, no
+  torch, no crane, no humanoid anatomy in the arbiter.
+- **In-engine training throughput up 5.9×** (132k → 784k env-steps/s at K=16384 on an RTX 4090)
+  via slim contact buffers and a kinematics-only reset path, quality-gated at parity. New
+  quality-gated reward instruments: peak-torque saturation hinge (`QUAD_W_SATHINGE`) and
+  stance-foot slip (`QUAD_W_FOOTSLIP`).
+- **A minimal runtime, measured.** A world can now run with no window constructed (−20 % RSS at
+  full parity), with no GL context (compute-only "no-GL" mode: a K=4 fleet drops 1593 → 1041 MB,
+  −35 %), and with Qt on the `minimal` platform so a headless host never opens a window-system
+  connection.
+- **The physics layer is Qt-free** — `physics/` reached zero Qt includes, held there by a
+  per-directory include ratchet test.
+- **OmniBench, a cross-simulator physics benchmark — and the five Newton defects it found.**
+  Three lanes: correctness against analytic ground truth, throughput to the post-Genesis
+  credibility checklist, and three novel axes (determinism grading, train==deploy structural
+  parity, agent-driveability of the HTTP harness). Engines measured: MuJoCo 3.8.1, PyBullet,
+  OmniSim/ODE, OmniSim/Newton, over two machines; of 180 comparable OmniSim metric cells, 124
+  are numerically identical across Windows and Linux. The suite quotes **no published
+  competitor numbers** — every figure is same-harness, and OmniSim's Newton backend embeds
+  mujoco-warp, so accuracy deltas against MuJoCo are framed as integration fidelity, never a win.
+- **A multi-robot agent demo that reports measured positions, not remembered ones.**
+  HuskySwarm — four Clearpath Huskies, one coordinator, 45 tools — is the flagship OmniLink
+  demo, with an optional per-Husky unit-agent team beneath it. Motion tools settle and stamp
+  the robot's real final pose: without that, the agent narrated its remembered position right
+  after physically driving elsewhere.
+- **The scaffolding was worth more than the model choice.** On a 6-task hard tier, four
+  agent-side changes moved the cheapest routing tier 4/6 → 5/6 and another engine 3/6 → 5/6
+  with no model change; halving the prompt halved the cost and lost nothing. The losses are on
+  the record too: one task is passed by no model, and a verifier that inaction could beat was
+  found and fixed.
+- **AgentBench — a sim-vs-sim agent benchmark, and its first A/B says our own surface did NOT
+  win.** Same one-sentence task ("build a scene with 10 Huskies and let them move randomly"),
+  same model, two tool conditions, artifacts graded blind: the bare `shell` condition — no
+  harness, no HTTP surface — reached the same PASS 10/10 on ~36 tool calls against the full
+  surface's ~50, and tied on the debug task at ~21 each. The claim that an agent gets more done
+  here is therefore **currently unsupported by any measurement we hold**. What the run does not
+  establish either way is recorded with it: n=1 per cell; the ablation leaked (both agents ran as
+  coding-harness subagents, which auto-inject `AGENTS.md`, so a documentation-free condition was
+  structurally unreachable); both conditions ran concurrently on one box sharing one binary and
+  one trace directory, so **the wall-clock numbers must not be used at all**; and the graded rows
+  carried the wrong condition tag, so the headline survives only as an operator's observation.
+- **A pre-registered kill condition for that claim**, written before the data
+  ([docs/developer/agent-edge-validation-plan.md](docs/developer/agent-edge-validation-plan.md)):
+  6 tasks × 2 conditions × 3 repeats × ≥2 simulators, and the agent-throughput claim is
+  **WITHDRAWN** unless a pass-delta of ≥ +1 appears in ≥5 of the 12 (task, simulator) pairs, or a
+  tool-call ratio ≤ 0.85 in ≥5 of them. No escape clauses — adding a task, dropping a simulator or
+  switching the headline metric after seeing rows voids the campaign — and the withdrawal
+  paragraph is pre-written verbatim. Five of five validity requirements are recorded as unmet.
+- **The tool contract is a first-order term in agent task success, and we proved it on
+  ourselves.** The mobile bridge's `turn` delivered **56.7% of the commanded angle**, reproducible
+  to four decimals, while its own source comment documented it as "~−19%" and declared a corrector
+  unworkable. Rewriting the control law lands it at **mean |error| 0.44°, max 0.97°, n=8** from
+  10° to 270°, measured through the shipped tool on an RTX 3060 laptop (machine `9722d23d12a3`) —
+  **with no prompt, model or agent-config change**. The honest trade is 8–55 s per turn against
+  ~3 s before. Written up with its limits in
+  [docs/developer/tool-design-for-agents.md](docs/developer/tool-design-for-agents.md): it is the
+  cheapest term to fix, not a claim that it dominates the model — holding this surface constant,
+  model choice moved the same swarm suite 4/4 → 0/4, and that ladder has not been run.
+- **Every determinism claim is now scoped to a SOLVER, and two were retracted.**
+  [docs/benchmarks/determinism-scope.md](docs/benchmarks/determinism-scope.md) is the source of
+  truth and overrides every other doc: **bitwise** on ODE and on `newtonSolver "mujoco"` (CPU
+  `mj_step`, verified at 336 contacts / 1344 constraint rows with ten live controllers);
+  **refuted** on the GPU `mujoco_warp` path — 0 bitwise of 24 same-config cold pairs, diverging
+  from ~4e-5 m at 120 steps to **9.152 m at 1000**, with the mechanism traced to `wp.atomic_add`
+  contact-slot claiming and confirmed by saturating the GPU with an unrelated process; **unproven**
+  on XPBD, whose one green row is a single light-contact scene; **untested** cross-machine. Struck
+  outright: the comparison matrix's "Cross-machine determinism: Bitwise" row (our own census has
+  56 of 180 lane-1 cells differing between machines) and "lane 3a grades the underlying simulation
+  bitwise-deterministic", which does not hold for the configuration the G1 actually trains in.
+- **A stationary sun marker can no longer prove GPU determinism.** The lane had reported "GPU
+  physics is bitwise deterministic" at `max_abs_dev = 0.0`. The result was **void**: the recorder
+  skipped every node without a DEF name, so the graded CSV held exactly one body — `SUN_MARKER`,
+  parked at z = 100000 — while the engine's own step trace in the same directory showed the robots
+  0.333 m apart by step 120. Nothing asserted the recording had moved, and a run that died halfway
+  was graded on the step intersection as a full result. All three fixed, verified by replaying the
+  original failing CSVs, which now grade `no_motion` carrying *"this run proves NOTHING about
+  determinism"*. The rule it cost us twice in one week is now written down: **an assertion that has
+  never gone red should be assumed broken until you make it go red on purpose.**
+- **The harness became a mutation surface, and `/sim/step` stopped costing half a minute.** The
+  injected supervisor had honoured `--light` for months, but the harness passed no
+  `controllerArgs`, so over HTTP the flag was unreachable and every agent paid for the contact,
+  joint-limit and grip trackers whether it read them or not. On a 10-Husky, 298-node world (RTX
+  3060 laptop; both runs proven non-degraded Newton/MuJoCo by the sidecar): **`/sim/step` went
+  28.5 / 27.0 / 27.3 s to 0.047 / 0.035 / 0.034 s**, and a ten-step advance from 120 s to 0.19 s.
+  The kicker is that `/sim/contacts` returned zero in both conditions — on that world the trackers
+  cost 27 seconds per step to report nothing. Alongside it: `GET /capabilities`,
+  `POST /scene/spawn|delete|set_pose`, `POST /sim/snapshot|restore`, and a `/sim/reset` that
+  actually resets.
+- **The headless lane no longer certifies a world that is physically impossible.** Measured on
+  AgentBench task `C2_fall_through_floor`: a world whose floor Solid has no `boundingObject`, so
+  its dynamic body free-falls to **z ≈ −69 km** in an 8 s run, printed `0 errors, 0 warnings …
+  PASS` **byte-identically to the fixed world**. New opt-in `--fail-on-runaway` injects a sampler
+  into a sibling copy of the world and fails on a pure, unit-tested verdict: |z| past a bound, or
+  descent below the lowest detected static collider while still accelerating. The broken world
+  exits 1 naming the body and its exit z; both independent fixes exit 0; swept for false positives
+  on three unrelated worlds.
+
+### Demos & worlds
+
+- G1 flagship harnessed walk pace nearly doubled; harnessed box delivery cut to 91.8 s, with a
+  cleaner arrest for box placement and a physical-suction grasp in the harnessed path.
+- Arm demos: bin-picking suction feel + a rigid 6-DoF lock and slab-center placement for the box
+  grasp.
+- Chat demos gained a **zero-account local-Ollama mode** (`OllamaRelay`) and a hybrid tier that
+  keeps local inference behind the OmniLink platform layer.
+- **Worlds open looking at their subject.** Measured across all 703 `.wbt` files: 45.4 % of
+  robot-bearing worlds opened with the robot entirely out of frame, including the no-args entry
+  point. Three framing bugs fixed (an up-vector-free look-at, an aspect-ratio-blind frame
+  distance, and a third pasted copy of the broken math serving live agents); `projects/` +
+  `distribution/` is now 0/305 out-of-frame, and an authored Viewpoint is never touched.
+- **HuskySwarm** (`omnilink_husky_swarm.omniworld`): deterministic geometry tools take the per-robot
+  trigonometry away from the model; drive accuracy closed to −0.7 %..−0.1 % over 1–2 m by a
+  settle-and-verify loop. **Open-loop turns are explicitly not fixed** (~43 % undershoot at
+  90°, documented as such) — the closed-loop tools are the accurate path.
+- **Northgate Depot**: a reusable robot-free courier-warehouse environment alongside
+  city / desert ruins / forest.
+- The mobile bridge gained scene-derived obstacle avoidance, a deadlock-free peer layer with
+  bounded holds, a time mutex for contested work columns, and a trailer articulation clamp.
+- **The 10-Husky flagship runs on the GPU solver from a self-contained world.** New per-world
+  `WorldInfo.newtonNjmax` / `newtonNconmax` (`0` keeps the engine's built-in 256, so every existing
+  world is byte-identical). MuJoCo's constraint buffers had been hardcoded at 256 with env-var-only
+  override, so a `.wbt` could not use `newtonSolver "mujoco_warp"` past eight robots — it would
+  only be correct if launched with extra env vars a world file cannot carry, and two independent
+  agents building a ten-Husky scene both hit this and both fell back to ODE. A 4WD Husky rests on
+  8 wheel-ground contacts × 4 rows = 32 constraint rows, so ten peak at 320 and overflow the 256
+  default from tick 4. ⚠️ **Overflow is silent on Windows** — the runtime's only warning is a
+  `wp.printf` from inside a warp kernel, and a GUI-subsystem binary captures none of it.
+- **The swarm world's "caps at 8 Huskies" comment now names *which* wall.** Two independent limits
+  bite near the same robot count and a commit message briefly conflated them: the documented one is
+  an **XPBD actuator** wall (wheel targets settling at ~0.4 rad/s against a commanded 2.5), and
+  XPBD has no constraint-buffer concept at all, so `newtonNjmax` neither explains nor helps it.
+  That 256/32 = 8 lands on the same number is a coincidence of magnitude; the header says so now.
+- **The mobile bridge gained an absolute-coordinate verb.** `drive_to(x, y)` — world frame, always
+  blocking, returns `achieved_xy` / `error_m` / `arrived`, and **refuses** an off-site target with
+  the bound named rather than clamping. This was the single largest gap in the surface: there was
+  no absolute-coordinate verb at all, so the model had to compose a rotation with a translation and
+  call `atan2` — the two things LLMs are measurably worst at and a tool is exactly correct at.
+
+### Agents
+
+- **Conversational control of every robot in a chat world**, through one shared intent router —
+  grounded natural-language commands, with offline / local-Ollama / keyed routing tiers.
+- The arm chat bridge gained a **`learn` capability**: a chat request spawns a skill-learning
+  runner, streams stage progress (design/validate/train/certify) into the chat and an SSE feed
+  with a live HUD page (`GET /hud`), and registers the certified result as a new runnable verb —
+  with honest refusals (one learn at a time; unknown recipes listed; a failed certification
+  registers nothing). The runner and its recipes are discovered on disk and are not part of
+  this snapshot — without them the verb simply lists nothing to learn.
+- Deploy integrity: **no controller may report a bare-baseline run as a policy result** — all 21
+  policy-loading controllers audited; load failures are FATAL with an asserted `ONNX loaded:`
+  line.
+- The arm bridge's `set_tcp_target` now accepts a flat `x/y/z` as well as an `xyz` array.
+- **A record of the agent's own actions, and promises that survive the turn.** A 40-turn
+  stress run found 26 % of turns contained a fabrication — every one about the robot's *own
+  past actions*, while zero tool-sourced claims were wrong. So: an action journal, deferred
+  intents that are commitments rather than prose, and durable constraints with a real duration.
+- **Grounding made structural, because prompting it had stopped working.** Fabrication across
+  three measured builds plateaued (26 % → 13.9 % → 13.5 %); two relay gates now apply instead
+  (fetch-and-re-ask on ungrounded state claims; capitulations extracted by a pushy operator are
+  dropped from storage, loudly). A later graded re-measurement read 5.7 % at n=35, which is
+  **not** a significant improvement (p=0.43) and is reported as such.
+- **Three ways the intent mechanism itself lied to the operator**, all fixed — including a
+  cancel-by-guessed-id that destroyed a live commitment and replied "Cancelled."
+- **Memory stopped destroying itself**: persisting was a whole-blob overwrite that erased
+  early-session facts from storage; two writers stopped correcting each other; the agent can
+  mark a fact durable.
+- **A measured safety model** ([docs/developer/agent-safety-model.md](docs/developer/agent-safety-model.md)):
+  the e-stop is deliberately not a tool (not listable, not dispatchable), all motion tools
+  refuse while it is latched, the last unguarded motion path is now bounded on worst-case
+  travel — and the document names the gaps it does not close; bridge-token enforcement is
+  opt-in and labelled as such.
+- **Agent identity is no longer hijackable by a test run** (`OMNILINK_AGENT_TAG` keys profile
+  and memory everywhere), and tool surfaces that under-report are treated as defects — a
+  motion tool can no longer run its loop against a latched e-stop and return success.
+- **Supervised long-horizon control, and a benchmark it still fails.** New `omnilink_long_horizon`
+  suite: the operator gives one natural-language objective, Mission Captain must form a supervised
+  delegation plan, and the specialist must tour all four maze corners, return to start and submit a
+  verified claim — scored 0–100 from measured robot pose, the physics-derived visited-cell trail,
+  live fault state and the bridge claim log. **No model judge.** New runtime: a shared fail-closed
+  outcome vocabulary, a dependent-step ledger, `execute_mission_plan` with fresh-state preflight
+  and duplicate-ownership rejection, and a corners bridge that refuses completion unless the robot
+  is physically back at the start. The graded baseline **FAILS at 35/100**; a later, better-
+  exploring run (settled cells 24 → 55) was **terminated mid-episode by an API connection
+  error**, so it is recorded `INVALID` and excluded from every pass rate rather than reported as
+  a 40/100 result — infrastructure failure is not a model result. The bridge correctly refused
+  the specialist's attempted premature completion claim. Note what the harness does *not*
+  capture: the result files record host, platform, python and commit only — no GPU, no backend,
+  no model — so these runs are not machine-attributable in the way the rest of this release is.
+  **This stack is not yet reliable enough for unsupervised long-horizon robot control**, and the
+  benchmark exists to say so.
+- **A separate hard orchestration suite**, `omnilink-hard/v1` — seven tasks spanning dependent
+  motion, compound concurrency, state restoration, ambiguity handling, guard-triggered recovery,
+  live delegation and fleet failure containment, every verdict from measured pose and the recorded
+  tool trace. ⚠️ Its 2026-07-26 campaign is **exploratory, not a reproducible measurement**: every
+  row is `+dirty` at a commit that predates the suite definition, `results/` is gitignored, and the
+  runs are model-unpinned. The best available estimate from the only multi-sample run at that tree
+  state is **11/13 graded**, with `hard_square_return` and `hard_conditional_delegation` failing.
+- **The agent benchmark refuses to run when another copy of it holds the stack.** Two `matrix.py`
+  processes ran concurrently for 36 minutes against the same four bridges, and the collision did
+  not merely interleave the runs — it corrupted both: one process cleared the other's e-stop fault
+  44 times mid-episode, `/reset_to_home` landed inside the other's episode, and every "the other
+  robots must not move" assertion saw the other run's robots moving. A file-based `StackLock` now
+  claims the stack **before** preflight, exits 4 naming the holder, pid, start time and argv,
+  reclaims a dead pid with a printed notice, and releases in a `finally`. ⚠️ Consequently the
+  suite's earlier "first measured run" is **retracted and unquotable** — its rows carry
+  `model: null` and neither process wrote a summary.
+- **Tool results are verified, and mission state is isolated per agent.** Motion outcomes are
+  normalized onto one conservative vocabulary in which *unknown* is deliberately distinct from
+  *success*; dependent plan steps execute in order and stop at the first unverified step; parallel
+  work claiming the same exclusive resource twice is rejected. The helper module has no OmniSim or
+  OmniLink dependency, so every production agent shares it and it is unit-tested without a simulator.
+- **Two `husky_maze` tools stopped lying about being blocking.** `drive_forward` and `turn` promised
+  in their own descriptions to return when within tolerance or after 30 s; neither actually waited,
+  so a model that believed the description issued its next command into a still-moving robot with
+  nothing distinguishing that from success. Both now honour `wait` and return
+  `{commanded, achieved, error, unit, settled, fault, final_pose}`, with `achieved` measured as
+  signed progress along the *original* heading axis rather than Euclidean drift. ⚠️ Making it honest
+  immediately exposed a second defect: `drive_forward` delivers **~65% of the commanded distance**,
+  outside the tolerance its own description claims. No accuracy claim is made for this bridge; the
+  number is recorded so the next person starts from it.
+
+### OmniLink platform integration
+
+- **The platform reference lives here now.** The OmniLink website's documentation site was
+  deleted; the parts that are the platform boundary moved to
+  [docs/guide/omnilink-key-and-api.md](docs/guide/omnilink-key-and-api.md): the Omni Key,
+  `/api/chat`, and the `omnilink` PyPI package. The page leads with the case for **not**
+  needing a key at all — the bridges fall back to local Ollama and then to the regex router.
+- **`python -m omnisim key`** — where you stand plus the exact line for *this* shell,
+  `--open` for the page, and `--check`, which asks the platform rather than eyeballing the key
+  prefix and prints the plan the platform reports. Stdlib only.
+- **`python -m omnisim byok`** — connect the model provider from the terminal (`--providers`
+  works with no key and no network; `--add google` takes hidden input; a provider key is sent
+  straight to the platform and never written to disk). An Omni Key is not a model key, and the
+  command says so in the words of the `402 BYOK_REQUIRED` you would otherwise hit.
+- **Presence, so a dead robot stops looking like a live one**: bridges and agents heartbeat,
+  publish their own callback URL, and declare their cadence so a healthy 30 s beat is not
+  judged against a 3 s window.
+- **Setup is two steps, and the CLI now says so.** An Omni Key identifies the account; a
+  model-provider key pays for the tokens, and the platform does not fall back to a system
+  key — so a user with only a key hit `402 BYOK_REQUIRED` on their first message after
+  being told they were ready. `key` now walks through the provider step as a REQUIRED one,
+  and `key --check` reports which providers are actually connected. The 402 itself no longer
+  echoes the platform's browser-oriented text (which asks for service-account JSON, though a
+  free API key works): the relay answers with `python -m omnisim byok --add google`, and
+  keeps serving from its local fallback meanwhile.
+- **Honest cost readout**: real USD per run and per hour from a local price table (each request
+  counted once — the reported rate had been ~2× high), with a price-drift parity test that
+  skips cleanly on a public clone.
+- **PROTOCOL.md §5.4.1 — the action-result contract, normative.** *An LLM agent has no independent
+  access to the world: every belief it holds about what the robot did came from an action result.*
+  The measured consequence here: `POST /drive_forward {"distance": 1.0}` returned
+  `{"accepted": true, "distance": 1.0, "eta_s": 1.84}` in **0.01 s**, at which instant the robot had
+  travelled **0.019 m**. Six requirements now bind: never report a commanded quantity under a field
+  name that reads as a measurement; return `{commanded, achieved, error, settled}` against
+  bridge-side ground truth; `achieved` **MUST** be `null` when unmeasured; an action that returns
+  before completing must say so in its capabilities description and hand back a monotonic `seq`; a
+  mutating action arriving while one is in flight should be `409 busy` rather than silently
+  replacing it; and a known inaccuracy goes in the description until it is fixed — *shipping a
+  −43% actuator behind a description implying exactness is a protocol defect, not a robot defect.*
+- **Conformance is recorded per bridge, not asserted in the aggregate**, with each bridge's
+  outstanding gap named in its own row rather than summarised away.
+- **PROTOCOL.md now documents what the code does**, derived from route registrations and emit sites
+  rather than from either doc — and where they disagreed, the doc was wrong every time. There are
+  **ten** event types, not twelve: four documented names have no producer at all, and because
+  `?types=` is a literal set-membership test, a documented-but-wrong name returns `200` with an
+  empty list, so an agent following our docs would poll a dead stream forever. Also: §10's one
+  universal requirement — that every event carry `t` in float sim-seconds — **had never been
+  implemented**; `/world/render_stats` returns 0–255 statistics while the example showed 0–1, so a
+  client thresholding `< 0.1` for "scene is black" matches nothing; and eight
+  implemented-but-undocumented harness endpoints are now written down.
+
+### Authoring & harness
+
+- **IPC hardening:** a fail-fast versioned engine↔controller handshake, a zero-tick watchdog, and
+  an extern nonce — a mismatched libController now fails loudly instead of hanging every
+  controller silently. Broader OmniLink agent/bridge integration hardened (shared
+  `http_security`, bridge-conformance tests, chat-plugin sync, PROTOCOL.md).
+- `headless_runner` no longer discards engine stderr; `doctor --strict` gained a Tier-0
+  install-coherence gate including the engine↔libController IPC mismatch.
+- Cross-machine determinism is a three-tier contract with a measuring instrument per tier
+  (same-machine golden compare → same-GPU band → cross-machine statistical equivalence);
+  `env_fingerprint` records a stable machine identity next to every result.
+- **OmniBench harness discipline**: `run_all.py` writes per-machine, per-date result trees
+  with a MANIFEST; `SPEC.md` binds the reports to honesty rules (never compare a batched-GPU
+  number to a single-env CPU number; report losses as prominently as wins; carry the machine
+  id on every number). The harness refuses to benchmark the wrong engine (`--no-fallback`).
+- **The agent-benchmark suite is canonical, with its limits stated**
+  ([docs/developer/agent-benchmarks.md](docs/developer/agent-benchmarks.md)): verdicts computed
+  from supervisor ground truth, infrastructure failure graded INVALID rather than scored, cost
+  attributed once, and its own measurement bugs documented rather than quietly fixed.
+- Agent runners gained keep-alive (the simulator dying no longer kills the agent) plus a
+  guarded `/relaunch-sim` endpoint that spawns the world only and never kills anything.
+- New reference: [docs/developer/viewpoint-convention.md](docs/developer/viewpoint-convention.md),
+  with `set_viewpoint.py --auto`, a viewpoint checker and a pre-push hook so the framing fix
+  cannot silently regress.
+- **`GET /capabilities`** — one call for what you are talking to, what is driving the physics, what
+  a step will cost and what it will refuse to do. Backend and solver are read from the engine's own
+  `.newton.json` verdict sidecar (with `sidecar_stale` / `sidecar_absent` / `forced_by_env` labelled
+  honestly — a short run that never reached finalize proves nothing), plus light mode, the
+  authoritative event types, every `not_supported` entry with a `reason` and a `workaround`, and a
+  rolling median of the **measured** per-step cost with a `recommended_max_steps_per_request`, so an
+  agent sizes its budget instead of discovering the RPC timeout by hanging. Anti-drift is structural
+  rather than documentary: the supervisor scans its own emit sites and the harness its own route
+  table, and `verified` / `undeclared` / `declared_not_emitted` come back in the response.
+- **`POST /scene/spawn` | `/scene/delete` | `/scene/set_pose`**, each returning a verification block
+  (node resolved, children delta, pose before/after, settle steps) and typed error codes instead of
+  prose 503s. Every verb already existed in the shipped Supervisor binding; none was reachable over
+  HTTP. Honest headline: building the 10-Husky scene via verbs is a **wash on wall time** against the
+  hand-authored file — the real wins are that per-entity VRML disappears, a bad entity is a fast
+  typed rejection carrying the rejected text instead of a whole-file reload, and incremental edits
+  stop costing a load. Three rules that cost the most to learn ship with it: a `URDFRobot` **cannot**
+  be imported from a string (use `{"clone": "<DEF>"}`); a cloned robot's `name` must be rewritten in
+  the node text **before** import, because the engine starts the controller at import and keys the
+  IPC channel on the name — measured before the fix, **8 of 9 clones were silently dead behind
+  `200 OK`**; and nothing checks interpenetration.
+- **`POST /sim/snapshot` | `/sim/restore`, and `/sim/reset` FIXED.** Reset had rewound the clock and
+  left the scene where it fell — a silent correctness trap we had documented rather than fixed. It
+  now restores the engine's own parse-time state, verified on both backends. Restoring an unsaved
+  name is **refused**, because the saved-pose map default-constructs a zero vector on a miss and an
+  unguarded restore would teleport the whole scene to the origin.
+- **An honest audit of our agent-facing surface against ROS 2 `simulation_interfaces`** — all 21
+  services, every cell measured against a live harness on both backends rather than asserted. It
+  names the places the thesis does not hold, including that we are not the perception surface for
+  anything except the camera.
+- **AgentBench's graders are a simulator-neutral physical core plus per-simulator adapters**, so a
+  cross-simulator number is possible at all: the originals counted engine-specific nodes and read
+  our own sidecar, none of which exists elsewhere. In the evidence bundle, `None` **always** means
+  "the adapter could not answer" and never `0`, `False` or `[]`. Zero drift was proven the strong
+  way — identical captured evidence re-graded by old and new graders in separate interpreters:
+  **0 drifted values, 0 removed, 288 added** (all new basis metadata). Every verdict declares its
+  **basis**: core-physical (metres and seconds, identical on any simulator), core-structural, mixed,
+  or adapter-attested.
+- **A Webots adapter, so one grader drives two simulators.** The graded upstream run scores FAIL
+  5/10 — and the five failures are **all absent evidence, every one flagged vacuous**: that is our
+  schema refusing to award credit it has no evidence for, **not a finding about Webots**. Every
+  deliberate asymmetry makes the *control* arm harder, not easier. Two refusals kept: the adapter
+  would not read the other lane's own metrics (a competing grader's verdict is not evidence), and
+  faced with several candidate logs it refused to guess which was the witness.
+- **The 13 lane-3 determinism probe worlds are committed** — they *are* the evidence base. Every
+  headline in the scope doc had rested on worlds that existed on one machine only. ⚠️ The buffer
+  sweep found a trap worth its own line: setting `newtonNjmax` to exactly the measured peak puts the
+  buffer at capacity, rows are silently truncated, and results move **8.81 m** versus every other
+  size. **Size the buffer with headroom, not to the measurement.**
+
+### Build / packaging
+
+- Compute-only mode defaults to the Qt `minimal` platform; the packaging file list follows the
+  minimal-runtime path.
+- Newton runtime wheels are **pinned** to the runtime-pins manifest (an unpinned install had
+  picked up an incompatible Newton release and failed every world load).
+- **A GPU training image**, published to GHCR by `.github/workflows/train-image.yml` from
+  `docker/Dockerfile.train`: OmniSim built from a release tag on CUDA + Ubuntu 22.04 with the
+  Newton/mujoco_warp stack baked in, so a GPU box trains immediately instead of reinstalling
+  the same stack each time (`docker run --gpus all -it ghcr.io/omnilink-tech/omnisim-train:v5.3.0`).
+  The base is deliberately Ubuntu 22.04, not an ML image: the engine embeds CPython and spawns
+  controllers as `python3`, so a base whose PATH python differs from the one the binary links
+  produces two interpreters, and the resulting missing-`onnxruntime` failure is SILENT — a
+  zero-residual baseline that still exits 0. 22.04's system python is the one the engine links.
+
+### Fixed
+
+- Corrected stale claims across README / AGENTS and the guides.
+- The quadruped ghost path no longer hardcodes Go2 joint names — Shadowing LUTs declare their
+  robot and the trainer asserts it.
+- **Newton physics: gravity, inertia, friction cone and ODE gating** (found by OmniBench's
+  diagnosis campaign; six measured symptoms, five distinct engine bugs — all five below).
+  `WorldInfo.gravity`
+  was never plumbed to the Newton runtime, so **every Newton world ran at the library
+  default** — blast radius is narrow (only worlds authoring a non-default gravity), but a spin
+  test lost all angular momentum in ~0.6 s and now conserves |ω| = 5.0 over 10 s. Solids
+  without an explicit `inertiaMatrix` silently inherited a hard-coded wheel preset and now
+  take the geometry tensor (rolling error 47.632 % → 0.058 %; revert with
+  `OMNISIM_NEWTON_LEGACY_INERTIA_PRESET=1`). New per-world `newtonCone` / `newtonImpratio`
+  knobs (friction-transition error 4.065° → 0.065°; a 10-box stack 1/10 → 10/10) — **the
+  global default stays MuJoCo-stock** pending champion re-verification. `OMNISIM_FORCE_ODE`
+  now actually suppresses Newton (three gating gaps closed), and a supervisor `setVelocity`
+  at t=0 is no longer dropped.
+- A world that authors no Viewpoint is framed on its scene at load (auto-inserted viewpoints
+  only; authored cameras never touched). Z-aligned rescale fixed in Capsule / Cone / Cylinder.
+- `omnilink_husky_swarm.omniworld` finalised on XPBD, which locks lateral wheel pairs on 4-wheel
+  rovers (a straight 2 m drive came out as a 65° arc); solver pinned to MuJoCo.
+- **Contact pairing was structurally impossible, and it silently defeated our own benchmark.** The
+  contact record returned the **queried** solid's own id rather than the other body, so every pair
+  was keyed `(id, id)` and the endpoint could only ever report a body touching itself. The
+  benchmark's "no robot-robot contact in the first 10 steps" assertion therefore **could never be
+  non-zero** — half of it was vacuous while reading green for weeks. Contacts are now paired on the
+  shared contact point, and the recorder returns a **witness** alongside the filtered pairs, so an
+  empty list can be told apart from a pipeline that structurally cannot name two bodies. On the
+  current oracle the witness reports zero, so the grader still marks the clause **vacuous —
+  correctly**: ten Huskies on a 12 m ring genuinely never touch, and a scene where nothing collides
+  cannot demonstrate that a collision check works.
+- **The Newton-vs-ODE speedup directive is revoked.** An archived plan carried a *live* editorial
+  instruction telling every doc to lead with "Newton is 30–100× faster than ODE" and to frame ODE as
+  the legacy baseline — both errors, propagating forward. The retired 17–33× compared whole-engine
+  GUI FPS against a bare solver probe; same-harness, ODE is faster per step on these scenes and
+  Newton's case is **batching**. History is kept verbatim under superseded banners with the ratio
+  columns struck rather than deleted.
+- **Every env-steps/s figure now carries its machine, batch and unit; two were retracted.** The same
+  in-engine trainer measures **10,228 env-steps/s at batch 256 on a laptop RTX 3060** and **333,036
+  at batch 4096 on an RTX 4090**, and one control step is 8 substeps — so an unqualified figure can
+  be off by ~33× in either direction *and* another 8× on units alone. One figure that had no run
+  file, batch or date anywhere in the tree was **removed rather than restated**.
+
+### Removed
+
+- **Five older agent-driven OmniLink sample demos** retired (warehouse-logistics,
+  warehouse-patrol, mission-control among them); the pieces they genuinely shared were folded
+  into the demos that remain.
+- **Boston Dynamics Atlas** — model, worlds, controllers and checkpoints. The stand experiment
+  was a confirmed negative result, and the upstream geometry's chain of title did not meet the
+  bar this repository ships under.
+- **The `drone_surveyor` agent demo** (runner, tool surface, knowledge base, docs). Its world
+  and the Mavic bridge stay — they also serve the aerial chat demo.
+- **NASA Valkyrie (R5) is withheld from the public distribution** — the package, its worlds,
+  and its stand/shadow artifacts, all of which shipped in v5.1.1. Its upstream licence is the
+  NASA Open Source Agreement 1.3: OSI-approved, but not Apache-2.0-compatible, GPL-incompatible,
+  not relicensable, and requiring that a copy of the agreement accompany every redistribution.
+  Our own licence audit ruled it must not ship until we hold a real position on that, so it is
+  held rather than shipped under a claim we cannot stand behind. It remains in development and
+  the Shadowing/skill-library docs still reference it, marked as held. `THIRD_PARTY_NOTICES.md`
+  keeps the NOSA text and the carve-out for anyone redistributing a tree that does carry it.
+
+---
+
+## [v5.1.1] — 2026-07-12
+
+**The verification release.** Every claim in the README was checked against the public v5.1.0
+artifact three ways — statically against the tree, behaviorally on a Linux public clone, and
+behaviorally on Windows. Most claims held, including the load-bearing one: the re-hosted
+Unitree G1 policy reproduced its documented free-standing walk exactly (63.06 m at 0.483 m/s
+over 130 s, zero falls, zero harness variables, pelvis height matching the docs digit-for-digit).
+What did not hold is fixed below.
+
+### README corrections
+
+- **The throughput sentence contradicted its own citation.** It claimed the "GPU-batched RL path
+  reaches top-tier throughput"; the linked benchmark says, in bold, that end-to-end RL throughput
+  was never measured. It now claims physics-stepping throughput in the class the benchmark
+  actually supports.
+- **Every Atlas world failed to load the robot** — stale URDF paths from an old directory move
+  meant the scene silently contained no robot at all. Paths fixed (the 70-link model loads with
+  zero errors), and the brand row now says what is true: model + research worlds, locomotion
+  unsolved.
+- Smaller: Newton's originators quoted per its own repo ("initiated by Disney Research, Google
+  DeepMind, and NVIDIA"), the MuJoCo Playground robot count attributed to its technical report,
+  and Valkyrie added to the skill-library sentence (the registry carries a Valkyrie skill).
+
+### Agent surface — the harness and capture services now survive slow platforms
+
+- **The harness no longer loses to slow world loads.** On a virtualized-disk Linux box the
+  flagship warehouse world cold-loads in 46–79 s; the supervisor bind window was silently capped
+  at 60 s, its connect pings could not succeed against a busy supervisor, and an expired bind
+  left the engine wedged (or dead with an X11 error) with every RPC returning 503. Five stacked
+  causes, all fixed: `wait_s` honored up to 300 s and now bounding only the POST (a background
+  waiter with engine-progress detection — log growth, stdout, CPU time — carries on); escalating
+  ping patience; expiry cleanly terminates and reports instead of wedging; a repeat load joins
+  the in-flight bind instead of killing it; and supervisor adoption is stability-checked so a
+  dying controller from the previous world is never re-adopted. Verified on the failing
+  platform: warehouse connects inside a single POST (70–72 s), full loop works, hot reload
+  included, 2/2.
+- **The capture service delivers the resolution you asked for.** The injected high-resolution
+  Camera had been removed in May over an engine segfault that no longer reproduces — since then
+  every "1920×1080" screenshot was silently a viewport grab (316×316 under Xvfb, ~1896×1113 on
+  Windows). The Camera is restored and enabled by default on both platforms; if it is ever
+  unavailable, the response now *says so* (`camera_fallback`, with the delivered vs requested
+  size decoded from the PNG itself) instead of silently downgrading. The 8-second supervisor
+  bind window gets the same slow-platform treatment as the harness (soft `wait_s`,
+  progress-aware, clean expiry), and `/capture/sequence` fails fast with an actionable message
+  when ffmpeg is missing.
+- **Every HTTP bridge now returns strict JSON, always.** An exception inside any route used to
+  produce a zero-byte reply (the error visible only server-side), and sensor floats read before
+  the first step emitted bare `NaN` — invalid JSON that non-Python clients reject as nothing.
+  All four bridges (arm, mobile, quadruped, drone) and the harness's own endpoints now guard
+  every route (errors come back as JSON with a 500) and sanitize non-finite floats. Found along
+  the way and fixed: a joint/sensor misalignment in the arm bridge when a motor is missing, and
+  two device-name-drift bugs that made the drone bridge exit before its HTTP server ever
+  started.
+- **The Newton import log line can no longer be misread as a verdict.** It used to end with
+  "opt-in via `physicsBackend "newton"`" — which reads as "Newton is off" even when the default
+  `"auto"` resolves to Newton at world finalise. It now says exactly that, and points at the
+  authoritative `<log>.newton.json` sidecar. Every log matcher was verified against the new
+  wording.
+
+### Diagnostics
+
+- **The headless runner no longer discards the engine's stderr.** An intermittent early-exit
+  (code 1, a trio of Qt teardown warnings, no cause anywhere) was investigated to its edge: it
+  is an orderly exit during embedded-Python/Newton bring-up, and its actual reason is printed
+  only to stderr — which the runner routed to DEVNULL. stderr now goes to `<log>.stderr` (a
+  file, so the historical pipe-stall bug cannot return) and the runner prints its tail on any
+  early exit. The next occurrence will document itself.
+
+### Verified on a real cloud pod
+
+- **The Linux recipe is now RunPod-verified, not just claimed.** The shipped
+  `linux_bootstrap.sh` was run from the public repo on a fresh RunPod community pod (RTX A4000,
+  Ubuntu 22.04.5): build ~3 minutes on datacenter cores, and the backend-verdict sidecar
+  confirmed the real GPU solver — `{"backend":"newton","degraded":false,"finalised":true}`.
+  Total verification cost: about four cents.
+- **Two cloud-pod traps the trip exposed, both now handled by the bootstrap:** (1) ML pod images
+  ship **two Pythons** — `python3` on PATH is the image's (3.11) while the engine links the
+  distro's (`libpython3.10`), so wheels installed with plain `python3 -m pip` land where the
+  embedded interpreter never looks. The gpu phase now reads `ldd bin/omnisim-bin` and installs
+  into the **linked** interpreter. (2) On a pristine machine, warp compiles its CUDA kernels on
+  first use — minutes, not seconds — so the smoke phase auto-retries once with a
+  kernel-compile-sized window instead of misreporting "no sidecar" as an ODE fallback. Also:
+  containers report the host's core count (112 on the pod), so the build's default job count is
+  now capped.
+
+### Documentation
+
+- Sidecar guidance corrected: ≥15 s on a fast disk, **≥45 s for cold loads on virtualized disks**
+  (WSL2, cloud pods) — and a missing sidecar on a short run proves nothing.
+- Linux runtime notes: Pillow for `/world/render_stats` (with the PEP-668 reality), ffmpeg for
+  movie encoding, the running-as-root warning, and honest cold-load expectations for
+  asset-heavy worlds on slow disks.
+
+## [v5.1.0] — 2026-07-12
+
+**The Linux release.** OmniSim now builds, runs, and drives Newton GPU physics on Linux — from
+the public repository, verified end-to-end (Ubuntu, RTX GPU): the engine builds in ~7 minutes,
+worlds load and step headless, and the backend-verdict sidecar confirms the real GPU solver
+drove the run: `{"backend":"newton","degraded":false,"finalised":true,"solver":"MuJoCo
+(mujoco_warp, WorldInfo.newtonSolver)"}`. A flagship locomotion demo (G1 box delivery — on the
+disclosed balance harness) ran end-to-end on Linux with its torch LSTM policy.
+
+There is no separate Linux engine: it turned out nothing in the physics code was ever gated to
+Windows. What stood between Linux users and a working simulator was a handful of small build and
+packaging defects, plus documentation that said — wrongly — that it could not work. Both are
+fixed.
+
+### Linux support
+
+- **Build from source works on Linux.** Five defects fixed: the Python-embed flags are now
+  discovered via `python3-config` instead of a hardcoded `python3.12` (builds against whatever
+  Python the distro ships); the Windows-only Newton runtime-bundle step is OS-guarded so
+  `make release` no longer dies after a successful link; the Qt installer survives PEP 668
+  (`externally-managed-environment`) on Ubuntu 24.04+; `WbSoundEngine.cpp` gained an include it
+  only received transitively on Windows; and every tracked `.sh` script now carries its
+  executable bit (57 files — `make` invokes several directly on Linux).
+- **One-command setup: [`scripts/install/linux_bootstrap.sh`](scripts/install/linux_bootstrap.sh).**
+  apt prerequisites → clone with submodules → `make release` (Qt 6.5.3 arrives automatically via
+  `aqtinstall` from Qt's own servers) → GPU wheels → an Xvfb smoke test that **hard-fails**
+  unless the Newton sidecar reports a non-degraded, finalised GPU run. This is the supported
+  recipe for cloud GPU pods (RunPod and similar Ubuntu + CUDA images).
+- **Newton on Linux needs no bundle.** The Windows runtime bundle is a Windows-specific
+  DLL-resolution mechanism; on Linux the engine's embedded interpreter resolves the **system**
+  `python3`, so `pip install torch warp-lang newton mujoco mujoco-warp` into the system
+  interpreter is the entire setup. ⚠️ A **venv is invisible** to the embedded interpreter —
+  installing the wheels there produces a silent ODE fallback. NVIDIA/CUDA GPU required for the
+  GPU solver.
+- **The runtime environment is now supplied automatically.** Invoking `bin/omnisim-bin` directly
+  on Linux used to abort with a Qt version clash (`version 'Qt_6.10' not found`) because the
+  launcher's `LD_LIBRARY_PATH` was bypassed. The headless runner, the agent harness and the
+  capture service now inject the correct Linux runtime env (`LD_LIBRARY_PATH`,
+  `QT_QPA_PLATFORM=xcb`, `WEBOTS_TMPDIR`, software-GL fallback) themselves. Xvfb remains
+  required for headless boxes — the engine creates a Qt/XCB context even with `--no-rendering`.
+- **Python controller spawning:** the engine now falls back to `python3` when a `runtime.ini`
+  asks for a bare `python` that does not exist (takes effect with the next engine rebuild; the
+  Linux dependency script also installs `python-is-python3` so current binaries work today).
+- **Every locomotion deploy demo now has a bash launcher.** The 14 `scripts/dev/run_*deploy*.ps1`
+  launchers and the flagship walker gained `.sh` siblings (the `.ps1` remain for Windows). The
+  ports are proven faithful — for all 15, the fully-assembled launch environment is identical
+  between the two — and live-verified on both platforms: on Windows (Go2 deploy, +25.4 m, no
+  fall) and **on Linux from the public repo** (Go2 with its ONNX policy active: **+85.5 m over
+  225 s sim, no fall**, Newton sidecar non-degraded). RL-residual demos on Linux additionally
+  need `onnxruntime` in the system Python (the bootstrap installs it).
+- **The RL trainers' early-stop watchdog works on Linux** (it was silently disarmed off Windows:
+  it read an MSYS-only `/proc` field and used `taskkill`; it now falls back to process-group
+  signals). Thirteen developer tools that hardcoded the Windows binary path now use the
+  cross-platform resolver.
+
+### Documentation
+
+- **The platform-support story is rewritten to match reality — in both directions.** The README
+  claimed Linux gets no Newton, no RL and no locomotion demos, and that "the demo launchers are
+  PowerShell"; the flagship demo launchers are bash, and Newton on Linux is now verified. In the
+  other direction, `system-requirements.md` still carried text inherited from upstream Webots
+  claiming OmniSim is "ensured to run" on Ubuntu and macOS — deleted. **macOS remains untested
+  and is documented as exactly that.** The quickstart gains a real Linux section.
+- Known caveat, stated plainly: **Ubuntu 22.04 / 24.04 are the recommended targets** (broadest
+  Python-wheel coverage for the GPU stack). Newer releases work when wheels for their Python
+  exist.
+
+## [v5.0.0] — 2026-07-11
+
+**The robot-learning release.** OmniSim gains a complete, robot-agnostic pipeline for
+*making a legged robot do a motion*: design a dynamically-feasible reference (a **ghost**),
+prove it feasible **before** training, learn to track it (**Shadowing**), package the result
+as a versioned **skill**, and compose skills into task sequences (**BATON**). Training moved
+**in-engine** — policies now train *through* `omnisim-bin`, so train == deploy bit-exact — and
+the cloud training path was **removed**: everything runs on the GPU you already own.
+
+This release supersedes **v4.5.0**, which was version-bumped but never published; all of its
+content ships here.
+
+> **A note on honesty, up front.** The humanoid results below are real but **assisted**: the
+> G1 walk, box-delivery, and turn demos run on a *visible balance harness* (a "puppet" rig)
+> that carries part of the robot's weight and stabilises its attitude. **A durable,
+> free-standing humanoid walk remains OPEN.** Every capability claim in this file is
+> caveated inline, and the single canonical per-robot answer to "is it actually done in
+> deploy?" always lives in
+> [docs/developer/rl-current-state.md](docs/developer/rl-current-state.md) — if any headline
+> here disagrees with that file, **that file is right**. See *Known limitations* at the end.
+
+~370 commits since v4.0.0.
+
+### ⚠️ Breaking changes
+
+- **The `cloud/` Modal-H100 training path is REMOVED.** Training is **in-engine and local by
+  policy**. The 16 Modal wrappers were thin subprocess shims over trainers that already ran
+  locally. Use [`projects/policies/training/run_walk_rl.sh`](projects/policies/training/run_walk_rl.sh)
+  (in-engine, train == deploy) or the standalone-but-still-local trainers in
+  `projects/policies/research/training/`. The `OMNISIM_MODAL_GPU` env var is dead.
+- **`projects/rl/` → `projects/policies/`** (685 files), with a `control` / `controllers` /
+  `worlds` split from `research/`. Update any external paths and imports.
+- **Robot removed:** an experimental humanoid model and its demo.
+- **Robot asset packages withdrawn pending confirmation of redistribution terms.** We audited the
+  provenance of every robot model we redistribute. A few carried no stated licence for their
+  source geometry. Rather than keep redistributing CAD whose terms we cannot evidence, those
+  packages and the demos that exist only to drive them are withdrawn from distribution until the
+  terms are confirmed in writing. The simulator, the arm bridge, the grasping stack and the URDF
+  importer are unaffected — point them at any URDF you have the rights to. We would rather ship
+  fewer demos than redistribute a manufacturer's CAD we cannot account for.
+- **Upstream licences now ship with the robots that need them.** The same audit found geometry we
+  redistribute under BSD-3 and NASA-1.3 whose licence text we were not reproducing — a real
+  compliance gap, not a formality. Each robot package that carries a third-party licence now ships
+  that licence verbatim beside its meshes, and `NOTICE` / `THIRD_PARTY_NOTICES.md` name the actual
+  licence and copyright holder for every one.
+- **Arms: the openly-licensed lineup is back.** v4.5.0 had narrowed the supported arms down to a
+  single vendor's. With that vendor's package now withheld (above), the **Universal Robots
+  UR3e / UR5e / UR10e** (BSD-3) are restored, along with their chat demos, the
+  `omnilink_multi_arm` world (3× UR5e), and the UR5e loader in `warehouse_logistics`. All three
+  are verified driving over the arm bridge (joint tracking to ~0.02–0.03 rad; DLS IK reaches a
+  Cartesian target to ~4.6 cm). Every arm OmniSim ships is now one whose redistribution terms we
+  can point at. *(The Franka Panda is restored in-tree but **not** shipped in v5.0.0: its URDF
+  declares no inertials, so the importer synthesises gram-scale links and the arm will not hold a
+  pose. It ships when it works.)* Robotiq / OnRobot / Schunk / vacuum / magnetic
+  grippers are unaffected. *(Carried over from the unreleased v4.5.0.)*
+- **`book_delivery` → `box_delivery`** across skill manifests, sequences, and demo scripts.
+- **Demos retired:** the arm `bin_grab` demo (a one-wall friction grasp is fundamentally marginal)
+  and the standalone construction-site demo + benchmark (the *environment* world is kept).
+- **The GUI now defaults to the dark Night theme** on all platforms.
+- **`run-world` gained a first-run conformance gate** — it can block an interactive launch on
+  FAIL. It fails *open*, and `OMNISIM_SKIP_CONFORMANCE=1` bypasses it.
+- **The controllers' `warmup_reload` helper is now a no-op** — the cold-first-load articulation
+  bug it worked around is fixed, so the startup reload is gone.
+
+### Highlights
+
+- **The three train→deploy gaps are CLOSED — train == deploy is now bit-exact.** The
+  discretization mismatch (the live engine steps 4×0.004 s; the trainer was doing 4×0.002 s),
+  the settle-and-go handoff, and a post-step joint-limit clamp were the last three. Result: a
+  durable straight real-foot G1 walk in the engine. v4.5.0 shipped this as ⚠️ OPEN.
+- **In-engine training is the flagship venue.** Policies train *through* `omnisim-bin`
+  (Newton / `mujoco_warp`), so there is no second physics stack to keep in sync. GPU-resident
+  in-engine PPO runs **~44× faster** than the previous path (~140–200 k env-steps/s sustained on a
+  laptop GPU, via zero-copy `wp.to_torch` + CUDA-graph capture).
+- **Shadowing** — the robot-agnostic motion method: a *generator* produces a
+  dynamically-feasible reference ("the ghost"), a *verifier* numerically certifies it
+  **before** any RL, and a *tracker* learns to follow it. The thesis: **reference feasibility
+  is the bottleneck** — so verify, then learn.
+  ([docs/developer/shadowing.md](docs/developer/shadowing.md))
+- **Ghost design formalised as gates.** Feasibility is now four checkable gates — kinematic
+  closure, COM support, force-wrench membership, and **PD-realizability** — and `ghost_synth`
+  builds ghosts where they hold **by construction**. The accompanying **corridor-vs-torque
+  law** (a tracking corridor must exceed τ_ff/kp or the reference is untrackable *by
+  construction*) retro-explains a long run of previously mysterious training failures.
+  ([docs/developer/ghost-design-rules.md](docs/developer/ghost-design-rules.md))
+- **The Skill Library** — the standard packaging of Shadowing + BATON. One versioned manifest
+  per skill binds its ghost, validator verdict, deploy env, champion checkpoint, and
+  provenance; `skill_lib.py` covers `list` / `preview` / `train` / `run` / `sequence` /
+  `verify-demos`. 10 skills across G1 / H1 / Go2 / Spot, 4 BATON sequences.
+  ([docs/developer/skill-library.md](docs/developer/skill-library.md))
+- **BATON policy switching** — composes specialist policies (walk / turn / carry / stand) into
+  task sequences with engineered handovers.
+- **First-party MCP server** ([`packages/omnisim-mcp/`](packages/omnisim-mcp/)) — a
+  dependency-free stdio JSON-RPC proxy to the `:6789` harness (14 tools), so Claude Desktop
+  and Cursor drive OmniSim natively.
+- **Newton is now honest about being Newton.** A silent Newton→ODE downgrade is **fatal**
+  instead of quiet, and the engine writes a race-free `<log>.newton.json` verdict sidecar at
+  world finalisation — its presence is proof Newton drove *that* run.
+
+### Robot learning — Shadowing, skills, BATON
+
+- **Skill Library** (`projects/policies/skills/`): manifests + `skill_lib.py`, cross-cadence
+  adapters, per-edge handovers, freeze, and cross-robot reuse. `verify-demos` asserts each
+  manifest reproduces its hand-written demo script **key-for-key on the assembled launch env**.
+- **BATON** sequences: `box_delivery`, `box_delivery_classic`, `walk_turn_walk`, `turn_solo`.
+  ⚠️ BATON's *thesis* — that switching specialists degrades more gracefully over a long
+  horizon than one distilled monolith — remains a **well-posed open hypothesis**; the
+  success-vs-horizon experiment is unrun. ([docs/developer/policy-switching.md](docs/developer/policy-switching.md))
+- **Ghost toolchain**: `ghost_synth`, `ghost_validator`, `ghost_doctor` (a prescriptive
+  classifier), `ghost_polish`, `ghost_close`, `ghost_funnel` (the gate-4 PD-realizability
+  funnel), `ghost_ff`, `ghost_topp`. The **WBMATCH** similarity metric reached v4 — an honest
+  *shape-only* ruler that no longer flatters a policy for tracking a corridor it was handed.
+- **`ghost_synth` motion library** — one method (plan the contacts, solve the base + joints),
+  one judge, generalising across **walk, squat, kneel, push-up, and 3 cm + 7 cm stairs**. It
+  also *measured* the quasi-static walking speed limit (vx ≈ 0.131 m/s), which retroactively
+  explained why an earlier "0.45 m/s" reference was only achievable on a crane.
+- **In-engine quad RL** — Go2 now trains *through* the engine with no MJCF reparse, so train ==
+  deploy bit-exact. On a **trainer-side batched eval** of the deploy-identical model (4096 envs):
+  **94.8 % never fell over 48 s, 16.6 m mean, 0.357 m·s⁻¹**; Spot smoke 69.5 %.
+  ⚠️ **That is a batched evaluation inside the trainer, not a live single-robot deploy run** — the
+  in-engine champions have not yet been given an equivalent live long-run. The live Newton deploy
+  walks on record are still the *standalone*-trained policies (Go2 **+86.7 m**, Spot +47.8 m,
+  B2 +110.7 m, 0 falls). ⚠️ B2 stiffness is **unreconciled**.
+- **Terrain-curriculum quad RL** — blind (observations unchanged), Spot clears 18 cm bumps and
+  rubble with 0 falls.
+- **Binary-level train↔deploy parity probe**, generalised robot-agnostically — all 6 legged
+  robots PASS.
+- **Unitree's own official G1 and H1 policies now run inside OmniSim**, which is where the
+  recorded reference ghost comes from.
+
+### Demos & worlds
+
+- ⭐ **The Decent Walker** — the flagship humanoid demo: the G1 walks the official Unitree gait
+  beside its ghost hologram, with natural thigh-clearing arm swing (LSTM + foresight champion,
+  WBMATCH4 **0.868** on the shape-only ruler). ⚠️ Runs on the **visible balance-harness puppet
+  rig** — an overhead support that carries part of the robot's weight and stabilises attitude.
+  **This is not yet a free-standing walk.** Known-open: live stride runs below the trainer.
+- ⭐ **Box delivery** (BATON) — the G1 walks to a cart, lifts a 1.5 kg box, carries it, sets it
+  down on a second cart, takes a real ~90° footwork corner, and walks away. **0 falls.**
+  ⚠️ Harnessed. ⚠️ **The carry is kinematic, not a grasp.** The box is a real rigid body under
+  gravity, but it is an ODE body while the robot runs on Newton — so hand↔box contact is
+  structurally impossible. During the carry the box is posed to the hand centroid each tick and
+  holds ~1 cm hand clearance by design: *the hands never touch it*. The payload is real to the
+  **policy** (it is the trained carry plant, `CARRY_PAYLOAD_KG`), and the locomotion, the corner
+  and the fall-free record are real. The grasp is not — see
+  [policy-switching.md](docs/developer/policy-switching.md).
+- ⭐ **Walk-turn-walk** — a genuine 90° footwork turn in sequence: **90.6–95.6° actual, 3/3,
+  0 falls**. ⚠️ Harnessed.
+- **G1 stair climb** — a full **5-step live climb**, and the one demo where **the legs do all the
+  *vertical* work** (`HARNESS_KZ=0`: no vertical crane assist). A companion demo climbs all five
+  treads and then holds a near-motionless stand on the top landing via a position-gated BATON
+  handover.
+  ⚠️ **The crane is off vertically, but not in attitude — and the champion leans on it.** Our own
+  motion-legitimacy verifier (which ships:
+  [`verify_motion_legitimacy.py`](projects/policies/training/verify_motion_legitimacy.py)) **FAILS**
+  this champion: the attitude springs sustain **|ty| ≈ 77.5 N·m on 77 % of climb ticks** (the crane
+  carries the lean), and its **knees contact the treads on 13.6 % of climb ticks**. The stand demo
+  passes roughly **1 run in 2** (retry on a fall). It clears the *kinematic* gates; it does not
+  clear the *dynamic* ones. Treat this as a promising result under scrutiny, **not a finished
+  demo**. Full write-up: [motion-legitimacy.md](docs/developer/motion-legitimacy.md).
+  ⚠️ **3 cm risers is the measured ceiling** for the stock-foot G1 — 4 cm degrades to ~2 steps and
+  5 cm to none. Taller risers need a foot-morphology change or a vertical assist.
+- **Ghost-follow holograms** — the ghost now renders the deploy's *active* reference
+  end-to-end through walk → turn → walk, plus dedicated "show" worlds.
+- **G1**: manipulation while standing, cube-defense stand, one-leg balance, deterministic squat
+  overlay, arm-motion skill.
+- ⚠️ **G1 army-crawl** — feasibility is a GO and the reference is designed, but it is **not a
+  working motion**: the 25 N·m arms are the wall.
+
+### Agent & bridge surface
+
+- **The arm bridge's real-hardware path is now a pluggable backend, not a hardcoded vendor.**
+  Drop a `<name>_backend.py` next to the controller and select it with
+  `--hardware-backend <name>` / `--hardware-ip <addr>` (or `OMNILINK_HARDWARE_BACKEND` /
+  `OMNILINK_HARDWARE_IP`); the bridge discovers it by module name against a small
+  `HardwareBackend` protocol (start/shutdown, status, joint + linear moves, home, grasp/release,
+  stop). With no backend installed the bridge is pure simulation and the option is not offered;
+  asking for a backend that is not installed fails loudly rather than silently running sim-only.
+  **Breaking:** the old vendor-specific spellings are gone — the hardware IP flag is now
+  `--hardware-backend`/`--hardware-ip`, the status route is `GET /hardware_status`, and the
+  per-vendor key in `/get_robot_state` and the robot-window payload is now `hardware` (carrying
+  the backend name). No backend ships in the public snapshot, so no published consumer breaks.
+- **The `/sim/events` stream no longer drowns itself.** A Newton registration census intended to
+  fire once per world build was re-firing every tick, so **~99 % of the `controller.log` traffic on
+  `GET /sim/events` was one repeated line** and real controller output was being dropped
+  (`dropped_log` in the hundreds of thousands on a long run). It now fires once per build, still
+  re-fires on reload, and stays silent for worlds with no Newton bodies. This was breaking the
+  exact HTTP-harness debugging loop [AGENTS.md](AGENTS.md) and [PROTOCOL.md](PROTOCOL.md) tell
+  agents to use.
+- **The in-app demo launcher no longer offers a button that cannot work.** The policy demos need a
+  deploy environment that only their shell script exports; their cards previously had a live
+  *Launch* button that loaded a bare world and left the robot lifeless. They now show the exact
+  command with a copy button instead.
+
+### Engine & physics
+
+- **Cross-tree contact — characterized, not solved.** `mujoco_warp`'s *island* path (active only
+  when a free prop exists — i.e. exactly when you try to grasp something) produces NaNs on the
+  first robot↔free-body contact. We now understand it and can reproduce it on demand: a box
+  *does* rise under real palm contact, but some runs still go non-finite, so **friction grasping
+  is parked**. The working pick-and-place path is a contact-free suction coupling instead.
+  This is a diagnosis, not a fix.
+- **No silent Newton→ODE fallback** — capability-gate downgrades, orphaned Newton joints, and
+  a MuJoCo→XPBD solver downgrade are now **fatal**. Escape hatches: `OMNISIM_ALLOW_ODE_FALLBACK`,
+  `OMNISIM_FORCE_ODE`.
+- **Newton verdict sidecar** — the engine writes `<log>.newton.json` at world finalisation, so
+  "did Newton actually drive this run?" is answerable without scraping logs (the old
+  log-scrape was fooled by large logs and could falsely report ODE).
+- **Newton compound-body inertia** corrected; degenerate welded-static and dynamic-bin inertias
+  de-degenerated (they were causing a contact drop / sink).
+- **Launch-flake fixed** — the Windows IPC pipe name was salted only by TCP port, so
+  back-to-back launches could cross-connect. Now folds in the PID: **105/105 launches connect
+  first-try** (was ~90 %).
+- `staticBase` robots were being welded at the origin instead of their spawn pose — fixed.
+- **G1 stand deploy observation bug** — the engine's angular velocity is a different frame and
+  scale than MuJoCo's `qvel`; using it raw caused a ~1.8 s deploy fall.
+
+### Performance
+
+- **GPU-resident in-engine PPO: ~44×** (~140–200 k env-steps/s sustained on a laptop RTX 5070 Ti;
+  ~218 k peak at K=2048).
+- **Realtime**: even `newtonSubsteps` re-enables CUDA-graph capture (0.25× → **1.16× realtime**);
+  forcing the wgpu/Vulkan main view takes the live GUI from ~0.4× to **~1.2× realtime**.
+- **Persistent-sim job server** — keeps one simulator alive across queued jobs: evaluations go
+  from 4–6 minutes to **9 seconds** (~30×).
+- Harness `render_stats` vectorized (**17×**).
+
+### Packaging, tooling & conformance
+
+- **`omnisim verify-install`** — a per-backend acceptance manifest with hard canaries and soft
+  physics bands, plus a fingerprint and an advisor. Wired into `run-world` as a first-run gate.
+- **Newton runtime version-parity guard** + CI test — the bundler was `pip install --upgrade`-ing
+  while the trainer pinned exact versions, so "bit-exact train == deploy" could silently rot.
+- **Reproducible Newton scaling benchmark**, replacing a deleted headline probe.
+- **Warp contact-kernel validation harness** — steps physics-only worlds on both `mujoco_warp`
+  and CPU `mj_step`. Tiers 1–2 are **clean (10/10 cells)**, which *rules out* the prop contact
+  kernels as the grasp defect.
+- **~1 GB of tracked training checkpoints purged** — only the referenced champions stay tracked,
+  enforced by a pre-push guard.
+- Agent runners consolidated onto a shared `OmniLinkAgentRunner` / `_lib` (−4.4 k LOC).
+
+### Documentation
+
+New: [`simulator-comparison.md`](docs/developer/simulator-comparison.md) (10 simulators, every
+claim marked verified / unaudited / vendor-claim, adversarially checked),
+[`ros2-integration.md`](docs/developer/ros2-integration.md) (**ROS 2 is an explicit non-goal** —
+with a working external-bridge recipe, and a pointer to Gazebo for ROS-centric work),
+[`skill-library.md`](docs/developer/skill-library.md),
+[`ghost-design-rules.md`](docs/developer/ghost-design-rules.md),
+[`policy-switching.md`](docs/developer/policy-switching.md),
+[`train-deploy-gap.md`](docs/developer/train-deploy-gap.md),
+[`closed-loop-chaos-diagnostic.md`](docs/developer/closed-loop-chaos-diagnostic.md) (classifies a
+train-vs-deploy divergence as BUG / CHAOS / MATCH before you theorise),
+[`install-conformance.md`](docs/developer/install-conformance.md), and the
+`projects/policies/training/` + `projects/policies/skills/` READMEs.
+
+The **Shadowing paper** ([`docs/developer/shadowing_paper/`](docs/developer/shadowing_paper/)) —
+the method writeup, published here for the first time. Every reported result is a real deploy
+rollout traceable to
+[rl-current-state.md](docs/developer/rl-current-state.md), and the G1 results state up front that
+they run on a partial-support balance harness.
+
+### Legal & licensing
+
+We audited the provenance of every robot model OmniSim redistributes, and fixed what the audit
+found. This was a real compliance gap, not paperwork.
+
+- **Upstream licence texts now ship with the geometry they cover**, as BSD-3 clause 1 and NOSA §3
+  require: **Unitree** G1 / H1 / Go2 / B2 (BSD-3), **Spot** (BSD-3, Clearpath), **Atlas** (BSD-3,
+  Robot Locomotion Group @ CSAIL), **Valkyrie** (NASA-1.3), **Universal Robots** UR3e / UR5e /
+  UR10e (BSD-3), **Franka Panda** (Apache-2.0, plus the upstream `NOTICE`). Previously we shipped
+  187 Unitree geometry files with no licence text at all.
+- **`NOTICE` and `THIRD_PARTY_NOTICES.md` rewritten** to name, per robot, the upstream URL, the
+  licence, the copyright holder, and the path to the licence text in this tree. **Spot and Atlas
+  leave the "unverified terms" carve-out** — both are cleanly BSD-3 (Spot's meshes were authored
+  by Clearpath, not supplied by Boston Dynamics). The carve-out is now **Valkyrie alone**, plus
+  the Code2000 fonts.
+- **Valkyrie is NASA-1.3 (NOSA)** — OSI-approved but GPL-incompatible and **not relicensable**,
+  and it obliges every redistributor to carry the agreement. Labelled accordingly.
+- **Universal Robots licenses its UR20-class meshes under separate, restrictive terms.** OmniSim
+  ships only the BSD-3 ur3e / ur5e / ur10e families. Do not add a UR20 without re-reading them.
+- **Spot renders textured again** — 13 of its meshes referenced a `spot_mat.png` we were not
+  shipping. It comes from the same BSD-3 package; it now ships.
+- **Trademarks** are used nominatively only. "TurtleBot" is a registered OSRF mark.
+
+### Known limitations (read before quoting any result)
+
+- **No durable free-standing humanoid walk *from a policy we trained*.** Our G1 walk / delivery /
+  turn demos run on a weight- and attitude-bearing balance harness; removing it is the open
+  problem. For calibration: **Unitree's own official G1/H1 policies, re-hosted unchanged in
+  OmniSim, walk free-standing with no harness** (G1: 33.7 m, 0 falls, 0.48 m/s). The engine
+  carries an unassisted humanoid walk — our *training* is what doesn't, yet.
+- **Stair climbing caps at 3 cm risers** on the stock-foot G1. The 7 cm ghost passes every
+  feasibility gate — but **gate-pass is not a climb**: no policy climbs 7 cm live; it plateaus
+  at ~2 of 5 steps against a propulsion wall.
+- **The stair champion does not pass our own dynamic audit.** The climb is legs-only *vertically*
+  (`HARNESS_KZ=0`), but the harness still has attitude authority, and
+  [`verify_motion_legitimacy.py`](projects/policies/training/verify_motion_legitimacy.py) — which
+  we ship — **FAILS** the champion: the attitude springs sustain ~77.5 N·m on 77 % of climb ticks,
+  and its knees contact the treads on 13.6 % of them. It clears the kinematic gates and not the
+  dynamic ones. We built the verifier, it caught our own demo, and we are shipping both.
+- **We do not have a contact-physics grasp.** Friction grasping goes non-finite on palm contact
+  (`mujoco_warp`'s island path) and is **parked**. What works is a *contact-free* suction coupling,
+  and the G1 box-delivery carry is **kinematic** — the box is posed to the hand each tick with
+  ~1 cm clearance; the hands never touch it. Verified pick-and-place exists on the arm side; a
+  humanoid that closes its fingers on an object and holds it by friction does not.
+- **The arm demos are pick-and-place, not dexterous manipulation.** The arms that ship (UR3e /
+  UR5e / UR10e, Franka Panda) do position control, IK and suction/parallel-jaw picking. There is
+  no in-hand manipulation, no force control, and — per the previous point — no friction grasp.
+- **BATON's switching advantage is unproven** — an open hypothesis, not a result.
+- **B2 quadruped stiffness is unreconciled.**
+- **Newton physics, the RL pipeline and every legged demo are Windows + NVIDIA only** today.
+  Linux/macOS run the simulator on the ODE fallback. See the platform-support table in the README.
+- **Sim-to-real is unproven.** OmniSim demonstrates train == deploy parity *in-engine*. That is
+  not the same as zero-shot transfer to physical hardware, and **no policy trained in OmniSim has
+  been validated on physical hardware.**
+
+---
+
+## [v4.5.0] — 2026-06-24 *(version-bumped but NEVER PUBLISHED — its content ships in v5.0.0 above; retained for provenance)*
+
+The **Shadowing** release. This cycle is mostly a new, robot-agnostic motion-control
+*method* and the demos built on it, plus more Unitree robots. It also **narrows the
+supported arm lineup to a single 6-DOF cobot arm** (removing the Universal Robots and
+Franka Emika Panda arms — see Removed) and adds a reusable **STEP/CAD → URDF converter**. A note on honesty up front: much of the motion/RL work
+below is **sim-validated with an open deploy gap**, flagged inline. The single
+canonical, per-robot "is it actually done in deploy?" answer always lives in
+[docs/developer/rl-current-state.md](docs/developer/rl-current-state.md); if any
+headline here disagrees with that file, that file is right. ~340 commits since v4.0.0.
+
+### Highlights
+- **Shadowing** (the headline; formerly "ghost-tracking") — a robot-agnostic motion
+  pipeline. A *generator* (trajectory optimization) produces a dynamically-feasible
+  reference (the "ghost"); a *verifier* numerically certifies feasibility **before**
+  any RL; an RL *tracker* then learns to follow ("shadow") it through to deploy.
+  "Planning describes, control solves." Method writeup + research-paper scaffold:
+  [docs/developer/shadowing.md](docs/developer/shadowing.md).
+- **Arm toss-to-place via Shadowing** — the arm *throws* a cube into a bin **beyond
+  its reach** (impossible to carry or solve with IK), landing ~1.5 cm from centre;
+  full generate → verify → deploy in OmniSim Newton. The verifier *rejecting* too-far
+  bins (the feasibility frontier) is the point of the demo.
+- **More Unitree robots** — Unitree **Go2** walks in Newton deploy via the Spot
+  residual stack (plus a retarget recipe for other Unitree quadrupeds); Unitree
+  **B2** get-up (rise) via Shadowing.
+
+### Demos & worlds
+- **Arm toss-to-place** and **arm throw-and-catch** — flagship Shadowing
+  manipulation demos.
+- **Spot velocity-conditioned walk / stop / walk** — one policy takes a commanded
+  speed (including 0 = stop); walks, stops, then resumes. Deploy verdict in
+  rl-current-state.md.
+- **G1 stand-and-wave**, **G1 sit→stand→sit**, **seated G1 arm-mimic** — Shadowing
+  test-beds on the 23-DOF humanoid; sim-validated. On-screen deploy of a *stationary*
+  full-body stand remains an open project gap (walking deploys; a static full-body
+  stand does not yet).
+- **Hill-walk** ghost pipeline for Spot + B2 (gait pitched to the incline, with a
+  live preview); the RL tracker is still blocked at the flat→ramp transition.
+
+### Robots & PROTOs
+- Unitree **Go2** (walk); Unitree **B2** (walk + get-up scaffolding). Retarget recipe
+  for additional Unitree quadrupeds (Go1 / A1 / Aliengo / B1).
+- **`scripts/dev/step_to_urdf.py`** — a reusable STEP/STP → URDF converter (tessellate →
+  colour-split → URDF; doc: [docs/developer/step-to-urdf.md](docs/developer/step-to-urdf.md)).
+  Turns any CAD assembly into a simulatable robot.
+
+### Reinforcement learning
+- **Shadowing realized end-to-end** (generator + verifier + tracker) on the arm
+  toss, and documented as the canonical recipe.
+- **Spot** velocity-conditioned walk/stop/walk; **Go2** walk; **B2** rise — see
+  rl-current-state.md for the honest deploy verdict on each.
+- ⚠️ A **durable G1 humanoid deploy walk remains OPEN**; the G1 Shadowing demos
+  (sit-stand, stand-and-wave) are sim-validated, with the on-screen full-body-stand
+  deploy gap noted above.
+- **H1 + Valkyrie walking shadows** — feasible walking references (designed +
+  ghost-verified) for the Unitree **H1** (5-DOF leg) and NASA **Valkyrie** (130 kg,
+  6-DOF leg), plus an **H1 Phase-2 deploy-physics fine-tune trainer** (batched MuJoCo
+  solver). ⚠️ sim-validated; the RL tracker that closes the sim-to-deploy gap is
+  pending — see rl-current-state.md.
+
+### Removed
+- **Universal Robots (UR3e / UR5e / UR10e) and the Franka Emika Panda arms** — OmniSim's
+  manipulator lineup is narrowed to a **single 6-DOF cobot arm**. This
+  removes the `projects/robots/universal_robots/` and `projects/robots/franka_emika/`
+  asset packages; the `omnilink_ur3e` / `omnilink_ur5e` / `omnilink_ur10e` /
+  `omnilink_panda` chat demos; the `omnilink_multi_arm` (3× UR5e) world and its
+  `OmniSim-Foreman` agent template; the UR5e-specific controllers (`ur5e_omnilink_bridge`,
+  `ur5e_ik_slave`, `ur5e_teleop`); and the `panda_hand` gripper preset. The
+  `omnilink_arm_bridge` arm registry now contains a single arm. The `warehouse_logistics`
+  flagship loses its dock-side UR5e Loader (the Warehouse Foreman now runs the mission
+  Picker-only), and the `Axis` control agent is re-pointed to that arm. The Robotiq /
+  OnRobot / Schunk / vacuum / magnetic grippers are unaffected.
+- **Construction-site demo + benchmark** — the standalone construction-site demo and its
+  benchmark were removed; the construction-site *environment* world is kept for reuse.
+
+### Fixed
+- **Free-body velocity writes under Newton** — `node.setVelocity()` on a *free*
+  (non-articulated) body was a no-op under the Newton/MuJoCo backend (it wrote the
+  body twist instead of the free joint's `joint_qd`); fixed so Supervisor velocity
+  sets on free bodies take effect. This is what makes the toss release-velocity land.
+
+### Documentation
+- [docs/developer/shadowing.md](docs/developer/shadowing.md) — the Shadowing method +
+  paper scaffold.
+- [docs/developer/rl-current-state.md](docs/developer/rl-current-state.md) consolidated
+  as the single canonical RL status; the v4.0.0 RL headlines were corrected against it
+  (see the **Errata** in the v4.0.0 section below).
+- **`CLAUDE.md`** added at the repo root (a one-line `@AGENTS.md` import) so Claude
+  Code loads the same project instructions every other agent already reads from
+  `AGENTS.md` — no duplicated content, other tools unaffected.
+
+### Build / packaging
+- Newton runtime bundle size documented consistently as **~600 MB** (the CHANGELOG and
+  the Makefile comment previously said ~450 MB).
+
+---
+
+## [v4.0.0] — 2026-06-12
+
+The engine flips and the walking release. **Newton becomes the default
+physics solver** (`physicsBackend "auto"` resolves to Newton; the build
+ships `OMNISIM_WITH_NEWTON=ON`); the wgpu render arm reaches its
+architectural baseline and is compiled in by default, but **WREN remains
+the runtime default main-view renderer** — the Phase ζ flip is deferred
+because wgpu is not yet a feature superset of WREN. `OMNISIM_LEGACY=1`
+demonstrably reverts the whole stack to ODE + WREN. On top of those
+arms: **G1 walks 212 m / 10 min in deploy with zero falls** (mathematical
+foot-space planner + IK + residual RL); the first Newton-native Spot
+walker walks STRAIGHT with locked heading; the **AnyPick Line** demo
+sorts mixed parts with a learned ONNX classifier; **Omni Quest** routes
+a Husky across the whole city via an OpenStreetMap-derived sidewalk
+graph and a cost-optimal A* router; **The Living City** ships as a
+generator-driven 4×4 urban grid; Open Robot Combat (ORC) and arm
+bin-picking land as polished demos. 652 commits since v3.0.0.
+
+> **Errata (updated 2026-06-23):** three reinforcement-learning headlines in this
+> v4.0.0 entry were later found to overstate the *deploy* result. The honest,
+> canonical per-robot status is
+> [docs/developer/rl-current-state.md](docs/developer/rl-current-state.md) — where it
+> disagrees with the bullets below, it is right.
+> - **G1 walk** — "G1 walks 212 m / 10 min, zero falls" does **not reproduce in
+>   deploy** (that policy topples ~1 s). **No from-scratch G1 policy walks durably
+>   free-standing**; the deployed ones topple in ~1.3–1.7 s, and the good-looking G1
+>   gait is harness-supported. A durable free-standing deploy walk is **still open**.
+>   (Later figures quoting a "finite ~34 s bout" are also not reproducible — that
+>   checkpoint is absent from the repo. Quote no G1 walk distance from this section.)
+> - **G1 stand** — the deploy stand is real, but it is solved by a **deterministic
+>   classical pose (statics), NOT RL**; the heavy-DR RL residual actually
+>   *destabilises* it (~2.4 s vs 12 s+ for the pure pose).
+> - **Spot "walks straight under Newton"** — under **Newton** the chassis tips (roll
+>   instability); at v4.0.0 Spot walked straight only under **forced ODE**, and even
+>   there the learned residual was a *passenger* (≈ the same distance with no policy
+>   at all). Spot/Newton walking improved in later cycles — see the v4.5 notes and
+>   rl-current-state.md for current status.
+
+### Breaking changes
+
+- **`OMNISIM_WITH_NEWTON` defaults to ON.** The build links the Newton
+  XPBD solver by default. Distributions that need the old behavior must
+  build with `OMNISIM_WITH_NEWTON=OFF` explicitly. **Source builds also
+  need the Newton Python runtime** (`newton`, `warp`) on the embedded
+  CPython's `sys.path` — run `make -C src/omnisim bundle-newton-runtime`
+  to vendor it next to the binary (one-time, ~600 MB). Without it,
+  worlds silently fall back to ODE; confirm Newton is live via the
+  `[WbNewtonBackend]` line in startup log. Release installers ship the
+  runtime pre-bundled. See
+  [docs/developer/newton-runtime-bundle.md](docs/developer/newton-runtime-bundle.md).
+- **`Solid.physicsBackend "auto"` resolves to Newton.** Worlds that
+  depend on ODE-specific contact behavior must pin `physicsBackend
+  "ode"` on the Solid (or via the world template). The capability gate
+  auto-falls-back to ODE for Newton-unsupported features (e.g. mixed
+  hinge+ball articulations) and warns; check `omnisim_log.txt`.
+- **`OMNISIM_WITH_VULKAN` defaults to ON** (the build flag that gates
+  the wgpu render arm). Builders without a `wgpu-native` toolchain must
+  pass `OMNISIM_WITH_VULKAN=OFF` explicitly. **The runtime default
+  main-view renderer remains WREN** — wgpu is compiled in but opt-in
+  per world via `Viewpoint.renderBackend "wgpu"` (or test-only
+  `OMNISIM_WGPU_MAINVIEW_FORCE=1`). The Phase ζ default flip is
+  deferred because wgpu is not yet a feature superset of WREN. See
+  [docs/developer/wgpu-renderer-status.md](docs/developer/wgpu-renderer-status.md).
+  In short, the v4 engine defaults are **Newton physics + WREN
+  rendering**.
+- **`physicsBackend` ancestor resolution is now strict.** An explicit
+  ancestor backend governs descendant `"auto"` — previously articulation
+  could split solvers and leave sensors frozen. Worlds that relied on
+  the loose behavior may need an explicit per-Solid override.
+- **The full-range revolute importer reclassification.** URDF joints
+  with a full ±2π range were previously misclassified as velocity wheels
+  under Newton; they now register as revolutes. Worlds whose behavior
+  depended on the misclassification need to be re-tuned.
+- **`OMNISIM_FORCE_ODE=1`** is the new escape hatch for ODE-only
+  determinism tests on a Newton-ON build. `OMNISIM_LEGACY=1` reverts
+  both physics *and* rendering to the legacy ODE+WREN combo and is the
+  documented full-stack rollback.
+- **Sponsor button + funding wiring.** A repository-level Sponsorships
+  toggle is now expected; `SPONSORS.md` auto-refreshes daily via a
+  GitHub Action against the Sponsors API.
+
+### Headlines (new since v3.0.0)
+
+- **G1 humanoid WALKS in deploy** — `+212 m / 10 min, zero falls` _(⚠️ does not
+  reproduce in deploy — see Errata above)_ via a mathematical human-gait model (foot-space planner + IK + residual
+  RL on top). Earlier in the cycle: G1 STANDS in deploy; then G1 walks
+  the platform `+25.9 m / 68.5 s, zero falls`; then full-body 23-DOF
+  walk with natural arm swing. The deploy bridge is 56× faster than
+  the first cut (`0.08× → 4.5× realtime`); the previous bottleneck was
+  launch/sync, not the solver.
+- **AnyPick Line** — a perception-driven, learned-classification
+  end-of-arm-tool bin-picking line. L-conveyor feeds yawed bins of
+  mixed parts; the arm sorts with a 200 KB ONNX classifier (gear / bar /
+  T-bracket / tube + a model-free unknown lane). 5-seed reliability
+  sweep: 5/5 PASS, 96% emptied / 92% sorted. Cycle time `318 s → 168 s`
+  for 18 parts (1.9×). Breakable suction (shear budget), overlapped
+  bin staging, contact-honest vacuum (no magnet grabs), strict
+  top-down tray placement.
+- **Omni Quest full-city navigator** — Husky routes the whole road
+  grid via `build_city_graph` (OpenStreetMap → sidewalk graph derived
+  from the road grid) and a general cost-optimal A* router with faster
+  reroute. A learned free-space segmenter transfers sim→real (ML
+  perception loop), and a histogram-match adaptation closes the
+  camera sim-to-real gap by 96%. Stereo cameras bumped 128×96 →
+  256×192 to close the structural sim-to-real gap. A Locomotion
+  actuation seam (twist commands, not wheel velocities) makes the
+  algorithm cross-platform (Husky + Jackal, same code).
+- **Spot deploy hardened** — six root causes fixed across trainer /
+  eval / deploy; Spot now walks with LOCKED heading (gait yaw-steering
+  fix + env-port self-collision deadlock fix).
+- **city_traffic perf 3×** — `0.34× → 1.0× realtime` end-to-end on
+  the showcase city.
+- **All RL worlds migrated to Newton** — no ODE stragglers; robot-
+  combat demos migrated too; the arm assembly-line demo retired.
+
+### Engine architecture (the migration baseline lands)
+
+- **`architectural-baseline-v1` tag** on commit `bfbe1262` — both arms
+  of the engine migration are *structurally* done; the runtime default
+  flip for rendering (Phase ζ) is deferred (see
+  [wgpu-renderer-status.md](docs/developer/wgpu-renderer-status.md)).
+- **`OMNISIM_LEGACY=1` reversibility proven** via `scripts/dev/
+  reversibility_check.py` + `OMNISIM_PROBE_BACKENDS` — flipping the
+  knob restores ODE+WREN end-to-end.
+- **P1.6 joint-op widening COMPLETE** — hinge angle reads, slider +
+  AMotor reads, user-defined force/torque writes, per-step
+  `setParam(FMax, Velocity)`, joint enable/disable lifecycle,
+  world-load `setParam` family, Hinge2 + Ball `setParam`. WbSolid is
+  fully migrated off direct ODE joint ops.
+- **Unified engine plan** — the five rendering plans and six physics
+  plans were consolidated into a single canonical
+  [engine-migration-plan.md](docs/developer/engine-migration-plan.md).
+- **Default-flip migration framework** — Stage 0 (escape hatches +
+  dual-backend oracle + physics CI gate via invariants), Stage 1
+  (capability-gate auto→ODE for Newton-unsupported features), Stage 2
+  (Newton safe-default base guard + `WorldInfo.substeps`/`statics`),
+  Stage 3 (Newton build default flips ON), Phase D FIRE (Solid.wrl +
+  Robot.wrl `physicsBackend` default → `"auto"`).
+- **`WorldInfo.defaultPhysicsBackend` / `defaultRenderBackend`** —
+  pin a whole world to a specific backend pair without touching every
+  Solid/Camera.
+- **Symmetric legacy escape hatches** — `OMNISIM_FORCE_ODE`,
+  `OMNISIM_FORCE_WREN`, `OMNISIM_LEGACY` (sets both).
+- **Multi-session migration plan** — parallel-lanes split for engine
+  work spread across sessions, with sanctioned isolated git worktrees
+  and atomic path-scoped commits.
+
+### Rendering (wgpu — the new render arm, opt-in)
+
+- **wgpu architectural baseline COMPLETE** — A1/A2/B1/B2/B4/C1/C2 all
+  signed off. The `WbRenderBackend` C2 surface is final; the
+  `WbVulkanBackend` (a thin shim) routes through the wgpu pane.
+- **wgpu beats WREN on the city benchmark.** Quality gate at 65%
+  within-tolerance (gate threshold: 55%); 2.7× faster main view via
+  draw-list and bind-group caches + async pipelined readback.
+- **Phase ζ runtime default flip DEFERRED.** WREN remains the default
+  main-view renderer; wgpu opt-in via `Viewpoint.renderBackend "wgpu"`
+  or `OMNISIM_WGPU_MAINVIEW_FORCE=1`. Decision recorded
+  2026-06-11.
+- **Native window-swap** — wgpu presentation for the main view via the
+  native swapchain; non-sRGB swapchain fix kills the double-gamma
+  washout on window swap; Mailbox present for frame pacing.
+- **Reversed-Z depth** in the wgpu main view — kills far-field
+  z-fighting (city orbit distance).
+- **Authored near-plane** — eliminates road z-fighting at orbit
+  distance.
+- **SSAO** in the wgpu main view — contact darkening with depth weight.
+- **Bloom** post-process in the wgpu main view.
+- **HDR + AgX tonemap infrastructure** for the main view (opt-in via
+  `OMNISIM_WGPU_AGX`).
+- **Distance fog + anisotropic filtering** in the wgpu main view;
+  linear-space fog composition fixes the zoom-out fade; WREN-exact fog
+  curve restores distant street/grass colour.
+- **Camera-following fitted shadow frustum** — 4× near-shadow density
+  on the same atlas; city-scale shadow frustum widened (12 m → 90 m
+  half-extent, light back 130 m).
+- **Main view un-gated** — `renderBackend "wgpu"` renders live (3c-B);
+  the offscreen → GL blit path landed first, then the surface path
+  superseded it (Option B interop ruled infeasible on pinned
+  wgpu-native v29).
+- **Material fidelity ladder** — albedo, roughness, metalness, normal
+  maps; Cook-Torrance GGX specular BRDF; sRGB color management on lit
+  shaders; specular highlight and worldPos plumbing landed via T1.1.
+- **AgX filmic tonemap** ported to engine WGSL with pre-tonemap
+  exposure, emissive HDR source, and a golden-image regression gate.
+- **CSM cascaded shadow maps + PCF** (T1.2) — per-cascade
+  orthographic light viewProjs, clip-depth shadow shader, shadow-pipeline
+  3-binding group, two-pass shadowed render method, 3×3 percentage-closer
+  filtering, multi-cascade receiver shader. Soft shadow edges observed;
+  cross-object cast shadow verified by controlled A/B.
+- **TAA** (T1.4) — sub-pixel Halton jitter + ping-pong history
+  accumulator + temporal-resolve pass; `OMNISIM_PROBE_TAA_JITTER` /
+  `OMNISIM_PROBE_TAA` probes.
+- **Distance fog** (T1.3) — analytic distance-fog resolve;
+  `OMNISIM_PROBE_FOG`.
+- **Hemisphere-IBL ambient** (T1.x) — world-general hemisphere ambient
+  in the wgpu main view + no-reference quality measure.
+- **Atmospheric sky + day/night** in the wgpu main view.
+- **Emissive term** in the wgpu textured-shadow path — city lights at
+  night.
+- **Soft shadows** — natural wgpu shadows with contact bias, 5×5 PCF,
+  strength 0.8.
+- **MSAA 4×** in the textured-shadowed pass.
+- **wgpu sensor family** (R5) — RangeFinder (R32Float real-meters
+  depth), Camera (sRGB sensor output kept linear), Lidar
+  (single-layer → multi-layer → wide-FOV → multi-frustum → tilt →
+  rotating-head → wide-FOV rotating). All with regression guards.
+- **3c-A interaction kit** — picking, selection highlight, line +
+  wireframe pipeline (bounding objects, COM, contact points, joint
+  axes, surface normals, lidar rays, camera/sensor view frustums),
+  translate / rotate / scale gizmos with hit-test drag, distance-scaled
+  handles, depth-independent always-on-top markers, two-batch live-pane
+  overlays, full-screen overlay compositing, screenshot pipeline,
+  per-pixel roughness map, support polygon overlay.
+- **Newton → wgpu interop** demonstrated end-to-end (Phase δ) — bulk
+  Newton body-translation snapshot API feeds a wgpu storage-buffer
+  instanced draw.
+- **wgpu-native v29 integration** — sync-callback fix; LIBS-not-LFLAGS
+  link fix; `OMNISIM_PROBE_WGPU` smoke knob; on-screen window present;
+  texture cache LRU cap + path-keyed dedup.
+- **R3.x runtime-verified path** — vertex/uniform/bind-group/pipeline-
+  layout path; mesh cache + vertex buffer pipeline; texture bridge with
+  cache + sampler + textured pipeline; QImage → wgpu texture adapter;
+  golden-image regression harness; `WrStaticMesh → wgpu` byte-stream
+  adapter; `WbCamera` routes through `WbWgpuRenderTarget`.
+- **WREN → engine bridge** — `WbCamera` migrated onto the shared
+  `WbWgpuSceneRenderer`; collect articulated-robot geometry (joints +
+  CadShape) in the main view; WREN mesh-readback validation + plain-
+  Appearance fallback in the wgpu collector.
+
+### CUDA / physics (Newton — the new default)
+
+- **Phase D FIRE** — `Solid.wrl` + `Robot.wrl` `physicsBackend`
+  default flipped to `"auto"`. Worlds without an explicit backend now
+  run on Newton.
+- **W-series native primitives** — native plane collision (W1.1),
+  native cylinder as oriented capsule (W1.2), native triangle-mesh
+  collision (W1), Hinge2 2-DoF support (W2), ball/spherical joint (W2.2),
+  external force/torque injection (W3.1 spine), mid-step body velocity
+  sets (W3.2), supervisor force/torque API routed to Newton.
+- **Native contact readback (W4)** — `get_contacts()` verified
+  in-binary; C++ contact accessor + native-vs-ODE comparison harness;
+  native contacts feed the supervisor API (verified 0 → 4 transitions);
+  native contacts REPLACE the ODE source for multi-body verified.
+- **Coverage meter (N-MEASURE)** — Newton-coverage dashboard; current
+  reading ~60% of the ODE feature surface.
+- **Real per-contact penetration depth** — `ContactPoint.depth`; the
+  damage subsystem can opt in via `cp.depth` scoring (`L4`).
+- **Arm friction grasp under Newton** via `SolverMuJoCo` — pick-place
+  works on Newton (commit `6beae669`).
+- **Newton actuates `staticBase` arms** (pin base, fixed-joint root);
+  Newton unwraps Shape `boundingObject`s (no more `r=0.12` placeholder);
+  prismatic joints + effort-scaled position gains; joint sensors read
+  live angle (eval_ik under XPBD).
+- **MuJoCo solver-stability engine knobs** — `OMNISIM_NEWTON_SUBSTEPS`
+  fixes XPBD NaN at high drive speed; `OMNISIM_DAMAGE_VEL_SMOOTH`
+  de-jitters contact velocity (57k → 58 events).
+- **`OMNISIM_NEWTON_MJWARP`** — deploy via mujoco_warp (GPU) vs CPU
+  mj_step; seed-rebuild uses the deploy engine, not hardcoded CPU.
+- **statics-on-Newton dispatch (P8)** — top-level colliders register
+  as Newton static bodies (opt-in); fixes Newton chassis-freeze caused
+  by static furniture wrongly getting dynamic bodies.
+- **Control-mode-aware joint ke/kd** — restores legged position-hold
+  (G1 stand regression fix).
+- **Articulation single-solver rule** — explicit ancestor backend
+  governs descendant `"auto"`; fixes Spot frozen-sensor regression.
+- **Rescue full-range revolute arms** from velocity-wheel
+  misclassification (the `<rest>` trick generalized).
+- **Multi-husky world-load hang fixed** — WbLog message accumulation
+  was the culprit.
+- **Newton 1.2.0 stable installed and verified** — Phase D gate #2 met.
+- **Newton runtime bundling** — `bundle-newton-runtime` make target
+  + warn at package time if unbundled.
+- **Rolling-friction knob** — `OMNISIM_NEWTON_ROLL_MU` (AnyPick tubes
+  stop rolling under it).
+- **World-reload singleton teardown** — world reload silently dropped
+  robots to ODE because the Newton backend singleton wasn't torn down.
+  Fixed.
+- **Collide-skip perf restored** — earlier exoneration audit confirmed
+  it; restoring it brings back the throughput.
+- **G1 walk deploy perf 56×** — `0.08× → 4.5× realtime`. The bridge
+  was launch/sync-bound, not the solver.
+
+### Reinforcement learning (humanoid + manipulation)
+
+- **G1 WALKS in deploy — HUMAN GAIT.** _(⚠️ Corrected: does not reproduce in
+  deploy — see Errata above.)_ `+212 m / 10 min, zero falls` in deploy. Recipe: mathematical foot-space planner + IK +
+  residual RL on top, gait-v2 levers, the four launch fixes, and the
+  deploy-gap ledger. Earlier in the cycle: G1 walks the platform
+  (`+25.9 m / 68.5 s, zero falls`), G1 walks with arms (full-body
+  23-DOF deploy), G1 walks with natural ARM SWING.
+- **G1 humanoid (Unitree, 23-DOF) stands in deploy.** _(⚠️ This is a deterministic
+  classical pose — statics, not RL; see Errata above.)_ First stable
+  humanoid deploy stand on OmniSim. Recipe: heavy domain randomization,
+  train on Newton-exact MJCF, deploy with stiff PD + planted feet +
+  tuned CoM/ankle PD. The root cause of the original deploy gap was
+  forward CoM + destabilising ankle PD, not a sim-to-sim gap.
+- **GPU-native G1 trainer** — 5 stacked speedups vs the prior version;
+  GPU mujoco_warp residual standing trainer.
+- **Active capture-point balance law** for G1 deploy; deterministic
+  G1 balancer prototypes (Phase A validation log).
+- **Atlas RL pipeline** — port G1 stand recipe to Atlas; baseline-
+  equivalent stand policy + DR curriculum.
+- **Trainer initial DR** — base-tilt and base-velocity init randomization
+  (`--dr-init-tilt-band` / `--dr-init-vel-band`).
+- **Canonical two-layer control architecture** — deterministic
+  controller + RL residual; documented in [docs/developer/](docs/developer/).
+- **Sim-to-deploy gap closing** — three deploy obs-frame fixes for
+  Newton; deploy obs feeds body-frame ang-vel to match the trainer.
+- **First Newton-native Spot walker** _(⚠️ see Errata above: under Newton the chassis
+  tips; straight-line walking was forced-ODE only at v4.0.0)_ — `spot_residual_main` walks
+  STRAIGHT under Newton via the model+residual recipe (analytic CPG
+  prior + learned residual correction), with heading + steer-to-
+  centreline hold for path tracking. Six root causes fixed across
+  trainer / eval / deploy; gait yaw-steering fix; env-port
+  self-collision deadlock fix; Spot walks with LOCKED heading.
+- **All RL worlds migrated to Newton** — no ODE stragglers left.
+- **Arm bin-picking journey** — friction grasp under Newton; suction
+  end-effector empties dense bin 36/36 via grab+shake singulation;
+  tilt-and-pour bin emptying; colour-sort 36 cubes into trays; real
+  collider walls + 18-part pile; camera-driven randomly-filled bin
+  routine; residual-RL grasp layer.
+- **Manipulation push/declutter exploration** — residual lifts
+  emptying 15 → 18 cubes; pushing capped by gripper geometry.
+
+### Demos & worlds
+
+- **The Living City** (`showcase/city_traffic.omniworld`) — 4×4 generator-
+  driven urban grid: 48 cars routing with right-turns + 2-phase signals,
+  36 pedestrians on zebra crossings, wall-to-wall mixed-use blocks,
+  shops and restaurants with cafe seating, central park and landmarks,
+  city bus that pulls up at stops, day/night cycle with a lit-up night.
+  Regenerable via [`scripts/dev/gen_city_traffic.py`](scripts/dev/gen_city_traffic.py)
+  + `city_grid.json`.
+- **`environments/city.omniworld`** — mixed urban street block as a default
+  environment biome; `Car.proto` + parked/queued fleet.
+- **Omni Quest** (`projects/omni_quest/`) — outdoor GPS+camera nav:
+  M1 GPS waypoints, off-road course (rough terrain + obstacle avoidance),
+  real camera-based obstacle avoidance (M3), cross-platform navigation
+  (Husky + Jackal, same algorithm), interacting swarm, pedestrian
+  sidewalk navigation, stereo-camera + GPS local planner, OpenStreetMap
+  → routable walking graph, KITTI stereo + GPS + IMU sensor adapter,
+  native EKF state estimator, deploy-with-reroute live in the city.
+- **G1 deploy worlds** — `rl/g1_stand_deploy.omniworld`,
+  `rl/g1_stand_arms_deploy.omniworld`.
+- **Spot Newton deploys** — `rl/spot_residual_deploy_newton.omniworld` (+
+  perturb variant); the model+residual recipe live.
+- **Open Robot Combat (ORC)** — `robot_combat/orc/orc_open_field.omniworld`
+  (2v2), `orc_forest_war.omniworld` (3v3 across a 40 m wooded battlefield),
+  `orc_queen_defense.omniworld` (protect-the-queen mode); 20v20 verified
+  end-to-end through the harness.
+- **BattleBox** — contact-point-gated damage, physical damage +
+  immobilization win condition, loud winner banner; tribute matches
+  (Hydra vs Gravedigger flipper-vs-spinner, Gravedigger vs BiteForce
+  heavyweight, --weapon-mode pulse for flippers).
+- **Arm bin-pick worlds** — dense bin emptying, suction + grab/shake,
+  tilt + pour, colour sort, robot-tilts-bin demo.
+- **AnyPick Line** — perception-driven sorting line. Shape-agnostic
+  suction bin picking + shape sort for the arm; L-conveyor feeds yawed
+  bins of mixed parts (18/18 sorted); LEARNED part recognition via a
+  200 KB ONNX classifier (gear / bar / T-bracket / tube + a model-free
+  unknown lane). Reliability sweep: 5 seeds, 5/5 PASS, 96% emptied /
+  92% sorted. Cycle time 318 s → 168 s (1.9×). BREAKABLE suction (seal
+  has a shear budget). Overlapped flow (next bin stages during
+  picking). Contact-honest vacuum (no magnet grabs). Strict top-down
+  tray placement (no joint-arc swing). Containment (no part ever
+  falls out). Sticky-gum gripper + model-free unknown-part lane. Gears
+  + bars route to the BLACK bin.
+- **`omni_quest` full-city navigator** — Husky routes the whole road
+  grid. `build_city_graph` derives the sidewalk graph from the road
+  grid; general cost-optimal A* router + faster reroute; learned
+  free-space segmenter transfers sim→real (ML perception loop); camera
+  sim-to-real gap closed 96% (histogram-match adaptation); stereo
+  cameras bumped 128×96 → 256×192; Locomotion actuation seam (twist
+  commands, not wheel velocities) makes the algorithm cross-platform
+  (Husky + Jackal, same code).
+- **city_traffic perf 3×** — `0.34× → 1.0× realtime` end-to-end on
+  the showcase city.
+- **`robot_combat` demos migrated to Newton**;
+  the arm assembly-line demo retired.
+
+### Procedural worlds (`omniworld`)
+
+- **`city` biome** — joins forest, desert, urban_block, warehouse,
+  indoor_apartment, and mars in the recipe set.
+- Living-city regeneration via `gen_city_traffic.py` + readable
+  `city_grid.json` (resize via XS/YS, re-run).
+
+### Authoring & harness
+
+- **`#include` directive for world files** (VRML extension).
+- **`--minimize` + DEVNULL stdout/stderr** in headless runner —
+  unblocks Newton 20v20 in batch.
+- **Sensor parity oracle** (R5) — wgpu Camera path verified against
+  WREN with retry + duration knobs.
+- **Capability-gate harness** — Tier B verified (mixed hinge+ball
+  articulations auto-fall-back to ODE with a warning); Tier A
+  best-effort-safe.
+- **Physics dual-backend oracle** — legacy verifies Newton via
+  `scripts/dev/render_oracle.py`.
+- **Physics CI gate via physical invariants** — `scripts/dev/
+  physics_oracle.py` validates both backends agree on energy /
+  momentum / quasi-static equilibrium.
+- **Render-arm completion checklist** + golden-image regression gate.
+- **Newton coverage meter** (`scripts/dev/newton_coverage.py`).
+- **wgpu probe knobs** — `OMNISIM_PROBE_WGPU`, `_PROBE_PICK`,
+  `_PROBE_INSET`, `_PROBE_CSM`, `_PROBE_TAA`, `_PROBE_TAA_JITTER`,
+  `_PROBE_FOG`, `_PROBE_BACKENDS`, `_PROBE_TEX`.
+- **MinGW runtime DLLs shipped into `lib/controller/`** so Windows
+  controllers load.
+
+### Damage system
+
+- **Contact-point-gated damage** — opt-in `cp.depth` scoring in
+  `battlebot_damage_director` (L4).
+- **`cp.depth` restricted to non-load-bearing parts** to avoid spurious
+  chassis-on-chassis inflation.
+- **`OMNISIM_DAMAGE_VEL_SMOOTH`** — de-jitter Newton contact velocity
+  (57k → 58 events).
+- **DamageTracker reset** clears `vel_ema` per its docstring.
+- **damage_director** strips leading DEF from exported part before
+  reinserting.
+
+### Build / packaging
+
+- **`OMNISIM_WITH_NEWTON ?= ON`** is the new build default (Stage 3).
+- **`OMNISIM_WITH_VULKAN ?= ON`** is the new build default (C1
+  architectural baseline).
+- **`wgpu-ON` builds auto-ship `wgpu_native.dll`** (supported config).
+- **Newton runtime bundling tool** — `bundle-newton-runtime` make
+  target; package-time warning if unbundled.
+- **`build_with_cd.sh`** forwards `OMNISIM_WITH_VULKAN` and
+  `WGPU_NATIVE_HOME` to make.
+- **`setup_wgpu_native.sh`** repaired — `wgpu-native v29.0.0.0 (gnu)`
+  pinned.
+- **Sponsors automation** — `.github/workflows/update_sponsors.yml`
+  auto-refreshes `SPONSORS.md` daily from the GitHub Sponsors GraphQL
+  API (four tiers via marker pairs).
+
+### Release infrastructure
+
+- **`publish_snapshot.sh` bypasses the local pre-push smoke hook** via
+  `OMNISIM_SKIP_PUSH_CHECK=1`. The hook ships that env var as its
+  documented escape hatch for binary-less worktrees.
+- **`tmp_*.err` scratch files added to `publish_deny.txt`** — agent-run
+  stderr captures stay private.
+- **Sponsors auto-refresh GitHub Action** runs daily; opt-in tier
+  markers in `SPONSORS.md`.
+
+### Documentation
+
+- **Consolidated engine plan** — five rendering plans and six physics
+  plans absorbed into a single master plan
+  ([docs/developer/engine-migration-plan.md](docs/developer/engine-migration-plan.md)).
+- **R3 wgpu-native + Newton-interop design** rewritten and pinned.
+- **R4 → wgpu-default completion checklist** as a living tracker.
+- **G1 standing playbook** + general sim-to-deploy RL recipe.
+- **Canonical RL state doc** — correct stale "stands forever" headlines
+  and add base-divergence guard.
+- **Humanoid balance gap** — the actual blocker for Atlas + G1 RL,
+  characterized.
+- **Contact API consumer inventory** + coordination requirement +
+  migration entanglement notes.
+- **Newton runtime bundling guide** + Newton-as-default release
+  procedure.
+- **Sponsors automation runbook** (private).
+- **Architectural baseline checklist** + final default-flip plan.
+- **Parallel-lanes split** for multi-session migration work.
+- **Reproducible codebase-stats.md** ("lines we wrote").
+- Dropped the unverifiable "first" claim from public positioning.
+- **Webots-named icons + web frontend files** renamed to OmniSim.
+
+### Fixed
+
+- **`physicsBackend` ancestor governs descendant `"auto"`** — Spot
+  frozen-sensor regression.
+- **Articulation must use one solver** — split-solver articulation was
+  a regression source.
+- **Newton chassis-freeze** — static furniture wrongly got dynamic
+  bodies.
+- **Newton motor ke/kd wiring** — env defaults silently overrode
+  `WbBasicJoint` values.
+- **Newton head-on XPBD NaN** at high drive speed — `_SUBSTEPS` knob.
+- **G1 floor-contact deploy regression** in the recipe.
+- **Spot W6 deploy collapse** — diagnosis pinned to ROLL/lateral
+  stability + control-bridge issues.
+- **Newton multi-husky world-load hang** — WbLog message accumulation.
+- **Newton world-reload silently dropped robots to ODE** — singleton
+  world teardown missing on reload.
+- **wgpu reversed-Z + authored near plane** — far-field z-fighting and
+  road-at-orbit-distance z-fighting on the city.
+- **wgpu periodic motion hitch** in the main view eliminated.
+- **wgpu non-sRGB swapchain** — window-swap double-gamma washout.
+- **wgpu linear-space fog composition** — zoom-out fade fixed.
+- **wgpu WREN-exact fog curve** — distant street/grass colour stops
+  fading to a wrong tone.
+- **wgpu `TextureTransform` applied** — omni_quest grass was one tile
+  smeared over 200 m.
+- **wgpu `castShadows` honored** — sun marker was shadow-bombing
+  spot.omniworld.
+- **wgpu corpus-sweep fixes** — dither, normal-offset shadows,
+  diagnostic switches.
+- **Deterministic offscreen parity golden** — crash fix + gate
+  recalibrated.
+- **Render-parity gate clarification** — WREN is legacy-dark
+  (advisory, not a regression).
+- **Spot GPU pipeline sim2sim fidelity** — six root causes fixed
+  across trainer / eval / deploy. The pipeline was never sim2sim-
+  faithful before this.
+- **Spot env-port self-collision deadlock** + **gait yaw-steering
+  break** — Spot now walks with locked heading.
+- **AnyPick LINE queue** — yawed bins no longer interpenetrate.
+- **AnyPick LINE containment** — no part ever falls out.
+- **AnyPick LINE strict top-down tray placement** — no joint-arc
+  swing.
+- **AnyPick LINE true-surface gauge** for model-free unknowns + long-
+  part wall corridor + flush model-free picks (no hover).
+- **AnyPick LINE tube rolling** — fixed via the Newton rolling-friction
+  knob.
+- **AnyPick LINE contact-honest vacuum** — no magnet grabs.
+- **WbCamera FOV match** — wgpu pane frames at any aspect (R4-3b
+  polish).
+- **wgpu shadow-render non-determinism** — dangling `modelMatrix16`
+  per-draw uniform; pinned via headless RenderDoc capture.
+- **Textured-shadowed floor-drop** — pinned to GROUND-plane skip; root
+  cause is a timing/sync race, fix landed.
+- **Camera sensor sRGB regression** — keep camera SENSOR output linear
+  (sRGB is display-only); R5 regression green.
+- **wgpu texture-cache key bug** — path-key the cache to dedupe
+  shared-file textures; multi-world soak now clean across 6 worlds.
+- **wgpu main-view reload crash** + NaN-normal handling + live blit.
+- **`build_with_cd.sh` engine-flag forwarding** — exporting before the
+  build no longer reaches the child make.
+- **`isolated-worktree engine build`** — Qt5+Qt6 coexistence link
+  failure documented; junction the gitignored vendored deps.
+- **G1 STANDS in deploy** — root cause was forward CoM + destabilising
+  ankle PD (not a sim2sim gap).
+- **G1 RL deploy obs-frame** — body-frame ang-vel matches the trainer.
+- **Spot deploy heading + steer-to-centreline hold** — walk straight
+  down the path.
+- **Newton actuator position-target writes** were silently no-op'ing.
+- **Newton chassis visual** now follows physics (WREN-push fix).
+- **MinGW runtime DLLs** ship into `lib/controller/` so Windows
+  controllers load.
+
+### Removed
+
+- **Splash images for non-shipped robots.**
+- **Stale Cyberbotics path strings** + dead-language pages
+  (docs cleanup).
+- **`WEBOTS_HOME` self-reference bugs** purged from dev docs ahead of
+  public publish.
+- **Pre-rebrand `Webots-named` icons + web frontend files** renamed to
+  OmniSim equivalents.
+- The legacy single-solver articulation policy (now strictly enforced).
+- **The arm assembly-line demo retired** — superseded by the AnyPick
+  Line and the bin-pick suite.
+
+---
+
+## [v3.0.0] — 2026-05-25
+
+OmniSim stops introducing itself as a Webots fork and starts behaving as
+its own engine. Five "dual-accept" compatibility shims that the v2.x
+rebrand phases left in place are now strict OmniSim-only (env var, URL
+scheme, binary name, project manifest, canonical header tree), the
+`src/webots/` source folder is renamed to `src/omnisim/`, and the
+physics default flips from ODE to Newton. The new Spot walker — straight
+walking via a model+residual recipe — is the first piece of locomotion
+that runs end-to-end on the Newton path. A render-backend abstraction
+lands as the seam for the upcoming Vulkan migration.
+
+### Breaking changes
+
+- **Source-tree rename: `src/webots/` → `src/omnisim/`.** External code
+  that builds against OmniSim sources (private forks, extension modules)
+  must update include paths. `omnisim/*.h` and `omnisim/*.hpp` are
+  canonical; `webots/*.h` shims remain for one release window only.
+- **`WEBOTS_HOME` env var is no longer read.** Set `OMNISIM_HOME` instead.
+- **`webots://` URL scheme is no longer accepted.** Use `omnisim://`.
+- **`webots-bin.exe` binary alias is gone.** The shipped binary is
+  `omnisim-bin.exe` (and the controller equivalent). Anything launching
+  `webots-bin.exe` by name will fail.
+- **`webots.yaml` project manifest is no longer accepted.** Rename to
+  `omnisim.yaml`.
+- **Default physics solver flips from ODE to Newton.** `physicsBackend
+  "auto"` now resolves to Newton, and new empty worlds nudge Newton for
+  freshly imported robots. ODE remains available as the documented
+  legacy fallback by setting `physicsBackend "ode"` explicitly on the
+  Solid (or via the world template). Worlds that depend on ODE-specific
+  contact behaviour may need that flag added.
+- **`rename_audit` ceilings lowered** — the policy now enforces
+  omnisim-only naming across the surfaces it covers; legacy occurrences
+  that previously passed will fail audit.
+
+### Engine architecture (the migration plan reaches a milestone)
+
+- **WbPhysicsBackend dispatcher — P1.5 milestone:** WbSolid is fully
+  migrated off direct ODE body ops. Position, quaternion, velocity,
+  point-velocity, force, torque, body enable/disable, and
+  setGeomAndBodyPositions all route through the backend dispatcher.
+- WbGyro, WbAccelerometer, and WbGps dispatch via
+  `WbSolid::bodyHandle()` — sensors no longer reach into ODE directly.
+- WbNewtonBackend implements the dispatcher's pose-read methods
+  (`getBodyPointVel`, position, quaternion) for the body-ops surface.
+- `WbConnector::rotateBodies` and `WbSolidMerger::setGeomAndBodyPositions`
+  converted; force/torque/velocity application widened to the dispatcher.
+- `wb_supervisor_node_add_force[_with_offset]` and
+  `wb_supervisor_node_add_torque` are now polymorphic across backends.
+- Engine-migration plan tracks P1.5 as COMPLETE; cuda-newton-physics
+  plan tracks P7 PARTIAL and P9 COMPLETE.
+
+### Rendering (Vulkan migration seam)
+
+- **R0** — `WbRenderBackend` abstraction lands as the unified seam
+- **R1** — `OMNISIM_WITH_VULKAN` build flag + `WbVulkanBackend` extracted
+- **R2** — `renderBackend` SFString field on Viewpoint + Camera
+- R3 — rendering-backend evaluation + design doc written up
+- chassis visual now follows physics (WREN-push fix) + verify-as-shown
+  tooling
+
+### Newton physics
+
+- **Real fix for the joint-glitch** — clean-build flag + widened URDF
+  deploy + analyzer
+- Hard post-step joint-limit clamp + stress test
+- `armature`, `limit_ke`, `limit_kd` env vars for joint physics tuning
+- `getVelocity()` root-cause fix — was returning 0, broke deploy
+- NaN-safe ODE pose writeback in `WbSolid::applyPhysicsTransform`
+- `OMNISIM_NEWTON_MJWARP` to deploy via mujoco_warp (vs CPU mj_step)
+- broadphase "auto" mode now resolves via top-level Solid AABB
+- `worldinfo.broadphase` is a real SFString field; ODE switching plumbed
+  end-to-end
+- `gatherSleepingStats` — sleeping-island verification telemetry
+- WREN instancing-candidate run detector (item 1 of large-world plan)
+
+### Reinforcement learning (the residual recipe)
+
+- **First Spot walker that walks STRAIGHT under Newton.** Method:
+  model+residual recipe (analytic CPG prior + learned residual
+  correction). Shipped as the canonical `spot_residual_main`.
+- Model-based Spot walker (analytic IK + trot gait) — beats v12_200k
+  PPO with zero neurons; ships as Phase 4 balance PD + heading-lock
+- Custom residual-RL system on the model walker (Phase 5)
+- GPU residual deploy controller + docs for the full Spot-walk journey
+- GPU mjwarp residual trainer on RTX 5070 with backwards-walking fixes
+- Recovery agent: leg-based self-righting on fall (no supervisor
+  teleport), model-based righting (orientation-aware geometric), realistic
+  motor limits (torque cap + rate-limited targets), reward redesign +
+  curriculum, training pipeline scaffold
+- Push-recovery perturbation experiment + Newton joint-limit diagnostic
+- Action-magnitude penalty (`--act-pen`) for smoother gait
+- Live MuJoCo viewer for the GPU residual Spot walker
+- Spot URDF: `<rest>` tag extension; widen `hip_x` and `hip_y` to ±1.5
+  rad for self-righting
+- Heading-lock control + verify harness + reward-shaping knobs
+- Extended obs vector to 50 dims (added heading-deviation);
+  `SPOT_OBS_DIM` env override
+- Deploy fixes: clear finite-diff vel history on loop-reset; faithful
+  Spot walker walks 0.45 m/s forward in OmniSim
+
+### Demos & worlds
+
+- **BattleBox** — BattleBots-style combat sport scene
+- **robot_combat** — new project for all combat demos; 10 worlds + 2
+  controllers moved
+- 20-husky top-down arena variant + double-the-huskies marketing scene
+- husky_fleet_arena top-down capture variant + shotlists
+- husky_maze: cell-level loop detection + min-pivot path planning,
+  perception-as-tool (hide `read_camera`, scan_surroundings only),
+  shake-free + smarter wedge-escape (basic maze now reliably solves),
+  wheels-only navigation (no teleport recovery), agent-written memories
+  from 2026-05-24 successful runs, refuses `complete_mission` while a
+  bridge fault is live, restored `goto_cell` recovery
+- Arm assembly line: real physics pick-and-place + grip-confirm sensors
+- Arm bridge: working physics pick-and-place — 6-DOF IK + real grasp
+- Spot demos: hide-on-start sun marker + higher initial camera
+- walk_demo: restored default dark PBR ground (dropped tile pattern)
+- fleet_cam: headless Camera-device recorder for husky fleet arena
+- Saved default view perspectives for Spot Newton worlds
+
+### Authoring & harness
+
+- WbProject resolves project root for worlds nested in subdirectories
+- Smoke gate auto-builds missing controller binaries before push
+- Scripts self-locate the repo root in dev build scripts
+- `broadphase_auto.omniworld` smoke world
+
+### Branding & social
+
+- **Brand book**: particle orb, OMNI/SIM wordmark, mimosa palette
+- Replaced Webots-branded textures with OmniSim equivalents
+- Omnivoice — voiceover tool for the youtube_videos scripts
+- Husky combat video pipeline + house video style guide
+- Tier 1 video polish — LUFS master, captions, tracking camera
+- Tier 3 — Claude critic, smoke gate, b-roll, Discord poster
+- Multi-angle combat assembler + 2 new b-roll entries
+- Original synthesized soundtrack for the topdown video
+- ODE "spot walks straight" journey video + ODE walk demo world
+- "Teaching a robot dog to walk" journey video — before/after Spot gait
+- husky_maze journey video — 5 top-down shotlists + builder
+- Recovery-prompt terminal scene + typing SFX mux
+- FUNDING.yml points at the omnilink-tech org; omnilink-agents.com
+  custom link added
+
+### Build / packaging
+
+- Full release-build unblockers + URDF path fix
+- Rename migration script: `scripts/.../rename_webots_to_omnisim.sh`
+- Cleanup: prune empty howto/tutorials samples; rename `protogen_demo`
+  → `protogen`
+- Move retired/experimental worlds to `samples/_archive/`
+- `gitignore`: `.wbproj` globally, `MUJOCO_LOG.TXT`, leftover scratch
+- Removed orphan `src/webots/Makefile` left after Phase G
+
+### Documentation
+
+- User-facing Newton physics backend guide
+- Migration perf comparison with measured Newton vs ODE numbers
+- Newton XPBD scaling sweep (1–50 huskies) — benchmark + writeup
+- Engine-migration plan kept in sync as P1.5 closed; item 6 closed
+- cuda-newton-physics-plan — phase status block
+- Newton-as-default + `src/webots` → `src/omnisim` rename plan doc;
+  Phase J documents the rename as historic
+- Spot residual-RL writeup: old PPO method vs new model+residual
+- Physics pick-and-place + grasp-mode docs
+- Scrubbed Java/MATLAB code blocks + language-list mentions
+- Dropped dead-language pages + fixed stale Cyberbotics path strings
+- Archived `REBRAND_PLAN.md` (all phases shipped); deleted
+  `MIGRATION_PLAN.md`; references repointed at AGENTS.md §0
+
+### Fixed
+
+- Newton `getVelocity()` returning 0 (root cause of broken deploy)
+- Newton joint-glitch — clean-build flag + URDF deploy widening
+- NaN ODE pose writeback in `WbSolid::applyPhysicsTransform`
+- WREN visual lagging chassis physics
+- husky_maze: shake-free + smarter wedge-escape; reliable basic-maze
+  solve
+- GPU residual trainer: backwards-walking fix on mjwarp
+- GPU residual deploy: cleared finite-diff vel history on loop-reset
+  (no spike)
+- rendering-normals smoke skip root cause documented
+
+### Removed
+
+- `webots://` URL scheme (use `omnisim://`)
+- `webots-bin.exe` binary alias (use `omnisim-bin.exe`)
+- `webots.yaml` project manifest alias (use `omnisim.yaml`)
+- `WEBOTS_HOME` env-var read (set `OMNISIM_HOME`)
+- MATLAB engine support — all docs/code-blocks cleaned up
+- `REBRAND_PLAN.md` (archived after all phases shipped)
+- `MIGRATION_PLAN.md` (all phases shipped)
+- Orphan `src/webots/Makefile` left after Phase G
+- Empty howto/tutorials samples
+
+---
+
+## [v2.2.0] — 2026-05-21
+
+The physics-and-learning release. Newton finally holds Spot upright and
+walking — a chain of solver fixes (qd-indexed joint targets, inherited-Solid
+overwrites, shape-center offsets, collision filtering) turned the "parts
+falling off" and "no-stand" bugs into a robot that stands, resets cleanly,
+and trains. On top of that lands a GPU-batched MuJoCo-Warp PPO trainer
+(~125k env-steps/s that actually learns), first-class pluggable gripper
+support on arm robots, and a worlds reorganization into starter / showcase /
+environments with three new cinematic environments (forest, desert ruins,
+high-rise construction site). No breaking changes; several sample demos
+were retired.
+
+### CUDA / physics (Newton)
+
+- **Spot STANDS** — collision filter + shape centers + position spring +
+  live feedback. The milestone fix after a long bisect.
+- Fixed the no-stand bug: `joint_target_pos` is qd-indexed, not q-indexed
+- Fixed "parts falling off": Newton overwrite was skipping inherited
+  Solids; scene-tree joint angle now read from Newton
+- Fixed actuator position-target writes silently no-op'ing
+- Realistic per-body inertia + per-joint effort/velocity/position limits
+- Pass Pose translation into shape offsets so feet collide where rendered
+- Pass URDF joint limits (minStop/maxStop) into the articulation
+- Translate URDF mesh collisions to Newton AABB boxes (wrapper opt-in)
+- Seed `joint_q` to the standing pose + rebuild solver; pose-seed reaches
+  MuJoCo
+- Supervisor-driven resets push pose into Newton's `body_q`; reset clears
+  the spawn-pose freeze loop
+- Settle Spot actuator on ke=200 / kd=5 (best stability + leg mobility)
+- `setValueFromOde` overwrite now invalidates the matrix cache
+- `OMNISIM_NEWTON_GROUND_MU` foot-friction knob
+- Fixed a GPU-array leak that crashed training at ~200k steps
+- XPBD-on-GPU by default for training (3× throughput); MuJoCo CPU fallback
+  remains for NaN-prone scenes
+- Per-call / per-joint / per-step diagnostics added during the bisect
+
+### Reinforcement learning
+
+- GPU-batched MuJoCo-Warp PPO trainer — ~125k env-steps/s and learns
+  (PoC peaked at 813k env-steps/s); env-tunable solver iterations
+  (default 10/8) for throughput
+- GPU trainer auto-configures from MJCF + Spot export hook + eval
+- Real trot gait + standing-regression diagnostics; legacy sin² gait stays
+  default, trot is opt-in
+- Stand-first training curriculum (from-scratch launcher seeds standing
+  pose + stiff leg gain); value-warmup uses a critic-only optimizer for a
+  correct actor freeze
+- Warm-start launcher for SB3 `continue_training` under Newton physics
+- Session isolation so parallel training agents can't kill each other
+- Anti-B-mode reward shaping + forward-distance episode logging
+- Knobs: `SPOT_PITCH_TRIM`, `SPOT_ACTION_SCALE`, uprightness weight, kd=60
+  damping; fixed structural CPG nose-down
+- Fixed train/deploy CPG mismatch and a deploy-eval bug that silently
+  tested the wrong policy
+- Opt-in per-episode body trace (`OMNISIM_AGENT_TRACE`)
+
+### Grippers & arm bridge
+
+- First-class gripper support on arm robots (plan → ship):
+  - Phase 1 — decouple grippers into a pluggable effector layer
+  - Phase 2 — richer surface: grasp / release / set_width
+  - Phases 3 & 5 — kinematic grasp weld + pick-place demo + docs
+  - Phase 4 — pluggable gripper drivers
+  - Physics-grasp gripper with real 2F-85 fingers (WIP)
+- Arm demo: refined gripper into a proper Robotiq 2F-85 shape, mounted
+  visibly, anchored to the real flange node (fix clipping), grasp radius
+  widened to 0.16 m for reliable picks
+
+### Demos & worlds
+
+- Worlds reorganized into `starter/`, `showcase/`, `environments/`
+- New environments:
+  - **forest** — real-mesh bushes + floor litter, hand-placed background
+    ring, everything grounded (no hovering)
+  - **desert_ruins** — ground + dune system, ancient architecture,
+    cinematic golden-hour overhaul
+  - **construction site** — realistic high-rise, more buildings + plant,
+    real procedural construction vehicles, fully-editable dev world
+- Unify lighting across all user-facing worlds via a 3-PROTO recipe
+- Damage: driving arena sheds parts from real box impacts; husky_damage_arena
+  tears parts off under falling weights; detached parts keep the robot's
+  real colour
+- Mavic 2 Pro: chat-style demo (chat_aerial); chat + Drone Surveyor
+  flagship consolidated onto one world
+- warehouse_patrol: 2026-05-21 patrol sweep manifests
+- ConstructionFrameBuilding replaces Building + BuildingUnderConstruction
+
+### Robots & PROTOs
+
+- Inline pipe/torus boundingObject math; drop `projects/bounding_objects`
+- street_furniture PublicToilet shows OmniSim branding, not Webots
+
+### Authoring & harness
+
+- `--no-window` for true background mode (no taskbar entry); suppress the
+  world-loading progress dialog in `--no-window`
+- Always inject `mingw64/bin` on the Windows controller PATH
+- Allow in-place editing of bundled worlds/projects by default
+- Smoke: pre-flight abort when port 1234 is held by a running Webots;
+  per-world skip flag; mark rendering-normals broken
+- Husky bridge: remove teleport-snapping globally — drive on wheels only
+
+### Build / packaging
+
+- CI: local pre-push smoke hook + WORLDS.md drift refresh
+- gitignore the NVIDIA Corporation/ driver crash dir
+
+### Documentation
+
+- Worlds index; flip docs/README.md to `OMNISIM_HOME` canonical
+- Spot + Newton session-state captures + spot_newton_v4 results writeup
+- Plan for first-class gripper support; drop stale control_showcases doc
+
+### Fixed
+
+- Newton no-stand bug (qd-indexed joint targets)
+- Newton "parts falling off" (inherited-Solid overwrite + scene-tree joint
+  angle)
+- Newton actuator position-target writes silently no-op'ing
+- GPU-array leak crashing training at ~200k steps
+- train/deploy CPG mismatch; deploy-eval testing the wrong policy
+- mounted gripper clipping (anchor to real flange node)
+- forest objects hovering above the ground
+
+### Removed
+
+- Demos: arm digital-twin, all_urdf_robots, urdf_ur5e, urdf_epuck,
+  urdf_tiago, urdf_showcase, mobile_robots_showcase, omnibot_combat,
+  two_omnibots, cube_bot, ur5e_omnilink kinematics, object_gallery,
+  husky_fleet_outdoor (Axis repointed at warehouse_logistics)
+- `projects/bounding_objects` PROTO directory (math inlined)
+- Building + BuildingUnderConstruction PROTOs (use ConstructionFrameBuilding)
+
+---
+
+## [v2.1.0] — 2026-05-18
+
+A consolidation release on top of v2.0.0. The headline themes: atmospheric
+sky becomes the default backdrop across every world (with a draggable sun
+marker), the Webots→OmniSim rebrand reaches into the engine layer via an
+alias-not-rename phase plan (binaries, env vars, URL scheme, project
+config all dual-accept the new names), a full reinforcement-learning
+pipeline ships for Spot (and scaffolding for Atlas), and the OmniLink
+integration picks up voice I/O, short-term memory, per-turn telemetry,
+and a starter PyPI package. No breaking changes — every rebranded entry
+point keeps its prior alias.
+
+### Engine rebrand (Webots → OmniSim, alias-not-rename)
+
+- REBRAND_PLAN.md staged in [Phase 0](docs/) — inventory + safety net,
+  no functional change
+- Phase A — cosmetic display strings rebranded
+- Phase B — `omnisim-bin.exe` / `omnisim-controller.exe` binary aliases
+- Phase D — `omnisim/*.h` and `omnisim/*.hpp` C/C++ header forwarders
+- Phase E — `omnisim` Python controller package (forwarder)
+- Phase F — `OMNISIM_HOME` canonical; `WEBOTS_HOME` dual-read alias
+- Phase G — `webots://` URL scheme also accepts `omnisim://`
+- Phase H — `projects/*/webots.yaml` also accepts `omnisim.yaml`
+- Phase C (`Wb*` → `Om*` class rename) intentionally skipped to preserve
+  the "built on Webots" attribution surface
+- Doc + in-app sweep so new agent sessions read OmniSim, not Webots
+- Two pre-existing breakages flagged during the verification gate, fixed
+
+### Demos & worlds
+
+- MissionControl: 6-Husky fleet on a logistics campus, agent-only
+- HuskySwarm: 4-Husky OmniLink coordinator → upgraded to 34-tool
+  meta-tool-pattern coordinator
+- Construction-site logistics benchmark — scripted vs agentic control
+- Multi-arm demo world (3× UR5e on a shared stage)
+- Three specialist OmniLink agents shipped as examples — Foreman, Picker,
+  Roomba
+- Real-robot bridge starter kit example (no Webots, no OmniSim)
+- In-sim demo gallery launcher (world + supervisor + Robot Window)
+- Worlds subdivided by category; path-refs refreshed
+- spot_newton_demo: switched to atmosphericSky + draggable sun marker
+- Sweep removed classic-Webots demos that no longer fit OmniSim (twice —
+  a merge restored them and they were re-deleted)
+- Cinematic atmospheric-sky playground worlds + headless bench
+
+### Atmospheric sky (the new default)
+
+- Atmospheric sky installed on every world with a Background — full sweep
+  across 330 atmospheric worlds (last 24 needed surrogate-escape for
+  non-UTF-8 .wbt files)
+- Legacy photo-cubemap backgrounds ripped out
+- Draggable sun marker — Unreal-style glowing sphere; doesn't cast a
+  shadow; bound to DirectionalLight position
+- DirectionalLight.color → atmospheric sky `sunIlluminance` binding
+- Night sky: procedural starfield, moon with maria, marker overhead,
+  Milky Way band, varied stars, stars constrained to upper hemisphere,
+  realistic moon
+- Cinematic tonemap: S-curve contrast + saturation lift
+- Per-world IBL auto re-bake on DirectionalLight edits
+- Real Lambertian diffuse-IBL bake for atmospheric sky
+- IBL white-balance pushed to 0.95 → 1.0 so PBR materials read true albedo
+- Damped IBL bake against atmospheric-sky over-tint
+- Perlin terrain + fix for IBL axis-swap bug in sky shaders
+- Reverted one engine IBL iteration to restore a working baseline
+
+### Robots & PROTOs
+
+- Removed PR2 support entirely (no live demo consumers, blocked sweeps)
+- Spot: end-to-end demo runs (articulation + position-bridge wired)
+- Spot URDF inertia diagnosis from the RL deploy path
+
+### CUDA / physics
+
+- Newton: multi-parent articulation bug fixed on Spot tree (leaf-first
+  joints)
+- Newton MuJoCo-CPU env-var override
+
+### Reinforcement learning (new in v2.1.0)
+
+- End-to-end RL pipeline scaffolding for Spot — env wrapper, trainer,
+  deploy controller, eval workflow
+- Trained Spot policy: 200k-step PPO checkpoint (320 KB), then 100k
+  walk-focused checkpoint
+- Spot OmniSim walker — verified +9.79 m forward in ODE, never falls
+- CPG trot prior + GPU env
+- Atlas (Boston Dynamics v5) RL pipeline + MJX deploy-parity fixes
+- Pluggable training backends: sb3 / mjx / isaac
+- Platform-ify: generic deploy, robot registry, reward recipes
+- Headless MuJoCo deploy
+- MJX trainer NaN-defensive fixes
+- MJX PPO loss fix — sum log_std along act dim, not full batch
+- `kp=500` fix unlocks MJX deploy
+- SpotEnv connect timeout bumped 30s → 90s
+- Deploy controller path resolution + eval workflow
+- Body trace from deploy controller + headless eval script
+- env-var reward weights for the walk-focused trainer
+
+### Agents (`agents/`)
+
+- All OmniLink agents consolidated under a single `agents/` tree
+- Voice I/O in the chat panel (mic in + agent voice out)
+- Short-term memory: cross-session chat continuity
+- Per-turn usage telemetry (tokens + credits) on every bridge
+- Auto-register per-robot profiles + tool callback endpoint
+- Demos depend on omnilink-lib explicitly + warn on outdated versions
+- OmniLinkClient + sim-to-real docs
+- Agent benchmark suite scaffold (3 tasks)
+
+### Authoring & harness
+
+- Agent-driven cinematic capture pipeline
+- Marketing slate driver scripts + 4 shotlists
+- Cinematic-pipeline 5 fixes (unblock end-to-end)
+- Agent gallery page + demo-video capture script
+- `headless_runner` honors `OMNISIM_LOG_PATH` for parallel runs
+- URDF sensor-segfault bisect narrowed + device-smoke harness
+- Untrack harness scratch worlds + gitignore them
+
+### Build / packaging
+
+- omnisim-bridges PyPI package (skeleton, locally installable)
+- Prune vehicles target from `projects/Makefile` + relay Makefile stub
+- gitignore runtime artifacts (`fps_sweep` summary, `*.egg-info`)
+- Drop stray baseline artifacts from rebrand Phase 0
+
+### GUI / UX
+
+- View > Theme submenu — Light / Dark (Night) / Dark (Dusk)
+
+### Release infrastructure
+
+- `publish_snapshot.sh` auto-bumps `omniSimVersionString` in
+  `WbApplicationInfo.cpp` to match the release tag before snapshotting
+  (idempotent no-op when already current). Was a hand-maintained constant
+  that drifted in both v1.0.10 and v2.0.0.
+
+### Licensing
+
+- TRADEMARKS policy added (open code, protected brand model)
+- DCO contributor flow (not CLA)
+
+### Documentation
+
+- REBRAND_PLAN.md staging doc — engine refactor phases
+- Top-level DEMOS, WORLDS, ARCHITECTURE, MIGRATION_PLAN indexes
+- OmniLink integration roadmap — 13 items across 5 phases
+- omnilink-roadmap.md annotated with status + commit hashes
+- README + AGENTS.md + chat-demos surface every OmniLink artefact
+- RL pipeline: README, smoke_deploy, AGENTS.md pointer, eval_policy
+  usage + plateau notes
+- RL handoff doc — resume-here section with commit SHA, GPU-box handoff
+
+### Fixed
+
+- Newton: 'multi-parent' articulation on Spot tree (leaf-first joints)
+- MJX: PPO loss log_std summed along act dim, not full batch
+- engine IBL: damp bake against atmospheric-sky over-tint
+- sky shaders: IBL axis-swap bug
+- two pre-existing breakages flagged during the rebrand verification gate
+
+### Removed
+
+- PR2 robot (no live consumers)
+- Classic-Webots demos that no longer fit OmniSim
+- Legacy photo-cubemap backgrounds (replaced by atmospheric sky)
+- Stray baseline artifacts from rebrand Phase 0
+
+---
+
+## [v2.0.0] — 2026-05-14
+
+OmniSim's first major release. The simulator's centre of gravity moves from
+PROTO-authored Webots robots to a URDF-native, agent-driven platform: 14
+canonical robots now load from URDF, every shipped demo is wired to the
+OmniLink agent platform via the new Wire Protocol, the physics layer gains a
+pluggable Newton/XPBD backend with CUDA-accelerated particles and rigid-body
+contact, and the rendering path picks up an atmospheric sky stack with
+real-world perf gains on the existing forest, mars, and warehouse scenes.
+
+### Breaking changes
+
+- Removed Pico TTS, Java, and MATLAB controller support. Python and C/C++
+  remain. Worlds, samples, and build scripts that referenced these are gone.
+- Removed the integrated text editor (-3,190 LOC). External editors only.
+- Removed the Classic light theme. OmniSim is dark-only.
+- Removed i18n machinery. UI strings are English-only for now.
+- Removed Cyberbotics menu items and the legacy Webots.cloud upload flow.
+- Removed ~30 legacy robots that had no canonical URDF and no live world
+  consumers: e-puck, elisa, mir100, hoap2, k-team kheperas/hemisson/koala,
+  pioneer2/3, p-rob3, thymio, boebot, fabtino, nao, aibo, qrio, crazyflie,
+  shrimp, biorob, robotnik (summit_xl_steel), irb, scara_t6, youbot, ipr,
+  ned, tinkerbots, kondo khrs, mantis, scout, tiago family, saeon, sphero
+  bb8, surveyor, puma, sojourner, bioloiddog, firebird6, heron USV, atlas,
+  jetbot, darwin-op and its dependents (robocup, humanoid_marathon,
+  supervisor_set_position_loop test), `projects/humans/` tree.
+- Prefs migration: `webots_*.qss` theme keys are read as `omnisim_*.qss`.
+  Manually-edited theme overrides need re-saving once.
+
+### Demos & worlds
+
+- 14 per-URDF-robot OmniLink chat demos, each wired end-to-end to the
+  OmniLink agent platform (g1-engine default, local fallback)
+- OmniLinkStage PROTO adopted across all 14 omnilink_* worlds
+- warehouse_foreman: iterations 0-4 — Picker, Loader, vision-driven tag ID,
+  orchestrator runs end-to-end, side-detour push fix, ground-truth pallet
+  delivery verified
+- warehouse_patrol: iterations 0-3 — two-husky patrol squad, bridge port
+  multiplexing
+- drone_surveyor: iterations 0-3, verified end-to-end
+- tour_guide: TIAGo four-room apartment, verified end-to-end
+- Arm assembly line: three-arm cobot demo with Robotiq 3F-styled,
+  parallel-jaw, and realistic hinged-finger grippers; ARM_BRIDGE_HOST/PORT
+  env override; iter-1 vision + NL goals + recovery, end-to-end LLM verified
+- Arm digital twin: shadow-mode bridge + reference demo
+- husky_maze: drift-gate snap-to-cell smoother corridors, fix corners
+  replan loop, unknown-lidar thrash, tokens-per-hour metric
+- husky_fleet_arena: 10-husky open-arena variant
+- husky rough-terrain hill: 840 HD rocks + heading-PID controller
+- mars_max stress benchmark: 8 huskies + 160m world; renderer well within
+  budget; regenerate with hills and valleys
+- Husky combat: husky_hunt AI, 2-husky head-on demo, 4v4 head-on collision,
+  match runner
+- two-OmniBot combat arena demo + random walk demo
+- CUDA M2: boundsHalfWidth PROTO field, Husky-meets-spheres demo, 10k
+  broadphase showcase, two-way robot/particle coupling
+- Cinematic capture service: agent-facing render service, deterministic
+  stepping, /shutdown endpoint, drone shotlists, 4K static top-down shotlist
+  for the husky fleet arena
+- Canonical top-down Viewpoint across all 37 worlds
+
+### Robots & PROTOs
+
+- Native URDF support: WbUrdfImporter + URDFRobot world node, inertia +
+  sensors gated, fallback colors, composite bounding, smarter joint limits
+- PROTO → URDF migrations: Boston Dynamics Spot, Franka Panda, Mavic 2 Pro
+  (with custom rotor physics), PR2, Husarion Rosbot + Rosbot XL,
+  UR3e/UR5e/UR10e, TurtleBot3 Burger/Waffle/Waffle Pi
+- Agent-first PROTO tooling: schemas, validation, authoring, hot-reload,
+  tests
+- Devices: replace PROTO catalog with xacro macros
+- Spot URDF: walk progression — exploding-spawn fix → stable stance →
+  supervisor-driven wave gait → IK foot-trajectory walk → closed-loop
+  Raibert balance → pure-physics wide-stance walk → statically-stable
+  crawl with CoM shift + roll feedback → ported CHAMP control algorithms
+  to Python controller
+- UR5e: IK keyboard teleop + OmniLink bridge supervisor
+
+### CUDA / physics
+
+- Newton physics backend (additive, ODE remains default): WbPhysicsBackend
+  abstraction (P0) → concrete WbOdeBackend + WbNewtonBackend + registry
+  (P1) → embed CPython, import warp + newton (P2) → FFI smoke at
+  newton.ModelBuilder() (P3.0) → per-world simulation surface (P3.1) →
+  smoke sphere registers and steps live (P3.2) → numerical sphere drop
+  + land verify (P3.2.e) → rotation readback (P3.4) → sphere radius
+  from boundingObject (P3.5) → WbBox bounding + tumbling-box verify
+  (P3.6) → WbHingeJoint → Newton revolute, in-binary verified (P3.7.b)
+  → motor FFI surface + controller drives wheel (P3.8) → WbCylinder +
+  WbCapsule bounding (P3.9) → physicsBackend inheritance from ancestor
+  Solid + URDFRobot pass-through, husky on Newton (P3.10–P3.10f) → 10
+  huskies sustain 165 fps (P4) → 8-husky watchable demo + scaling-cliff
+  investigation → 4v4 head-on collision demo (P5) → damage demo + perf
+  instrumentation (P6) → XPBD as primary solver, MuJoCo CPU as fallback
+- CUDA GranularGroup: ENU-aware kernel + bouncing scatter demo (M2),
+  one-way Husky pushes spheres → uniform-grid broadphase (100x more
+  particles, real-time) → two-way coupling (robot pushes balls AND balls
+  push robot), bowling-balls + 10k showcase worlds
+- CUDA plans: husky head-on (30+ fps target), CUDA rigid-body solver
+  (replace ODE for 10-20 husky scenes), CUDA particle effects, CUDA
+  compute infrastructure
+- CUDA particles: damage_tracker pool client + numba.cuda particle pool
+  prototype
+
+### Agents (`omnilink-agents/`)
+
+- omnilink-agents shared SDK + omnisim-runner launcher
+- omnisim Python package + CLI + doctor; omnisim.dev and omnisim.damage
+  lifted into the package
+- Agent runtime observability layer (snapshots + unified event stream)
+- omnisim live agent HUD docked alongside the text editor; user-controllable
+  font size; bigger default
+- Damage system phases 0-21 + repair: contact detection + impulse via
+  supervisor (P1) → HP/state model + chassis-impact detection (P2) → HTTP
+  query endpoints (P3) → visual damage markers (P4) → behavioral
+  consequences via customData gate (P5) → debris bursts on broken
+  transitions (P6) → per-part appearance darkening (P7) → cumulative
+  impact decals (P8) → wheel detachment on broken transition (P9) →
+  per-state mesh swap (P10, Tier A) → particle effects: smoke, sparks,
+  fluid stains (P11) → generic damage trait via DamageProfile (P12) →
+  agent SDK (P13) → procedural body deformation (P14a-c) → impact-localized
+  mesh deformation (P15) → headless full-realism harness (P16a-e) →
+  topology fracture: strain detection → island selection → fragment spawn
+  + chassis hole → regression test (P17a-d) → repair mechanics: HP regen
+  + mesh regen + heal-to-pristine (P18) → generic part detachment + realism
+  polish (P19) → slab attribution + car-crash physics (P20+P21); spawn-drop
+  suppression; defensive guards against breaking other harness-loaded worlds
+- mission_captain + husky_maze: tokens-per-hour metric + COSTS docs
+- Tour-guide, foreman, patrol, surveyor agents (see Demos)
+
+### Authoring & harness
+
+- Headless harness self-detects parallel-session collisions, prints
+  agent-actionable guidance
+- sim-instances: scope kill to our PIDs and add --auto-port
+- scripts: scope webots-bin kills to spawned instances (don't touch the
+  user's running Webots)
+- omnisim CLI pins WEBOTS_HOME to this clone in webots_env()
+- Drone surveyor, warehouse foreman, patrol multi-iteration scaffolds
+- Per-instance log file + dynamic controller stdout buffer
+
+### Build / packaging
+
+- OmniSim Wire Protocol v1.0 — canonical PROTOCOL.md
+- AGENTS.md as the canonical agent entry point at repo root
+- Auto-purge orphan robot/asset dirs after pulls; clean_orphans wipes stale
+  .o/.d build outputs
+- Prune hollow controller dirs + stub Makefiles for Python controllers
+- Cleanup: ~90 MB pruned from projects tree (upstream Webots dead weight)
+- Cascade-delete darwin-op dependents + trim test source skip-lists
+- glm submodule bumps (0af55cce, bf71a834)
+
+### Release infrastructure
+
+- Auto-create GitHub Release pages on publish + backfill helper for
+  v1.0.0–v1.0.7
+- Switch GitHub Release POST from curl to python urllib (Schannel TLS
+  revocation workaround)
+- ASCII-only output for backfill_release_pages.py (Windows cp1252)
+- Pass `--root` to git diff-tree so orphan first-release dry-runs show file
+  list; capture diff-tree output to temp file so the total-files line
+  survives pipefail
+- Repoint publish target at github.com/omnilink-tech/omnisim
+- CHANGELOG.md + auto-generated release-note flow
+- omnilink-reports/ rename (was omnilink-bugs/) and add OPERATIONS report
+- SECURITY.md responsible-disclosure policy
+- youtube_videos/ private marketing-scripts folder (deny-listed)
+- ci: disable inherited Webots workflows until validated against OmniSim tree
+
+### Documentation
+
+- AGENTS.md: agent-first positioning, multi-instance support documented
+- Beginner guide for the 14 OmniLink chat demos
+- OmniSim Wire Protocol v1.0 reference (PROTOCOL.md)
+- Long-range plans: Unreal-fidelity rendering, procedural world generation,
+  CUDA Newton physics backend, CUDA husky head-on, CUDA rigid-body solver,
+  CUDA particle effects, large-world optimization, granular physics
+- guide/ + reference/ rebranded to OmniSim; archived inherited Webots
+  changelog history (R2020–R2025) under upstream-webots-history/
+- Damage system plans (phases 10-18) — mesh deform, particles, generic,
+  SDK, procedural deformation, impact-localized deformation, headless
+  full-realism dev, topology fracture, repair mechanics
+- README: fresh-user onboarding (prereqs, submodule clone, verify, agentic
+  setup); README section on capturing videos & screenshots; headless runner
+  surfaced in README + quickstart
+- URDF: import sensor-gate crash bisect + Python PATH guidance; record
+  sensor-gate crash as upstream Webots bug
+- benchmarks: outdoor_forest baseline + revised architecture finding;
+  peak-RSS sampling per run; --repeats/median + chunky scenario
+- OmniLink platform reference docs
+- omnilink-agents DEMOS roadmap — 4 next demo agents, ranked + scoped
+
+### Rendering
+
+- Modern renderer backend via OMNISIM_RENDERER env selector
+- WbRenderBackend seam, WREN scene iteration + mesh accessor C API
+- OmniRender ForwardBackend scaffold; shared WREN viewpoint camera
+- Atmospheric sky: Hillaire 2020 multi-scattering LUT, end-to-end procedural
+  sky live on mars, procedural PBR irradiance + cubemap-free worlds, HDR
+  cubemap for mars, per-pixel sky_apply matching preview HTML byte-for-byte,
+  ENU→Y-up axis swap fix
+- AgX tonemap, GPU-side auto-exposure, output dither, temporal smoothing
+  (all under OMNISIM_RENDERER=modern)
+- Mars perf: sun stencil shadows off by default (-51% forward GPU on
+  mars_big), rock subdiv 3→2 (-38% mars_big / -46% mars), rock-template
+  cache dedup, per-instance displaced mesh geometry
+- Cross-world: shadows-off default (-49% on forest), bloom + GTAO defaults
+  off (mars_big render 5.0 → 1.3 ms, -74%)
+- T2 instrumentation: GPU timestamps for main scene, CPU companion timer
+  + FullRenderNow, WREN-internal forward/post-process GPU breakdown,
+  per-frame triangle counter, per-geometry draw histogram, forward-pass
+  sub-bucket breakdown, aggregate per-viewport scene-render timing
+
+### OmniWorld procedural worlds
+
+- Scaffold + heightmap primitives (T1.1, T1.2)
+- Scatter primitives (T1.3); nested scatter + surface manifests (T1.11)
+- Layout DSL, solver, JSON schema (T1.4)
+- Asset catalog (T1.5)
+- Headless-simulator validator (T1.7)
+- Biome cookbook (T1.8)
+- Per-instance variation + weathering (T1.10)
+- Biomes: outdoor_forest (first real biome), outdoor_desert, urban_block,
+  warehouse, indoor_apartment, mars (with atmosphere overrides)
+
+### GUI / UX
+
+- WASD free-fly camera + FPS mouselook + numpad view snaps
+- Splash screen: orb-centered OmniSim composition, drop Webots robot
+  screenshots
+- Live agent HUD (WbAgentHud) docked alongside text editor
+- Web viewer rebranded to OmniSim, dropped dead Cyberbotics image links
+- Streaming viewer vendors wrenjs/enum.js, serves wwi/ tree locally
+- Auto-update notifier repointed to GitHub Releases for OmniSim
+- mWebotsLogo + webots_icon.png renamed to OmniSim equivalents
+- Branding polish: startup-update bug fixed, welcome/updated/About dialogs
+  finished
+- Docs URLs route Help-menu and node-help to GitHub-hosted OmniSim docs;
+  load icons.svg + viewer.js locally instead of from cyberbotics.com
+- CLI bug-report URL rewritten to OmniSim issues; --log-performance
+  rebranded; metainfo URL typo fixed; Apache modification line; snap-MATLAB
+  string cleaned
+- Copyright backfill: OmniLink modification line on Cyberbotics-derived
+  edits
+
+### Fixed
+
+- URDF importer: silence inertia matrix warning, fix TB3 motion bug,
+  inertia gate, sensor emission restructure, TurtleBot3 waffle DAE crash,
+  sensor gate progresses past world-load crash via carrier-Solid +
+  replace-in-place
+- spot.omniworld: world description matches statically-stable wave-gait walk
+- husky_random controller: strip broken sensor-based stuck-escape
+- Newton: project joint anchors through parent/child rotations
+- damage_system: align detached wheel mesh axis with collision cylinder;
+  detached wheel uses real Husky wheel.dae mesh; IFS field + env-var
+  disable hooks for stability
+- Fix rotation pipeline: initialize Wren quats to identity
+- prefs migration handles legacy webots_*.qss theme key
+
+### Removed
+
+- Pico TTS, Java, and MATLAB controller support (controllers, build
+  scripts, samples, launcher strings)
+- Integrated text editor (-3,190 LOC)
+- Classic light theme (dark-only)
+- i18n machinery
+- Cyberbotics menu items + Webots.cloud upload feature
+- Lua/Java/MATLAB overclaims in branding
+- ~30 legacy robots without canonical URDFs (see Breaking changes above)
+- `projects/humans/` tree (no URDF equivalents)
+- Sample trees whose target robot was removed
+- Mixed-dir dead worlds + scaffolding; residual refs to deleted
+  robots/humans/worlds
+
+---
+
+## [v1.0.10] — 2026-05-08
+
+### Demos & worlds
+
+- cuda_particles + multi_robot_damage: P6 closed (fps gap remains)
+- Arm assembly line: Robotiq 3F-styled grippers + TCP rotation tracking
+
+### Robots & PROTOs
+
+- damage_system: phase 19 — generic part detachment + realism polish
+- damage_system: phases 20+21 -- slab attribution + car-crash physics
+
+### Agents (`omnilink-agents/`)
+
+- damage_system: phase 13 — agent SDK + drop accidental scratch PNGs
+- Arm assembly line: parallel-jaw grippers + truststore patch + /reload
+- Arm assembly line: realistic hinged-finger grippers, single-Robot host
+- docs: rebrand pass — omnilink-agents + video script Webots → OmniSim
+
+### Build / packaging
+
+- omnisim.dev: lift dev CLI into the package, shim the script
+
+### Release infrastructure
+
+- release: record v1.0.9 published private SHA
+
+### Documentation
+
+- damage_system: plan v2 — Phases 10-13 (mesh deform, particles, generic, SDK)
+- damage_system: plan — phase 14 (procedural body deformation)
+- damage_system: plan — phase 15 (impact-localized mesh deformation)
+- large_world: plan — CPU-side instancing, async load, scene streaming, broadphase audit
+- damage_system: plan — phase 16 (headless full-realism development)
+- damage_system: plan — phase 17 (topology fracture)
+- damage_system: plan — phase 18 (repair mechanics)
+- observability: agent runtime observability layer (snapshots + unified event stream)
+- agents_md: document multi-instance support for fresh agent sessions
+- omnilink-agents: shared SDK + omnisim-runner launcher
+- cuda_particles: P1 -- bench + plan justifying GPU particle field
+- cuda_particles: P1.5 -- python+numba.cuda particle pool prototype
+- cuda_particles: P6 -- damage_tracker pool client (followup needed)
+- Arm digital twin: shadow-mode bridge + reference demo
+- deeper rebrand: GUI strings, CLI --help, AGENTS.md, dev plans
+- rebrand pass: OPERATIONS.md + CHANGELOG + world-comments + matlab launcher
+- harness: self-detect parallel-session collisions, print agent-actionable guidance
+- fps: lite-damage env hook + pool optimisation + journey doc
+- plan: cuda husky head-on -- 30+ fps target via binary-level work
+- plan: cuda rigid-body solver -- replace ODE for 10-20 husky scenes
+- plan: nvidia newton physics backend -- additive, can't break simulator
+
+### Removed
+
+- remove i18n machinery
+- remove dead Cyberbotics menu items + Webots.cloud upload feature
+
+---
+
+## [v1.0.9] — 2026-05-04
+
+### Demos & worlds
+
+- damage_system: phase 1 — contact detection + impulse via supervisor
+
+### Agents (`omnilink-agents/`)
+
+- Arm assembly line: iter-1 — vision + NL goals + recovery, end-to-end LLM verified
+
+### Release infrastructure
+
+- release: record v1.0.8 published private SHA
+
+### Documentation
+
+- damage_system: phase 0 — arena world + box-dropper supervisor
+- damage_system: phase 2 — HP/state model + chassis-impact detection
+- damage_system: phase 3 — HTTP endpoints for damage queries
+- damage_system: phase 4 — visual damage markers on state transitions
+- damage_system: phase 5 — behavioral consequences via customData gate
+- damage_system: phase 6 — debris bursts on broken transitions
+- qa cleanup: rename OLink-agents → omnilink-agents in AGENTS.md, fix Linux build, document Linux setup
+
+---
+
+## [v1.0.8] — 2026-05-03
+
+### Release infrastructure
+
+- release: record v1.0.7 published private SHA
+- release: switch GitHub Release POST from curl to python urllib
+
+---
+
+## [v1.0.7] — 2026-05-03
+
+### Release infrastructure
+
+- release: record v1.0.6 published private SHA
+- release: ascii-only output for backfill_release_pages.py
+
+### Documentation
+
+- release: auto-create GitHub Release pages on publish + backfill helper
+
+---
+
+## [v1.0.6] — 2026-05-03
+
+### Release infrastructure
+
+- release: record v1.0.5 published private SHA
+
+### Documentation
+
+- capture: agent-facing cinematic render service — sister to the validation harness
+- capture: playback_speed knob — high-level alternative to settle_steps_per_frame
+- perf: per-instance log file + dynamic controller stdout buffer
+- bench: cleanup + --repeats/median + chunky scenario; record item-4 second attempt
+- Arm assembly line: three-arm cobot demo, iter-0 end-to-end verified
+- docs: README section on capturing videos & screenshots
+- bench: peak-RSS sampling per run; size item 3 + write session summary
+
+---
+
+## [v1.0.5] — 2026-05-02
+
+### Agents (`omnilink-agents/`)
+
+- warehouse_foreman: hint-first picker prompt — 56% faster, 86% cheaper
+- warehouse_foreman docs: Cloud Run, not Vercel
+- warehouse_foreman: perception-as-tool — $1.50/hr verified end-to-end
+- warehouse_foreman: ship documentation — ARCHITECTURE.md + AGENT_PATTERNS.md
+- warehouse_patrol: iteration 0 — world + folder scaffold
+- warehouse_patrol: iterations 2 + 3 — Patrol Squad shipped end-to-end
+- drone_surveyor: ship iter 0-3 + verify end-to-end
+- local_memory: propagate _write_file mkdir fix to 5 sibling agents
+- tour_guide: iteration 0 — TIAGo four-room apartment tour, end-to-end verified
+
+### Authoring & harness
+
+- warehouse_patrol: iteration 1 — bridge port multiplexing for two-husky worlds
+
+### Release infrastructure
+
+- release: record v1.0.4 published private SHA
+
+---
+
+## [v1.0.4] — 2026-05-02
+
+### Highlights
+
+- **A 6-DoF cobot arm.** First cobot-class arm in the stock URDF library, complete with per-link visual + collision meshes, a sample world, and a wave demo controller that exercises all six joints.
+- **CUDA broadphase.** `GranularGroup`'s O(N²) brute-force collision test is replaced by a uniform-grid linked-list broadphase. Real-time particle ceiling moves from ~2 000 to well past 100 000 — the new `tests/cuda/warehouse_husky_granular_massive.omniworld` showcase runs the larger budget end-to-end on commodity NVIDIA hardware.
+- **Warehouse-logistics demo + agents.** A new `warehouse_logistics.wbt` scene driven by two co-located OmniLink agents: `warehouse_foreman` (supervisor scaffolding) and `warehouse_picker` (first end-to-end picking agent — profile, knowledge, memory, picker tool, chat-driven runner).
+
+### Demos & worlds
+
+- `projects/samples/demos/worlds/flagship/warehouse_logistics.wbt` — pallet / forklift logistics world driven by `warehouse_picker`.
+- `tests/cuda/warehouse_husky_granular_massive.omniworld` — 10 k-sphere CUDA broadphase showcase world.
+- `tests/cuda/launch_warehouse_granular.bat` and `launch_warehouse_granular_massive.bat` — Windows launchers for the granular CUDA demos.
+
+### Robots & PROTOs
+
+- A 6-DOF cobot arm package: URDF, per-link visual (`.glb` / `.stl`) and convex-hull collision (`.obj`) meshes, a wave demo controller, a sample world, and a `webots.yaml` registry entry.
+- `URDFRobot.staticBase` — new field on the URDF importer. When `TRUE`, the emitted `Robot` has its root `Physics` block stripped so OmniSim treats the base as a kinematic root. This is the bolted-to-the-floor semantics that arms like the UR5e and Panda need to keep their base from skating around under joint torque.
+
+### CUDA / physics
+
+- `WbGranularGroup` uniform-grid linked-list broadphase. Cell size is `2 · radius` so any contacting pair of centres lands in the same or an adjacent cell; the build pass uses `atomicExchange` chains so each cell ends up pointing at a chain of every particle inside it; the force pass walks the 27 neighbour cells per particle. Grid is reused across substeps.
+- Refreshed `tests/cuda/bench_results.md` with the post-broadphase numbers.
+
+### Agents (`omnilink-agents/`)
+
+- `warehouse_foreman/` — supervisor agent scaffolding.
+- `warehouse_picker/` — full picking agent: `profile.json`, README, knowledge tool, local-memory + recall tools, `picker` action tool, `scripts/chat_drive.py` runner, agent entry point.
+- `DEMOS.md` — roadmap for the next four demo agents, ranked and scoped.
+
+### Authoring & harness
+
+- `husky_omnilink_bridge`: new `drive_to_waypoint` action exposed to the bridge protocol — the foundation the warehouse picker drives the Husky on top of.
+- `husky_omnilink_bridge`: drift-gated cell-snap. The husky now snaps to the destination cell only when residual drift exceeds 0.40 m, so clean forward drives no longer pop visually after every cell while post-pivot drift still corrects. The threshold sits well under the 0.5 m wall-clearance buffer.
+
+### Fixed
+
+- `husky_maze`: corners-mode replan loop and unknown-world lidar thrash.
+
+---
+
+## [v1.0.3] — 2026-05-01
+
+### Documentation
+
+- README hero replaces the inline `<video>` embed with an animated GIF preview of the CUDA `GranularGroup` showcase. The full three-minute MP4 stays linked underneath. GitHub's README rewriter strips relative-source `<video>` tags, which made the original embed render as a broken icon on the public landing page.
+
+---
+
+## [v1.0.2] — 2026-05-01
+
+### Highlights
+
+- Three-minute CUDA `GranularGroup` showcase video added to the README hero — `docs/media/videos/cuda_showcase.mp4`.
+
+### Authoring & harness
+
+- `tests/cuda/.harness_granular_group_load.wbt` — minimal hot-reload test world for the granular-group load path through the validation harness.
+
+### Documentation
+
+- README polish around the CUDA hero block.
+
+---
+
+## [v1.0.1] — 2026-05-01
+
+### Highlights
+
+- README rewritten around an OmniSim demo screenshot gallery: warehouse Husky, industrial warehouse, the five Husky maze variants (`husky_maze`, `_unknown`, `_corners`, `_visual`, `_blind`), and the CUDA `GranularGroup` demo — all captured headlessly via the validation harness.
+- `GranularGroup` PROTO fully wired into the scene tree: `resources/nodes/GranularGroup.wrl` declaration plus `WbGranularGroup.cpp/.hpp` machinery.
+
+### Build / packaging
+
+- Inherited Webots CI workflows moved to `.github/workflows.disabled/` until validated against the OmniSim tree. The release build job stays active on the public side.
+
+---
+
+## [v1.0.0] — 2026-05-01
+
+First public release of OmniSim. OmniSim is a fork of
+[Webots](https://github.com/cyberbotics/webots) repositioned around
+agent-driven robotics simulation, distributed by OmniLink under the
+Apache License 2.0.
+
+### Highlights
+
+- **Agent-first product surface.** [`AGENTS.md`](AGENTS.md) at the repo root is the canonical entry point for AI coding agents (Claude Code, Codex, Cursor) following the [agents.md open standard](https://agents.md/). It hands a fresh-clone agent everything it needs: build, launch, demo selection, headless-validation contract, HTTP-bridge driving, world iteration via the harness, and validation lanes.
+- **Validation harness for agent-driven authoring.** Long-running HTTP service at [`scripts/harness/omnisim_harness.py`](scripts/harness/omnisim_harness.py) wraps a headless simulator subprocess and exposes endpoints for loading `.wbt` files, hot-reloading (~600 ms), screenshots, scene-tree inspection, viewpoint aiming (`/scene/look_at`), exposure stats (`/world/render_stats`), and stepping. Load failures come back as structured diagnostic codes (`PROTO_NOT_FOUND`, `WORLD_PARSE_SYNTAX_ERROR`, `TEXTURE_READ_FAILED`, …) so callers branch on codes rather than regex-matching stderr.
+- **`omniworld` procedural world generator.** Recipes: `flat_ground`, `outdoor_forest`, `outdoor_desert`, `warehouse`, `urban_block`, `indoor_apartment`, `mars`. Same `(recipe, seed, params)` always produces a byte-identical `.wbt`. Backed by a Layout DSL + solver + JSON schema, asset catalog, scatter primitives, heightmap primitives, nested scatter + surface manifests, per-instance variation + weathering, and a headless validator.
+- **Native URDF support.** New `WbUrdfImporter` plus a `URDFRobot` world-file syntax: drop a URDF + meshes into `projects/robots/<name>/`, reference it from a `.wbt`, and the simulator imports it on world load. Includes mesh loader (STL / Collada / glb), fallback colors, composite bounding, smarter joint limits, motor effort/velocity emission, position sensors, and supervisor flags. Stock URDF library covers UR5e, E-puck, Tiago, Husky, OmniBot.
+- **HTTP bridges for runtime agents.** Sample bridges (`ur5e_omnilink_bridge`, `husky_omnilink_bridge`) expose robot control over a local HTTP API so an OmniLink agent can drive a robot model without writing controller code. Reference UR5e bridge listens on `127.0.0.1:6060` with `/state`, `/capabilities`, and `/action` (`set_joint_positions`, `set_tcp_target`, `solve_ik`, `reset_home`, …).
+- **`omnilink-agents/` co-located agents.** Agent definitions versioned alongside the worlds and controllers they drive — same productized layout as OmniLink's first-party agents (`profile.json`, `prompts/`, `knowledge/`, `long_term_memory/`, auto-discovered `tools/`, runner). Reference agents at v1.0.0:
+  - `husky_maze/` drives the Clearpath Husky across four maze worlds with progressively harder briefs (`husky_maze.omniworld` trivial, `_unknown.wbt` lidar wall-follow, `_corners.wbt` mission-brief, `_visual.wbt` camera-only). Episodic memory of visited / unvisited cells, structured ops view, long-term memory for cross-session compounding.
+  - `mission_captain/` provides cross-agent composability via local delegation; live-verified after credentials refresh, with resilience patches.
+- **CUDA acceleration layer.** Two-tier additive infrastructure:
+  - **CUDA M0** — context, buffer, and dispatch primitives gated behind `OMNISIM_CUDA_SMOKE=1`.
+  - **CUDA M2** — `GranularGroup` PROTO with brute-force collision response (~320× CPU speedup at N=400 on the bench), real gravity-integration kernel via NVRTC + CUDA Driver API, Coulomb-capped tangential friction, ENU-aware kernel, WREN host-readback rendering so particles are visible end-to-end, two-way coupling between robots and granular media, `boundsHalfWidth` PROTO field.
+- **Modern renderer baseline.** `WbRenderBackend` seam selectable via `OMNISIM_RENDERER`. Modern backend ships pass-through forward + post-process injection, AgX tonemap, GPU-side auto-exposure with temporal smoothing, output dither — all gated to opt-in until A/B-verified-better. Default backend stays WREN to preserve byte-identical visuals.
+- **Realism + performance pass on outdoor worlds.** Per-instance displaced rocks, per-instance variation + weathering, log-uniform rock size distribution. Mars biome: fog, craters, ground-fit, multi-layer scatter, Husky fleet option, drivable-crater geometry, drop-height fix, motor-stall escape. `mars_big`: forward GPU 5.0 → 1.3 ms (-74%) via bloom / GTAO defaults off; rock subdivision 3 → 2 (-38%); shadows-off cross-world (-49% on forest, -51% on `mars_big`).
+- **Branding.** OmniLink dot-sphere orb established as the canonical OmniSim mark. Splash screen, About box, GUI icons, color palette (black / cream / mimosa) all driven from a single source-of-truth tree under [`resources/branding/omnilink/`](resources/branding/omnilink/). Cyberbotics telemetry pings stripped; share-to-cloud dialog neutered; CLI bug-report URL points at the OmniSim issue tracker; `--log-performance` rebrand.
+
+### Demos & worlds
+
+Ships ~37 demo worlds with a canonical top-down `Viewpoint` across the
+set. Featured worlds:
+
+- `warehouse_husky.omniworld` — onboarding demo. Husky random-walks a 26 × 12 m warehouse with reactive, position-based collision recovery.
+- `warehouse_industrial.omniworld` — pallet-rack columns, central conveyor, forklift, crates; harder collision scenario. Built end-to-end via the harness.
+- `husky_maze.omniworld` + `_unknown.wbt` + `_corners.wbt` + `_visual.wbt` + `_blind.wbt` — progressively harder mazes, including a vision-only world where pixels become tags via a four-cardinal-camera `husky_eye` sidecar.
+- `desert_ruins.omniworld` — abandoned-city-in-desert demo built via the harness; real 3D dune terrain, no image backgrounds.
+- `husky_fleet_outdoor.wbt`, `mars.wbt` (generated), `swarm_control_showcase.wbt`, `mobile_robot_control_showcase.wbt`, `two_omnibots.wbt`, `ur5e_ik_test.wbt`, `hexapod.wbt`, `stewart_platform.wbt`, `soccer.wbt`.
+
+### Build, launch & developer tooling
+
+- `build_omni.bat` — Windows one-command build. Derives `WEBOTS_HOME` automatically. Wraps the MSYS2 / MinGW64 toolchain.
+- `launch.bat` — Windows zero-args launcher. Opens the warehouse Husky demo by default; accepts any `.wbt` path and forwards extra simulator flags.
+- `scripts/dev/omnisim_dev.py` — cross-platform helper. Subcommands: `build {core|renderer|gui|controller-libs|all}`, `run-world`, `run-headless` (the headless-validation contract: `--batch --mode=fast --no-rendering --minimize`, monitored log, structured exit codes), `harness`, `test-world`, `test-smoke`, `test-group`, `profile-world`.
+- WASD free-fly camera + FPS mouselook, `F`-key follow toggle for the selected object, numpad view snaps in the 3D view.
+- Structured runtime log file (`omnisim_log.txt`) at repo root.
+
+### Documentation
+
+- `AGENTS.md` — canonical agent entry point.
+- `docs/developer/quickstart.md` — full local build / run walkthrough.
+- `docs/developer/agent-map.md` — code-search and subsystem map for agents.
+- `docs/developer/simulation-authoring-for-coding-agents.md` — best workflow for building new simulations.
+- `docs/developer/omniworld-user-guide.md` and `omniworld-biome-cookbook.md` — procedural world generation.
+- Inherited Webots `guide` / `reference` / `automobile` docs rebranded; dead Cyberbotics URLs scrubbed; chapter titles updated.
+
+### Release infrastructure
+
+- `scripts/release/publish_snapshot.sh` — one-commit-per-release publishing script. Operates inside a throwaway worktree under `.build_tmp/release-publish/` and never rewrites history. Defaults to dry-run; `--push` is the only way to actually publish.
+- Apache 2.0 file headers brought into line with the OmniLink `copyright-headers.md` convention.
+- `SECURITY.md` at repo root.
+
+### Removed
+
+- Cyberbotics-hosted telemetry pings.
+- Share-to-cloud dialog wired up to dial out (UI surface kept; outbound network removed).
+- Inherited Webots CI workflows moved to `.github/workflows.disabled/` until validated against the OmniSim tree.
+- Hardcoded personal paths and machine-specific configuration removed from the tracked tree.

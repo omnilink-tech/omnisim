@@ -1,0 +1,121 @@
+{
+  "schema": "omnisim.install_check.calibration/v1",
+  "runs": 3,
+  "commit": "156db092",
+  "calibrated_on": {
+    "fingerprint_id": "fa2a2b1a1962",
+    "resolved_backend": "ode",
+    "gpu": "NVIDIA GeForce RTX 5070 Ti Laptop GPU (driver 592.01)",
+    "os": "Windows-11",
+    "render_backend": "wren",
+    "note": "within-host (single-machine) N-run calibration; harden multi-host in CI"
+  },
+  "bands": {
+    "warehouse_husky": {
+      "warning_count": {
+        "any": {
+          "band_max": 60,
+          "drift_max": 200
+        }
+      }
+    },
+    "husky_maze": {
+      "warning_count": {
+        "any": {
+          "band_max": 60,
+          "drift_max": 200
+        }
+      }
+    },
+    "warehouse_render": {
+      "world_errors": {
+        "any": {
+          "band_max": 1.0,
+          "drift_max": 11.0
+        }
+      },
+      "displacement_m": {
+        "any": {
+          "band_min": 1.08,
+          "drift_min": 0.22
+        }
+      },
+      "mean_brightness": {
+        "any": {
+          "expected": 58.87,
+          "abs_tol": 30.0,
+          "drift_abs_tol": 60.0
+        }
+      },
+      "black_pct": {
+        "any": {
+          "band_max": 15.0,
+          "drift_max": 50.0
+        }
+      },
+      "saturated_pct": {
+        "any": {
+          "band_max": 5.0,
+          "drift_max": 25.0
+        }
+      }
+    }
+  },
+  "stats": {
+    "warehouse_husky": {
+      "warning_count": {
+        "mean": 1.0,
+        "sd": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "n": 3
+      }
+    },
+    "husky_maze": {
+      "warning_count": {
+        "mean": 0.333,
+        "sd": 0.471,
+        "min": 0.0,
+        "max": 1.0,
+        "n": 3
+      }
+    },
+    "warehouse_render": {
+      "world_errors": {
+        "mean": 0.0,
+        "sd": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "n": 3
+      },
+      "displacement_m": {
+        "mean": 2.985,
+        "sd": 0.394,
+        "min": 2.516,
+        "max": 3.48,
+        "n": 3
+      },
+      "mean_brightness": {
+        "mean": 58.873,
+        "sd": 0.005,
+        "min": 58.87,
+        "max": 58.88,
+        "n": 3
+      },
+      "black_pct": {
+        "mean": 0.27,
+        "sd": 0.0,
+        "min": 0.27,
+        "max": 0.27,
+        "n": 3
+      },
+      "saturated_pct": {
+        "mean": 0.0,
+        "sd": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "n": 3
+      }
+    }
+  }
+}

@@ -1,0 +1,75 @@
+{
+ "tag": "smoke2",
+ "world": "O:\\omnisim\\_scratch\\wheelscale\\worlds\\smoke2.wbt",
+ "rc": 0,
+ "killed": false,
+ "wall_s": 11.8,
+ "log": "O:\\omnisim\\_scratch\\wheelscale\\out\\smoke2.log",
+ "nlog": "O:\\omnisim\\_scratch\\wheelscale\\out\\smoke2.newton.log",
+ "probe": "O:\\omnisim\\_scratch\\wheelscale\\out\\smoke2.probe.json",
+ "sim_time_s": 8.0,
+ "robots": [
+  {
+   "name": "bot_0",
+   "n_wheels": 4,
+   "dx": 3.21,
+   "dy": 0.0,
+   "disp": 3.21,
+   "z0": 0.3,
+   "z1": 0.132,
+   "zmin": 0.132,
+   "zmax": 0.3,
+   "mean_speed": 0.4013,
+   "speed_sd": 0.0014,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_1",
+   "n_wheels": 4,
+   "dx": 3.21,
+   "dy": 0.0,
+   "disp": 3.21,
+   "z0": 0.3,
+   "z1": 0.132,
+   "zmin": 0.132,
+   "zmax": 0.3,
+   "mean_speed": 0.4013,
+   "speed_sd": 0.0014,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  }
+ ],
+ "disp_min": 3.21,
+ "disp_max": 3.21,
+ "disp_mean": 3.21,
+ "disp_spread": 0.0,
+ "wheel_w_min": 2.5,
+ "z_range": [
+  0.132,
+  0.3
+ ],
+ "any_nan": false,
+ "newton": {
+  "buffers": [
+   "20:37:04 constraint buffers: njmax=256 nconmax=256 (0=newton auto) initial nefc=0 ncon=0 nv=20"
+  ],
+  "peak_first": null,
+  "peak_last": null,
+  "n_peaks": 0,
+  "overflow_lines": 0
+ },
+ "log_hits": []
+}

@@ -1,0 +1,15 @@
+=== OmniSim Log Started (pid=10124): 2026-09-12 18:06:09 ===
+INFO: [main] stdio: stdout inherited from the launcher (handle type 1: 1=file 2=char/null 3=pipe); stdio left as given, no console attached
+INFO: [OmNewtonBackend] warp + newton imports OK; FFI smoke OK (newton.ModelBuilder()); helper module loaded -- not a backend verdict: the backend is chosen at world finalise (default physicsBackend "auto" resolves to Newton when the runtime is present); authoritative verdict: the <log>.newton.json sidecar
+WARNING: DEF BLOCK Solid: 'name' field value should be unique: 'solid' already used by a sibling Solid node.
+INFO: [OmWgpuBackend] wgpu-native init OK (instance + adapter + device + queue)
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmWgpuSurface] on-screen surface created + configured (source=windows-hwnd)
+INFO: [OmView3D] wgpu main view tonemap: HDR linear-light + AgX (exposure 1)
+INFO: object_motion_probe: Starting controller: python.exe -u object_motion_probe.py O:/omnisim/.local-runs/motion-pipeline/release-moving/0
+INFO: [OmCamera] 'probe' declares far=0.000 (means infinite); the wgpu sensor projection substitutes 10000.0 m, matching WREN's wren::Camera::setFar
+INFO: [OmCamera] 'probe' rendered through wgpu (320x200, 2 draws) [W3 scene: sun=world extraLights=0 sky=Background skyColor fog=off exposure=1.00 center BGRA=(86,86,86)]
+INFO: object_motion_probe: Terminating.
+Qt Warning: QProcess: Destroyed while process ("python.exe") is still running.
+INFO: omnisim exited normally (code 0)
+=== OmniSim Log Ended ===

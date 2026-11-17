@@ -1,0 +1,136 @@
+{
+  "primary": {
+    "world": "tests\\benchmarks\\agentbench\\adapters\\omnisim\\build_scale_lane\\worlds\\build_scale_10.wbt",
+    "injected_world": "tests\\benchmarks\\agentbench\\adapters\\omnisim\\build_scale_lane\\worlds\\_agentbench_buildscale_primary_build_scale_10.wbt",
+    "rc": 0,
+    "wall_s": 19.494122600000992,
+    "timed_out": false,
+    "log_path": ".agentbench-buildscale-current4-10\\primary\\buildscale_primary_engine.log",
+    "sidecar": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.8.1",
+        "mujoco_warp": "3.8.0.3",
+        "newton": "1.2.0",
+        "warp": "1.13.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "present": true
+    },
+    "recorder_complete": true,
+    "rows": 2501,
+    "n_robots": 10,
+    "n_tracks": 10,
+    "n_link_tracks": 0,
+    "n_solid_tracks": 0,
+    "links_truncated": false,
+    "scene_scan": {
+      "supported": true,
+      "cap": 128,
+      "found": 3,
+      "bounded": 3,
+      "truncated": false
+    },
+    "run_contacts": {
+      "supported": true,
+      "every_n_steps": 1,
+      "steps_sampled": 2501,
+      "total_observed": 200080,
+      "distinct_named": 0,
+      "unpaired": 200080,
+      "truncated": false,
+      "error": null
+    },
+    "run_contact_pairs": [
+      "scale_000/None",
+      "scale_001/None",
+      "scale_002/None",
+      "scale_003/None",
+      "scale_004/None",
+      "scale_005/None",
+      "scale_006/None",
+      "scale_007/None"
+    ],
+    "attempts_used": 1,
+    "launch_backend_env": {},
+    "tamper": [],
+    "error": null
+  },
+  "clean_replay": {
+    "world": ".agentbench-buildscale-current4-10\\clean_project\\worlds\\build_scale_10.wbt",
+    "injected_world": ".agentbench-buildscale-current4-10\\clean_project\\worlds\\_agentbench_buildscale_replay_build_scale_10.wbt",
+    "rc": 0,
+    "wall_s": 21.85496140000032,
+    "timed_out": false,
+    "log_path": ".agentbench-buildscale-current4-10\\clean_run\\buildscale_replay_engine.log",
+    "sidecar": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.8.1",
+        "mujoco_warp": "3.8.0.3",
+        "newton": "1.2.0",
+        "warp": "1.13.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "present": true
+    },
+    "recorder_complete": true,
+    "rows": 2501,
+    "n_robots": 10,
+    "n_tracks": 10,
+    "n_link_tracks": 0,
+    "n_solid_tracks": 0,
+    "links_truncated": false,
+    "scene_scan": {
+      "supported": true,
+      "cap": 128,
+      "found": 3,
+      "bounded": 3,
+      "truncated": false
+    },
+    "run_contacts": {
+      "supported": true,
+      "every_n_steps": 1,
+      "steps_sampled": 2501,
+      "total_observed": 200080,
+      "distinct_named": 0,
+      "unpaired": 200080,
+      "truncated": false,
+      "error": null
+    },
+    "run_contact_pairs": [
+      "scale_000/None",
+      "scale_001/None",
+      "scale_002/None",
+      "scale_003/None",
+      "scale_004/None",
+      "scale_005/None",
+      "scale_006/None",
+      "scale_007/None"
+    ],
+    "attempts_used": 1,
+    "launch_backend_env": {},
+    "tamper": [],
+    "error": null
+  },
+  "clean_replay_failed_assertions": [],
+  "clean_replay_error": null,
+  "source_audit": {
+    "root": "O:\\omnisim\\tests\\benchmarks\\agentbench\\adapters\\omnisim\\build_scale_lane",
+    "blocks": [],
+    "artifact_files": [
+      "controllers/build_scale_drive/build_scale_drive.py",
+      "protos/ScaleBot.proto",
+      "worlds/build_scale_10.wbt"
+    ],
+    "missing": [],
+    "absolute": [],
+    "forbidden": []
+  }
+}

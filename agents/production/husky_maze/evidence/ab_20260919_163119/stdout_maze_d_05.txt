@@ -1,0 +1,150 @@
+[solve] bridge: http://127.0.0.1:6070
+[solve] world_title = 'Husky Maze'  map_available = True
+[solve] max_linear = 0.99 m/s, max_angular = 3.47 rad/s, lidar = 16 rays @ 8.0 m
+[solve] strategy: BFS over known map
+[solve] plan: 73 cells from (0, 10) to (10, 0)
+[solve] step  1/72: goto (0,9) expected pose (-10.0,+8.0)
+[solve]              actual (-9.99,+8.18) yaw=-1.60  drift=0.18 m
+[solve] step  2/72: goto (0,8) expected pose (-10.0,+6.0)
+[solve]              actual (-10.00,+6.18) yaw=-1.56  drift=0.18 m
+[solve] step  3/72: goto (0,7) expected pose (-10.0,+4.0)
+[solve]              actual (-10.00,+4.18) yaw=-1.58  drift=0.18 m
+[solve] step  4/72: goto (1,7) expected pose (-8.0,+4.0)
+[solve]              actual (-8.18,+4.01) yaw=-0.05  drift=0.18 m
+[solve] step  5/72: goto (2,7) expected pose (-6.0,+4.0)
+[solve]              actual (-6.18,+4.00) yaw=+0.02  drift=0.18 m
+[solve] step  6/72: goto (3,7) expected pose (-4.0,+4.0)
+[solve]              actual (-4.18,+4.00) yaw=-0.01  drift=0.18 m
+[solve] step  7/72: goto (3,6) expected pose (-4.0,+2.0)
+[solve]              actual (-4.01,+2.18) yaw=-1.51  drift=0.18 m
+[solve] step  8/72: goto (2,6) expected pose (-6.0,+2.0)
+[solve]              actual (-5.82,+2.01) yaw=-3.09  drift=0.18 m
+[solve] step  9/72: goto (2,5) expected pose (-6.0,+0.0)
+[solve]              actual (-5.99,+0.18) yaw=-1.63  drift=0.18 m
+[solve] step 10/72: goto (2,4) expected pose (-6.0,-2.0)
+[solve]              actual (-6.00,-1.82) yaw=-1.55  drift=0.18 m
+[solve] step 11/72: goto (1,4) expected pose (-8.0,-2.0)
+[solve]              actual (-7.82,-1.99) yaw=-3.09  drift=0.18 m
+[solve] step 12/72: goto (0,4) expected pose (-10.0,-2.0)
+[solve]              actual (-9.82,-2.00) yaw=+3.12  drift=0.18 m
+[solve] step 13/72: goto (0,3) expected pose (-10.0,-4.0)
+[solve]              actual (-9.99,-3.82) yaw=-1.63  drift=0.18 m
+[solve] step 14/72: goto (0,2) expected pose (-10.0,-6.0)
+[solve]              actual (-10.00,-5.82) yaw=-1.55  drift=0.18 m
+[solve] step 15/72: goto (1,2) expected pose (-8.0,-6.0)
+[solve]              actual (-8.18,-5.99) yaw=-0.06  drift=0.18 m
+[solve] step 16/72: goto (1,1) expected pose (-8.0,-8.0)
+[solve]              actual (-8.01,-7.82) yaw=-1.51  drift=0.18 m
+[solve] step 17/72: goto (2,1) expected pose (-6.0,-8.0)
+[solve]              actual (-6.18,-7.99) yaw=-0.06  drift=0.18 m
+[solve] step 18/72: goto (2,0) expected pose (-6.0,-10.0)
+[solve]              actual (-6.01,-9.82) yaw=-1.51  drift=0.18 m
+[solve] step 19/72: goto (3,0) expected pose (-4.0,-10.0)
+[solve]              actual (-4.18,-9.99) yaw=-0.06  drift=0.18 m
+[solve] step 20/72: goto (3,1) expected pose (-4.0,-8.0)
+[solve]              actual (-4.01,-8.18) yaw=+1.51  drift=0.18 m
+[solve] step 21/72: goto (3,2) expected pose (-4.0,-6.0)
+[solve]              actual (-4.00,-6.18) yaw=+1.59  drift=0.18 m
+[solve] step 22/72: goto (4,2) expected pose (-2.0,-6.0)
+[solve]              actual (-2.18,-6.01) yaw=+0.06  drift=0.18 m
+[solve] step 23/72: goto (4,1) expected pose (-2.0,-8.0)
+[solve]              actual (-2.01,-7.82) yaw=-1.51  drift=0.18 m
+[solve] step 24/72: goto (4,0) expected pose (-2.0,-10.0)
+[solve]              actual (-2.00,-9.82) yaw=-1.59  drift=0.18 m
+[solve] step 25/72: goto (5,0) expected pose (+0.0,-10.0)
+[solve]              actual (-0.18,-9.99) yaw=-0.06  drift=0.18 m
+[solve] step 26/72: goto (5,1) expected pose (+0.0,-8.0)
+[solve]              actual (-0.01,-8.18) yaw=+1.51  drift=0.18 m
+[solve] step 27/72: goto (5,2) expected pose (+0.0,-6.0)
+[solve]              actual (+0.00,-6.18) yaw=+1.59  drift=0.18 m
+[solve] step 28/72: goto (6,2) expected pose (+2.0,-6.0)
+[solve]              actual (+1.82,-6.01) yaw=+0.06  drift=0.18 m
+[solve] step 29/72: goto (6,1) expected pose (+2.0,-8.0)
+[solve]              actual (+1.99,-7.82) yaw=-1.51  drift=0.18 m
+[solve] step 30/72: goto (7,1) expected pose (+4.0,-8.0)
+[solve]              actual (+3.82,-7.99) yaw=-0.06  drift=0.18 m
+[solve] step 31/72: goto (8,1) expected pose (+6.0,-8.0)
+[solve]              actual (+5.82,-8.00) yaw=+0.02  drift=0.18 m
+[solve] step 32/72: goto (8,2) expected pose (+6.0,-6.0)
+[solve]              actual (+5.99,-6.18) yaw=+1.51  drift=0.18 m
+[solve] step 33/72: goto (8,3) expected pose (+6.0,-4.0)
+[solve]              actual (+6.00,-4.18) yaw=+1.59  drift=0.18 m
+[solve] step 34/72: goto (8,4) expected pose (+6.0,-2.0)
+[solve]              actual (+6.00,-2.18) yaw=+1.56  drift=0.18 m
+[solve] step 35/72: goto (7,4) expected pose (+4.0,-2.0)
+[solve]              actual (+4.18,-2.01) yaw=+3.08  drift=0.18 m
+[solve] step 36/72: goto (6,4) expected pose (+2.0,-2.0)
+[solve]              actual (+2.18,-2.00) yaw=-3.12  drift=0.18 m
+[solve] step 37/72: goto (5,4) expected pose (+0.0,-2.0)
+[solve]              actual (+0.18,-2.00) yaw=+3.13  drift=0.18 m
+[solve] step 38/72: goto (5,5) expected pose (+0.0,+0.0)
+[solve]              actual (+0.01,-0.18) yaw=+1.63  drift=0.18 m
+[solve] step 39/72: goto (6,5) expected pose (+2.0,+0.0)
+[solve]              actual (+1.82,-0.01) yaw=+0.05  drift=0.18 m
+[solve] step 40/72: goto (6,6) expected pose (+2.0,+2.0)
+[solve]              actual (+1.99,+1.82) yaw=+1.51  drift=0.18 m
+[solve] step 41/72: goto (5,6) expected pose (+0.0,+2.0)
+[solve]              actual (+0.18,+1.99) yaw=+3.08  drift=0.18 m
+[solve] step 42/72: goto (5,7) expected pose (+0.0,+4.0)
+[solve]              actual (+0.01,+3.82) yaw=+1.63  drift=0.18 m
+[solve] step 43/72: goto (5,8) expected pose (+0.0,+6.0)
+[solve]              actual (-0.00,+5.82) yaw=+1.55  drift=0.18 m
+[solve] step 44/72: goto (4,8) expected pose (-2.0,+6.0)
+[solve]              actual (-1.82,+5.99) yaw=+3.09  drift=0.18 m
+[solve] step 45/72: goto (3,8) expected pose (-4.0,+6.0)
+[solve]              actual (-3.82,+6.00) yaw=-3.12  drift=0.18 m
+[solve] step 46/72: goto (3,9) expected pose (-4.0,+8.0)
+[solve]              actual (-3.99,+7.82) yaw=+1.63  drift=0.18 m
+[solve] step 47/72: goto (4,9) expected pose (-2.0,+8.0)
+[solve]              actual (-2.18,+7.99) yaw=+0.05  drift=0.18 m
+[solve] step 48/72: goto (4,10) expected pose (-2.0,+10.0)
+[solve]              actual (-2.01,+9.82) yaw=+1.51  drift=0.18 m
+[solve] step 49/72: goto (5,10) expected pose (+0.0,+10.0)
+[solve]              actual (-0.18,+9.99) yaw=+0.06  drift=0.18 m
+[solve] step 50/72: goto (6,10) expected pose (+2.0,+10.0)
+[solve]              actual (+1.82,+10.00) yaw=-0.02  drift=0.18 m
+[solve] step 51/72: goto (6,9) expected pose (+2.0,+8.0)
+[solve]              actual (+1.99,+8.18) yaw=-1.51  drift=0.18 m
+[solve] step 52/72: goto (7,9) expected pose (+4.0,+8.0)
+[solve]              actual (+3.82,+8.01) yaw=-0.06  drift=0.18 m
+[solve] step 53/72: goto (7,10) expected pose (+4.0,+10.0)
+[solve]              actual (+3.99,+9.82) yaw=+1.51  drift=0.18 m
+[solve] step 54/72: goto (8,10) expected pose (+6.0,+10.0)
+[solve]              actual (+5.82,+9.99) yaw=+0.06  drift=0.18 m
+[solve] step 55/72: goto (9,10) expected pose (+8.0,+10.0)
+[solve]              actual (+7.82,+10.00) yaw=-0.02  drift=0.18 m
+[solve] step 56/72: goto (10,10) expected pose (+10.0,+10.0)
+[solve]              actual (+9.82,+10.00) yaw=+0.01  drift=0.18 m
+[solve] step 57/72: goto (10,9) expected pose (+10.0,+8.0)
+[solve]              actual (+9.99,+8.18) yaw=-1.51  drift=0.18 m
+[solve] step 58/72: goto (10,8) expected pose (+10.0,+6.0)
+[solve]              actual (+10.00,+6.18) yaw=-1.59  drift=0.18 m
+[solve] step 59/72: goto (10,7) expected pose (+10.0,+4.0)
+[solve]              actual (+10.00,+4.18) yaw=-1.56  drift=0.18 m
+[solve] step 60/72: goto (10,6) expected pose (+10.0,+2.0)
+[solve]              actual (+10.00,+2.18) yaw=-1.57  drift=0.18 m
+[solve] step 61/72: goto (10,5) expected pose (+10.0,+0.0)
+[solve]              actual (+10.00,+0.18) yaw=-1.57  drift=0.18 m
+[solve] step 62/72: goto (9,5) expected pose (+8.0,+0.0)
+[solve]              actual (+8.18,+0.01) yaw=-3.09  drift=0.18 m
+[solve] step 63/72: goto (9,4) expected pose (+8.0,-2.0)
+[solve]              actual (+8.01,-1.82) yaw=-1.63  drift=0.18 m
+[solve] step 64/72: goto (10,4) expected pose (+10.0,-2.0)
+[solve]              actual (+9.82,-1.99) yaw=-0.06  drift=0.18 m
+[solve] step 65/72: goto (10,3) expected pose (+10.0,-4.0)
+[solve]              actual (+9.99,-3.82) yaw=-1.51  drift=0.18 m
+[solve] step 66/72: goto (9,3) expected pose (+8.0,-4.0)
+[solve]              actual (+8.18,-3.99) yaw=-3.09  drift=0.18 m
+[solve] step 67/72: goto (9,2) expected pose (+8.0,-6.0)
+[solve]              actual (+8.01,-5.82) yaw=-1.63  drift=0.18 m
+[solve] step 68/72: goto (10,2) expected pose (+10.0,-6.0)
+[solve]              actual (+9.82,-5.99) yaw=-0.06  drift=0.18 m
+[solve] step 69/72: goto (10,1) expected pose (+10.0,-8.0)
+[solve]              actual (+9.99,-7.82) yaw=-1.51  drift=0.18 m
+[solve] step 70/72: goto (9,1) expected pose (+8.0,-8.0)
+[solve]              actual (+8.18,-7.99) yaw=-3.08  drift=0.18 m
+[solve] step 71/72: goto (9,0) expected pose (+8.0,-10.0)
+[solve]              actual (+8.01,-9.82) yaw=-1.63  drift=0.18 m
+[solve] step 72/72: goto (10,0) expected pose (+10.0,-10.0)
+[solve]              actual (+9.82,-9.99) yaw=-0.06  drift=0.18 m
+[solve] goal_reached at step 72

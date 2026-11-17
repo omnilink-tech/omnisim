@@ -1,0 +1,161 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/tables/protos/Desk.proto
+# keywords: furniture/table
+# An office desk (0.7 x 1.2 x 0.72 m): a rimmed top on four splayed tubular legs, with a modesty panel across the back.
+# template language: javascript
+
+PROTO Desk [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFString   name        "desk"
+  field SFColor    color       1 1 1               # Defines the color of the desk.
+  field SFNode     physics     NULL                # Is `Solid.physics`.
+]
+{
+  %<
+    // The desk is 0.7 deep (x), 1.2 wide (y) and 0.72 tall, with the top at
+    // 0.71. The legs are not vertical: they lean out by 0.152 rad, which is
+    // what puts the feet outside the footprint of the top and keeps the desk
+    // from going over when someone leans on a corner of it.
+    const depth = 0.7;
+    const width = 1.2;
+    const topZ = 0.71;
+    const topThickness = 0.02;
+
+    const legLean = 0.152;   // rad, off the vertical
+    const legLength = 0.66;
+    const legRadius = 0.023;
+    const legZ = 0.35;       // the leg centres, at half height
+    const legX = 0.269;
+    const legY = 0.535;
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      # --- the top -----------------------------------------------------------
+      DEF DESK_TOP Pose {
+        translation 0 0 %<= topZ >%
+        children [
+          Shape {
+            appearance DEF DESK_SURFACE PBRAppearance {
+              baseColor IS color
+              roughness 0.4
+              metalness 0
+            }
+            geometry Box {
+              size %<= depth >% %<= width >% %<= topThickness >%
+            }
+          }
+        ]
+      }
+      # --- the rim under the lip of the top. Without it the top reads as a bare
+      #     slab of board rather than as a desk. ------------------------------
+      %< for (let s = -1; s <= 1; s += 2) { >%
+      Pose {
+        translation %<= s * 0.5 * (depth - 0.02) >% 0 %<= topZ - 0.025 >%
+        children [
+        %< if (s === -1) { >%
+          DEF DESK_RAIL_LONG Shape {
+            appearance DEF DESK_FRAME PBRAppearance {
+              baseColor 0.29 0.3 0.32
+              roughness 0.45
+              metalness 0.6
+            }
+            geometry Box {
+              size 0.02 %<= width - 0.04 >% 0.03
+            }
+          }
+        %< } else { >%
+          USE DESK_RAIL_LONG
+        %< } >%
+        ]
+      }
+      Pose {
+        translation 0 %<= s * 0.5 * (width - 0.02) >% %<= topZ - 0.025 >%
+        children [
+        %< if (s === -1) { >%
+          DEF DESK_RAIL_SHORT Shape {
+            appearance USE DESK_FRAME
+            geometry Box {
+              size %<= depth - 0.04 >% 0.02 0.03
+            }
+          }
+        %< } else { >%
+          USE DESK_RAIL_SHORT
+        %< } >%
+        ]
+      }
+      %< } >%
+      # --- the four legs, each leaning outwards -------------------------------
+      %< for (let sx = -1; sx <= 1; sx += 2) {
+           for (let sy = -1; sy <= 1; sy += 2) { >%
+      Pose {
+        translation %<= sx * legX >% %<= sy * legY >% %<= legZ >%
+        rotation 0 1 0 %<= -sx * legLean >%
+        children [
+        %< if (sx === -1 && sy === -1) { >%
+          DEF DESK_LEG Shape {
+            appearance USE DESK_FRAME
+            geometry Capsule {
+              height %<= legLength >%
+              radius %<= legRadius >%
+              subdivision 12
+            }
+          }
+        %< } else { >%
+          USE DESK_LEG
+        %< } >%
+        ]
+      }
+      %<   }
+         } >%
+      # --- the modesty panel across the back ----------------------------------
+      DEF DESK_PANEL Pose {
+        translation %<= -0.5 * depth + 0.06 >% 0 0.5
+        children [
+          Shape {
+            appearance USE DESK_SURFACE
+            geometry Box {
+              size 0.015 %<= width - 0.18 >% 0.3
+            }
+          }
+        ]
+      }
+    ]
+    name IS name
+    model "desk"
+    # The top and the four legs. The rim and the panel sit inside that envelope
+    # and get no collider of their own.
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 %<= topZ >%
+          children [
+            Box {
+              size %<= depth >% %<= width >% %<= topThickness >%
+            }
+          ]
+        }
+      %< for (let sx = -1; sx <= 1; sx += 2) {
+           for (let sy = -1; sy <= 1; sy += 2) { >%
+        Pose {
+          translation %<= sx * legX >% %<= sy * legY >% %<= legZ >%
+          rotation 0 1 0 %<= -sx * legLean >%
+          children [
+            Capsule {
+              height %<= legLength >%
+              radius %<= legRadius >%
+              subdivision 8
+            }
+          ]
+        }
+      %<   }
+         } >%
+      ]
+    }
+    physics IS physics
+  }
+}

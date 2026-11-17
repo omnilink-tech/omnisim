@@ -1,0 +1,39 @@
+Where these three descriptions came from
+=======================================
+
+All three were authored for this task, by the maintainers of the benchmark
+that grades it, from primitive shapes only. None is a vendor's model, none is
+derived from one, and none references an external file: there are no meshes,
+no package:// paths and no downloads. Licence: Apache-2.0, the same as the
+repository they ship in.
+
+  bench_arm/urdf/bench_arm.urdf   six revolute axes on a fixed pedestal, plus
+                                  a two-finger parallel gripper. Reach is
+                                  about 0.9 m from a shoulder at z = 0.25 m.
+                                  The link named "tool" is the palm, and its
+                                  own frame is the end effector.
+
+  props/urdf/block.urdf           a 50 mm cube, 0.2 kg.
+
+  props/urdf/bin.urdf             an open-topped box, 0.30 m square outside,
+                                  0.26 m square inside, rim at z = 0.16 m
+                                  above its own frame, 3.0 kg.
+
+Two things this file deliberately does NOT tell you, because they are the
+task: where to put any of them, and how to make the arm move.
+
+On whether the task is achievable
+--------------------------------
+
+The masses, inertias, limits and efforts are plausible, and the geometry has
+been checked for reach and for gripper travel against the block. Nothing here
+tells you how hard the task is on any particular simulator, and that is not an
+omission you should read anything into.
+
+(An earlier version of this file said the arm "has never been demonstrated
+completing this task on any simulator", and warned that it might be
+unachievable everywhere. That was true when written and is no longer: a
+scripted controller now completes the task with these three descriptions. It
+was also a thumb on the scale -- it sat in the agent's own workspace and told
+it the job might be impossible, in the direction that flatters a failure. The
+provenance above is what this file is for; the editorial is gone.)

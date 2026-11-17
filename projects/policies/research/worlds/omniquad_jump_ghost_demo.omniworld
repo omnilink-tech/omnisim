@@ -1,0 +1,64 @@
+#OMNISIM R2025a utf8
+
+# OmniQuad FORWARD-LEAP + GHOST demo. DEF OMNIQUAD_REAL leaps under the RL policy
+# (omniquad_getup_mimic, jump ghost), beside DEF OMNIQUAD_GHOST -- a translucent physics-free
+# OmniQuad (omniquad_getup_ghost) REPLAYING the ideal MPPI leap. The gap = tracking error.
+# Launch: scripts/dev/run_omniquad_jump_ghost_demo.ps1
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "OmniQuad forward-leap + ghost"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 6.936 -6.684 7.499
+  follow "omniquad"
+  followType "Tracking Shot"
+  followSmoothness 0.3
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 12 8
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF OMNIQUAD_REAL URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad.urdf"
+  translation 0 0 0.56
+  name "omniquad"
+  supervisor TRUE
+  controller "omniquad_getup_mimic"
+  physicsBackend "newton"
+}
+
+DEF OMNIQUAD_GHOST URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad_ghost.urdf"
+  translation 0 1.4 0.56
+  name "omniquad_ghost"
+  supervisor TRUE
+  controller "omniquad_getup_ghost"
+  staticBase TRUE
+}

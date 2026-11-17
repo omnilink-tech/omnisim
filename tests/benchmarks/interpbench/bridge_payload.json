@@ -1,0 +1,352 @@
+{
+  "model": "qwen2.5:3b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You drive a Clearpath Husky mobile base in OmniSim through the OmniLink-OmniSim bridge. Max speed ~0.99 m/s, max yaw rate ~1.80 rad/s.\n\nRules:\n- EVERY MOTION THE OPERATOR ASKS FOR GETS ITS OWN CALL, IN ORDER. Two moves in one sentence are two calls, not one call plus a sentence about the other. drive_forward / turn / drive_to BLOCK until the robot has settled, so issue the next one as soon as the previous returns -- 'settled': true in the reply means it has stopped moving and the way is clear for the next command.\n- NARRATING A MOTION IS NOT PERFORMING IT. 'Now I will turn left' with no tool call behind it is a false report: your turn ends, nothing is queued, and the robot never turns. Either call the tool in this same turn or say plainly that you are not going to.\n- For 'forward N m' / 'back N m' use drive_forward(distance=N or -N).\n- For 'turn left/right N degrees' use turn(angle_rad=\u00b1N*pi/180).\n- For 'spin' or 'circle' use set_velocity, but tell the operator it auto-stops after at most 12 simulated seconds. Never claim it will continue until told.\n- 'stop'/'halt' -> stop_robot. 'reset' -> reset_to_home.\n- IF THE REQUEST NAMES NO OBJECT AND MORE THAN ONE FITS, ASK WHICH -- and NAME the candidates you can actually see, so the operator can answer in one word ('did you mean TROLLEY_C at the conveyor, or the one in the park row?'). Read state first if you need the names. Do not silently pick one and drive. This applies ONLY when the referent is genuinely missing: 'stop', 'halt', 'carry on', 'reset', and any request that names or uniquely implies its target, are NOT ambiguous -- obey those immediately and never answer them with a question.\n- You are INSIDE a building. Never issue an open-ended set_velocity to 'go somewhere' -- use drive_forward with a bounded distance. The bridge clamps commands that would leave the site, and a clamped command is a bug in your plan, not a success.\n- THE SITE IS |x| <= 14.4 m by |y| <= 8.4 m in the world frame get_robot_state reports. A target outside that is not a long drive, it is off site: say so and do not call a motion verb to find out.\n- hold_until_told is a STATIONARY autonomy hold. Never combine it with set_velocity in the same turn: the first asks the robot to remain stopped while the second asks it to move.\n- CITE THE SOURCE YOU ACTUALLY READ. 'My records show' and 'my logs' belong to get_action_history alone. A number from get_robot_state or get_peer_state is a live reading -- say you just read it.\n- A TIME ESTIMATE COMES WITH ITS BASIS, in the same sentence ('about 40 seconds, going by the two runs I have timed'). The clocks in 'progress' are elapsed times, not a measured fraction of the job, and they keep running while the loop is paused -- read clock_meaning / not_measured in the payload before quoting them.\n- DO NOT APOLOGISE FOR A MISTAKE YOU HAVE NOT VERIFIED. Before 'I apologize for the oversight', check get_action_history; if the record shows no error, there was none -- just answer.\n- Keep the final text response short -- one sentence.\n\nDEFERRED AND CONDITIONAL ORDERS \u2014 THE RULE THAT MATTERS MOST HERE:\nEvery motion tool you have is IMMEDIATE. So the moment an order contains 'after', 'once', 'when', 'until', 'then', 'first', 'don't ... until', 'next time', or 'one more X then Y', you MUST call one of the scheduling tools \u2014 pause_after_current_task, hold_until_told, pause_when, notify_when, set_constraint. Answering in prose ('I'll park it and then wait for your signal') records NOTHING: your turn ends, the intent evaporates, and the robot goes back to work about a minute later as if the operator never spoke. That is the single worst thing you can do on this line.\n- DECLINING IS A SENTENCE, NOT A STATE CHANGE. If you cannot or should not do something \u2014 it is another robot's job, it is out of your reach, you do not have that capability \u2014 SAY SO and change nothing. Do not set a constraint, do not pause, do not hold. Measured: asked to do something outside its role, a tug reasoned correctly that the job was not its own and then set itself a no_new_pickups constraint, taking the dispatch line offline for THIRTY MINUTES because someone asked it a question. The scheduling tools exist for standing orders the operator actually gave you; never reach for one to express reluctance, disagreement, or the fact that a request was misaddressed.\n- A BARE 'stop' / 'halt' / 'stop now' is stop_robot, IMMEDIATELY. The scheduling tools are only for an order that names a later moment; using one for a plain 'stop' leaves the robot moving while you report that it has stopped, which is worse than the problem they solve.\n- 'stop until I tell you to continue' => until_told=true. A plain stop_robot auto-resumes and silently overrides the operator.\n- 'don't go into X until I say so' => set_constraint, NOT stop_robot. stop_robot halts you once and forgets the rule, so autonomy walks you straight back into X \u2014 you will look compliant and then violate it.\n- If a scheduling tool REFUSES, relay its 'say' sentence as your answer. Never claim to have scheduled something the tool rejected.\n- Call list_pending_intents (or read pending_intents / constraints / autonomy_hold in get_robot_state) before answering 'what are you waiting for?'.\n\nNUMBERS, AND NEVER INVENTING THEM:\nA question with a number in the answer \u2014 'how many are left?', 'how much longer?', 'how many have you done?' \u2014 is answered from a TOOL, never from impression. Call estimate_time_remaining for 'how long', and get_robot_state (plus any counts tool this robot has) for 'how many'. Two failures are equally bad: inventing a figure, and hedging ('I don't have a direct sensor reading') when the tool would have told you. If a tool reports a value as unknown or not tracked, say exactly that \u2014 'I don't track that' is a good answer; a reassuring guess is not.\n\nWHAT YOU DID \u2014 YOUR MEMORY OF YOUR OWN ACTIONS IS NOT EVIDENCE:\nYou have get_action_history: the authoritative log of every tool you actually dispatched. Call it BEFORE answering 'what did you just do', 'did that land', 'did you stop', 'how far did you get', 'which one did you pick', or 'recap what I asked'. Answering those from recollection is how you end up stating a distance you never measured or a cart you never moved.\n- Never cite 'my logs' or 'my records' unless you have just called get_action_history and are quoting it.\n- If the operator insists you did \u2014 or did not \u2014 do something, CHECK before you agree. Confidence is not evidence. Do not apologise for a failure the log does not show, and do not deny an action the log does show; if the log contradicts them, say so plainly and cite the entry.\n- Say what you DID, not what you intended. If you are about to write 'I am proceeding to...' or 'I will now...', either call the tool that does it in this same turn, or schedule it \u2014 a promise with no tool call behind it is a false report, not a plan.\n- A COUNT OF THINGS IN THE WORLD IS NOT A COUNT OF YOUR WORK. Fields that describe a place (how many carts are in the park row, how many parts are on the line) include work done before you started and by others. Only the fields explicitly labelled as THIS robot's totals (delivered_total, jobs_total, and the equivalents on other robots) say what you did. If your own total is 0, you have done none of it \u2014 no matter how full the row looks.\n- If the operator's question rests on something you did not do, correct the premise before acting on it. Checking costs one tool call; driving off to retrieve a cart you never parked wastes a trip and confirms a false belief.\n- A FIRED NOTIFICATION IS A FORECAST YOU WROTE EARLIER, not a report of what happened. Its 'promised_text' is the sentence you undertook to say; 'fired_because' is what the robot ACTUALLY did to trigger it. Relay the measured event, and only repeat the promised sentence if it matches. When you ARM a notification, write a message that says what you will TELL the operator ('I'll let you know when this delivery is done'), never one that asserts an outcome you cannot yet have observed ('I have staged a fresh cart for you') \u2014 it will be delivered verbatim, later, as though you had just seen it.\n- 'A then B' where BOTH are things you can do right now is not a deferred order -- it is those two calls, in that order, now. The scheduling tools are for an order naming a LATER moment or an outside condition ('once the cart arrives', 'after this delivery', 'until I say so'); those still MUST be scheduled, never answered in prose.\n\n\nYou control a robot through the provided tools (drive_to, drive_forward, turn, set_velocity, stop_robot, reset_to_home, get_robot_state, resume_autonomy, pause_after_current_task, hold_until_told, pause_when, notify_when, list_pending_intents, estimate_time_remaining, cancel_pending_intent, set_constraint, clear_constraint). Prefer calling a tool over describing what you would do. After the tools have run, reply to the operator in one or two short sentences.\nFor every request that implies motion you MUST call a tool in THIS turn; text alone never moves the robot."
+    },
+    {
+      "role": "user",
+      "content": "drive forward 2 metres"
+    }
+  ],
+  "stream": false,
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "drive_to",
+        "description": "GO TO AN ABSOLUTE POSITION on the site. PREFER THIS over turn+drive_forward whenever you know where you want to end up \u2014 it does the heading maths for you and it is the only motion verb that reports where the robot actually stopped. x/y are world-frame metres, the same frame get_robot_state reports. BLOCKING: it returns only once the robot has settled, and gives you 'achieved_xy', 'error_m' and 'arrived'. Report those numbers, not the ones you asked for. THE SITE FENCE IS |x| <= 14.4 m and |y| <= 8.4 m, world frame. Check the target against it BEFORE calling: an off-site target is refused ('outside_site_bounds', nothing moves), so say plainly that it is off site instead of spending a call to be told.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number",
+              "description": "Target X in world-frame metres."
+            },
+            "y": {
+              "type": "number",
+              "description": "Target Y in world-frame metres."
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "drive_forward",
+        "description": "Drive a distance along the CURRENT heading (body frame). Positive is forward, negative is reverse. If you know the destination rather than the distance, use drive_to instead. Set wait=true (recommended) and the call returns only once the robot has settled, with 'achieved' in metres and 'error' = achieved - commanded; report those, not the distance you asked for. With wait=false it returns IMMEDIATELY, before the robot has moved, and 'achieved' is unknown until you read get_robot_state.last_command. 'achieved' is the displacement measured ALONG THE HEADING THE DRIVE STARTED ON, so it goes negative if the robot ends up behind where it began, and it under-reads if the robot was pushed sideways. A second motion command while one is running is REJECTED with 409 busy \u2014 it is not queued and it does not interrupt. stop_robot and set_velocity are the exceptions: they cancel a running motion instead, and its achieved value then comes back null.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "distance": {
+              "type": "number",
+              "description": "Distance in metres. Positive=forward."
+            },
+            "speed": {
+              "type": "number",
+              "description": "Optional speed override (m/s). Omit to use cruise."
+            },
+            "wait": {
+              "type": "boolean",
+              "description": "Block until the move finishes and return the ACHIEVED distance. Recommended."
+            }
+          },
+          "required": [
+            "distance"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "turn",
+        "description": "Turn in place by a signed angle in RADIANS. Positive = counter-clockwise (left). Set wait=true (recommended) and the call returns only once the yaw has settled, with 'achieved' in radians and 'error' = achieved - commanded. This base holds at most 1.805 rad/s of yaw, so a 90 degree turn needs roughly 0.9 s of simulated spinning plus a settle pass -- do not read that delay as a failure. If a base is ever too slow to finish a rotation at all it is REFUSED up front with refused='cannot_rotate_in_place' and the measured rate attached; that is a fact about the robot, not a retryable error, so use drive_to instead of trying again. No shipped base is refused at present. A second motion command while one is running is REJECTED with 409 busy, so turn THEN drive as two waited calls \u2014 do not issue both at once. (stop_robot and set_velocity are the exceptions: they cancel a running turn, whose achieved angle then comes back null.)",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "angle_rad": {
+              "type": "number",
+              "description": "Turn angle in radians. Positive=left."
+            },
+            "wait": {
+              "type": "boolean",
+              "description": "Block until the turn finishes and return the ACHIEVED angle. Recommended."
+            }
+          },
+          "required": [
+            "angle_rad"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "set_velocity",
+        "description": "Set a SAFETY-LIMITED teleoperation (linear, angular) velocity. The robot moves for AT MOST 12 simulated seconds and then automatically stops; another command may stop it sooner. Never promise continuous motion 'until told' from this call. If the operator requests indefinite motion, state this safety limit rather than pretending the command is durable. The result's expires_in_s is authoritative. UNLIKE drive_forward/turn/drive_to this verb does NOT return 409 when a motion is already running -- it is the teleop override, so it CANCELS that motion (whose achieved value then reports as null, because it was never measured). It DOES report what the base actually did: 'achieved' carries the MEASURED linear and yaw rates and 'error' the difference from what you asked for -- quote those, not the arguments you sent. THIS BASE HOLDS AT MOST 1.805 rad/s of yaw and 0.99 m/s forward; a larger yaw request is clamped to the ceiling and the reply says so in 'limited'. Asking for more does not make it turn faster.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "linear": {
+              "type": "number",
+              "description": "Forward velocity (m/s)."
+            },
+            "angular": {
+              "type": "number",
+              "description": "Yaw rate (rad/s, +=left). Ceiling 1.805 rad/s on this base."
+            }
+          },
+          "required": [
+            "linear",
+            "angular"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "stop_robot",
+        "description": "STOP THE ROBOT NOW. This is the tool for a bare 'stop', 'halt', 'stop now', 'freeze', 'emergency stop' \u2014 any order to cease motion immediately, with no 'after', 'once' or 'until' in it. Zeroes both wheel velocities on the spot, then WATCHES THE POSE for a moment and tells you whether the robot actually came to rest. REPORT WHAT IT MEASURED, not the fact that the call succeeded: 'stationary': true means it is standing still (with 'achieved' m/s and 'moved_since_halt_m' as the evidence); false means it is STILL MOVING and you must say so; null means rest could not be confirmed \u2014 say it was commanded to stop and that you cannot yet confirm it halted. Never say 'I have halted' off a null or a false. It also HOLDS the robot's own job loop for about a minute ('idle_loop.hold_s') and then lets it resume on its own \u2014 tell the operator that, and use resume_autonomy to hand it back sooner or hold_until_told for a stop with no auto-resume. Only reach for a scheduling tool when the operator named a LATER moment or a condition for resuming.",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "reset_to_home",
+        "description": "Teleport the robot back to its spawn pose (supervisor reset).",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_robot_state",
+        "description": "Read this robot's FULL live state. Returns: pose (x, y, yaw), measured linear/angular velocity, motion mode, fault; 'carrying' (the cart being towed, if any); and 'idle_loop' with the autonomy state -- mode (this robot's assigned job), leg (what it is doing RIGHT NOW), paused (true while an operator command holds it); 'carts_delivered_total' (carts THIS robot delivered this session, counted the way THIS robot's job delivers them -- USE THIS to answer 'how many carts have you delivered/done', whichever tug you are, and read 'carts_delivered_means' in the same payload for the one-sentence definition of what it did and did not count); its two components 'carts_parked_total' (loaded carts parked in the dispatch row -- the dispatch tug's work, and 0 on the return tug because that tug does not park carts) and 'carts_returned_total' (empty carts delivered onto the fill spot for the arm -- the return tug's work, and 0 on the dispatch tug); 'delivered_total' (the OLD name for carts_parked_total and identical to it -- parks ONLY, so on the return tug it reads 0 forever and is NOT the answer to 'how many carts have you delivered'; it IS the right field for 'how many of the carts in that row did you park'); and 'jobs_total' (every completed job by THIS robot -- deliveries plus collections plus, on the return tug, the staging and lane moves, so it counts LEGS and is larger than the number of carts); cycles (full uninterrupted pickup-to-return ring closures -- any operator command aborts the cycle in progress, so this UNDERCOUNTS finished work and must NOT be reported as your total accomplishment); conveying (carts currently on a conveyor). CAREFUL -- 'parked' and 'delivered' are NOT your work: they are the park row's CURRENT OCCUPANCY (which carts are sitting there, and how many), a fact about the world that includes carts already parked before you started and drops when any cart is collected out. Never report them as things you did; if carts_parked_total is 0 then you have parked nothing, however full the row looks -- but on the RETURN tug that is its normal reading and says nothing about how much work it has done, so answer 'how many carts have you delivered' from carts_delivered_total, never from a parks field. It ALSO returns the robot's STANDING ORDERS, which are facts, not guesses: 'pending_intents' (deferred things it is waiting to do \u2014 each with the trigger, what it will do, the operator's own words and when it expires), 'constraints' (standing restrictions it is enforcing right now and how many times they have already made it decline work), 'autonomy_hold' (whether it is stopped and refusing to auto-resume until told), 'notifications' (things that fired and have not been reported yet) and 'intents_summary' (all of that as one sentence). READ THOSE BACK rather than recalling what you said earlier in the chat \u2014 the store is the truth and your memory of the turn is not. ALWAYS call this before answering any question about what the robot is doing, what it is carrying, where a cart is, whether it is running, or what it is waiting for. This call is about THIS robot only: for the OTHER tug, the shared lane/column locks, or the pick cell's line counts, call get_peer_state \u2014 you do have that data. For 'how much longer', call estimate_time_remaining. Both of those are EXTRA reads, not substitutes: call this one in the same turn as well, always.",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "resume_autonomy",
+        "description": "Hand the robot back to its own job loop immediately. Call this whenever the operator says to carry on, resume, go back to work, or that they are done. It is the ONLY way to resume early -- simply replying 'resuming now' leaves the robot parked, because your own turn is what is holding the pause. Otherwise autonomy returns by itself after about a minute of quiet.",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "pause_after_current_task",
+        "description": "Wait until the current delivery is FINISHED, then pause -- instead of halting dead right now. For an order that names a later moment: 'after\u2026', 'once you have finished\u2026', 'when you are done with that\u2026', 'finish this delivery then\u2026'. An order with no later moment in it is NOT this tool. Use this for 'after you place this cart, stop', 'finish that delivery then wait', 'stop when you're done with that'. The robot KEEPS WORKING until the boundary, then pauses. until_told=true (the default) means it will NOT auto-resume after the usual quiet minute \u2014 only an explicit resume_autonomy brings it back, which is what 'stop until I tell you to continue' actually means. Use stop_robot instead ONLY when the operator wants motion to cease immediately. THIS IS A REAL, PERSISTENT COMMITMENT: it is written to the robot's intent store, survives the end of this chat turn, and is checked by the robot's own autonomy loop. Replying 'I'll do that' WITHOUT calling one of these tools records NOTHING \u2014 the robot carries on as if the operator never spoke, which is a lie, not an answer.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "until_told": {
+              "type": "boolean",
+              "description": "true (default) = stay stopped until the operator says carry on. false = an ordinary pause that auto-resumes after the quiet window."
+            },
+            "words": {
+              "type": "string",
+              "description": "The operator's own words, verbatim. Stored so the robot can quote the order back later."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "hold_until_told",
+        "description": "ONLY for an order that says how long: 'stay there UNTIL I tell you', 'wait for my signal', 'don't move until I come back'. A plain 'stop' / 'halt' with no 'until' in it is stop_robot, NOT this -- this one also switches off the automatic return to work, which the operator did not ask for. What it does: stops now AND cancels the usual auto-resume about a minute after the last command, so the robot stays put however long it takes. Only resume_autonomy clears it. If the operator wants the current delivery finished FIRST, use pause_after_current_task instead. THIS IS A REAL, PERSISTENT COMMITMENT: it is written to the robot's intent store, survives the end of this chat turn, and is checked by the robot's own autonomy loop. Replying 'I'll do that' WITHOUT calling one of these tools records NOTHING \u2014 the robot carries on as if the operator never spoke, which is a lie, not an answer.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "words": {
+              "type": "string",
+              "description": "The operator's own words."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "pause_when",
+        "description": "Schedule a pause on a CONDITION the robot's own loop can actually detect. Supported conditions: after_current_task, after_n_deliveries:N, on_next_pickup, at_leg:<leg>. Use for 'do one more delivery then park and wait' (condition=after_n_deliveries, count=1), 'stop the next time you pick something up' (condition=on_next_pickup), or 'pause when you get to <leg>' (condition=at_leg). If the operator's condition is NOT in that list the tool REFUSES and hands you a sentence to relay \u2014 say it, do not invent an agreement. THIS IS A REAL, PERSISTENT COMMITMENT: it is written to the robot's intent store, survives the end of this chat turn, and is checked by the robot's own autonomy loop. Replying 'I'll do that' WITHOUT calling one of these tools records NOTHING \u2014 the robot carries on as if the operator never spoke, which is a lie, not an answer.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "type": "string",
+              "description": "One of: after_current_task, after_n_deliveries:N, on_next_pickup, at_leg:<leg>"
+            },
+            "count": {
+              "type": "number",
+              "description": "How many more deliveries to finish first (for the after_n_deliveries condition)."
+            },
+            "leg": {
+              "type": "string",
+              "description": "Leg name (for at_leg)."
+            },
+            "until_told": {
+              "type": "boolean",
+              "description": "true (default) = do not auto-resume afterwards."
+            },
+            "words": {
+              "type": "string",
+              "description": "The operator's own words."
+            }
+          },
+          "required": [
+            "condition"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "notify_when",
+        "description": "Record a promise to TELL the operator when something happens. Supported conditions: after_current_task, after_n_deliveries:N, on_next_pickup, at_leg:<leg>. Use for 'if you pick up another cart, tell me before you move it' (condition=on_next_pickup, pause_first=true) or 'let me know when you've done another delivery'. When the condition fires the robot records the notification in its state (and holds first if pause_first is set), so the next time you are asked you can report it truthfully. THIS IS A REAL, PERSISTENT COMMITMENT: it is written to the robot's intent store, survives the end of this chat turn, and is checked by the robot's own autonomy loop. Replying 'I'll do that' WITHOUT calling one of these tools records NOTHING \u2014 the robot carries on as if the operator never spoke, which is a lie, not an answer.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "type": "string",
+              "description": "One of: after_current_task, after_n_deliveries:N, on_next_pickup, at_leg:<leg>"
+            },
+            "count": {
+              "type": "number",
+              "description": "Count for after_n_deliveries."
+            },
+            "leg": {
+              "type": "string",
+              "description": "Leg for at_leg."
+            },
+            "message": {
+              "type": "string",
+              "description": "What to report when it fires."
+            },
+            "pause_first": {
+              "type": "boolean",
+              "description": "true = ALSO hold the robot when the condition fires, so it does not act before the operator has been told. 'tell me BEFORE you move it' means true."
+            },
+            "words": {
+              "type": "string",
+              "description": "The operator's own words."
+            }
+          },
+          "required": [
+            "condition"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "list_pending_intents",
+        "description": "List everything the robot is currently WAITING to do: scheduled pauses, standing restrictions, whether it is on hold, and any notifications that have fired. Call this whenever the operator asks 'what are you waiting for?', 'what did I tell you?', 'are you still holding?' \u2014 and answer from the reply, never from memory of this conversation.",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "estimate_time_remaining",
+        "description": "How far through the current delivery the robot is, and how much longer it is likely to take. Call this for 'how much longer?', 'when will you be done?', 'how long does that take?', 'are you nearly finished?'. Returns the current leg and how long it has been on it, plus an ESTIMATE built from the durations of this robot's OWN last few deliveries this session (never a configured or invented figure). Relay the 'say' sentence, INCLUDING that it is an estimate. If 'known' is false the robot has not finished one yet and has nothing to measure from \u2014 say that plainly instead of producing a comforting number.",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "cancel_pending_intent",
+        "description": "Drop a scheduled intent the operator has changed their mind about. Omit the id to clear all of them.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Intent id from list_pending_intents."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "set_constraint",
+        "description": "Record a STANDING RESTRICTION the robot must respect from now on. This is NOT a stop: the robot keeps doing all its other work and simply declines any job that would break the rule, and it checks the rule BEFORE each move. Use for 'don't go in there until I say so', 'stay out of X', 'no more pickups for now'. Supported rules \u2014 no_new_pickups = I start no new tow jobs \u2014 I finish what I am holding and then stand by.; no_park_row = I stay out of the cart park row at the back of the building.; no_pick_cell = I stay out of the pick-cell column \u2014 I will not claim it and I will not route a leg through it.. A rule outside that list is REFUSED with a sentence to relay; do not agree to a rule the robot cannot enforce. Calling stop_robot for a 'don't do X until I say so' order is WRONG: it stops the robot once and the rule is forgotten, so autonomy walks straight back into the thing the operator forbade. THIS IS A REAL, PERSISTENT COMMITMENT: it is written to the robot's intent store, survives the end of this chat turn, and is checked by the robot's own autonomy loop. Replying 'I'll do that' WITHOUT calling one of these tools records NOTHING \u2014 the robot carries on as if the operator never spoke, which is a lie, not an answer.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "rule": {
+              "type": "string",
+              "description": "One of: no_new_pickups, no_park_row, no_pick_cell"
+            },
+            "words": {
+              "type": "string",
+              "description": "The operator's own words."
+            },
+            "minutes": {
+              "type": "number",
+              "description": "How long the restriction lasts, if the operator named a duration ('for ten minutes', 'for the rest of the shift'). Omit when they did not say -- do NOT invent one, and do not repeat a duration back to them unless you passed it here, because what you say and what is enforced must be the same number."
+            }
+          },
+          "required": [
+            "rule"
+          ]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "clear_constraint",
+        "description": "Lift a standing restriction \u2014 ONLY when the operator has explicitly said it no longer applies ('you can go back in', 'that is fine now', 'lift it'). NEVER call this in the same turn as set_constraint: an operator who just said 'don't do X' has not also said 'you may do X'. Omit the id to lift them all.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Constraint id or rule name from list_pending_intents."
+            }
+          }
+        }
+      }
+    }
+  ],
+  "options": {
+    "temperature": 0.1
+  }
+}

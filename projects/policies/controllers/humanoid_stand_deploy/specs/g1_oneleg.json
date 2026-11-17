@@ -1,0 +1,111 @@
+{
+  "name": "g1",
+  "urdf": "projects/robots/unitree/g1/urdf/g1_23dof_omnisim.urdf",
+  "spawn_z": 0.78,
+  "_note": "G1 23-DOF run through the SAME generic harness as H1/Valkyrie, to test whether the centering+stiffening method makes its stand robust. Pose = G1's documented deeper squat (hip -0.30/knee 0.52/ankle -0.23) + arms-down (g1_stand_arms_deploy). deploy_ke/ank_bias are swept empirically.",
+  "joint_order": [
+    "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+    "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+    "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+    "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+    "waist_yaw_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+  ],
+  "nominal": {
+    "left_hip_pitch_joint": -0.30, "left_knee_joint": 0.52, "left_ankle_pitch_joint": -0.23,
+    "right_hip_pitch_joint": -0.30, "right_knee_joint": 0.52, "right_ankle_pitch_joint": -0.23,
+    "left_shoulder_pitch_joint": 1.5708, "left_shoulder_roll_joint": 0.0,
+    "left_shoulder_yaw_joint": 0.0, "left_elbow_joint": 0.5, "left_wrist_roll_joint": 0.0,
+    "right_shoulder_pitch_joint": 1.5708, "right_shoulder_roll_joint": 0.0,
+    "right_shoulder_yaw_joint": 0.0, "right_elbow_joint": 0.5, "right_wrist_roll_joint": 0.0
+  },
+  "_armsdown_note": "HOME pose: arms a single STRAIGHT line hanging down beside the body. elbow=0.5 makes the forearm COLLINEAR with the upper arm -- NOT 0 (that bends the forearm ~90 deg straight forward, VERIFIED by render: elbow origin offsets put the forearm along +X while the upper arm is along -Z). The upper arm is already rotated down ~90 deg by shoulder_pitch=1.5708, so the forearm needs only ~+0.5 more to line up (rendered sweep: 0=90deg-fwd, 0.45-0.6=straight/vertical, >=0.8 swings forward again, 1.5708 over-rotates forward-up). shoulder_roll=0 (parallel, no splay), shoulder_yaw=wrist=0 (no twist). Arms swing freely from here for balance; body returns to 0-rad upright via the integrals.",
+  "ankle_pitch_joints": ["left_ankle_pitch_joint", "right_ankle_pitch_joint"],
+  "ankle_roll_joints": ["left_ankle_roll_joint", "right_ankle_roll_joint"],
+  "hip_pitch_joints": ["left_hip_pitch_joint", "right_hip_pitch_joint"],
+  "arm_hold": [
+    "waist_yaw_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+  ],
+  "deploy_ke": 400,
+  "deploy_kd": 60,
+  "ank_bias": -0.10,
+  "_armsdown_trim": "ank_bias -0.10. Arms-down shifts the CoM so the bare stand is marginal; the ARMS (arm_balance kp=6, fast P) + the return-to-home integrals (arm ki + hip auto_trim ki) hold it and drive the body back to 0 rad upright. Verified: holds all 8 thrown cubes and returns pitch & roll to 0.000, no fall, robust COLD (the integral absorbs the cold-load offset -- no warm reload needed). Ankle active feedback DESTABILISES this stiff stand, so the return uses ARMS + HIP only, never the ankle.",
+  "_result": "Through this generic harness G1 STANDS robustly with ank_bias -0.06 (KE 400): 0 falls over 400s+ sim. At bias 0 it tips forward at 1.46s -- the SAME marginal forward-CoM failure as H1/Valkyrie at bias 0, fixed by the SAME backward-ankle centering. Confirms G1's committed stand was marginal only because its pose was not centred. Basin ~[-0.05,-0.07]: bias 0/-0.03 tip forward, -0.09 tips back.",
+  "upright": {"bz_min": 0.55, "roll_max": 0.7, "pitch_max": 0.7},
+  "settle_s": 0.2,
+  "wave": {
+    "enabled": false,
+    "ramp_s": 1.5,
+    "pose": {
+      "right_shoulder_pitch_joint": 0.0,
+      "right_shoulder_roll_joint": -1.4,
+      "right_shoulder_yaw_joint": 0.3,
+      "right_elbow_joint": 1.0
+    },
+    "osc": {"joint": "right_shoulder_yaw_joint", "amp": 0.5, "freq_hz": 0.9}
+  },
+  "lean": {
+    "_note": "G1's stand is marginal (forward-CoM), so the reactive ankle lean earns its keep -- it holds all thrown cubes where the passive stand drops them. H1/Valkyrie are stiff enough to hold passively and the lean HURTS them, so they leave it off.",
+    "enabled": true
+  },
+  "arm_balance": {
+    "_note": "One-leg: arm PITCH balance holds fore/aft AND arm ROLL balance (kept ON) holds the pelvis level -- WITHOUT it the body slowly rolls over and falls ~6s even with no leg lift. The one_leg lateral shift is a TRANSLATE (pelvis stays level), so it does NOT fight the roll-to-0; the arms also ramp OUT as outriggers on top.",
+    "enabled": true,
+    "kp_pitch": 6.0,
+    "ki_pitch": 0.5,
+    "kd_pitch": 0.0,
+    "kp_roll": 1.2,
+    "ki_roll": 0.4,
+    "clamp": 1.5,
+    "iclamp": 1.2
+  },
+  "auto_trim": {
+    "_note": "HIP-ONLY return-to-home (NOT ankle -- ankle feedback destabilises this stiff stand). Integral of absolute pitch leans the torso back via the hips to bring the body all the way to 0 rad (upright HOME) after a tilt, where a proportional-only controller would settle at an offset.",
+    "enabled": true,
+    "kp": 1.5,
+    "ki": 0.8,
+    "clamp": 0.30,
+    "hip": 1.0
+  },
+  "capture_step": {
+    "enabled": false,
+    "trigger_tilt": 0.16,
+    "trigger_vel": 0.25,
+    "reach": 0.55,
+    "lift": 0.55,
+    "dur": 0.34,
+    "settle": 0.8,
+    "legs": {
+      "left":  {"hip_pitch": "left_hip_pitch_joint",  "hip_roll": "left_hip_roll_joint",  "knee": "left_knee_joint",  "ankle_pitch": "left_ankle_pitch_joint",  "ankle_roll": "left_ankle_roll_joint"},
+      "right": {"hip_pitch": "right_hip_pitch_joint", "hip_roll": "right_hip_roll_joint", "knee": "right_knee_joint", "ankle_pitch": "right_ankle_pitch_joint", "ankle_roll": "right_ankle_roll_joint"}
+    }
+  },
+  "one_leg": {
+    "_note": "SHIPPED config = stable WEIGHT-SHIFT onto the support leg. A slow hip translate + the torque-bounded ankle CoP (ankle_torque) drive the CoM over the support foot and HOLD it there (rock-stable 50s+, verified). lift_knee/lift_hip=0 -> the swing foot stays grazing (NOT fully cleared): true foot-off single support falls ~8-9s on this robot because the frontal-plane instability exceeds bounded ankle-CoP + limb momentum (swept exhaustively -- needs WBC, see project_g1_oneleg_attempt). The arm pitch-balance + hip trim hold fore/aft; ankle CoP holds lateral.",
+    "enabled": true,
+    "support": "left",
+    "shift_s": 7.0,
+    "lift_s": 4.0,
+    "y_target": 0.12,
+    "lat_kp": 0.6,
+    "lat_ki": 0.25,
+    "lat_kd": 0.0,
+    "lat_clamp": 0.40,
+    "hip_share": 0.5,
+    "ankle_torque": true,
+    "cop_k": 160.0,
+    "tau_max": 14.0,
+    "cp_arm": 0.0,
+    "height_kp": 0.0,
+    "lift_hip": 0.0,
+    "lift_knee": 0.0,
+    "arm_out": 0.35
+  }
+}

@@ -1,0 +1,147 @@
+#OMNISIM R2025a utf8
+
+# OmniTug 500 - moving demo.
+#
+# The OMNITUG500 (converted from STEP CAD) is a low 4-wheeled rover. Here it drives
+# itself around a smooth elliptical loop on the floor: the rover body is in its
+# true orientation (wheels on the underside touching the floor at z=0), and the
+# omnitug500_patrol supervisor moves the rover's own translation/rotation each tick
+# (scripted kinematic motion, not wheel-torque physics). An overhead light casts
+# a contact shadow so it reads as grounded. A central dock and four corner
+# pillars give fixed references for the motion.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniTug 500 - Patrol Demo"
+  info [
+    "OMNITUG500 (URDF from STEP CAD) patrolling a floor loop, driven kinematically"
+    "by the omnitug500_patrol supervisor controller."
+  ]
+}
+
+Viewpoint {
+  orientation 0.000000 0.393024 0.919528 2.189459
+  position 4.8 -6.2 2.8
+  exposure 1.0
+}
+
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# Overhead key light that casts a contact shadow under the AGV across the
+# whole loop, so the robot reads as grounded (not floating).
+SpotLight {
+  attenuation 0 0 1
+  intensity 6
+  location 0 0 6.5
+  direction 0 0 -1
+  cutOffAngle 0.95
+  beamWidth 0.8
+  castShadows TRUE
+}
+
+# --- Floor -----------------------------------------------------------------
+DEF FLOOR Solid {
+  translation 0 0 -0.02
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.32 0.35
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 18 18 0.04
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 18 18 0.04
+  }
+}
+
+# --- Central dock the unit orbits ------------------------------------------
+DEF DOCK Solid {
+  translation 0 0 0.03
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.12 0.13 0.15
+        roughness 0.5
+        metalness 0.3
+      }
+      geometry Box {
+        size 1.8 1.8 0.06
+      }
+    }
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.85 0.05 0.08
+        roughness 0.4
+        emissiveColor 0.3 0.0 0.0
+      }
+      geometry Box {
+        size 1.95 1.95 0.02
+      }
+    }
+  ]
+  name "dock"
+}
+
+# --- Four corner pillars as fixed landmarks --------------------------------
+DEF PILLAR_A Solid {
+  translation 5 3.5 0.8
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.78 0.78 0.80 roughness 0.7 metalness 0.1 }
+      geometry Box { size 0.25 0.25 1.6 }
+    }
+  ]
+  name "pillar_a"
+}
+DEF PILLAR_B Solid {
+  translation -5 3.5 0.8
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.78 0.78 0.80 roughness 0.7 metalness 0.1 }
+      geometry Box { size 0.25 0.25 1.6 }
+    }
+  ]
+  name "pillar_b"
+}
+DEF PILLAR_C Solid {
+  translation 5 -3.5 0.8
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.78 0.78 0.80 roughness 0.7 metalness 0.1 }
+      geometry Box { size 0.25 0.25 1.6 }
+    }
+  ]
+  name "pillar_c"
+}
+DEF PILLAR_D Solid {
+  translation -5 -3.5 0.8
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.78 0.78 0.80 roughness 0.7 metalness 0.1 }
+      geometry Box { size 0.25 0.25 1.6 }
+    }
+  ]
+  name "pillar_d"
+}
+
+# --- The OMNITUG500, imported from URDF, driven around the loop ----------------
+DEF OMNITUG500 URDFRobot {
+  url "../urdf/omnitug500.urdf"
+  translation 0 -2.3 0
+  rotation 0 0 1 -1.5708
+  name "OMNITUG500"
+  controller "omnitug500_patrol"
+  supervisor TRUE
+}

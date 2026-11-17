@@ -1,0 +1,23 @@
+{
+  "schema": "agentbench/script/v1",
+  "name": "limit_tokens",
+  "description": "Trips the token budget: each turn declares a large synthetic usage, so the input-token cap is reached first.",
+  "turns": [
+    {
+      "text": "verbose",
+      "tool_calls": [
+        {
+          "name": "list_dir",
+          "arguments": {
+            "path": "."
+          }
+        }
+      ],
+      "usage": {
+        "tokens_in": 150000,
+        "tokens_out": 9000
+      },
+      "repeat": 20
+    }
+  ]
+}

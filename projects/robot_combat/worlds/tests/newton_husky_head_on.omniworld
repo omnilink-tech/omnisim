@@ -1,0 +1,129 @@
+#OMNISIM R2025a utf8
+
+# Newton head-on collision demo (P5 of cuda-newton-physics-plan.md).
+#
+# 4 vs 4 huskies driving toward each other along the x axis. Each
+# side spawns 4 huskies in a row (12 m spacing in y, comfortably
+# clear of the multi-articulation cliff documented in 1dfd895 +
+# 5c5e92b). The right-side huskies are rotated 180 deg about z so
+# their wheels (spinning forward in local frame) carry them in the
+# -x direction world-frame. Spawn x=+/-8 so they meet at x=0 around
+# 19 seconds in (closing at 2 * 0.413 = 0.826 m/s, gap = 16 m).
+#
+# Why 4v4 not the original-plan 10v10: Newton 1.2.0rc3 still has a
+# scaling cliff somewhere between 8 and 10 articulated bodies in one
+# model (specifically, body index ~30 onward stops getting its wheel
+# actuator targets satisfied; see scripts/xpbd_probes/probe15). 4v4
+# = 8 huskies total = 40 bodies, which is below the threshold and
+# drives reliably.
+#
+# Controller is the unmodified drive_forward; the URDFRobot rotation
+# does the directional flip without needing a separate controller.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Newton Husky Head-On (4v4)"
+  info [
+    "P5: 8 huskies in 4v4 head-on collision on Newton XPBD."
+    "Left side at x=-15 facing +x, right side at x=+15 facing -x."
+    "Meet at x=0 around 6-7 seconds. Inter-husky contact via Newton's"
+    "broadphase + narrowphase (wheels + chassis spheres)."
+  ]
+}
+Viewpoint {
+  orientation 0.000000 1.000000 0.000000 1.570796
+  position 0.000 0.000 106.458
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 80 80
+  wallHeight 0.5
+  floorAppearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# LEFT side -- 4 huskies facing +x (default URDF orientation),
+# wheels at +2.5 rad/s drive them toward x=0.
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -18 0.3
+  name "husky_L0"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 -6 0.3
+  name "husky_L1"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 6 0.3
+  name "husky_L2"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation -8 18 0.3
+  name "husky_L3"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+
+# RIGHT side -- 4 huskies rotated 180 deg about z so their local +x
+# faces world -x; same forward-drive controller carries them toward
+# x=0. Quaternion (0, 0, 1, 3.14159) = 180 deg about z (axis-angle
+# format Webots uses).
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -18 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R0"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 -6 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R1"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 6 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R2"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}
+URDFRobot {
+  url "../../../robots/clearpath/husky_description/urdf/husky.urdf"
+  translation 8 18 0.3
+  rotation 0 0 1 3.14159
+  name "husky_R3"
+  controller "drive_forward"
+  physicsBackend "newton"
+  customData "{\"wheel_torque\":{\"fl\":1.0,\"fr\":1.0,\"rl\":1.0,\"rr\":1.0},\"game_over\":false}"
+}

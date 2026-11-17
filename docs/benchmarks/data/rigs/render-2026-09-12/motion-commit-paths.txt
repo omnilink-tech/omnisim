@@ -1,0 +1,17 @@
+docs/benchmarks/data/object-motion-2026-09-12.json
+docs/developer/temporal-rendering.md
+docs/developer/wgpu-renderer-status.md
+docs/reference/environment-variables.md
+scripts/dev/render_temporal_bench.py
+src/omnisim/nodes/OmWgpuSceneRenderer.cpp
+src/omnisim/render/OmMotionHistory.hpp
+src/omnisim/render/OmMotionVectors.hpp
+src/omnisim/render/OmWgpuRenderTarget.cpp
+src/omnisim/render/OmWgpuRenderTarget.hpp
+src/omnisim/render/OmWgpuShaders.cpp
+src/omnisim/render/OmWgpuShaders.hpp
+tests/rendering/controllers/object_motion_probe/object_motion_probe.py
+tests/rendering/motion_history_test.cpp
+tests/rendering/test_object_motion_gpu.py
+tests/rendering/test_taa_validation_gpu.py
+tests/test_object_motion_scene.py

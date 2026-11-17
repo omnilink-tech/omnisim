@@ -1,0 +1,22 @@
+#OMNISIM R2025a utf8
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+WorldInfo { basicTimeStep 16 title "Husky Mission Agent - stations A, B and base" newtonSolver "mujoco" newtonGroundMu 1 newtonSubsteps 8 }
+Viewpoint { position 4.7 -4.2 4.8 orientation -0.3546411078316836 0.2007943832412283 0.9131874398472041 2.1872229103158256 fieldOfView .7 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DEF FLOOR Solid { translation 0 0 -.1 newtonFriction 1
+ children [ Shape { appearance PBRAppearance { baseColor .22 .27 .30 roughness .9 metalness 0 } geometry Box { size 10 10 .2 } } ]
+ boundingObject Box { size 10 10 .2 } }
+# Markers are visual only. They add no collision or support.
+Transform { translation 0 0 .004 children [ Shape { appearance PBRAppearance { baseColor .22 .72 .46 roughness 1 metalness 0 } geometry Box { size .7 .7 .004 } } ] }
+Transform { translation 1.5 0 .004 children [ Shape { appearance PBRAppearance { baseColor .12 .64 .88 roughness 1 metalness 0 } geometry Box { size .7 .7 .004 } } ] }
+Transform { translation 1.5 1.5 .004 children [ Shape { appearance PBRAppearance { baseColor .92 .72 .18 roughness 1 metalness 0 } geometry Box { size .7 .7 .004 } } ] }
+DEF HUSKY URDFRobot {
+ url "../../../../robots/clearpath/husky_description/urdf/husky.urdf"
+ translation 0 0 .2 name "husky-mission" supervisor TRUE
+ controller "husky_mission_agent" controllerArgs [ "--robot" "husky" "--name" "husky-mission" "--port" "8765" ]
+ window "omnilink_chat"
+}

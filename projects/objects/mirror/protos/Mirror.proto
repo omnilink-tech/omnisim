@@ -1,0 +1,175 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/mirror/protos/Mirror.proto
+# keywords: household/living room
+# A framed mirror faked with optics rather than ray tracing: a Camera set back behind the glass feeds a Display hung in the frame.
+# The pane shows what the camera sees, so the reflection is independent of where the observer stands.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/VarnishedPine.proto"
+
+PROTO Mirror [
+  field SFVec3f    translation     0 0 0
+  field SFRotation rotation        0 0 1 0
+  field SFString   name            "mirror"
+  field SFString   controller      "mirror"          # Defines the controller of the mirror. This controller should simply enable the camera and attach it to the display.
+  field SFString   window          "<none>"          # Is `Robot.window`.
+  field SFBool     supervisor      FALSE             # Is `Robot.supervisor`.
+  field SFFloat    fieldOfView     0.785398          # Defines the field of view of the mirror camera.
+  field SFFloat    width           0.5               # Defines the width of the mirror.
+  field SFFloat    height          0.8               # Defines the height of the mirror.
+  field SFFloat    frameThickness  0.02              # Defines the thickness of the mirror frame.
+  field SFNode     physics         NULL              # Is `Solid.physics`.
+  field SFNode     frameAppearance VarnishedPine {}  # Defines the appearance of the mirror frame.
+
+  # Deprecated in Webots R2019a
+  hiddenField MFString   frameTexture    ["omnisim://projects/default/worlds/textures/wood.jpg"]
+]
+{
+  %<
+    // ---------------------------------------------------------------------
+    // Parameters.
+    // ---------------------------------------------------------------------
+    let fieldOfView = fields.fieldOfView.value;
+    if (fieldOfView <= 0.0) {
+      fieldOfView = fields.fieldOfView.defaultValue;
+      console.error('\'fieldOfView\' must be strictly positive. Value reset to ' + fieldOfView + '.');
+    }
+    if (fieldOfView > Math.PI) {
+      fieldOfView = fields.fieldOfView.defaultValue;
+      console.error('\'fieldOfView\' should not be bigger than pi. Value reset to ' + fieldOfView + '.');
+    }
+
+    let width = fields.width.value;
+    if (width <= 0.0) {
+      width = fields.width.defaultValue;
+      console.error('\'width\' must be strictly positive. Value reset to ' + width + '.');
+    }
+
+    let height = fields.height.value;
+    if (height <= 0.0) {
+      height = fields.height.defaultValue;
+      console.error('\'height\' must be strictly positive. Value reset to ' + height + '.');
+    }
+
+    let frameThickness = fields.frameThickness.value;
+    if (frameThickness <= 0.0) {
+      frameThickness = fields.frameThickness.defaultValue;
+      console.error('\'frameThickness\' must be strictly positive. Value reset to ' + frameThickness + '.');
+    }
+
+    if (fields.frameTexture.value[0] !== fields.frameTexture.defaultValue[0])
+      console.error('The \'frameTexture\' field is deprecated, using the new \'frameAppearance\' field instead.');
+
+    // ---------------------------------------------------------------------
+    // The optics. For the image on the pane to line up with what a real mirror
+    // would show, the camera has to sit exactly where the virtual image of the
+    // scene is: straight back from the centre of the pane, far enough that its
+    // horizontal field of view spans precisely the width of the glass.
+    //
+    //   tan(fov / 2) = (width / 2) / setback
+    //
+    // The near plane is pushed just past the pane so the frame itself does not
+    // get reflected back into the picture.
+    // ---------------------------------------------------------------------
+    const setback = (0.5 * width) / Math.tan(0.5 * fieldOfView);
+
+    const pixelsWide = 256;
+    const pixelsHigh = Math.ceil(pixelsWide * height / width);
+
+    // The mirror is built in its own plane: X spans the glass, Y is up, Z is the
+    // thickness. The centre of the pane is one frame's thickness above the
+    // origin, which sits at the bottom of the frame.
+    const centre = 0.5 * height + frameThickness;
+
+    // The four frame bars. The uprights carry the full height, the rails cap
+    // them off top and bottom.
+    const bars = [
+      {def: 'UPPER_FRAME', x: 0, y: height + 1.5 * frameThickness, sx: width, sy: frameThickness},
+      {def: 'LOWER_FRAME', x: 0, y: 0.5 * frameThickness, sx: width, sy: frameThickness},
+      {def: 'RIGHT_FRAME', x: 0.5 * (width + frameThickness), y: centre, sx: frameThickness, sy: height + 2 * frameThickness},
+      {def: 'LEFT_FRAME', x: -0.5 * (width + frameThickness), y: centre, sx: frameThickness, sy: height + 2 * frameThickness}
+    ];
+  >%
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    controller IS controller
+    supervisor IS supervisor
+    window IS window
+    children [
+      Camera { # sits where the virtual image is, looking back through the glass
+        translation 0 %<= centre >% %<= -setback >%
+        rotation 0.5773509358554485 0.5773509358554485 0.5773489358556708 -2.094395307179586
+        fieldOfView IS fieldOfView
+        width %<= pixelsWide >%
+        height %<= pixelsHigh >%
+        near %<= (1 + 0.0001 * Math.max(width, height)) * setback >%
+        antiAliasing TRUE
+      }
+      DEF FRONT Display { # the silvered face: the controller pipes the camera into it
+        translation 0 %<= centre >% 0
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColorMap ImageTexture {
+                filtering 0
+              }
+              textureTransform TextureTransform {
+                scale -1 1   # a mirror image, not a photograph
+              }
+              metalness 0
+              roughness 1
+            }
+            geometry Plane {
+              size %<= width >% %<= height >%
+            }
+          }
+        ]
+        width %<= pixelsWide >%
+        height %<= pixelsHigh >%
+      }
+      DEF BACK Pose { # the backing board, so the mirror is not see-through from behind
+        translation 0 %<= centre >% 0
+        rotation 0 1 0 -3.14159
+        children [
+          Shape {
+            appearance PBRAppearance {
+              metalness 0
+              baseColor 0.6 0.6 0.6
+              roughness 0.8
+            }
+            geometry Plane {
+              size %<= width >% %<= height >%
+            }
+          }
+        ]
+      }
+      %< for (let i = 0; i < bars.length; ++i) { >%
+      DEF %<= bars[i].def >% Pose {
+        translation %<= bars[i].x >% %<= bars[i].y >% 0
+        children [
+          Shape {
+            appearance IS frameAppearance
+            geometry Box {
+              size %<= bars[i].sx >% %<= bars[i].sy >% %<= frameThickness >%
+            }
+          }
+        ]
+      }
+      %< } >%
+    ]
+    name IS name
+    model "mirror"
+    boundingObject Pose {
+      translation 0 %<= centre >% 0
+      children [
+        Box {
+          size %<= width + 2 * frameThickness >% %<= height + 2 * frameThickness >% %<= frameThickness >%
+        }
+      ]
+    }
+    physics IS physics
+  }
+}

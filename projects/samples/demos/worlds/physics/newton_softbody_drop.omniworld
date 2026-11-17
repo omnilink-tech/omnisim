@@ -1,0 +1,212 @@
+#VRML_SIM R2025a utf8
+
+# The first VOLUMETRIC SOFT BODY world in OmniSim. Two tetrahedral-FEM blocks on
+# newton's SolverVBD, coupled to the rigid SolverMuJoCo scene over ONE Model by
+# SolverCoupledProxy -- the same architecture the `Cloth` node established, with
+# tetrahedra instead of a triangle sheet.
+#
+# WHY A SOFT BODY IS A SMALL ADDITION AND A ROPE IS NOT. Both would ride the same
+# coupled solver, but a soft body adds PARTICLES ONLY, so the coupled solver's
+# "mjc" ModelView still owns every rigid body and the raycast / weld /
+# TouchSensor / pose-check readbacks that index by parent body id stay valid
+# (measured at 1 and 3 bodies: view("mjc").body_count equals the parent model's).
+# A Cosserat rod adds rigid capsule BODIES and moves them OUT of "mjc", which
+# breaks those readbacks -- measured, mjc owned 2 of 26 bodies -- and the guard
+# only WARNS. See docs/developer/newton-capability-frontier.md.
+#
+# WHAT TO EXPECT, and the proof is numeric rather than visual:
+#
+#   HANGER  a block pinned along one face, hanging and sagging under gravity.
+#           Its pinned face MUST NOT MOVE AT ALL -- measured 1.500000 ->
+#           1.500000 -- while the free end sags. A pinned face that drifts means
+#           the fix flags never reached the solver.
+#
+#   DROP    a block released from z = 0.5 onto the floor. It lands, wobbles, and
+#           SETTLES: measured in THIS configuration, lowest particle z = 0.00928
+#           (resting on its own 0.01 particle radius) and height 0.2000 -> 0.1874,
+#           with 0.00020 m of drift over the final 2 s. Below zero would mean it
+#           tunnelled; a rigid 0.2000 height would mean the tets carry no
+#           elasticity.
+#
+#   BLOCK   a dynamic rigid box the DROP block lands beside, present so the
+#           world exercises the coupled path with a real MuJoCo body in it.
+#
+# ⚠ kDamp 30 IS LOAD-BEARING, and it is why this world can state a rest state at
+# all. At newton's lighter damping the block does not settle -- it is a
+# lightly-damped elastic solid that keeps ringing. Measured in this coupled
+# scene, drift over the final 2 s: kDamp 1 -> still 0.28 m of motion at t = 20 s,
+# kDamp 10 -> 0.0028, kDamp 30 -> 0.00020, kDamp 80 -> 0.00010. A demo that
+# asserts a rest height needs the block to actually reach one.
+#
+# ⚠ AND THE COUPLED PATH DIFFERS FROM VBD-ALONE, which is worth knowing before
+# you tune anything against a standalone probe: the same block with NO rigid body
+# in the world settles on a visibly different schedule (VBD alone converged by
+# t = 20 s at kDamp 1; coupled had not). Tune against the configuration you ship.
+#
+# ⚠ DELIBERATELY NOT STAGED HERE: a rigid body resting ON a soft body. Soft-on-
+# rigid is stable (a 15.6 kg soft block presses a 2 kg dynamic box from 0.060000
+# to 0.059385 and holds), but RIGID-ON-SOFT -- a rigid body supported only by
+# particles -- gains energy and is ejected, to z = 0.57..194 m. That reproduces
+# in pure newton with OmniSim absent, in both coupled and uncoupled solvers, is
+# not a timestep artifact (8x smaller dt made it worse) and is not self-contact.
+# Newton-side, mechanism unidentified. Do not add such a stack to this world
+# expecting it to hold.
+#
+# ⚠ SOFT BODIES ARE A GPU WORKLOAD, like cloth. Measured CPU: 31 ms/step for a
+# 4^3 block alone, 70 ms/step coupled. Both blocks here are small on purpose.
+#
+# ⚠ DECLARE AN EVEN newtonSubsteps. The CUDA-graph predicate requires
+# `_n_substeps % 2 == 0` and OmniSim's default is 1 -- odd -- so the graph can
+# never arm. Measured on a 4^3 soft body: 21.3 -> 6.5 ms/step at substeps 2,
+# while doing twice the physics.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  newtonSolver "mujoco+vbd"
+  newtonSubsteps 2
+  newtonStatics TRUE
+  newtonGroundMu 1
+}
+Viewpoint {
+  position -1.9 -2.1 1.4
+  orientation 0.34 -0.28 -0.90 1.22
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.36 0.40
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 4 4 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 4 4 0.1
+  }
+}
+# A dynamic rigid body, so the coupled path has a real MuJoCo entry to own.
+DEF BLOCK Solid {
+  translation 0.45 0 0.08
+  children [
+    DEF BLOCK_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.42 0.28
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 0.16 0.16 0.16
+      }
+    }
+  ]
+  name "block"
+  boundingObject USE BLOCK_SHAPE
+  physics Physics {
+    density -1
+    mass 2
+  }
+}
+# Pinned along its local +Y face. The +90 deg rotation about X maps local +Y to
+# world +Z, which is the documented way to pin the WORLD-top face of a block:
+# fixTop is a LOCAL-axis flag, not a world-up one. The block therefore spans
+# z = 1.2 .. 1.5 and hangs from the top.
+#
+# ⚠ THE `appearance` AND `creaseAngle` ON BOTH BLOCKS ARE PURELY COSMETIC. Not
+# one physical field is touched, so every measured number in the header still
+# stands -- these two fields are read by the renderer and by nothing else.
+#
+# WHY A PBRAppearance AT ALL, when a `diffuseColor` already gives the block a
+# colour: the canonical recipe declares `ambientIntensity 0`
+# (OmniSimSun.proto), so ALL fill light in an OmniSim world is IMAGE-BASED, and
+# image-based light reaches a surface ONLY through a PBR material. A Phong
+# SoftBody therefore renders EXACTLY (0,0,0) on every face the sun does not
+# strike directly -- and a block is a closed volume, so at any instant three of
+# its six faces are turned away. That is not a dim block, it is a black one, and
+# it is why these two read as flat cut-out shapes rather than as solids.
+#
+# NO TEXTURE MAPS ON EITHER, and that is a decision rather than an omission.
+# These are generic elastic blocks, not a specific material; the two texture
+# sets that ship next to this world are a yellow cellulose SPONGE and a woven
+# COTTON, and dressing a nondescript FEM test block in either would assert
+# something about it that the world does not mean. baseColor + roughness +
+# metalness 0 is the whole material, and the IBL is what makes it read as one.
+#
+# ⚠ metalness 0 EXPLICITLY on both. The schema default is 1, so an inline
+# PBRAppearance that omits it is a METAL, which under ambientIntensity 0 renders
+# near-black -- indistinguishable from the bug this block is fixing.
+#
+# creaseAngle 0.8 is the node default and is written out here because it is the
+# difference between a block and a bar of soap: at 0.8 rad (~46 deg) a block's
+# hard 90 deg edges SPLIT and keep their own face normals, while a squashed or
+# sagging face bends far less than 46 deg per triangle and stays smooth. Set it
+# >= pi and every vertex normal is shared, which is the rounded-soap look.
+DEF HANGER SoftBody {
+  translation -0.45 0 1.2
+  rotation 1 0 0 1.5708
+  dimX 3
+  dimY 6
+  dimZ 3
+  cellX 0.05
+  cellY 0.05
+  cellZ 0.05
+  density 1000
+  kMu 10000
+  kLambda 10000
+  kDamp 30
+  particleRadius 0.01
+  fixTop TRUE
+  diffuseColor 0.30 0.55 0.85
+  creaseAngle 0.8
+  appearance PBRAppearance {
+    baseColor 0.22 0.44 0.76
+    roughness 0.55
+    metalness 0
+    IBLStrength 1.4
+  }
+}
+# Released from z = 0.5 with nothing holding it.
+DEF DROP SoftBody {
+  translation -0.1 -0.1 0.5
+  dimX 4
+  dimY 4
+  dimZ 4
+  cellX 0.05
+  cellY 0.05
+  cellZ 0.05
+  density 1000
+  kMu 10000
+  kLambda 10000
+  kDamp 30
+  particleRadius 0.01
+  diffuseColor 0.85 0.35 0.30
+  # Same reasoning as HANGER above. The DROP block is the one that squashes on
+  # impact (height 0.2000 -> 0.1874), and the crease split is what lets a viewer
+  # SEE that: with every vertex normal shared, a squashing cube reads as a
+  # wobbling ball and the deformation the world exists to demonstrate is
+  # invisible.
+  creaseAngle 0.8
+  appearance PBRAppearance {
+    baseColor 0.74 0.26 0.20
+    roughness 0.6
+    metalness 0
+    IBLStrength 1.4
+  }
+}

@@ -1,0 +1,10 @@
+{
+ "exit_code": 0,
+ "timed_out": false,
+ "wall_s": 4.827,
+ "attempts_used": 1,
+ "perf_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools\\webots\\perf.txt",
+ "webots_version": "R2025a",
+ "command": "WEBOTS_HOME=/opt/upstream-webots/R2025a timeout 420 xvfb-run -a /opt/upstream-webots/R2025a/webots --batch --mode=fast --no-rendering --minimize --stdout --stderr --log-performance=\"/tmp/agentbench_webots/two_pioneers_af738453/out/perf.txt\",62 --port=1504 \"/tmp/agentbench_webots/two_pioneers_af738453/project/worlds/two_pioneers.wbt\"",
+ "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\B3_measure_and_report.shell_tools\\scratch\\two_pioneers.wbt"
+}

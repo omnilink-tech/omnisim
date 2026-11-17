@@ -1,0 +1,139 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/street_furniture/protos/FireHydrant.proto
+# keywords: exterior/street furniture
+# A pillar fire hydrant assembled from primitives: a bolted ground flange, a barrel,
+# a domed bonnet with an operating nut, and three capped outlets.
+# template language: javascript
+
+PROTO FireHydrant [
+  field SFVec3f    translation 0 0 0
+  field SFRotation rotation    0 0 1 0
+  field SFFloat    scale       1
+  field SFString   name        "fire hydrant"
+  field SFNode     appearance  PBRAppearance { baseColor 0.643 0 0 metalness 0 roughness 0.4 }  # Defines the appearance of the fire hydrant.
+]
+{
+  %<
+    // Every dimension is derived from the 'scale' field so the hydrant stays
+    // self-consistent; a scale of 1 gives a ~0.75 m tall pillar hydrant.
+    const s = fields.scale.value;
+    const m = (v) => v * s;
+
+    // Recognition colour follows the user-supplied appearance when it exposes a
+    // baseColor, so camera-recognition worlds still see a sensible label colour.
+    let rc = '0.643 0 0';
+    const ap = fields.appearance.value;
+    if (ap !== undefined && ap.fields !== undefined && ap.fields.baseColor !== undefined) {
+      const c = ap.fields.baseColor.value;
+      rc = c.r + ' ' + c.g + ' ' + c.b;
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "fire hydrant"
+    recognitionColors [ %<= rc >% ]
+    children [
+      # --- ground flange + bolts ---------------------------------------------
+      Pose {
+        translation 0 0 %<= m(0.03) >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Cylinder { radius %<= m(0.15) >% height %<= m(0.06) >% subdivision 20 }
+          }
+        ]
+      }
+      Pose {
+        translation 0 0 %<= m(0.09) >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Cylinder { radius %<= m(0.11) >% height %<= m(0.06) >% subdivision 20 }
+          }
+        ]
+      }
+      # --- barrel -------------------------------------------------------------
+      Pose {
+        translation 0 0 %<= m(0.38) >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Cylinder { radius %<= m(0.085) >% height %<= m(0.52) >% subdivision 20 }
+          }
+        ]
+      }
+      # --- collar under the bonnet --------------------------------------------
+      Pose {
+        translation 0 0 %<= m(0.645) >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Cylinder { radius %<= m(0.105) >% height %<= m(0.04) >% subdivision 20 }
+          }
+        ]
+      }
+      # --- domed bonnet + operating nut ---------------------------------------
+      Pose {
+        translation 0 0 %<= m(0.665) >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Sphere { radius %<= m(0.095) >% subdivision 3 }
+          }
+        ]
+      }
+      Pose {
+        translation 0 0 %<= m(0.745) >%
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Cylinder { radius %<= m(0.032) >% height %<= m(0.05) >% subdivision 6 }
+          }
+        ]
+      }
+      # --- two side outlets, capped -------------------------------------------
+      Pose {
+        translation %<= m(0.105) >% 0 %<= m(0.44) >%
+        rotation 0 1 0 1.5708
+        children [
+          DEF OUTLET Shape {
+            appearance IS appearance
+            geometry Cylinder { radius %<= m(0.055) >% height %<= m(0.07) >% subdivision 16 }
+          }
+        ]
+      }
+      Pose {
+        translation %<= m(-0.105) >% 0 %<= m(0.44) >%
+        rotation 0 1 0 1.5708
+        children [ USE OUTLET ]
+      }
+      # --- larger pumper outlet on the front -----------------------------------
+      Pose {
+        translation 0 %<= m(0.11) >% %<= m(0.30) >%
+        rotation 1 0 0 1.5708
+        children [
+          Shape {
+            appearance IS appearance
+            geometry Cylinder { radius %<= m(0.07) >% height %<= m(0.08) >% subdivision 16 }
+          }
+        ]
+      }
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 %<= m(0.06) >%
+          children [ Cylinder { radius %<= m(0.15) >% height %<= m(0.12) >% subdivision 12 } ]
+        }
+        Pose {
+          translation 0 0 %<= m(0.42) >%
+          children [ Cylinder { radius %<= m(0.10) >% height %<= m(0.62) >% subdivision 12 } ]
+        }
+      ]
+    }
+  }
+}

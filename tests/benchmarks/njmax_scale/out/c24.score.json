@@ -1,0 +1,548 @@
+{
+ "tag": "c24",
+ "world": "O:\\omnisim\\_scratch\\wheelscale\\worlds\\c24.wbt",
+ "rc": 0,
+ "killed": false,
+ "wall_s": 18.0,
+ "log": "O:\\omnisim\\_scratch\\wheelscale\\out\\c24.log",
+ "nlog": "O:\\omnisim\\_scratch\\wheelscale\\out\\c24.newton.log",
+ "probe": "O:\\omnisim\\_scratch\\wheelscale\\out\\c24.probe.json",
+ "sim_time_s": 12.0,
+ "robots": [
+  {
+   "name": "bot_0",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_1",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_2",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_3",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_4",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_5",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_6",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_7",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_8",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_9",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_10",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_11",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_12",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_13",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_14",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_15",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_16",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_17",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_18",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_19",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_20",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_21",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_22",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  },
+  {
+   "name": "bot_23",
+   "n_wheels": 4,
+   "dx": 4.874,
+   "dy": 0.0,
+   "disp": 4.874,
+   "z0": 0.3,
+   "z1": 0.1322,
+   "zmin": 0.1322,
+   "zmax": 0.3,
+   "mean_speed": 0.4061,
+   "speed_sd": 0.0001,
+   "wheel_w": [
+    2.5,
+    2.5,
+    2.5,
+    2.5
+   ],
+   "wheel_w_min": 2.5,
+   "nan": false
+  }
+ ],
+ "disp_min": 4.874,
+ "disp_max": 4.874,
+ "disp_mean": 4.874,
+ "disp_spread": 0.0,
+ "wheel_w_min": 2.5,
+ "z_range": [
+  0.1322,
+  0.3
+ ],
+ "any_nan": false,
+ "newton": {
+  "buffers": [
+   "20:47:29 constraint buffers: njmax=256 nconmax=256 (0=newton auto) initial nefc=0 ncon=0 nv=240"
+  ],
+  "peak_first": null,
+  "peak_last": null,
+  "n_peaks": 0,
+  "overflow_lines": 0
+ },
+ "log_hits": [],
+ "cfg": {
+  "n": 24,
+  "solver": "mujoco",
+  "njmax": 0,
+  "nconmax": 0,
+  "substeps": 2,
+  "z": 0.3,
+  "spacing": 12.0,
+  "duration_ms": 12000,
+  "env": {}
+ }
+}

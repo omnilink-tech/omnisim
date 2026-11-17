@@ -1,0 +1,15 @@
+{
+  "name": "m20s_sentry",
+  "display_name": "M20S Sentry",
+  "world": "projects/samples/demos/worlds/chat/omnilink_m20s.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/m20s_sentry/run.py",
+  "description": "m20s \u2014 come up and hold the post. Catalogue brief, 3 checked steps.",
+  "tags": [
+    "quadruped",
+    "sentry",
+    "m20s",
+    "catalogue",
+    "generated"
+  ]
+}

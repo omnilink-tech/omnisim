@@ -1,0 +1,107 @@
+# ============================================================================
+# slam_toolbox - ONLINE ASYNC mapping parameters
+# ============================================================================
+# Purpose:
+#   Online asynchronous SLAM (mapping mode) for a Clearpath Husky running
+#   inside the OmniSim simulator on ROS 2 Jazzy.
+#
+# OmniSim measured ROS surface (ground truth):
+#   - Laser scans:  /scan   (sensor_msgs/LaserScan, single layer, LiDAR max range ~20 m)
+#   - TF tree:      map -> odom -> base_link -> base_laser
+#   - Robot base frame:  base_link   (base_frame below matches OmniSim's surface)
+#   - Odom frame:        odom
+#   - Map frame:         map
+#
+# Notes specific to OmniSim:
+#   - `base_frame: base_link` and `scan_topic: /scan` match OmniSim's measured
+#     ROS surface exactly - do not change without re-checking the sim.
+#   - `transform_publish_period` is what EMITS the map->odom transform. Keep it
+#     small (0.05 s = 20 Hz) so localization stays smooth even when the sim runs
+#     fast-forward.
+#   - The sim runs ~13x realtime and publishes TF at only ~5 Hz, so we use
+#     `use_sim_time: true` plus generous `transform_timeout` and
+#     `tf_buffer_duration` to tolerate sparse / bursty transforms.
+# ============================================================================
+
+slam_toolbox:
+  ros__parameters:
+
+    # ------------------------------------------------------------------------
+    # Solver plugin (Ceres) - back-end pose-graph optimization
+    # ------------------------------------------------------------------------
+    solver_plugin: solver_plugins::CeresSolver
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
+    ceres_preconditioner: SCHUR_JACOBI
+    ceres_trust_strategy: LEVENBERG_MARQUARDT
+    ceres_dogleg_type: TRADITIONAL_DOGLEG
+    ceres_loss_function: None
+
+    # ------------------------------------------------------------------------
+    # Frames, topics and runtime mode
+    #   These match OmniSim's measured TF tree and topic surface.
+    # ------------------------------------------------------------------------
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_link        # OmniSim robot base frame
+    scan_topic: /scan            # OmniSim LaserScan topic
+    use_sim_time: true           # sim publishes /clock; must honor sim time
+    mode: mapping                # online_async in mapping (SLAM) mode
+
+    # ------------------------------------------------------------------------
+    # General / lifecycle
+    # ------------------------------------------------------------------------
+    debug_logging: false
+    throttle_scans: 1            # process every incoming scan
+    transform_publish_period: 0.05   # EMITS map->odom TF at 20 Hz
+    map_update_interval: 3.0     # seconds between occupancy-grid rebuilds
+    resolution: 0.05             # map cell size (m)
+    max_laser_range: 20.0        # matches OmniSim LiDAR max range (~20 m)
+    minimum_time_interval: 0.5   # min seconds between processed scans
+    transform_timeout: 1.0       # bumped up: sim runs ~13x, TF ~5 Hz
+    tf_buffer_duration: 30.0     # long buffer to survive sparse/bursty TF
+    stack_size_to_use: 40000000  # serialization stack (bytes) for large maps
+    enable_interactive_mode: true
+
+    # ------------------------------------------------------------------------
+    # Scan matcher / general SLAM behavior
+    # ------------------------------------------------------------------------
+    use_scan_matching: true
+    use_scan_barycenter: true
+    minimum_travel_distance: 0.3       # m of motion before adding a scan
+    minimum_travel_heading: 0.3        # rad of rotation before adding a scan
+    scan_buffer_size: 10
+    scan_buffer_maximum_scan_distance: 10.0
+    link_match_minimum_response_fine: 0.1
+    link_scan_maximum_distance: 1.5
+    loop_search_maximum_distance: 3.0
+    do_loop_closing: true
+    loop_match_minimum_chain_size: 10
+    loop_match_maximum_variance_coarse: 3.0
+    loop_match_minimum_response_coarse: 0.35
+    loop_match_minimum_response_fine: 0.45
+
+    # ------------------------------------------------------------------------
+    # Correlation parameters (local scan matching search grid)
+    # ------------------------------------------------------------------------
+    correlation_search_space_dimension: 0.5
+    correlation_search_space_resolution: 0.01
+    correlation_search_space_smear_deviation: 0.1
+
+    # ------------------------------------------------------------------------
+    # Loop-closure correlation parameters (larger search grid)
+    # ------------------------------------------------------------------------
+    loop_search_space_dimension: 8.0
+    loop_search_space_resolution: 0.05
+    loop_search_space_smear_deviation: 0.03
+
+    # ------------------------------------------------------------------------
+    # Scan matcher penalty parameters
+    # ------------------------------------------------------------------------
+    distance_variance_penalty: 0.5
+    angle_variance_penalty: 1.0
+    fine_search_angle_offset: 0.00349
+    coarse_search_angle_offset: 0.349
+    coarse_angle_resolution: 0.0349
+    minimum_angle_penalty: 0.9
+    minimum_distance_penalty: 0.5
+    use_response_expansion: true

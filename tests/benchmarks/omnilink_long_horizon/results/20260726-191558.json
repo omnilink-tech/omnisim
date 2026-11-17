@@ -1,0 +1,896 @@
+{
+  "benchmark": "LH-1-hierarchical-corners",
+  "timestamp": "2026-07-26T17:15:58.568191+00:00",
+  "score": 20,
+  "max_score": 100,
+  "pass": false,
+  "hard_gates": {
+    "all_corners": false,
+    "returned_to_start": false,
+    "bridge_verified": false,
+    "plan_verified": false,
+    "claim_bound": false
+  },
+  "checks": [
+    {
+      "name": "all live endpoints reachable",
+      "points": 5,
+      "passed": false,
+      "awarded": 0,
+      "evidence": {
+        "bridge": false,
+        "captain": true,
+        "husky": true
+      }
+    },
+    {
+      "name": "captain inspected specialist roster",
+      "points": 5,
+      "passed": true,
+      "awarded": 5,
+      "evidence": [
+        "execute_mission_plan",
+        "execute_mission_plan",
+        "list_agents",
+        "list_agents",
+        "list_agents",
+        "execute_mission_plan",
+        "list_agents",
+        "list_agents",
+        "list_agents",
+        "execute_mission_plan"
+      ]
+    },
+    {
+      "name": "captain used supervised plan",
+      "points": 10,
+      "passed": true,
+      "awarded": 10,
+      "evidence": {
+        "objective": "Complete the Husky Maze (Corners Tour) mission, including recovery from previous faults and returning to the start.",
+        "steps": [
+          {
+            "id": "husky_maze_recovery_and_run_003",
+            "agent": "Husky Maze",
+            "task": "Read the authoritative world brief, plan and execute the entire 'Corners Tour' route under wheel control, recover from any mid-run faults, and return to the start. Claim completion once back at the start."
+          }
+        ]
+      }
+    },
+    {
+      "name": "specialist mission is self-contained",
+      "points": 5,
+      "passed": true,
+      "awarded": 5,
+      "evidence": {
+        "objective": "Complete the Husky Maze (Corners Tour) mission, including recovery from previous faults and returning to the start.",
+        "steps": [
+          {
+            "id": "husky_maze_recovery_and_run_003",
+            "agent": "Husky Maze",
+            "task": "Read the authoritative world brief, plan and execute the entire 'Corners Tour' route under wheel control, recover from any mid-run faults, and return to the start. Claim completion once back at the start."
+          }
+        ]
+      }
+    },
+    {
+      "name": "visited corner (0, 0)",
+      "points": 5,
+      "passed": false,
+      "awarded": 0,
+      "evidence": []
+    },
+    {
+      "name": "visited corner (0, 10)",
+      "points": 5,
+      "passed": false,
+      "awarded": 0,
+      "evidence": []
+    },
+    {
+      "name": "visited corner (10, 0)",
+      "points": 5,
+      "passed": false,
+      "awarded": 0,
+      "evidence": []
+    },
+    {
+      "name": "visited corner (10, 10)",
+      "points": 5,
+      "passed": false,
+      "awarded": 0,
+      "evidence": []
+    },
+    {
+      "name": "returned to start cell",
+      "points": 10,
+      "passed": false,
+      "awarded": 0,
+      "evidence": [
+        null,
+        null
+      ]
+    },
+    {
+      "name": "bridge mission_complete",
+      "points": 5,
+      "passed": false,
+      "awarded": 0,
+      "evidence": null
+    },
+    {
+      "name": "bridge accepted verified claim",
+      "points": 10,
+      "passed": false,
+      "awarded": 0,
+      "evidence": []
+    },
+    {
+      "name": "supervised ledger completed and verified",
+      "points": 10,
+      "passed": false,
+      "awarded": 0,
+      "evidence": {
+        "completed": false,
+        "verified": false,
+        "requested_steps": 1,
+        "completed_steps": 0,
+        "failed_step": "husky_maze_recovery_and_run_003",
+        "stopped_early": false,
+        "elapsed_s": 209.359,
+        "steps": [
+          {
+            "index": 0,
+            "id": "husky_maze_recovery_and_run_003",
+            "verified": false,
+            "outcome": {
+              "state": "failed",
+              "accepted": null,
+              "completed": false,
+              "verified": false,
+              "failed": true,
+              "reason": "hit max_turns=30 without sub-agent claiming completion"
+            },
+            "elapsed_s": 209.359,
+            "result": {
+              "success": false,
+              "agent": "Husky Maze",
+              "turns": 30,
+              "tool_calls": 27,
+              "final_text": "I am unable to fulfill the mission because the simulation bridge remains unreachable, as indicated by the persistent connection errors I have received. As I have no way to communicate with the hardware to execute the Corners Tour, the mission is genuinely impossible.",
+              "mission_complete": false,
+              "sub_status": {
+                "error": "TimeoutError: timed out",
+                "url": "http://127.0.0.1:51517/status"
+              },
+              "reason": "hit max_turns=30 without sub-agent claiming completion"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "robot settled without active fault",
+      "points": 5,
+      "passed": false,
+      "awarded": 0,
+      "evidence": {
+        "mode": null,
+        "fault": null
+      }
+    },
+    {
+      "name": "specialist performed meaningful work",
+      "points": 5,
+      "passed": false,
+      "awarded": 0,
+      "evidence": {
+        "tool_calls": 27,
+        "visited_cells": 0
+      }
+    },
+    {
+      "name": "captain recorded completion",
+      "points": 5,
+      "passed": false,
+      "awarded": 0,
+      "evidence": {}
+    },
+    {
+      "name": "captain claim bound to plan_id",
+      "points": 5,
+      "passed": false,
+      "awarded": 0,
+      "evidence": {
+        "plan_id": "e02e8c4f19ff45368f7b733bf1ae3ff5",
+        "claim_plan_id": null
+      }
+    }
+  ],
+  "metrics": {
+    "visited_cells": 0,
+    "specialist_turns": 30,
+    "specialist_tool_calls": 27,
+    "captain_activity_entries": 10,
+    "sim_time": null
+  },
+  "environment": {
+    "host": "machine-c385771a1404",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.13 (main, Mar  3 2026, 15:01:35) [MSC v.1944 64 bit (AMD64)]",
+    "git_commit": "2a234a7f3cc30f48a30d2016a08054d123c58dc3"
+  },
+  "chat": {
+    "completed": false,
+    "error": "hit max_turns=12",
+    "transcript": [
+      {
+        "turn": 1,
+        "elapsed_s": 3.062,
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "execute_mission_plan",
+            "arguments": {
+              "objective": "Complete the Husky Maze (Corners Tour) mission, including recovery from previous faults.",
+              "steps": [
+                {
+                  "task": "Read the authoritative world brief, recover from the previous goto_cell_timeout fault, execute the full Corners Tour route, and verify all objective completion from live state, returning to the start location.",
+                  "id": "husky_maze_recovery_001",
+                  "agent": "Husky Maze"
+                }
+              ]
+            },
+            "result": {
+              "error": "specialist_unreachable",
+              "agent": "Husky Maze",
+              "index": 0,
+              "detail": {
+                "error": "TimeoutError: timed out",
+                "url": "http://127.0.0.1:51517/status"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "turn": 2,
+        "elapsed_s": 4.734,
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "execute_mission_plan",
+            "arguments": {
+              "steps": [
+                {
+                  "task": "Read the authoritative world brief, clear any existing faults, execute the full Corners Tour route, verify all objectives, and return to the start. Claim success via mission_complete.",
+                  "id": "husky_maze_recovery_and_run_002",
+                  "agent": "Husky Maze"
+                }
+              ],
+              "objective": "Complete the Husky Maze (Corners Tour) mission, including recovery from previous faults and returning to the start."
+            },
+            "result": {
+              "plan_id": "b0c2aff8f8aa433aa643be45ef52bc77",
+              "objective": "Complete the Husky Maze (Corners Tour) mission, including recovery from previous faults and returning to the start.",
+              "completed": false,
+              "verified": false,
+              "preflight": [
+                {
+                  "agent": "Husky Maze",
+                  "status": {
+                    "agent": "Husky Maze",
+                    "variant": "v1",
+                    "bridge_url": "http://127.0.0.1:6070",
+                    "tools_registered": 29,
+                    "world_title": null,
+                    "map_available": null,
+                    "strategy": null,
+                    "current_pose": null,
+                    "mode": null,
+                    "goal_reached": null,
+                    "last_fault": null,
+                    "last_action": null,
+                    "activity_log_size": 0,
+                    "usage": {
+                      "elapsed_s": 45.2,
+                      "input_units": 69070,
+                      "output_units": 254,
+                      "cached_input_units": 9188,
+                      "fresh_input_units": 59882,
+                      "cache_hit_ratio": 0.133,
+                      "total_units": 69324,
+                      "credits": 0.0032,
+                      "tokens_per_hour": 5526055,
+                      "credits_per_hour": 0.2524,
+                      "available": true
+                    }
+                  }
+                }
+              ],
+              "ledger": {
+                "completed": false,
+                "verified": false,
+                "requested_steps": 1,
+                "completed_steps": 0,
+                "failed_step": "husky_maze_recovery_and_run_002",
+                "stopped_early": false,
+                "elapsed_s": 747.875,
+                "steps": [
+                  {
+                    "index": 0,
+                    "id": "husky_maze_recovery_and_run_002",
+                    "verified": false,
+                    "outcome": {
+                      "state": "failed",
+                      "accepted": null,
+                      "completed": false,
+                      "verified": false,
+                      "failed": true,
+                      "reason": "hit max_turns=30 without sub-agent claiming completion"
+                    },
+                    "elapsed_s": 747.875,
+                    "result": {
+                      "success": false,
+                      "agent": "Husky Maze",
+                      "turns": 30,
+                      "tool_calls": 29,
+                      "final_text": "I'm sorry, but I am unable to connect to the Husky maze bridge at the moment. The connection is being actively refused, which means the simulation environment or the bridge process isn't running as expected. \n\nCould you please verify that the `husky_maze.wbt` world is open in Webots and that the `husky_omnilink_bridge` is running? Once those are active, I'll be able to proceed with the Corners Tour.",
+                      "mission_complete": false,
+                      "sub_status": {
+                        "error": "TimeoutError: timed out",
+                        "url": "http://127.0.0.1:51517/status"
+                      },
+                      "reason": "hit max_turns=30 without sub-agent claiming completion"
+                    }
+                  }
+                ]
+              },
+              "created_at": 1785085890.523086
+            }
+          }
+        ]
+      },
+      {
+        "turn": 3,
+        "elapsed_s": 6.141,
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "list_agents",
+            "arguments": {},
+            "result": {
+              "status": "ok",
+              "specialists": [
+                {
+                  "name": "Husky Maze",
+                  "what_it_does": "Drives the Clearpath Husky in maze worlds. Strategies: BFS-on-known-map, lidar wall-follow, vision-based marker hunting. Claims completion via complete_mission.",
+                  "reachable": true,
+                  "status": {
+                    "agent": "Husky Maze",
+                    "variant": "v1",
+                    "bridge_url": "http://127.0.0.1:6070",
+                    "tools_registered": 29,
+                    "world_title": null,
+                    "map_available": null,
+                    "strategy": "lidar wall-follow (no map)",
+                    "current_pose": {
+                      "x": null,
+                      "y": null,
+                      "yaw": null
+                    },
+                    "mode": null,
+                    "goal_reached": null,
+                    "last_fault": null,
+                    "last_action": {
+                      "tool": "get_state",
+                      "kind": "critical",
+                      "detail": "get_state -> error: bridge unreachable: [WinError 10061] No connection could be made because the target machine actively refused it",
+                      "timestamp": "2026-07-26T17:11:29Z"
+                    },
+                    "activity_log_size": 29,
+                    "usage": {
+                      "elapsed_s": 801.2,
+                      "input_units": 974444,
+                      "output_units": 0,
+                      "cached_input_units": 148786,
+                      "fresh_input_units": 825658,
+                      "cache_hit_ratio": 0.1527,
+                      "total_units": 974444,
+                      "credits": 0.0489,
+                      "tokens_per_hour": 4378211,
+                      "credits_per_hour": 0.2196,
+                      "available": true
+                    }
+                  },
+                  "status_error": null
+                }
+              ],
+              "count": 1
+            }
+          }
+        ]
+      },
+      {
+        "turn": 4,
+        "elapsed_s": 1.969,
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "list_agents",
+            "arguments": {},
+            "result": {
+              "status": "ok",
+              "specialists": [
+                {
+                  "name": "Husky Maze",
+                  "what_it_does": "Drives the Clearpath Husky in maze worlds. Strategies: BFS-on-known-map, lidar wall-follow, vision-based marker hunting. Claims completion via complete_mission.",
+                  "reachable": true,
+                  "status": {
+                    "agent": "Husky Maze",
+                    "variant": "v1",
+                    "bridge_url": "http://127.0.0.1:6070",
+                    "tools_registered": 29,
+                    "world_title": null,
+                    "map_available": null,
+                    "strategy": "lidar wall-follow (no map)",
+                    "current_pose": {
+                      "x": null,
+                      "y": null,
+                      "yaw": null
+                    },
+                    "mode": null,
+                    "goal_reached": null,
+                    "last_fault": null,
+                    "last_action": {
+                      "tool": "get_state",
+                      "kind": "critical",
+                      "detail": "get_state -> error: bridge unreachable: [WinError 10061] No connection could be made because the target machine actively refused it",
+                      "timestamp": "2026-07-26T17:11:29Z"
+                    },
+                    "activity_log_size": 29,
+                    "usage": {
+                      "elapsed_s": 805.3,
+                      "input_units": 1014161,
+                      "output_units": 0,
+                      "cached_input_units": 153380,
+                      "fresh_input_units": 860781,
+                      "cache_hit_ratio": 0.1512,
+                      "total_units": 1014161,
+                      "credits": 0.0505,
+                      "tokens_per_hour": 4533881,
+                      "credits_per_hour": 0.2259,
+                      "available": true
+                    }
+                  },
+                  "status_error": null
+                }
+              ],
+              "count": 1
+            }
+          }
+        ]
+      },
+      {
+        "turn": 5,
+        "elapsed_s": 2.844,
+        "text": "I have confirmed the Husky Maze agent is currently reporting a bridge connection failure, which prevents me from delegating any new tasks or verifying the existing mission plan. I will wait briefly for the connection to stabilize before attempting to re-run the `execute_mission_plan` ledger to progress toward completion.",
+        "tool_calls": []
+      },
+      {
+        "turn": 6,
+        "elapsed_s": 2.219,
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "list_agents",
+            "arguments": {},
+            "result": {
+              "status": "ok",
+              "specialists": [
+                {
+                  "name": "Husky Maze",
+                  "what_it_does": "Drives the Clearpath Husky in maze worlds. Strategies: BFS-on-known-map, lidar wall-follow, vision-based marker hunting. Claims completion via complete_mission.",
+                  "reachable": true,
+                  "status": {
+                    "agent": "Husky Maze",
+                    "variant": "v1",
+                    "bridge_url": "http://127.0.0.1:6070",
+                    "tools_registered": 29,
+                    "world_title": null,
+                    "map_available": null,
+                    "strategy": "lidar wall-follow (no map)",
+                    "current_pose": {
+                      "x": null,
+                      "y": null,
+                      "yaw": null
+                    },
+                    "mode": null,
+                    "goal_reached": null,
+                    "last_fault": null,
+                    "last_action": {
+                      "tool": "get_state",
+                      "kind": "critical",
+                      "detail": "get_state -> error: bridge unreachable: [WinError 10061] No connection could be made because the target machine actively refused it",
+                      "timestamp": "2026-07-26T17:11:29Z"
+                    },
+                    "activity_log_size": 29,
+                    "usage": {
+                      "elapsed_s": 813.4,
+                      "input_units": 1108620,
+                      "output_units": 0,
+                      "cached_input_units": 162568,
+                      "fresh_input_units": 946052,
+                      "cache_hit_ratio": 0.1466,
+                      "total_units": 1108620,
+                      "credits": 0.0544,
+                      "tokens_per_hour": 4906567,
+                      "credits_per_hour": 0.2407,
+                      "available": true
+                    }
+                  },
+                  "status_error": null
+                }
+              ],
+              "count": 1
+            }
+          }
+        ]
+      },
+      {
+        "turn": 7,
+        "elapsed_s": 2.203,
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "execute_mission_plan",
+            "arguments": {
+              "steps": [
+                {
+                  "task": "Recover from the bridge connection failure, execute the Corners Tour, and call complete_mission once returned to the start.",
+                  "agent": "Husky Maze"
+                }
+              ],
+              "objective": "Complete the Husky Maze (Corners Tour) mission, including recovery from previous faults and returning to the start."
+            },
+            "result": {
+              "plan_id": "7916a3dcbfd74c56817d356b36f4eb65",
+              "objective": "Complete the Husky Maze (Corners Tour) mission, including recovery from previous faults and returning to the start.",
+              "completed": false,
+              "verified": false,
+              "preflight": [
+                {
+                  "agent": "Husky Maze",
+                  "status": {
+                    "agent": "Husky Maze",
+                    "variant": "v1",
+                    "bridge_url": "http://127.0.0.1:6070",
+                    "tools_registered": 29,
+                    "world_title": null,
+                    "map_available": null,
+                    "strategy": "lidar wall-follow (no map)",
+                    "current_pose": {
+                      "x": null,
+                      "y": null,
+                      "yaw": null
+                    },
+                    "mode": null,
+                    "goal_reached": null,
+                    "last_fault": null,
+                    "last_action": {
+                      "tool": "get_state",
+                      "kind": "critical",
+                      "detail": "get_state -> error: bridge unreachable: [WinError 10061] No connection could be made because the target machine actively refused it",
+                      "timestamp": "2026-07-26T17:11:29Z"
+                    },
+                    "activity_log_size": 29,
+                    "usage": {
+                      "elapsed_s": 817.7,
+                      "input_units": 1165376,
+                      "output_units": 0,
+                      "cached_input_units": 167162,
+                      "fresh_input_units": 998214,
+                      "cache_hit_ratio": 0.1434,
+                      "total_units": 1165376,
+                      "credits": 0.0566,
+                      "tokens_per_hour": 5130715,
+                      "credits_per_hour": 0.2494,
+                      "available": true
+                    }
+                  }
+                }
+              ],
+              "ledger": {
+                "completed": false,
+                "verified": false,
+                "requested_steps": 1,
+                "completed_steps": 0,
+                "failed_step": "delegation_1",
+                "stopped_early": false,
+                "elapsed_s": 0.297,
+                "steps": [
+                  {
+                    "index": 0,
+                    "id": "delegation_1",
+                    "verified": false,
+                    "outcome": {
+                      "state": "failed",
+                      "accepted": null,
+                      "completed": null,
+                      "verified": null,
+                      "failed": true,
+                      "reason": "step_execution_crashed"
+                    },
+                    "elapsed_s": 0.297,
+                    "result": {
+                      "error": "step_execution_crashed",
+                      "detail": "OSError: [Errno 22] Invalid argument"
+                    }
+                  }
+                ]
+              },
+              "created_at": 1785085915.4865253
+            }
+          }
+        ]
+      },
+      {
+        "turn": 8,
+        "elapsed_s": 6.0,
+        "text": "The connection to the specialist remains unstable, causing the agent lookup to return empty. I am calling `list_agents` again to confirm the current registration and address the lookup failure before retrying the mission.",
+        "tool_calls": [
+          {
+            "name": "list_agents",
+            "arguments": {},
+            "result": {
+              "status": "ok",
+              "specialists": [
+                {
+                  "name": "Husky Maze",
+                  "what_it_does": "Drives the Clearpath Husky in maze worlds. Strategies: BFS-on-known-map, lidar wall-follow, vision-based marker hunting. Claims completion via complete_mission.",
+                  "reachable": false,
+                  "status": null,
+                  "status_error": "TimeoutError: timed out"
+                }
+              ],
+              "count": 1
+            }
+          }
+        ]
+      },
+      {
+        "turn": 9,
+        "elapsed_s": 2.062,
+        "text": "The 'Husky Maze' agent is currently reporting a timeout, indicating it is unreachable. I will monitor the agent status and proceed as soon as it becomes reachable again.",
+        "tool_calls": []
+      },
+      {
+        "turn": 10,
+        "elapsed_s": 2.796,
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "list_agents",
+            "arguments": {},
+            "result": {
+              "status": "ok",
+              "specialists": [
+                {
+                  "name": "Husky Maze",
+                  "what_it_does": "Drives the Clearpath Husky in maze worlds. Strategies: BFS-on-known-map, lidar wall-follow, vision-based marker hunting. Claims completion via complete_mission.",
+                  "reachable": true,
+                  "status": {
+                    "agent": "Husky Maze",
+                    "variant": "v1",
+                    "bridge_url": "http://127.0.0.1:6070",
+                    "tools_registered": 29,
+                    "world_title": null,
+                    "map_available": null,
+                    "strategy": "lidar wall-follow (no map)",
+                    "current_pose": {
+                      "x": null,
+                      "y": null,
+                      "yaw": null
+                    },
+                    "mode": null,
+                    "goal_reached": null,
+                    "last_fault": null,
+                    "last_action": {
+                      "tool": "get_state",
+                      "kind": "critical",
+                      "detail": "get_state -> error: bridge unreachable: [WinError 10061] No connection could be made because the target machine actively refused it",
+                      "timestamp": "2026-07-26T17:11:29Z"
+                    },
+                    "activity_log_size": 29,
+                    "usage": {
+                      "elapsed_s": 834.5,
+                      "input_units": 1293654,
+                      "output_units": 304,
+                      "cached_input_units": 190132,
+                      "fresh_input_units": 1103522,
+                      "cache_hit_ratio": 0.147,
+                      "total_units": 1293958,
+                      "credits": 0.0645,
+                      "tokens_per_hour": 5581809,
+                      "credits_per_hour": 0.278,
+                      "available": true
+                    }
+                  },
+                  "status_error": null
+                }
+              ],
+              "count": 1
+            }
+          }
+        ]
+      },
+      {
+        "turn": 11,
+        "elapsed_s": 3.375,
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "list_agents",
+            "arguments": {},
+            "result": {
+              "status": "ok",
+              "specialists": [
+                {
+                  "name": "Husky Maze",
+                  "what_it_does": "Drives the Clearpath Husky in maze worlds. Strategies: BFS-on-known-map, lidar wall-follow, vision-based marker hunting. Claims completion via complete_mission.",
+                  "reachable": true,
+                  "status": {
+                    "agent": "Husky Maze",
+                    "variant": "v1",
+                    "bridge_url": "http://127.0.0.1:6070",
+                    "tools_registered": 29,
+                    "world_title": null,
+                    "map_available": null,
+                    "strategy": "lidar wall-follow (no map)",
+                    "current_pose": {
+                      "x": null,
+                      "y": null,
+                      "yaw": null
+                    },
+                    "mode": null,
+                    "goal_reached": null,
+                    "last_fault": null,
+                    "last_action": {
+                      "tool": "get_state",
+                      "kind": "critical",
+                      "detail": "get_state -> error: bridge unreachable: [WinError 10061] No connection could be made because the target machine actively refused it",
+                      "timestamp": "2026-07-26T17:11:29Z"
+                    },
+                    "activity_log_size": 29,
+                    "usage": {
+                      "elapsed_s": 840.0,
+                      "input_units": 1321172,
+                      "output_units": 381,
+                      "cached_input_units": 199320,
+                      "fresh_input_units": 1121852,
+                      "cache_hit_ratio": 0.1509,
+                      "total_units": 1321553,
+                      "credits": 0.0671,
+                      "tokens_per_hour": 5663637,
+                      "credits_per_hour": 0.2875,
+                      "available": true
+                    }
+                  },
+                  "status_error": null
+                }
+              ],
+              "count": 1
+            }
+          }
+        ]
+      },
+      {
+        "turn": 12,
+        "elapsed_s": 2.187,
+        "text": "",
+        "tool_calls": [
+          {
+            "name": "execute_mission_plan",
+            "arguments": {
+              "objective": "Complete the Husky Maze (Corners Tour) mission, including recovery from previous faults and returning to the start.",
+              "steps": [
+                {
+                  "id": "husky_maze_recovery_and_run_003",
+                  "agent": "Husky Maze",
+                  "task": "Read the authoritative world brief, plan and execute the entire 'Corners Tour' route under wheel control, recover from any mid-run faults, and return to the start. Claim completion once back at the start."
+                }
+              ]
+            },
+            "result": {
+              "plan_id": "e02e8c4f19ff45368f7b733bf1ae3ff5",
+              "objective": "Complete the Husky Maze (Corners Tour) mission, including recovery from previous faults and returning to the start.",
+              "completed": false,
+              "verified": false,
+              "preflight": [
+                {
+                  "agent": "Husky Maze",
+                  "status": {
+                    "agent": "Husky Maze",
+                    "variant": "v1",
+                    "bridge_url": "http://127.0.0.1:6070",
+                    "tools_registered": 29,
+                    "world_title": null,
+                    "map_available": null,
+                    "strategy": "lidar wall-follow (no map)",
+                    "current_pose": {
+                      "x": null,
+                      "y": null,
+                      "yaw": null
+                    },
+                    "mode": null,
+                    "goal_reached": null,
+                    "last_fault": null,
+                    "last_action": {
+                      "tool": "get_state",
+                      "kind": "critical",
+                      "detail": "get_state -> error: bridge unreachable: [WinError 10061] No connection could be made because the target machine actively refused it",
+                      "timestamp": "2026-07-26T17:11:29Z"
+                    },
+                    "activity_log_size": 29,
+                    "usage": {
+                      "elapsed_s": 844.3,
+                      "input_units": 1362365,
+                      "output_units": 495,
+                      "cached_input_units": 203914,
+                      "fresh_input_units": 1158451,
+                      "cache_hit_ratio": 0.1497,
+                      "total_units": 1362860,
+                      "credits": 0.0689,
+                      "tokens_per_hour": 5811199,
+                      "credits_per_hour": 0.2936,
+                      "available": true
+                    }
+                  }
+                }
+              ],
+              "ledger": {
+                "completed": false,
+                "verified": false,
+                "requested_steps": 1,
+                "completed_steps": 0,
+                "failed_step": "husky_maze_recovery_and_run_003",
+                "stopped_early": false,
+                "elapsed_s": 209.359,
+                "steps": [
+                  {
+                    "index": 0,
+                    "id": "husky_maze_recovery_and_run_003",
+                    "verified": false,
+                    "outcome": {
+                      "state": "failed",
+                      "accepted": null,
+                      "completed": false,
+                      "verified": false,
+                      "failed": true,
+                      "reason": "hit max_turns=30 without sub-agent claiming completion"
+                    },
+                    "elapsed_s": 209.359,
+                    "result": {
+                      "success": false,
+                      "agent": "Husky Maze",
+                      "turns": 30,
+                      "tool_calls": 27,
+                      "final_text": "I am unable to fulfill the mission because the simulation bridge remains unreachable, as indicated by the persistent connection errors I have received. As I have no way to communicate with the hardware to execute the Corners Tour, the mission is genuinely impossible.",
+                      "mission_complete": false,
+                      "sub_status": {
+                        "error": "TimeoutError: timed out",
+                        "url": "http://127.0.0.1:51517/status"
+                      },
+                      "reason": "hit max_turns=30 without sub-agent claiming completion"
+                    }
+                  }
+                ]
+              },
+              "created_at": 1785086151.1342118
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

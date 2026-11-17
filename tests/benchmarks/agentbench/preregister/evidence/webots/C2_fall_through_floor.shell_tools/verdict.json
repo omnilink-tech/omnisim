@@ -1,0 +1,225 @@
+{
+  "task": "C2_fall_through_floor",
+  "outcome": "PASS",
+  "progress": 4,
+  "progress_name": "graded_pass",
+  "assertions": {
+    "C2.1": {
+      "ok": true,
+      "what": "the run is clean",
+      "measured": {
+        "exit code": 0,
+        "ERROR: lines": 0,
+        "recorder called simulationQuit()": true,
+        "timed out": false
+      },
+      "threshold": {
+        "exit code": 0,
+        "ERROR: lines": 0
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "error stream + exit code: the captured stdout+stderr of the webots process (launched --stdout --stderr) plus its exit code. WARNING: upstream Webots writes NO log file -- there is no post-hoc equivalent of $OMNISIM_LOG_PATH, so whatever was not captured at launch does not exist"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "clean run",
+          "how_to_fail": "a non-zero exit code, an error-class line, a timeout, or a driver that never reached its target simulated time",
+          "witness": "the adapter captured the exit code AND the simulator's own error stream",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "C2.2": {
+      "ok": true,
+      "what": "the robot stays up",
+      "measured": {
+        "min z over all samples (m)": 0.7363,
+        "z_end (m)": 0.749
+      },
+      "threshold": {
+        "z (m)": "> -0.10"
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "vertical floor",
+          "how_to_fail": "one z sample at or below -0.10 m",
+          "witness": ">= 1 z sample",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "C2.3": {
+      "ok": true,
+      "what": "it is still a dynamic body",
+      "measured": {
+        "Physics node attached": true
+      },
+      "threshold": true,
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "dynamics model: getTypeName()=Robot getBaseTypeName()=Robot n_joints=0 (Supervisor recorder scan)"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "dynamics attached",
+          "how_to_fail": "the agent 'fixed' the fall by removing the body's dynamics",
+          "witness": "the adapter answers 'is this body dynamic' either way, rather than returning None",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "C2.4": {
+      "ok": true,
+      "what": "gravity still acts on it, and it came to rest",
+      "measured": {
+        "total descent (m)": 0.2637,
+        "z spread over the last 1.0 s (m)": 0.0
+      },
+      "threshold": {
+        "descent (m)": ">= 0.10",
+        "rest band (m)": "<= 0.020"
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "descended then rested",
+          "how_to_fail": "a body pinned in place (no descent) or still moving at the end",
+          "witness": ">= 2 samples, and a recorded window longer than the 1.0 s rest test",
+          "witness_present": true,
+          "detail": "recorded 4.992 s"
+        }
+      ]
+    },
+    "C2.5": {
+      "ok": true,
+      "what": "it rests on the floor surface",
+      "measured": {
+        "z_end (m)": 0.749,
+        "expected rest z (m)": 0.75,
+        "floor top z (m)": 0.55,
+        "robot half-height (m)": 0.2,
+        "error (m)": 0.001
+      },
+      "threshold": {
+        "error (m)": "<= 0.15"
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "rests on the surface",
+          "how_to_fail": "a body resting more than 0.15 m from the top of the floor it built",
+          "witness": "world-space AABBs for BOTH the body and the floor at a frozen t=0",
+          "witness_present": true,
+          "detail": "the grader-owned Supervisor recorder's t=0 scan. The recorder is synchronization TRUE, so the world is genuinely frozen while it walks the scene -- but upstream exposes no bounds API, so each world-space AABB is one the recorder computed itself from the body's boundingObject geometry and pose"
+        }
+      ]
+    }
+  },
+  "n_pass": 5,
+  "n_total": 5,
+  "failed_assertion": null,
+  "failed_assertions": [],
+  "self_verified": true,
+  "attribution": {
+    "backend": "ode",
+    "solver": "ode",
+    "degraded": false,
+    "engine_invariant": true,
+    "webots_version": "R2025a",
+    "coordinate_system": "ENU",
+    "ode_physics_plugin": null,
+    "basic_time_step_ms": 16.0,
+    "source": "upstream Webots R2025a ships ODE as its ONLY physics engine -- a documented structural invariant of that simulator rather than a per-run reading, because it exposes no engine-selection field and writes no backend-verdict file to read. Its own R2025a WorldInfo reference documents the ODE solver constants directly (basicTimeStep, ERP, and the ERP/CFM-bearing contactProperties) and documents WorldInfo.physics as the path to an ODE *physics plugin*: https://cyberbotics.com/doc/reference/worldinfo and https://cyberbotics.com/doc/reference/physics-plugin. Install and invocation for this arm: docs/developer/webots-control-baseline.md."
+  },
+  "measurements": {
+    "webots_run": {
+      "run_dir": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\webots",
+      "world": "/tmp/agentbench_webots/fall_through_ac68a588/project/worlds/fall_through.wbt",
+      "files": {
+        "trajectory": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\webots\\trajectory.json",
+        "roster": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\webots\\roster.json",
+        "contacts": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\webots\\contacts.json",
+        "completion": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\webots\\completion.json",
+        "process": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\webots\\process.json",
+        "console": "['O:\\\\omnisim\\\\tests\\\\benchmarks\\\\agentbench\\\\preregister\\\\runs\\\\webots\\\\C2_fall_through_floor.shell_tools\\\\webots\\\\stdout.log', 'O:\\\\omnisim\\\\tests\\\\benchmarks\\\\agentbench\\\\preregister\\\\runs\\\\webots\\\\C2_fall_through_floor.shell_tools\\\\webots\\\\stderr.log']",
+        "perf": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\webots\\perf.txt"
+      },
+      "missing": {},
+      "parse_errors": {},
+      "trajectory": {
+        "n_bodies": 1,
+        "n_samples": 313,
+        "dt_s": 0.016
+      },
+      "roster_bodies": 2,
+      "contacts": {
+        "supported": true,
+        "steps": 5,
+        "total_observed": 0,
+        "distinct_named": 0,
+        "error": null
+      },
+      "completion": {
+        "complete": true,
+        "quit_called": true,
+        "recorded_s": 4.992,
+        "steps": 312,
+        "dt_s": 0.016,
+        "world": "/tmp/agentbench_webots/fall_through_ac68a588/project/worlds/fall_through.wbt",
+        "coordinate_system": "ENU"
+      },
+      "process": {
+        "exit_code": 0,
+        "timed_out": false,
+        "wall_s": 2.475,
+        "attempts_used": 1,
+        "perf_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\webots\\perf.txt",
+        "webots_version": "R2025a",
+        "command": "WEBOTS_HOME=/opt/upstream-webots/R2025a timeout 420 xvfb-run -a /opt/upstream-webots/R2025a/webots --batch --mode=fast --no-rendering --minimize --stdout --stderr --log-performance=\"/tmp/agentbench_webots/fall_through_ac68a588/out/perf.txt\",312 --port=1504 \"/tmp/agentbench_webots/fall_through_ac68a588/project/worlds/fall_through.wbt\"",
+        "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\scratch\\fall_through.wbt"
+      },
+      "console_chars": 290,
+      "perf_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\webots\\perf.txt",
+      "perf_bytes": 950,
+      "dirs_tried": []
+    }
+  },
+  "artifacts": {
+    "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C2_fall_through_floor.shell_tools\\scratch\\fall_through.wbt"
+  },
+  "notes": [
+    "upstream Webots exposes no HTTP/JSON authoring surface, no scene-tree query, no hot reload and no structured load diagnostics (webots-control-baseline.md sec. 6), so there is no live-session pass on this arm. 'the artifact loaded' is evidenced instead by the in-world recorder having enumerated the scene at all.",
+    "upstream Webots has no --duration and no auto-exit: a headless run terminates only when an in-world Supervisor calls simulationQuit(), or when something kills it. 'the run exited cleanly' therefore rests on the recorder's own quit record, not on a wall-clock timeout.",
+    "trajectory rows could not be aligned to the roster by name (1 trajectory bodies, 2 roster bodies); the bundle's body_ids are the recorder's trajectory names and a per-body index is NOT valid across the two inventories."
+  ],
+  "basis": {
+    "core-physical": [
+      "C2.2",
+      "C2.4",
+      "C2.5"
+    ],
+    "mixed": [
+      "C2.1",
+      "C2.3"
+    ]
+  },
+  "vacuous_assertions": {}
+}

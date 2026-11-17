@@ -1,0 +1,17 @@
+blank_issues_enabled: true
+contact_links:
+  - name: OmniSim Discussions
+    url: https://github.com/omnilink-tech/omnisim/discussions/new/choose
+    about: Ask a question, share a build, or propose a feature without filing a bug.
+  - name: Where to get help
+    url: https://github.com/omnilink-tech/omnisim/blob/main/SUPPORT.md
+    about: Which channel fits your question, what makes a bug report actionable, and what to expect.
+  - name: OmniSim documentation
+    url: https://github.com/omnilink-tech/omnisim#readme
+    about: Getting started, the demo catalogue, the agent harness, and the developer book.
+  - name: Upstream Webots questions
+    url: https://robotics.stackexchange.com/questions/tagged/webots
+    about: For behaviour inherited from upstream Webots (world-file format, PROTO system, base controller API). These channels belong to the Webots project, not OmniSim.
+  - name: OmniLink platform
+    url: https://www.omnilink-agents.com
+    about: Questions about the OmniLink agentic platform that OmniSim is built for.

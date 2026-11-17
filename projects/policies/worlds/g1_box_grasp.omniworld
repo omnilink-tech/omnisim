@@ -1,0 +1,180 @@
+#OMNISIM R2025a utf8
+
+# G1 23-DOF walk on the ORIGINAL foot (g1_23dof_omnisim.urdf, foot box 0.17x0.06),
+# NOT the enlarged "bigfoot" (0.26x0.09). Used to test whether the in-engine RL walk
+# recipe (g1_walk_recipe.py) transfers from the bigfoot to the original G1 morphology.
+# Identical to g1_walk_bigfoot.omniworld except the URDF url.
+# + DEF G1_GHOST: the SAME G1 model with physics stripped (g1_23dof_ghost.urdf, staticBase),
+# driven kinematically by the historical g1_ghost controller (hologram tint + transparency),
+# phase-locked beside the real robot: the visible gap between them IS the balance work.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "G1 box-grasp arena: REAL Newton box, physics-only pick (no rig writes)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.25 0.25 0.9354 1.6378
+  position -2 -5 1.8
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 26 14
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+DEF G1_REAL URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_grasp.urdf"
+  translation 0 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "humanoid_stand_deploy"
+  physicsBackend "newton"
+}
+
+DEF G1_GHOST URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_ghost.urdf"
+  translation 0 1.1 0.78
+  name "g1_ghost"
+  supervisor TRUE
+  controller "ghost_hologram"
+  controllerArgs ["follow"]
+  staticBase TRUE
+  physicsBackend "ode"
+}
+
+DEF HARNESS_RIG Robot {
+  name "harness_rig"
+  supervisor TRUE
+  controller "harness_rig"
+}
+DEF HARNESS_LINE Solid {
+  translation 0 0 1.6
+  name "harness_line"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.80 0.15
+        transparency 0.35
+        roughness 0.6
+        metalness 0
+      }
+      geometry DEF HARNESS_CYL Cylinder {
+        radius 0.012
+        height 1.6
+      }
+    }
+  ]
+}
+# PHYS-GRASP BOX (2026-07-10): a REAL Newton body -- same physics world as the robot, so the
+# suction-cup lips must reach a sub-centimeter surface seal before vacuum may engage (no supervisor writes, ever; the
+# 40x dirty-solver lesson only applies to WRITES on Newton bodies -- an untouched free body is
+# just physics). 1.0 kg for grip margin (the carry policy trained with 1.5 kg at the hands).
+DEF CARRY_BOX Solid {
+  translation 4.2 -0.95 0.755
+  name "carry_box"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.52 0.30
+        roughness 0.9
+        metalness 0
+      }
+      geometry DEF CARRY_BOX_GEO Box { size 0.20 0.26 0.18 }
+    }
+  ]
+  boundingObject USE CARRY_BOX_GEO
+  contactMaterial "cube"
+  physics Physics {
+    density -1
+    mass 1.0
+  }
+}
+# The delivery stand is a MUSHROOM table (stem + overhanging top): the box always seats
+# ~5 cm WEST of whatever face stops the robot's march (toes/shins hit it before the hanging
+# box is over a flush top -- measured across 8 landings). The slim stem lets the robot press
+# 15 cm deeper; the thin top slab overhangs west ABOVE knee height, so the seated box lands
+# squarely on it.
+DEF DELIVERY_CART_B Solid {
+  translation 9.21 -1.63 0.26
+  name "delivery_cart_b"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.26 0.40 0.32
+        roughness 0.7
+        metalness 0.3
+      }
+      geometry DEF CART_B_GEO Box { size 0.30 0.44 0.52 }
+    }
+  ]
+  boundingObject USE CART_B_GEO
+}
+DEF DELIVERY_CART_B_TOP Solid {
+  translation 9.165 -1.63 0.535
+  name "delivery_cart_b_top"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.32 0.46 0.38
+        roughness 0.6
+        metalness 0.3
+      }
+      geometry DEF CART_B_TOP_GEO Box { size 0.61 0.44 0.03 }
+    }
+  ]
+  boundingObject USE CART_B_TOP_GEO
+}
+DEF DELIVERY_CART Solid {
+  translation 4.2 -0.95 0.33
+  name "delivery_cart"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.34 0.40
+        roughness 0.7
+        metalness 0.3
+      }
+      geometry DEF CART_GEO Box { size 0.5 0.4 0.66 }
+    }
+  ]
+  boundingObject USE CART_GEO
+}
+DEF HARNESS_HOOK Solid {
+  translation 0 0 2.4
+  name "harness_hook"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.80 0.15
+        transparency 0.1
+        roughness 0.4
+        metalness 0.6
+      }
+      geometry Box { size 0.22 0.22 0.06 }
+    }
+  ]
+}

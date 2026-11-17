@@ -1,0 +1,45 @@
+{
+  "schema": 2,
+  "name": "walk_turn_walk",
+  "title": "Walk -> 90 deg footwork turn -> walk (new heading)",
+  "class": "humanoid",
+  "robot": "g1",
+  "status": "verified",
+  "summary": "The G1 walks ~5 m on +x, turns a REAL ~90 deg by footwork (BATON solo-turn, crane yaw auto-OFF => wtz=0), then walks a clean straight leg along +y. TURN-LOOP replays partial passes of the modular 15-deg step-turn ghost (restart plateau planned from the measured ~0.67 live yaw gain) until the ACTUAL heading reaches TURN_TO_DEG, always finishing through the ghost's end-hold (never a mid-lut arrest). TURN_HOLD_LOCK=0 drops the completed-turn xy clamp (OOD for the feet-together turner -- it wound the settled hold into a spin+fall). keep-heading pins leg 2 to the achieved settled yaw; HARNESS_FY_HEADING keeps the crane brake in the heading frame. Measured 3/3: turn 90.6-95.6 deg actual, leg 2 bearing 82-90 deg, 0 falls (landing quantum = the ghost's 15-deg mini-pivot).",
+  "profile": "g1_shadow_deploy",
+  "world": "projects/policies/worlds/g1_walk_puppet.omniworld",
+  "primary": "g1_walk",
+  "skills": [
+    "g1_turn_in_place",
+    "g1_stand_rl"
+  ],
+  "arbiter": {
+    "kind": "schedule",
+    "value": "walk:32,stand:8,turn:45,stand:10,walk:40"
+  },
+  "_turn_note": "seq.env overrides the turn_in_place defaults: this demo runs the 90-deg turner (wr_turn90 + ghost_turn_90) under TURN-LOOP (loop-until-actual-90, TURN_HOLD_LOCK=0) exactly as run_walk_turn_walk.sh does; turn_solo keeps the skill defaults (wr_stepturn/180). BATON_COLD_HIDDEN='' unsets the derived cold-handover knob: the verified script runs the warm handover.",
+  "env": {
+    "WALK_RESET_STEPS": "180",
+    "BATON_COLD_HIDDEN": "",
+    "BATON_TURN_CKPT": "projects/policies/training/runs/wr_turn90.pt",
+    "BATON_TURN_LUT": "projects/policies/ghosts/g1/ghost_turn_90_lut.json",
+    "BATON_TURN_SETTLE_TICKS": "180",
+    "BATON_TURN_EXIT_TICKS": "150",
+    "TURN_TO_DEG": "90",
+    "TURN_LOOP": "1",
+    "TURN_HOLD_LOCK": "0",
+    "TURN_TARGET_STOP": "",
+    "TURN_DECEL_DEG": "",
+    "GHOST_FOLLOW": "1"
+  },
+  "duration_default": 120,
+  "gui_default": "gui",
+  "verification": {
+    "date": "2026-07-10",
+    "engine": "Newton/mujoco_warp",
+    "support": "G1 lambda=0.9 weight-bearing balance harness; zero yaw torque; not free-standing",
+    "result": "3/3 headless: leg 1 clean 5.2 m +x; TURN-LOOP lands the footwork turn at 90.6-95.6 deg actual (2-3 passes, measured gain 0.67-0.73), settled end-hold, keep-heading 84-90 deg; leg 2 straight at 82-90 deg bearing (best: x drift 0.3 m over 6.4 m +y); min z 0.662+, 0 falls"
+  },
+  "reproduces": "projects/policies/demos/run_walk_turn_walk.sh",
+  "memory": "project_baton_policy_switching"
+}

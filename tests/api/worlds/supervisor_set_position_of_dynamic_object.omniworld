@@ -1,0 +1,198 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  contactProperties [
+    ContactProperties {
+      material2 "ice"
+      coulombFriction [
+        0
+      ]
+    }
+  ]
+  coordinateSystem "NUE"
+  # translation_audit: ContactProperties.coulombFriction is an ODE-path field the
+  # Newton backend does not read; this declares the same friction where it is read.
+  newtonGroundMu 0
+}
+Viewpoint {
+  orientation -0.12163300473276177 -0.9557830154652709 -0.2677391258441581 2.32230289470441
+  position -1.527422443939456 1.1854605189388527 -1.2789805257879379
+}
+Background {
+  skyColor [
+    0.441932 0.383429 0.69482
+  ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  ambientIntensity 1
+  direction 0.2 -1 0.3
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+RectangleArena {
+  rotation 1 0 0 -1.5708
+}
+Robot {
+  translation 0.15 0 0
+  rotation 0 1 0 1
+  children [
+    TestSuiteEmitter {
+    }
+    GPS {
+      name "body_gps"
+    }
+    Pose {
+      translation 0 0.0415 0
+      rotation 1 0 0 -1.57079632679
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.0820075 0.364731 0.8
+            roughness 1
+            metalness 0
+          }
+          geometry DEF BODY Cylinder {
+            height 0.08
+            radius 0.045
+          }
+        }
+      ]
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis -1 0 0
+        anchor 0 0.025 0
+      }
+      device [
+        RotationalMotor {
+          name "left wheel motor"
+          consumptionFactor 70
+        }
+        PositionSensor {
+          name "left wheel sensor"
+        }
+      ]
+      endPoint Solid {
+        translation -0.04499999999999908 0.025 0
+        rotation 1 0 0 4.984670000000067
+        children [
+          GPS {
+            name "left_wheel_gps"
+          }
+          DEF WHEEL Pose {
+            rotation 0 0 0 -1.57
+            children [
+              Shape {
+                appearance PBRAppearance {
+                  baseColor 1 0 0
+                  roughness 1
+                  metalness 0
+                }
+                geometry Cylinder {
+                  height 0.01
+                  radius 0.025
+                }
+              }
+            ]
+          }
+        ]
+        name "left wheel"
+        boundingObject USE WHEEL
+        physics DEF PHYSICS_WHEEL Physics {
+          density -1
+          mass 0.05
+        }
+      }
+    }
+    HingeJoint {
+      jointParameters HingeJointParameters {
+        axis -1 0 0
+        anchor 0 0.025 0
+      }
+      device [
+        RotationalMotor {
+          name "right wheel motor"
+          consumptionFactor 70
+        }
+        PositionSensor {
+          name "right wheel sensor"
+        }
+      ]
+      endPoint Solid {
+        translation 0.04499999999999943 0.025 0
+        rotation 1 0 0 4.587350000000003
+        children [
+          GPS {
+            name "right_wheel_gps"
+          }
+          USE WHEEL
+        ]
+        name "right wheel"
+        boundingObject USE WHEEL
+        physics USE PHYSICS_WHEEL
+      }
+    }
+    Solid {
+      translation 0 0.006 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 0
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.05 0.012 0.1
+          }
+        }
+      ]
+      contactMaterial "ice"
+    }
+  ]
+  boundingObject Pose {
+    translation 0 0.0415 0
+    rotation 1 0 0 -1.57079632679
+    children [
+      USE BODY
+    ]
+  }
+  physics Physics {
+    density -1
+    mass 0.5
+  }
+  controller "supervisor_set_position_of_dynamic_object"
+  supervisor TRUE
+}
+TestSuiteSupervisor {
+}

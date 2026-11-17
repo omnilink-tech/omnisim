@@ -1,0 +1,35 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation 0.9955744364676343 0.017410407632859136 -0.09234944048671836 5.7496
+  position -0.156961 0.689912 1.21631
+}
+Background {
+  skyColor [
+    0.4 0.7 1
+  ]
+  atmosphericSky "earth"
+}
+PointLight {
+  ambientIntensity 1
+  intensity 0
+}
+Robot {
+  children [
+    GPS {
+    }
+    Display {
+    }
+    TestSuiteEmitter {
+    }
+  ]
+  controller "robot_time_consecutive_packets"
+}
+TestSuiteSupervisor {
+}

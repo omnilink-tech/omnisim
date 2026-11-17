@@ -1,0 +1,13 @@
+make: Entering directory '/o/omnisim/src/omnisim'
+# compiling render/OmWgpuRenderTarget.cpp
+# linking  ../../msys64/mingw64/bin/omnisim-bin-motion-final.exe
+# webots compiled in 10 seconds
+# release: Newton runtime already staged at ../../msys64/mingw64/bin/newton-runtime -- skipping bundle (rm -rf it to re-stage)
+make: Leaving directory '/o/omnisim/src/omnisim'
+................                                                         [100%]
+16 passed in 3.31s
+..                                                                       [100%]
+2 passed in 1.15s
+..                                                                       [100%]
+2 passed in 3.25s
+{'camera_only': 33.5, 'object_motion': 0.0}

@@ -1,0 +1,18 @@
+/cppcheck_report.txt
+/output.txt
+/world_counter.txt
+/omnisim_stderr.txt
+/omnisim_stdout.txt
+.*.cache
+/cppcheck_report.txt
+/slave.py
+/omnilink_smoke_result.txt
+/omnilink_smoke_live_result.txt
+
+# Run artefacts a controller writes BESIDE ITSELF when its output env var is
+# unset (OMNIBENCH_OUT / OMNISIM_ORACLE_OUT). They are regenerable per-run data,
+# never inputs, and they used to show up as untracked noise in `git status`
+# after any local bench/oracle run.
+benchmarks/omnibench/lane1/controllers/omnibench_recorder/omnibench_out.npz
+benchmarks/omnibench/lane1/controllers/omnibench_recorder/omnibench_out.npz.meta.json
+physics/controllers/oracle_dumper/oracle_out.csv

@@ -1,0 +1,37 @@
+{
+  "name": "go2_baton_deploy",
+  "title": "Go2 BATON deploy runtime \u2014 the quadruped counterpart of g1_shadow_deploy",
+  "class": "quadruped",
+  "robots": [
+    "go2"
+  ],
+  "summary": "The runtime env identical across every Go2 BATON demo: the engine block (byte-for-byte run_go2_shadow_deploy.sh's, so results stay comparable with the Shadowing head-to-head), the gait block (which MUST match the ghost lut's own gait), the corridor, and the quadruped BATON gate. Note what is NOT here and IS in g1_shadow_deploy: a crane. Quadrupeds carry no harness \u2014 a G1 BATON demo rides a weight-bearing rig at HARNESS_KZ=2000, and this one rides nothing.",
+  "env": {
+    "OMNISIM_NEWTON_FORCE_MUJOCO": "1",
+    "OMNISIM_REQUIRE_NEWTON": "1",
+    "OMNISIM_REQUIRE_MUJOCO_SOLVER": "1",
+    "OMNISIM_NEWTON_MJWARP": "1",
+    "OMNISIM_URDF_USE_INERTIA": "1",
+    "OMNISIM_NEWTON_WRAPPER_USES_OWN_SHAPE": "1",
+    "OMNISIM_NEWTON_SEED_POSE": "1",
+    "OMNISIM_NEWTON_GROUND_MU": "2.0",
+    "OMNISIM_NEWTON_SUBSTEPS": "8",
+    "OMNISIM_NEWTON_TARGET_KE": "250",
+    "OMNISIM_NEWTON_TARGET_KD": "6",
+    "GO2_GAIT_VX": "0.4",
+    "GO2_GAIT_FREQ": "1.8",
+    "GO2_GAIT_DUTY": "0.6",
+    "GO2_GAIT_STEP_H": "0.05",
+    "GO2_GAIT_BODY_H": "0.30",
+    "GO2_GAIT_RAMP_S": "1.0",
+    "GO2_ACT_SCALE": "0.15",
+    "GO2_GHOST_FF": "1",
+    "BATON_DS_GATE": "1",
+    "BATON_MORPH_TICKS": "30"
+  },
+  "notes": {
+    "GO2_GHOST_FF": "MANDATORY for this robot, not a preference: the Go2 ghost's peak |ctrl - q| is 0.217 rad at kp=250, which EXCEEDS the 0.15 corridor \u2014 the reference is untrackable by corridor alone BY CONSTRUCTION. The declared feedforward shifts the corridor centre so the residual only has to supply corrections.",
+    "BATON_DS_GATE": "1 -- consult the support gate. It was 0 on the theory that a statically stable trotter has no forbidden hand-over instant; a LIVE RUN REFUTED THAT (a walk:12 switch landed mid-swing, the Go2 tripped and flipped onto its back at t=12.83 s, then kept 'walking' inverted at gmatch 0.92). The Go2 host gates on the gait model's FOUR-FOOT SUPPORT windows (duty 0.6 -> ~20% of the cycle).",
+    "no_harness": "There is deliberately no HARNESS_* block here. Quadrupeds carry no crane."
+  }
+}

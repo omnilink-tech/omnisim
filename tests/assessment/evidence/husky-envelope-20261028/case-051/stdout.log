@@ -1,0 +1,38 @@
+[OmniSim] log: O:\omnisim\tests\assessment\evidence\husky-envelope-20261028\case-051\engine.log
+INFO: headless load: eager texture decode skipped (no Camera/IR-sensor/Pen in world). OMNISIM_EAGER_TEXTURE_DECODE=1 reverts.
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: husky_braking: Starting controller: python.exe -u husky_braking.py
+[sun_marker] ready — marker HIDDEN, press V to show
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=0.5 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 5 dynamic + 1 static Newton bodies (1 of the statics on the world body) (+6 this pass) (statics: solid)
+INFO: [OmNewtonBackend] fixed-child colliders: 2 boundingObject(s) of fixed child links attached to 1 dynamic body(ies); OMNISIM_NEWTON_FIXED_CHILD_COLLIDERS=0 reverts
+INFO: [OmNewtonBackend] composite inertia: 1 body(ies) carry the mass, COM and inertia of their fixed child links; OMNISIM_NEWTON_COMPOSITE_INERTIA=0 reverts
+INFO: [OmNewtonBackend] inertia provenance: 4 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=0.5 ke=0 kd=0 iters=0 ls_iters=0
+WARNING: Joint motor 'front_left_wheel_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 0, child=body 1) axis=(0, 1, 0) anchor=(0.256, 0.2775, 0.03282) effort=200 velLim=60 lim=[0, 0] [motorized: kd=500]
+WARNING: Joint motor 'front_right_wheel_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 0, child=body 2) axis=(0, 1, 0) anchor=(0.256, -0.2775, 0.03282) effort=200 velLim=60 lim=[0, 0] [motorized: kd=500]
+WARNING: Joint motor 'rear_left_wheel_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 0, child=body 3) axis=(0, 1, 0) anchor=(-0.256, 0.2775, 0.03282) effort=200 velLim=60 lim=[0, 0] [motorized: kd=500]
+WARNING: Joint motor 'rear_right_wheel_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled. (Since 2026-09-01 the first finite setPosition() FROM THE CONTROLLER promotes it to a position servo automatically; OMNISIM_NEWTON_PROMOTE_SERVO=0 disables the promotion.)
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 0, child=body 4) axis=(0, 1, 0) anchor=(-0.256, -0.2775, 0.03282) effort=200 velLim=60 lim=[0, 0] [motorized: kd=500]
+INFO: [OmNewtonBackend] 1 Robot root collider(s) registered from the robot's own boundingObject (lowest point vs its wheels: +53.0 mm). Before 2026-10-17 they were left out unless WorldInfo.newtonRobotColliders TRUE. OMNISIM_NEWTON_ROBOT_ROOT_COLLIDER=0 restores the old placeholder.
+[OmNewtonBackend] 1 URDF inertia placeholder sphere(s) (r=1 cm on links with <inertial> but no <collision>) made non-colliding. OMNISIM_NEWTON_URDF_PLACEHOLDER_COLLIDES=1 restores them.
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver))
+INFO: [OmNewtonBackend] step 1 dt=0.016s b0=(0.079,-0.000,0.215) b1=(0.330,0.277,0.158) b2=(0.330,-0.277,0.158) b3=(-0.151,0.277,0.333) b4=(-0.151,-0.277,0.333)
+INFO: [OmNewtonBackend] step 30 dt=0.016s b0=(0.085,-0.000,0.110) b1=(0.337,0.278,0.053) b2=(0.337,-0.277,0.053) b3=(-0.144,0.277,0.228) b4=(-0.144,-0.278,0.228)
+INFO: [OmNewtonBackend] step 60 dt=0.016s b0=(0.088,-0.000,0.109) b1=(0.339,0.278,0.052) b2=(0.340,-0.277,0.052) b3=(-0.142,0.277,0.227) b4=(-0.141,-0.278,0.227)
+INFO: [OmNewtonBackend] motor target_vel reached joint 0: 3.63416 rad/s (controller -> OmRotationalMotor -> backend chain verified)
+INFO: [OmNewtonBackend] motor target_vel reached joint 1: 3.63416 rad/s (controller -> OmRotationalMotor -> backend chain verified)
+INFO: [OmNewtonBackend] motor target_vel reached joint 2: 3.63416 rad/s (controller -> OmRotationalMotor -> backend chain verified)
+INFO: [OmNewtonBackend] motor target_vel reached joint 3: 3.63416 rad/s (controller -> OmRotationalMotor -> backend chain verified)
+INFO: [OmNewtonBackend] step 120 dt=0.016s b0=(0.467,0.000,-0.029) b1=(0.719,0.278,-0.086) b2=(0.720,-0.277,-0.086) b3=(0.238,0.278,0.089) b4=(0.239,-0.277,0.089)
+INFO: [OmNewtonBackend] step 240 dt=0.016s b0=(0.479,0.001,-0.033) b1=(0.730,0.279,-0.090) b2=(0.731,-0.276,-0.090) b3=(0.249,0.277,0.085) b4=(0.250,-0.278,0.085)
+INFO: sun_marker: Terminating.
+INFO: husky_braking: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+Warning: QProcess: Destroyed while process ("python.exe") is still running.
+INFO: omnisim exited normally (code 0)

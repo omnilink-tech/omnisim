@@ -1,0 +1,16 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/TemplateBoxShape.proto"
+
+PROTO InternalTemplateParent [
+  field SFFloat width 0.1
+]
+{
+  Group {
+    children [
+      TemplateBoxShape {
+        xSize IS width
+      }
+    ]
+  }
+}

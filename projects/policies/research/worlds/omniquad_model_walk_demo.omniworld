@@ -1,0 +1,63 @@
+#OMNISIM R2025a utf8
+
+# OmniQuad model-only walker demo — runs the hand-coded omniquad_model_walk
+# controller (no RL, no policy). Same arena + markers as
+# omniquad_walk_demo.omniworld so the verify harness can measure straight-walk
+# metrics on this controller without world differences confounding the
+# comparison.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "OmniQuad model-only walker demo"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 7
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 60 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+Solid { translation 3 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m3" }
+Solid { translation 6 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0.6 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m6" }
+Solid { translation 9 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 1 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m9" }
+Solid { translation 12 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0 1 0 } geometry Cylinder { radius 0.08 height 1 } } ] name "m12" }
+Solid { translation 15 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0 0.6 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m15" }
+Solid { translation 18 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.5 0 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m18" }
+Solid { translation 21 -1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 1 0 1 } geometry Cylinder { radius 0.08 height 1 } } ] name "m21" }
+
+URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad.urdf"
+  translation 0 0 0.70
+  name "omniquad"
+  supervisor TRUE
+  controller "omniquad_model_walk"
+  physicsBackend "newton"
+}

@@ -1,0 +1,222 @@
+#VRML_SIM R2025a utf8
+
+# The first HEIGHTFIELD TERRAIN world in OmniSim. An ElevationGrid boundingObject is
+# registered with newton as a native heightfield collider (newton.Heightfield +
+# ModelBuilder.add_shape_heightfield) instead of falling off the end of OmSolid's
+# geometry dispatch chain unrecognised.
+#
+# WHY THIS WORLD EXISTS. Until 2026-08-14 an ElevationGrid registered NO Newton collider
+# at all -- it derives from OmGeometry, not OmTriangleMeshGeometry, so the boundingObject
+# if/else chain simply ran off the end. Silently: no warning, exit 0. Measured on
+# tests/benchmarks/omnibench/lane4/worlds/object_elevationgrid_terrain.wbt, a 1 kg sphere
+# dropped on a flat grid reached z = -42.89 m and was STILL ACCELERATING at t = 3 s.
+# (Before 2026-08-12 the implicit z=0 ground plane masked the same defect as a
+# plausible-looking rest at z = 0.0996, which is why it survived so long.) That probe now
+# scores WORKS.
+#
+# WHAT TO EXPECT. The terrain is a BOWL: basin at z = -0.94, rising to z = 0.70 at the
+# middle of each edge and z = 2.33 at the corners, over 25x25 samples spanning 14.4 x 14.4 m.
+# Four balls drop from z = 3.0 onto different points of the slope, land, ROLL DOWNHILL and
+# collect in the basin.
+#
+# ⚠ THE BOWL SHAPE IS LOAD-BEARING, NOT DECORATION. The first draft of this world used
+# rolling hills and asserted a per-ball rest height under each drop point. That was wrong
+# twice over, and measuring it is what caught it: balls do not stay where they land on a
+# sloped surface (three of the four rolled into a common hollow), and the fourth rolled
+# clean off the 12 m edge and fell to z = -981. A heightfield is a FINITE PATCH with no
+# skirt and no implicit floor beneath it -- a body that leaves the footprint falls for
+# ever. The raised edge is what makes the claim below true.
+#
+# THE CLAIM, numeric rather than visual:
+#   * every ball rests ABOVE the basin floor (-0.94) and below the edge (0.70)
+#   * every ball stays INSIDE the footprint (|x| and |y| < 7.2)
+#   * every ball ends LOWER than it started -- it rolled downhill, so the surface really
+#     is sloped and is not a flat plane that happens to sit at the right height
+# A ball resting at one common height regardless of where it landed would mean the
+# elevation data is being ignored; a ball below the basin floor means the collider is
+# missing again. Run
+#
+#   python -m omnisim run-headless <this world> --duration 20 --fail-on-runaway
+#
+# which fails loudly on the second case.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  newtonSolver "mujoco"
+  newtonStatics TRUE
+  newtonGroundMu 1
+}
+Viewpoint {
+  position -13 -13 9
+  orientation 0.33 -0.26 -0.91 1.16
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+# xSpacing/ySpacing are CELL sizes, so 25 samples at 0.6 m span 0.6*(25-1) = 14.4 m per
+# axis, with the grid's (0,0) CORNER -- not its centre -- at `translation`.
+DEF TERRAIN Solid {
+  translation -7.2 -7.2 0
+  children [
+    DEF TERRAIN_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.38 0.46 0.32
+        roughness 1
+        metalness 0
+      }
+      geometry ElevationGrid {
+        xDimension 25
+        yDimension 25
+        xSpacing 0.6
+        ySpacing 0.6
+        height [
+    2.3 2.0936 1.8675 1.6155 1.3725 1.1847 1.07 1.0032 0.9369 0.8424 0.734 0.6567 0.6481 0.7059 0.7904
+    0.8579 0.8982 0.9433 1.04 1.2101 1.4317 1.658 1.857 2.0391 2.248 2.0444 1.8171 1.5879 1.3533 1.1334
+    0.9546 0.8273 0.7368 0.6561 0.5688 0.4829 0.4244 0.4147 0.4526 0.5153 0.5777 0.634 0.7025 0.81
+    0.9692 1.1674 1.3777 1.5819 1.7858 2.0146 1.8111 1.5387 1.3029 1.1058 0.9354 0.776 0.6214 0.4802
+    0.3687 0.2966 0.2591 0.2408 0.2289 0.224 0.2398 0.2913 0.3819 0.5007 0.6316 0.7673 0.9152 1.0913
+    1.3065 1.5574 1.8289 1.6 1.297 1.0567 0.885 0.7484 0.6022 0.429 0.2533 0.1207 0.059 0.0545 0.0637
+    0.0502 0.0161 0 0.044 0.158 0.3111 0.458 0.5776 0.6912 0.844 1.0668 1.3496 1.6502 1.4111 1.1179
+    0.879 0.6992 0.5518 0.4013 0.2341 0.0694 -0.0564 -0.1214 -0.1364 -0.1361 -0.1491 -0.1738 -0.1797
+    -0.1333 -0.0268 0.1153 0.2571 0.3819 0.5064 0.6667 0.8871 1.1596 1.4509 1.2444 0.9932 0.7605 0.5458
+    0.3522 0.1837 0.0418 -0.0756 -0.1726 -0.2518 -0.312 -0.3492 -0.3601 -0.3449 -0.3071 -0.2505 -0.176
+    -0.0808 0.0392 0.1859 0.3574 0.5495 0.7596 0.9884 1.2399 1.1 0.887 0.6599 0.4134 0.1777 -0.0073
+    -0.126 -0.2002 -0.271 -0.3633 -0.4646 -0.536 -0.545 -0.4934 -0.4157 -0.3498 -0.3045 -0.2521 -0.152
+    0.0147 0.229 0.4502 0.6509 0.8398 1.0549 0.9778 0.7668 0.54 0.2918 0.0539 -0.1319 -0.2494 -0.3214
+    -0.3909 -0.4838 -0.5873 -0.6604 -0.6693 -0.6158 -0.5361 -0.4697 -0.4259 -0.3757 -0.2766 -0.1089
+    0.1076 0.3303 0.5305 0.7174 0.9307 0.8778 0.6307 0.3986 0.1805 -0.0178 -0.1881 -0.3274 -0.4401
+    -0.5342 -0.6149 -0.6796 -0.7205 -0.7312 -0.712 -0.6698 -0.6122 -0.5409 -0.4504 -0.3326 -0.1837
+    -0.0075 0.1878 0.3968 0.6213 0.8688 0.8 0.5097 0.2712 0.089 -0.0616 -0.2133 -0.3788 -0.5402 -0.664
+    -0.73 -0.7482 -0.7504 -0.7633 -0.7852 -0.7881 -0.741 -0.6367 -0.4978 -0.3575 -0.2313 -0.1035 0.059
+    0.2786 0.5482 0.8368 0.7444 0.4405 0.2 0.0292 -0.1065 -0.2523 -0.426 -0.6028 -0.736 -0.7973 -0.8008
+    -0.7909 -0.8044 -0.8393 -0.8564 -0.8126 -0.6979 -0.5438 -0.3965 -0.2773 -0.1647 -0.0126 0.2104
+    0.4941 0.7957 0.7111 0.4348 0.1984 0.0046 -0.1615 -0.3192 -0.4762 -0.6218 -0.736 -0.8068 -0.84
+    -0.8548 -0.867 -0.8756 -0.8639 -0.8133 -0.7197 -0.5966 -0.4636 -0.33 -0.1865 -0.0134 0.2029 0.4578
+    0.7331 0.7 0.4691 0.2393 0.0078 -0.2082 -0.3855 -0.515 -0.6095 -0.6926 -0.7788 -0.8608 -0.9161
+    -0.926 -0.8915 -0.8325 -0.771 -0.712 -0.6395 -0.53 -0.3728 -0.1786 0.029 0.2341 0.4418 0.674 0.7111
+    0.5045 0.2784 0.0266 -0.2162 -0.404 -0.5188 -0.5858 -0.6522 -0.7466 -0.8549 -0.932 -0.9406 -0.8829
+    -0.7986 -0.7312 -0.6907 -0.6455 -0.5487 -0.3787 -0.1573 0.0689 0.268 0.4503 0.6593 0.7444 0.5204
+    0.2918 0.0544 -0.1692 -0.3495 -0.4748 -0.5615 -0.6398 -0.7283 -0.8178 -0.8794 -0.8889 -0.8478
+    -0.7816 -0.7184 -0.6646 -0.5999 -0.4941 -0.3332 -0.1312 0.0817 0.285 0.4855 0.7111 0.8 0.5317 0.2965
+    0.096 -0.0789 -0.24 -0.3922 -0.5288 -0.6376 -0.711 -0.7528 -0.7748 -0.7865 -0.7875 -0.7675 -0.7151
+    -0.6275 -0.5133 -0.3844 -0.2466 -0.0942 0.0849 0.2992 0.5458 0.8135 0.8778 0.576 0.3359 0.1632
+    0.0252 -0.1216 -0.294 -0.4683 -0.6 -0.6621 -0.6679 -0.66 -0.6734 -0.7062 -0.721 -0.6767 -0.5637
+    -0.412 -0.2658 -0.1455 -0.0305 0.1233 0.3457 0.6272 0.9267 0.9778 0.682 0.4427 0.2651 0.1205 -0.0289
+    -0.1977 -0.3652 -0.4928 -0.5569 -0.5692 -0.5666 -0.5797 -0.6069 -0.6154 -0.5696 -0.4612 -0.3162
+    -0.1731 -0.0497 0.072 0.2303 0.4513 0.7266 1.0203 1.1 0.8445 0.6112 0.4 0.2111 0.0444 -0.1 -0.2222
+    -0.3221 -0.3999 -0.4556 -0.489 -0.5001 -0.4889 -0.4555 -0.3999 -0.3222 -0.2223 -0.1001 0.0444 0.2111
+    0.4001 0.6112 0.8444 1.0999 1.2444 1.0292 0.8018 0.5572 0.3239 0.1399 0.0199 -0.057 -0.1293 -0.2208
+    -0.3197 -0.389 -0.3981 -0.3487 -0.2734 -0.2081 -0.161 -0.106 -0.0047 0.1607 0.3724 0.592 0.7932
+    0.9845 1.2018 1.4111 1.2017 0.9752 0.7257 0.486 0.2994 0.183 0.1127 0.0444 -0.0491 -0.1543 -0.2289
+    -0.2377 -0.1826 -0.1012 -0.0345 0.0081 0.0565 0.1548 0.3233 0.5416 0.7656 0.9653 1.1506 1.3623 1.6
+    1.3571 1.1256 0.904 0.7012 0.5291 0.3923 0.2843 0.193 0.1109 0.0418 -0.0029 -0.0134 0.0098 0.0563
+    0.1149 0.183 0.2689 0.3846 0.5356 0.7164 0.9149 1.1229 1.3431 1.5866 1.8111 1.5239 1.2859 1.1011
+    0.9471 0.794 0.6304 0.4725 0.3508 0.2838 0.2623 0.2573 0.2446 0.2256 0.2259 0.2738 0.3757 0.5111
+    0.6497 0.7777 0.909 1.0738 1.2927 1.559 1.8446 2.0444 1.7399 1.4994 1.329 1.194 1.0484 0.8743 0.6969
+    0.5634 0.5022 0.4993 0.5097 0.4962 0.4607 0.4431 0.4867 0.6018 0.7566 0.9042 1.0231 1.135 1.2867
+    1.5098 1.7942 2.0963 2.3 2.0199 1.783 1.5923 1.4303 1.2742 1.1149 0.9651 0.8483 0.7789 0.7497 0.7382
+    0.7259 0.7137 0.7215 0.7711 0.8676 0.995 1.1299 1.2616 1.4008 1.5711 1.7882 2.0471 2.3259
+        ]
+      }
+    }
+  ]
+  name "terrain"
+  boundingObject USE TERRAIN_SHAPE
+}
+DEF BALL0 Solid {
+  translation -3.6 -2.4 3.0
+  children [
+    DEF BALL0_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.90 0.30 0.25
+        roughness 0.8
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.25
+        subdivision 3
+      }
+    }
+  ]
+  name "ball0"
+  boundingObject USE BALL0_SHAPE
+  physics Physics {
+    density -1
+    mass 2
+  }
+}
+DEF BALL1 Solid {
+  translation 0 0.6 3.0
+  children [
+    DEF BALL1_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.72 0.46 0.25
+        roughness 0.8
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.25
+        subdivision 3
+      }
+    }
+  ]
+  name "ball1"
+  boundingObject USE BALL1_SHAPE
+  physics Physics {
+    density -1
+    mass 2
+  }
+}
+DEF BALL2 Solid {
+  translation 3 1.8 3.0
+  children [
+    DEF BALL2_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.54 0.62 0.25
+        roughness 0.8
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.25
+        subdivision 3
+      }
+    }
+  ]
+  name "ball2"
+  boundingObject USE BALL2_SHAPE
+  physics Physics {
+    density -1
+    mass 2
+  }
+}
+DEF BALL3 Solid {
+  translation -1.8 3.6 3.0
+  children [
+    DEF BALL3_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.36 0.78 0.25
+        roughness 0.8
+        metalness 0
+      }
+      geometry Sphere {
+        radius 0.25
+        subdivision 3
+      }
+    }
+  ]
+  name "ball3"
+  boundingObject USE BALL3_SHAPE
+  physics Physics {
+    density -1
+    mass 2
+  }
+}

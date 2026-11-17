@@ -1,0 +1,99 @@
+#OMNISIM R2025a utf8
+
+# TurtleBot3 Burger + LDS-01 lidar, measured against walls at KNOWN distances.
+#
+# ⚠ The lidar exists ONLY when the world is loaded with
+#   OMNISIM_URDF_USE_SENSORS=1
+# Without it the URDF's <sensor> block is parsed and dropped, and
+# /list_sensors reports no Lidar (that is the control run).
+#
+# Geometry (world frame; robot spawns at the origin facing +X; the LDS-01
+# focal point sits at x = -0.032 m, z ~ 0.18 m for the burger):
+#   FRONT_WALL  near face x = +1.50  -> 1.532 m straight ahead of the lidar
+#   LEFT_WALL   near face y = +1.00  -> 1.000 m at +90 deg (left)
+#   RIGHT_BOX   near face y = -0.60  -> 0.600 m at -90 deg (right)
+#   REAR_WALL   near face x = -4.00  -> 3.968 m behind: BEYOND the 3.5 m
+#               max range, so those beams must read "no return", not 3.968
+# Every obstacle is 0.5 m tall with a boundingObject; the stage's own rim
+# walls are 0.05 m, below the scan plane.
+#
+# Driven by omnilink_mobile_bridge on port 8781 (not the chat demos' 8765).
+# Measurement script: scripts/dev/measure_urdf_lidar.py
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "TurtleBot3 LDS-01 lidar — known-distance walls"
+  info [
+    "TurtleBot3 Burger with its LDS-01 360-degree lidar (URDF <sensor type=ray>),"
+    "facing walls at known distances. Needs OMNISIM_URDF_USE_SENSORS=1."
+  ]
+}
+Viewpoint {
+  orientation -0.3 0.1 0.95 2.5
+  position 3.2 -3.6 3.4
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 10 10
+  wallHeight 0.05
+}
+DEF FRONT_WALL Solid {
+  translation 1.55 0 0.25
+  name "front_wall"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.85 0.35 0.2 roughness 0.8 metalness 0 }
+      geometry Box { size 0.1 2.0 0.5 }
+    }
+  ]
+  boundingObject Box { size 0.1 2.0 0.5 }
+}
+DEF LEFT_WALL Solid {
+  translation 0 1.05 0.25
+  name "left_wall"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.2 0.5 0.85 roughness 0.8 metalness 0 }
+      geometry Box { size 2.6 0.1 0.5 }
+    }
+  ]
+  boundingObject Box { size 2.6 0.1 0.5 }
+}
+DEF RIGHT_BOX Solid {
+  translation 0 -0.75 0.25
+  name "right_box"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.3 0.75 0.3 roughness 0.8 metalness 0 }
+      geometry Box { size 0.3 0.3 0.5 }
+    }
+  ]
+  boundingObject Box { size 0.3 0.3 0.5 }
+}
+DEF REAR_WALL Solid {
+  translation -4.05 0 0.25
+  name "rear_wall"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.8 0.8 0.3 roughness 0.8 metalness 0 }
+      geometry Box { size 0.1 3.0 0.5 }
+    }
+  ]
+  boundingObject Box { size 0.1 3.0 0.5 }
+}
+
+DEF TB3_BURGER URDFRobot {
+  url "../../../../robots/robotis/turtlebot3_description/urdf/turtlebot3_burger.urdf"
+  translation 0 0 0
+  name "tb3_burger"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "tb3_burger" "--port" "8781" ]
+}

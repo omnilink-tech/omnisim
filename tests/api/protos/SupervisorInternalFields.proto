@@ -1,0 +1,23 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+
+PROTO SupervisorInternalFields [
+  field       SFString   controller  "<none>"
+  field       SFVec3f    translation 0 0 0
+  hiddenField SFRotation rotation    0 0 1 0
+]
+{
+DEF ROBOT Robot {
+  translation IS translation
+  rotation IS rotation
+  children [
+    DEF INTERNAL_SOLID Solid {
+    }
+    TestSuiteEmitter{
+    }
+  ]
+  controller IS controller
+  supervisor TRUE
+}
+}

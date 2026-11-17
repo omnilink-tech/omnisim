@@ -1,0 +1,169 @@
+#OMNISIM R2025a utf8
+
+PROTO ScaleBot [
+  field SFVec3f translation 0 0 0
+  field SFRotation rotation 0 0 1 0
+  field SFString name "scale bot"
+  field SFString controller "build_scale_drive"
+  # Large fleets must not serialize every physics tick behind every controller
+  # process. Each robot still owns a distinct process and IPC channel; FALSE only
+  # lets the engine advance while those independent controllers are between steps.
+  field SFBool synchronization FALSE
+  # Expose the collision envelope on the PROTO interface.  This lets the
+  # simulator-neutral grader measure the same world-space AABB an authoring
+  # agent can inspect, without depending on private PROTO internals.
+  field SFNode boundingObject Pose {
+    translation 0 0 0.13
+    children [ Box { size 0.34 0.26 0.1 } ]
+  }
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    controller IS controller
+    synchronization IS synchronization
+    children [
+      Pose {
+        translation 0 0 0.13
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.12 0.42 0.78
+              roughness 0.75
+              metalness 0.05
+            }
+            geometry DEF SCALE_CHASSIS Box { size 0.34 0.26 0.1 }
+          }
+        ]
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0 1 0
+          anchor 0.12 0.15 0.08
+        }
+        device [
+          RotationalMotor { name "left front motor" maxVelocity 12 maxTorque 12 }
+        ]
+        endPoint Solid {
+          translation 0.12 0.15 0.08
+          name "left front wheel"
+          children [
+            Pose {
+              rotation 1 0 0 1.5707963267948966
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 1 }
+                  geometry DEF SCALE_WHEEL Cylinder {
+                    height 0.05
+                    radius 0.08
+                    subdivision 16
+                  }
+                }
+              ]
+            }
+          ]
+          boundingObject Pose {
+            rotation 1 0 0 1.5707963267948966
+            children [ USE SCALE_WHEEL ]
+          }
+          physics DEF SCALE_WHEEL_PHYSICS Physics { density -1 mass 0.15 }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0 1 0
+          anchor -0.12 0.15 0.08
+        }
+        device [
+          RotationalMotor { name "left rear motor" maxVelocity 12 maxTorque 12 }
+        ]
+        endPoint Solid {
+          translation -0.12 0.15 0.08
+          name "left rear wheel"
+          children [
+            Pose {
+              rotation 1 0 0 1.5707963267948966
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 1 }
+                  geometry USE SCALE_WHEEL
+                }
+              ]
+            }
+          ]
+          boundingObject Pose {
+            rotation 1 0 0 1.5707963267948966
+            children [ USE SCALE_WHEEL ]
+          }
+          physics USE SCALE_WHEEL_PHYSICS
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0 1 0
+          anchor 0.12 -0.15 0.08
+        }
+        device [
+          RotationalMotor { name "right front motor" maxVelocity 12 maxTorque 12 }
+        ]
+        endPoint Solid {
+          translation 0.12 -0.15 0.08
+          name "right front wheel"
+          children [
+            Pose {
+              rotation 1 0 0 1.5707963267948966
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 1 }
+                  geometry USE SCALE_WHEEL
+                }
+              ]
+            }
+          ]
+          boundingObject Pose {
+            rotation 1 0 0 1.5707963267948966
+            children [ USE SCALE_WHEEL ]
+          }
+          physics USE SCALE_WHEEL_PHYSICS
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0 1 0
+          anchor -0.12 -0.15 0.08
+        }
+        device [
+          RotationalMotor { name "right rear motor" maxVelocity 12 maxTorque 12 }
+        ]
+        endPoint Solid {
+          translation -0.12 -0.15 0.08
+          name "right rear wheel"
+          children [
+            Pose {
+              rotation 1 0 0 1.5707963267948966
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 1 }
+                  geometry USE SCALE_WHEEL
+                }
+              ]
+            }
+          ]
+          boundingObject Pose {
+            rotation 1 0 0 1.5707963267948966
+            children [ USE SCALE_WHEEL ]
+          }
+          physics USE SCALE_WHEEL_PHYSICS
+        }
+      }
+    ]
+    boundingObject IS boundingObject
+    physics Physics {
+      density -1
+      mass 3
+      centerOfMass [ 0 0 0.06 ]
+    }
+  }
+}

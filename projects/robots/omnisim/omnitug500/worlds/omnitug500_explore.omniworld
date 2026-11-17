@@ -1,0 +1,132 @@
+#OMNISIM R2025a utf8
+
+# OmniTug 500 - autonomous EXPLORE & MAP demo.
+#
+# The OMNITUG500 starts knowing NOTHING about this two-room space. Using only its two
+# real corner laser scanners it builds a 2D occupancy grid, finds the frontiers
+# (free cells next to unknown), and drives a kinematic diff-drive motion model to
+# the nearest frontier until the whole reachable area is mapped. Pose is read
+# exactly from the sim, so this is known-pose occupancy mapping + frontier
+# exploration (not full SLAM) -- the sense -> map -> plan -> drive loop is real.
+#
+# Layout: a left room and a right room joined by a central doorway, with an
+# alcove (an L-wall) hiding the top-right corner, plus scattered shelves/boxes.
+#
+# Run it (rendering MUST be on - a Lidar is a render-based sensor):
+#   python scripts/dev/headless_runner.py \
+#      projects/robots/omnisim/omnitug500/worlds/omnitug500_explore.omniworld --gui --duration 120
+# The omnitug500_explore controller dumps occupancy snapshots to
+# _scratch/omnitug500_explore/grid_*.json as it maps.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniTug 500 - Autonomous Explore & Map"
+  info [
+    "OMNITUG500 explores an unknown two-room space with its two corner laser"
+    "scanners, building an occupancy grid via frontier exploration."
+  ]
+}
+
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position -0.036 -7.219 3.958
+  exposure 1.0
+}
+
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# --- Floor (12 x 10 m) -----------------------------------------------------
+DEF FLOOR Solid {
+  translation 0 0 -0.02
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.22 0.23 0.25 roughness 0.9 metalness 0 }
+      geometry Box { size 13 11 0.04 }
+    }
+  ]
+  name "floor"
+  boundingObject Box { size 13 11 0.04 }
+}
+
+# --- Outer walls -----------------------------------------------------------
+DEF WALL_N Solid { translation 0 5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.78 0.76 0.72 roughness 0.95 } geometry Box { size 12.4 0.2 1.0 } } ] name "wall_n" }
+DEF WALL_S Solid { translation 0 -5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.78 0.76 0.72 roughness 0.95 } geometry Box { size 12.4 0.2 1.0 } } ] name "wall_s" }
+DEF WALL_E Solid { translation 6 0 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.74 0.72 0.69 roughness 0.95 } geometry Box { size 0.2 10 1.0 } } ] name "wall_e" }
+DEF WALL_W Solid { translation -6 0 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.74 0.72 0.69 roughness 0.95 } geometry Box { size 0.2 10 1.0 } } ] name "wall_w" }
+
+# --- Internal divider at x=0 with a 1.8 m doorway (y in [-0.9, 0.9]) --------
+DEF DIV_S Solid { translation 0 -2.95 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.7 0.68 0.64 roughness 0.95 } geometry Box { size 0.2 4.1 1.0 } } ] name "div_s" }
+DEF DIV_N Solid { translation 0 2.95 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.7 0.68 0.64 roughness 0.95 } geometry Box { size 0.2 4.1 1.0 } } ] name "div_n" }
+
+# --- Alcove L-wall hiding the top-right corner (y=1.5, x in [2.5, 6]) -------
+DEF ALCOVE Solid { translation 4.25 1.5 0.5 children [ Shape { appearance PBRAppearance { baseColor 0.7 0.68 0.64 roughness 0.95 } geometry Box { size 3.5 0.2 1.0 } } ] name "alcove" }
+
+# --- Obstacles (shelves / boxes / pillar) ----------------------------------
+DEF OBST_L1 Solid { translation -3.5 2.0 0.4 children [ Shape { appearance PBRAppearance { baseColor 0.85 0.3 0.1 roughness 0.7 } geometry Box { size 0.7 0.7 0.8 } } ] name "box_l1" }
+DEF OBST_L2 Solid { translation -2.5 -2.5 0.4 children [ Shape { appearance PBRAppearance { baseColor 0.55 0.45 0.3 roughness 0.85 } geometry Box { size 0.5 1.8 0.8 } } ] name "shelf_l2" }
+DEF OBST_R1 Solid { translation 3.2 -2.8 0.4 children [ Shape { appearance PBRAppearance { baseColor 0.2 0.4 0.85 roughness 0.7 } geometry Box { size 0.7 0.7 0.8 } } ] name "box_r1" }
+DEF OBST_R2 Solid { translation 1.3 3.5 0.45 children [ Shape { appearance PBRAppearance { baseColor 0.15 0.6 0.35 roughness 0.7 } geometry Cylinder { radius 0.25 height 0.9 } } ] name "pillar_r2" }
+DEF OBST_R3 Solid { translation 4.6 -1.0 0.4 children [ Shape { appearance PBRAppearance { baseColor 0.7 0.65 0.15 roughness 0.7 } geometry Box { size 0.6 0.6 0.8 } } ] name "box_r3" }
+
+# --- The OMNITUG500 rover (visual body); driven by the explore supervisor --------
+DEF OMNITUG500 URDFRobot {
+  url "../urdf/omnitug500.urdf"
+  translation -4 -3 0
+  rotation 0 0 1 0
+  name "OMNITUG500"
+  controller "<none>"
+}
+
+# --- Sidecar Robot carrying the two corner scanners; moves with the rover ----
+DEF SCANNERS Robot {
+  translation -4 -3 0
+  rotation 0 0 1 0
+  name "OMNITUG500_scanners"
+  controller "omnitug500_explore"
+  supervisor TRUE
+  children [
+    DEF SCAN_FR Lidar {
+      translation 0.290 0.537 0.131
+      rotation 0 0 1 0.7854
+      name "scanner_front_right"
+      horizontalResolution 512
+      fieldOfView 3.1
+      verticalFieldOfView 0.02
+      numberOfLayers 1
+      near 0.05
+      minRange 0.06
+      maxRange 5.0
+      type "fixed"
+    }
+    DEF SCAN_RL Lidar {
+      translation -0.290 -0.536 0.131
+      rotation 0 0 1 3.9270
+      name "scanner_rear_left"
+      horizontalResolution 512
+      fieldOfView 3.1
+      verticalFieldOfView 0.02
+      numberOfLayers 1
+      near 0.05
+      minRange 0.06
+      maxRange 5.0
+      type "fixed"
+    }
+  ]
+}
+
+# --- Fixed overhead camera for 3D proof stills ------------------------------
+DEF CEILING_CAM Robot {
+  translation 0 0 12
+  rotation -0.5774 0.5774 0.5774 2.0944
+  name "ceiling_cam"
+  controller "omnitug500_explore_cam"
+  children [
+    Camera { name "cam" width 1200 height 1000 fieldOfView 1.15 }
+  ]
+}

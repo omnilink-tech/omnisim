@@ -1,0 +1,147 @@
+=== v0_stock (00:12:52) ===
+ newtonSubsteps 4;
+[combat_match] projects/robot_combat/battlebots/worlds/.sweep_v0_stock.omniworld backend=newton timer=25s vel_smooth=5 -> hydra_vs_gravedigger.json
+  scorecard: O:\omnisim\_scratch\hydra_vs_gravedigger.json
+  winner=draw reason=timeout_tie t=25.0s
+    hydra    immobile=False reason=None wheels=4 weapon_intact=True broken=[]
+    gravedigger immobile=False reason=None wheels=4 weapon_intact=True broken=[]
+RESULT: INCONCLUSIVE (no parts broken/immobilized -- bots may not have engaged in the window)
+wall=95s
+newton sidecar OK
+warnings in log: 10
+=== v1_t5 (00:14:27) ===
+ newtonContactKe 40000; newtonContactKd 400; newtonSubsteps 8;
+[combat_match] projects/robot_combat/battlebots/worlds/.sweep_v1_t5.omniworld backend=newton timer=25s vel_smooth=5 -> hydra_vs_gravedigger.json
+  scorecard: O:\omnisim\_scratch\hydra_vs_gravedigger.json
+  winner=draw reason=timeout_tie t=25.0s
+    hydra    immobile=False reason=None wheels=4 weapon_intact=True broken=[]
+    gravedigger immobile=False reason=None wheels=4 weapon_intact=True broken=[]
+RESULT: INCONCLUSIVE (no parts broken/immobilized -- bots may not have engaged in the window)
+wall=105s
+newton sidecar OK
+warnings in log: 10
+=== v2_t3 (00:16:12) ===
+ newtonContactKe 111000; newtonContactKd 667; newtonSubsteps 12;
+[combat_match] projects/robot_combat/battlebots/worlds/.sweep_v2_t3.omniworld backend=newton timer=25s vel_smooth=5 -> hydra_vs_gravedigger.json
+  scorecard: O:\omnisim\_scratch\hydra_vs_gravedigger.json
+  winner=gravedigger reason=oota t=22.38s
+    hydra    immobile=True reason=oota wheels=4 weapon_intact=True broken=[]
+    gravedigger immobile=False reason=None wheels=4 weapon_intact=False broken=['weapon']
+RESULT: PASS (ramming dealt damage)
+wall=108s
+newton sidecar OK
+warnings in log: 10
+=== v3_t3z07 (00:18:01) ===
+ newtonContactKe 227000; newtonContactKd 667; newtonSubsteps 12;
+[combat_match] projects/robot_combat/battlebots/worlds/.sweep_v3_t3z07.omniworld backend=newton timer=25s vel_smooth=5 -> hydra_vs_gravedigger.json
+  scorecard: O:\omnisim\_scratch\hydra_vs_gravedigger.json
+  winner=hydra reason=chassis_dead t=13.22s
+    hydra    immobile=False reason=None wheels=4 weapon_intact=True broken=[]
+    gravedigger immobile=True reason=chassis_dead wheels=4 weapon_intact=True broken=['chassis']
+RESULT: PASS (ramming dealt damage)
+wall=83s
+newton sidecar OK
+warnings in log: 10
+=== v4_t2 (00:19:24) ===
+ newtonContactKe 250000; newtonContactKd 1000; newtonSubsteps 16;
+[combat_match] projects/robot_combat/battlebots/worlds/.sweep_v4_t2.omniworld backend=newton timer=25s vel_smooth=5 -> hydra_vs_gravedigger.json
+  scorecard: O:\omnisim\_scratch\hydra_vs_gravedigger.json
+  winner=hydra reason=timeout_wheel_count t=25.0s
+    hydra    immobile=False reason=None wheels=4 weapon_intact=False broken=['weapon']
+    gravedigger immobile=False reason=None wheels=3 weapon_intact=False broken=['rl_wheel', 'weapon']
+RESULT: PASS (ramming dealt damage)
+wall=148s
+newton sidecar OK
+warnings in log: 10
+=== report ===
+| metric | before | v0_stock | v1_t5 | v2_t3 | v3_t3z07 | v4_t2 |
+|---|---|---|---|---|---|---|
+| trace duration (s) | 40 | 25 | 25 | 22.3 | 13.22 | 25 |
+| non-finite values | no | no | no | no | no | no |
+| hit events | 6 | 7 | 13 | 12 | 4 | 7 |
+| first hit (s) | 8.88 | 4.92 | 5.564 | 4.604 | 4.98 | 6.248 |
+| time in bot-on-bot contact (s) | 1.636 | 4.316 | 2.692 | 0.764 | 3.488 | 0.14 |
+| penetration max (mm) | 66.45 | 71.09 | 10.46 | 33.01 | 3.03 | 16.25 |
+| penetration p95 (mm) | 17.17 | 24.02 | 0.67 | 1.19 | 0.25 | 8.35 |
+| penetration mean (mm) | 3.89 | 3.93 | 0.24 | 0.44 | 0.13 | 1.67 |
+| chassis penetration max (mm) | 66.45 | 71.09 | 10.46 | 2.19 | 2.76 | 7.36 |
+| weapon penetration max (mm) | 66.45 | 71.09 | 10.46 | 33.01 | 3.03 | 16.25 |
+| biggest struck dv (m/s) | 4.593 | 5.313 | 3.149 | 5.083 | 9.509 | 4.854 |
+|   struck bot | gravedigger | hydra | hydra | hydra | hydra | hydra |
+| biggest spin energy given up in one hit | 1 | 0.999 | 0.943 | 0.997 | 0.991 | 0.996 |
+| gravedigger: top speed (m/s) | 4.205 | 3.934 | 2.673 | 5.239 | 7.265 | 4.555 |
+| gravedigger: launch above rest (m) | 0.733 | 0.4557 | 0.5673 | 0.3996 | 0.5988 | 0.8633 |
+| gravedigger: peak tumble (rad/s) | 14.68 | 7.821 | 8.112 | 7.599 | 16.82 | 22.55 |
+| gravedigger: weapon peak (rad/s) | 82.09 | 163.6 | 162.6 | 161.8 | 161.1 | 163.4 |
+| gravedigger: HP deductions | 8 | 6 | 2 | 10 | 8 | 8 |
+| gravedigger: parts broken | weapon | none | none | weapon | chassis | rl_wheel,weapon |
+| hydra: top speed (m/s) | 2.736 | 4.302 | 3.944 | 6.062 | 7.471 | 3.963 |
+| hydra: launch above rest (m) | 0.4658 | 1.51 | 0.3358 | 1.874 | 0.4239 | 0.9126 |
+| hydra: peak tumble (rad/s) | 12.87 | 28.7 | 14.82 | 31.52 | 11.24 | 26.21 |
+| hydra: weapon peak (rad/s) | 39.62 | 51.29 | 60.63 | 77.39 | 62.79 | 48.35 |
+| hydra: HP deductions | 5 | 10 | 2 | 3 | 6 | 6 |
+| hydra: parts broken | none | none | none | none | none | weapon |
+| winner | draw | draw | draw | gravedigger | hydra | hydra |
+| win reason | timeout_tie | timeout_tie | timeout_tie | oota | chassis_dead | timeout_wheel_count |
+
+## before: hit events
+{"t": 8.88, "dur_s": 0.056, "bots": {"gravedigger": {"peak_dv_mps": 0.612, "parts": ["chassis"], "peak_z_m": 0.1561, "spin_before_radps": 79.85, "spin_after_radps": 43.81, "spin_energy_given_up": 0.699, "spin_energy_given_up_J": 10696.9}, "hydra": {"peak_dv_mps": 1.94, "parts": ["weapon"], "peak_z_m": 0.4104, "spin_before_radps": 1.58, "spin_after_radps": 0.87, "spin_energy_given_up": 0.695, "spin_energy_given_up_J": 4.1}}}
+{"t": 19.948, "dur_s": 0.028, "bots": {"gravedigger": {"peak_dv_mps": 2.54, "parts": ["chassis"], "peak_z_m": 0.326, "spin_before_radps": 80.18, "spin_after_radps": 64.75, "spin_energy_given_up": 0.348, "spin_energy_given_up_J": 5367.8}, "hydra": {"peak_dv_mps": 0.71, "parts": ["fr_wheel"], "peak_z_m": 0.1025, "spin_before_radps": 1.13, "spin_after_radps": 0.65, "spin_energy_given_up": 0.665, "spin_energy_given_up_J": 2.0}}}
+{"t": 20.132, "dur_s": 0.092, "bots": {"gravedigger": {"peak_dv_mps": 1.315, "parts": ["chassis"], "peak_z_m": 0.326, "spin_before_radps": 74.77, "spin_after_radps": 74.77, "spin_energy_given_up": 0.0, "spin_energy_given_up_J": 0.0}, "hydra": {"peak_dv_mps": 0.478, "parts": ["fr_wheel"], "peak_z_m": 0.0945, "spin_before_radps": 1.69, "spin_after_radps": 0.65, "spin_energy_given_up": 0.85, "spin_energy_given_up_J": 5.8}}}
+{"t": 20.62, "dur_s": 1.332, "bots": {"gravedigger": {"peak_dv_mps": 2.679, "parts": ["chassis", "fl_wheel", "fr_wheel"], "peak_z_m": 0.5974, "spin_before_radps": 80.7, "spin_after_radps": 52.08, "spin_energy_given_up": 0.584, "spin_energy_given_up_J": 9122.3}, "hydra": {"peak_dv_mps": 0.952, "parts": ["chassis", "fl_wheel", "fr_wheel", "rr_wheel", "weapon"], "peak_z_m": 0.105, "spin_before_radps": 1.1, "spin_after_radps": 0.95, "spin_energy_given_up": 0.259, "spin_energy_given_up_J": 0.8}}}
+{"t": 22.104, "dur_s": 0.112, "bots": {"gravedigger": {"peak_dv_mps": 1.885, "parts": ["chassis", "fr_wheel"], "peak_z_m": 0.8829, "spin_before_radps": 80.49, "spin_after_radps": 62.73, "spin_energy_given_up": 0.393, "spin_energy_given_up_J": 6102.5}, "hydra": {"peak_dv_mps": 0.944, "parts": ["weapon"], "peak_z_m": 0.2541, "spin_before_radps": 30.1, "spin_after_radps": 0.02, "spin_energy_given_up": 1.0, "spin_energy_given_up_J": 2174.7}}}
+{"t": 22.568, "dur_s": 0.648, "bots": {"gravedigger": {"peak_dv_mps": 4.593, "parts": ["chassis", "fl_wheel", "rl_wheel", "weapon"], "peak_z_m": 0.8461, "spin_before_radps": 71.24, "spin_after_radps": 71.24, "spin_energy_given_up": 0.0, "spin_energy_given_up_J": 0.0}, "hydra": {"peak_dv_mps": 3.988, "parts": ["chassis", "rl_wheel", "weapon"], "peak_z_m": 0.4018, "spin_before_radps": 0.52, "spin_after_radps": 0.19}}}
+
+## v0_stock: hit events
+{"t": 4.92, "dur_s": 0.008, "bots": {"gravedigger": {"peak_dv_mps": 0.792, "parts": ["fl_wheel"], "peak_z_m": 0.1511, "spin_before_radps": 160.18, "spin_after_radps": 159.99, "spin_energy_given_up": 0.002, "spin_energy_given_up_J": 77.2}, "hydra": {"peak_dv_mps": 1.095, "parts": ["weapon"], "peak_z_m": 0.2159, "spin_before_radps": 4.24, "spin_after_radps": 0.23, "spin_energy_given_up": 0.997, "spin_energy_given_up_J": 22.4}}}
+{"t": 7.82, "dur_s": 0.028, "bots": {"gravedigger": {"peak_dv_mps": 3.46, "parts": ["chassis", "fr_wheel"], "peak_z_m": 0.1559, "spin_before_radps": 160.07, "spin_after_radps": 141.59, "spin_energy_given_up": 0.218, "spin_energy_given_up_J": 6968.5}, "hydra": {"peak_dv_mps": 2.942, "parts": ["chassis", "rr_wheel"], "peak_z_m": 0.4044, "spin_before_radps": 35.57, "spin_after_radps": 0.8, "spin_energy_given_up": 0.999, "spin_energy_given_up_J": 1580.8}}}
+{"t": 9.124, "dur_s": 1.884, "bots": {"gravedigger": {"peak_dv_mps": 4.339, "parts": ["chassis", "fl_wheel", "fr_wheel"], "peak_z_m": 0.1999, "spin_before_radps": 160.03, "spin_after_radps": 159.68, "spin_energy_given_up": 0.004, "spin_energy_given_up_J": 141.5}, "hydra": {"peak_dv_mps": 1.68, "parts": ["chassis", "fr_wheel", "rr_wheel", "weapon"], "peak_z_m": 0.2619, "spin_before_radps": 2.79, "spin_after_radps": 0.77, "spin_energy_given_up": 0.925, "spin_energy_given_up_J": 9.0}}}
+{"t": 12.088, "dur_s": 0.048, "bots": {"gravedigger": {"peak_dv_mps": 2.695, "parts": ["chassis"], "peak_z_m": 0.2065, "spin_before_radps": 160.04, "spin_after_radps": 158.0, "spin_energy_given_up": 0.025, "spin_energy_given_up_J": 812.6}, "hydra": {"peak_dv_mps": 2.273, "parts": ["weapon"], "peak_z_m": 0.2482, "spin_before_radps": 1.7, "spin_after_radps": 0.77, "spin_energy_given_up": 0.796, "spin_energy_given_up_J": 2.9}}}
+{"t": 12.52, "dur_s": 1.124, "bots": {"gravedigger": {"peak_dv_mps": 3.135, "parts": ["chassis", "fl_wheel"], "peak_z_m": 0.6057, "spin_before_radps": 160.4, "spin_after_radps": 159.7, "spin_energy_given_up": 0.009, "spin_energy_given_up_J": 279.7}, "hydra": {"peak_dv_mps": 3.485, "parts": ["fr_wheel", "weapon"], "peak_z_m": 0.4405, "spin_before_radps": 2.63, "spin_after_radps": 0.5, "spin_energy_given_up": 0.964, "spin_energy_given_up_J": 8.4}}}
+{"t": 15.068, "dur_s": 2.54, "bots": {"gravedigger": {"peak_dv_mps": 4.504, "parts": ["chassis", "fr_wheel"], "peak_z_m": 0.1634, "spin_before_radps": 160.04, "spin_after_radps": 159.27, "spin_energy_given_up": 0.01, "spin_energy_given_up_J": 304.9}, "hydra": {"peak_dv_mps": 3.386, "parts": ["chassis", "rl_wheel", "rr_wheel"], "peak_z_m": 0.3738, "spin_before_radps": 31.5, "spin_after_radps": 0.95, "spin_energy_given_up": 0.999, "spin_energy_given_up_J": 1238.9}}}
+{"t": 17.984, "dur_s": 0.108, "bots": {"gravedigger": {"peak_dv_mps": 1.736, "parts": ["weapon"], "peak_z_m": 0.1606, "spin_before_radps": 160.26, "spin_after_radps": 101.81, "spin_energy_given_up": 0.596, "spin_energy_given_up_J": 19150.4}, "hydra": {"peak_dv_mps": 5.313, "parts": ["chassis", "fl_wheel"], "peak_z_m": 0.8075, "spin_before_radps": 6.74, "spin_after_radps": 5.92, "spin_energy_given_up": 0.226, "spin_energy_given_up_J": 12.8}}}
+
+## v1_t5: hit events
+{"t": 5.564, "dur_s": 0.26, "bots": {"gravedigger": {"peak_dv_mps": 0.525, "parts": ["chassis"], "peak_z_m": 0.1503, "spin_before_radps": 160.27, "spin_after_radps": 160.15, "spin_energy_given_up": 0.001, "spin_energy_given_up_J": 46.9}, "hydra": {"peak_dv_mps": 0.95, "parts": ["weapon"], "peak_z_m": 0.1517, "spin_before_radps": 1.63, "spin_after_radps": 1.42, "spin_energy_given_up": 0.245, "spin_energy_given_up_J": 0.8}}}
+{"t": 6.0, "dur_s": 0.0, "bots": {"gravedigger": {"peak_dv_mps": 0.155, "parts": ["chassis"], "peak_z_m": 0.1501, "spin_before_radps": 160.22, "spin_after_radps": 160.21, "spin_energy_given_up": 0.0, "spin_energy_given_up_J": 6.0}, "hydra": {"peak_dv_mps": 1.068, "parts": ["weapon"], "peak_z_m": 0.1502, "spin_before_radps": 1.87, "spin_after_radps": 1.53, "spin_energy_given_up": 0.327, "spin_energy_given_up_J": 1.4}}}
+{"t": 7.088, "dur_s": 0.0, "bots": {"gravedigger": {"peak_dv_mps": 0.131, "parts": ["chassis"], "peak_z_m": 0.151, "spin_before_radps": 160.32, "spin_after_radps": 160.25, "spin_energy_given_up": 0.001, "spin_energy_given_up_J": 30.9}, "hydra": {"peak_dv_mps": 0.423, "parts": ["weapon"], "peak_z_m": 0.1505, "spin_before_radps": 1.75, "spin_after_radps": 1.5, "spin_energy_given_up": 0.27, "spin_energy_given_up_J": 1.0}}}
+{"t": 7.312, "dur_s": 0.128, "bots": {"gravedigger": {"peak_dv_mps": 0.142, "parts": ["chassis"], "peak_z_m": 0.151, "spin_before_radps": 160.4, "spin_after_radps": 160.23, "spin_energy_given_up": 0.002, "spin_energy_given_up_J": 67.7}, "hydra": {"peak_dv_mps": 0.317, "parts": ["weapon"], "peak_z_m": 0.1514, "spin_before_radps": 1.64, "spin_after_radps": 0.52, "spin_energy_given_up": 0.901, "spin_energy_given_up_J": 3.0}}}
+{"t": 7.596, "dur_s": 0.0, "bots": {"gravedigger": {"peak_dv_mps": 0.188, "parts": ["chassis"], "peak_z_m": 0.1518, "spin_before_radps": 160.34, "spin_after_radps": 160.28, "spin_energy_given_up": 0.001, "spin_energy_given_up_J": 22.8}, "hydra": {"peak_dv_mps": 0.322, "parts": ["weapon"], "peak_z_m": 0.1517, "spin_before_radps": 1.58, "spin_after_radps": 0.52, "spin_energy_given_up": 0.893, "spin_energy_given_up_J": 2.8}}}
+{"t": 7.752, "dur_s": 0.0, "bots": {"gravedigger": {"peak_dv_mps": 0.238, "parts": ["chassis"], "peak_z_m": 0.1518, "spin_before_radps": 160.38, "spin_after_radps": 160.3, "spin_energy_given_up": 0.001, "spin_energy_given_up_J": 34.1}, "hydra": {"peak_dv_mps": 0.378, "parts": ["weapon"], "peak_z_m": 0.1533, "spin_before_radps": 1.83, "spin_after_radps": 1.02, "spin_energy_given_up": 0.691, "spin_energy_given_up_J": 2.9}}}
+{"t": 8.124, "dur_s": 0.36, "bots": {"gravedigger": {"peak_dv_mps": 0.342, "parts": ["chassis"], "peak_z_m": 0.1577, "spin_before_radps": 160.33, "spin_after_radps": 160.12, "spin_energy_given_up": 0.003, "spin_energy_given_up_J": 82.5}, "hydra": {"peak_dv_mps": 0.465, "parts": ["weapon"], "peak_z_m": 0.1564, "spin_before_radps": 1.58, "spin_after_radps": 0.47, "spin_energy_given_up": 0.911, "spin_energy_given_up_J": 2.9}}}
+{"t": 8.748, "dur_s": 0.04, "bots": {"gravedigger": {"peak_dv_mps": 0.207, "parts": ["chassis"], "peak_z_m": 0.1545, "spin_before_radps": 160.63, "spin_after_radps": 160.17, "spin_energy_given_up": 0.006, "spin_energy_given_up_J": 182.9}, "hydra": {"peak_dv_mps": 0.36, "parts": ["weapon"], "peak_z_m": 0.1584, "spin_before_radps": 1.74, "spin_after_radps": 0.42, "spin_energy_given_up": 0.941, "spin_energy_given_up_J": 3.5}}}
+{"t": 8.968, "dur_s": 0.004, "bots": {"gravedigger": {"peak_dv_mps": 0.295, "parts": ["chassis"], "peak_z_m": 0.1577, "spin_before_radps": 160.55, "spin_after_radps": 160.23, "spin_energy_given_up": 0.004, "spin_energy_given_up_J": 128.3}, "hydra": {"peak_dv_mps": 0.436, "parts": ["weapon"], "peak_z_m": 0.1584, "spin_before_radps": 1.74, "spin_after_radps": 0.84, "spin_energy_given_up": 0.767, "spin_energy_given_up_J": 2.9}}}
+{"t": 9.268, "dur_s": 0.008, "bots": {"gravedigger": {"peak_dv_mps": 0.313, "parts": ["chassis"], "peak_z_m": 0.1622, "spin_before_radps": 160.88, "spin_after_radps": 160.02, "spin_energy_given_up": 0.011, "spin_energy_given_up_J": 345.8}, "hydra": {"peak_dv_mps": 0.305, "parts": ["weapon"], "peak_z_m": 0.1539, "spin_before_radps": 2.08, "spin_after_radps": 0.52, "spin_energy_given_up": 0.937, "spin_energy_given_up_J": 5.0}}}
+{"t": 9.508, "dur_s": 0.992, "bots": {"gravedigger": {"peak_dv_mps": 0.978, "parts": ["chassis", "rr_wheel"], "peak_z_m": 0.1795, "spin_before_radps": 160.92, "spin_after_radps": 159.6, "spin_energy_given_up": 0.016, "spin_energy_given_up_J": 526.9}, "hydra": {"peak_dv_mps": 1.093, "parts": ["weapon"], "peak_z_m": 0.2266, "spin_before_radps": 2.08, "spin_after_radps": 0.49, "spin_energy_given_up": 0.943, "spin_energy_given_up_J": 5.1}}}
+{"t": 10.684, "dur_s": 0.596, "bots": {"gravedigger": {"peak_dv_mps": 2.87, "parts": ["chassis", "rl_wheel", "rr_wheel"], "peak_z_m": 0.6282, "spin_before_radps": 160.6, "spin_after_radps": 159.85, "spin_energy_given_up": 0.009, "spin_energy_given_up_J": 299.6}, "hydra": {"peak_dv_mps": 3.149, "parts": ["fl_wheel", "weapon"], "peak_z_m": 0.4864, "spin_before_radps": 2.25, "spin_after_radps": 0.92, "spin_energy_given_up": 0.834, "spin_energy_given_up_J": 5.3}}}
+{"t": 21.448, "dur_s": 2.852, "bots": {"gravedigger": {"peak_dv_mps": 2.414, "parts": ["chassis", "fl_wheel"], "peak_z_m": 0.1516, "spin_before_radps": 160.21, "spin_after_radps": 159.8, "spin_energy_given_up": 0.005, "spin_energy_given_up_J": 165.6}, "hydra": {"peak_dv_mps": 1.062, "parts": ["fl_wheel", "rl_wheel"], "peak_z_m": 0.1162, "spin_before_radps": 1.5, "spin_after_radps": 0.98, "spin_energy_given_up": 0.573, "spin_energy_given_up_J": 1.6}}}
+
+## v2_t3: hit events
+{"t": 4.604, "dur_s": 0.2, "bots": {"gravedigger": {"peak_dv_mps": 0.611, "parts": ["fl_wheel"], "peak_z_m": 0.1508, "spin_before_radps": 160.36, "spin_after_radps": 159.87, "spin_energy_given_up": 0.006, "spin_energy_given_up_J": 194.1}, "hydra": {"peak_dv_mps": 0.715, "parts": ["weapon"], "peak_z_m": 0.1507, "spin_before_radps": 1.67, "spin_after_radps": 0.96, "spin_energy_given_up": 0.671, "spin_energy_given_up_J": 2.3}}}
+{"t": 5.152, "dur_s": 2.076, "bots": {"gravedigger": {"peak_dv_mps": 1.765, "parts": ["chassis", "fl_wheel"], "peak_z_m": 0.1574, "spin_before_radps": 160.1, "spin_after_radps": 159.2, "spin_energy_given_up": 0.011, "spin_energy_given_up_J": 361.6}, "hydra": {"peak_dv_mps": 1.594, "parts": ["fl_wheel", "weapon"], "peak_z_m": 0.1536, "spin_before_radps": 1.59, "spin_after_radps": 0.61, "spin_energy_given_up": 0.851, "spin_energy_given_up_J": 2.7}}}
+{"t": 7.436, "dur_s": 0.28, "bots": {"gravedigger": {"peak_dv_mps": 0.087, "parts": ["fl_wheel"], "peak_z_m": 0.1502, "spin_before_radps": 160.17, "spin_after_radps": 160.07, "spin_energy_given_up": 0.001, "spin_energy_given_up_J": 40.8}, "hydra": {"peak_dv_mps": 0.899, "parts": ["weapon"], "peak_z_m": 0.1528, "spin_before_radps": 1.57, "spin_after_radps": 1.38, "spin_energy_given_up": 0.231, "spin_energy_given_up_J": 0.7}}}
+{"t": 8.856, "dur_s": 0.128, "bots": {"gravedigger": {"peak_dv_mps": 1.297, "parts": ["fl_wheel"], "peak_z_m": 0.1514, "spin_before_radps": 160.45, "spin_after_radps": 160.15, "spin_energy_given_up": 0.004, "spin_energy_given_up_J": 118.2}, "hydra": {"peak_dv_mps": 1.68, "parts": ["weapon"], "peak_z_m": 0.1534, "spin_before_radps": 2.22, "spin_after_radps": 1.17, "spin_energy_given_up": 0.722, "spin_energy_given_up_J": 4.5}}}
+{"t": 9.356, "dur_s": 0.612, "bots": {"gravedigger": {"peak_dv_mps": 1.017, "parts": ["chassis", "fl_wheel"], "peak_z_m": 0.1535, "spin_before_radps": 160.18, "spin_after_radps": 160.03, "spin_energy_given_up": 0.002, "spin_energy_given_up_J": 60.8}, "hydra": {"peak_dv_mps": 1.034, "parts": ["weapon"], "peak_z_m": 0.1524, "spin_before_radps": 1.56, "spin_after_radps": 0.29, "spin_energy_given_up": 0.965, "spin_energy_given_up_J": 2.9}}}
+{"t": 10.14, "dur_s": 0.868, "bots": {"gravedigger": {"peak_dv_mps": 0.741, "parts": ["chassis"], "peak_z_m": 0.1672, "spin_before_radps": 160.5, "spin_after_radps": 159.89, "spin_energy_given_up": 0.008, "spin_energy_given_up_J": 244.3}, "hydra": {"peak_dv_mps": 0.888, "parts": ["weapon"], "peak_z_m": 0.1717, "spin_before_radps": 1.59, "spin_after_radps": 0.29, "spin_energy_given_up": 0.967, "spin_energy_given_up_J": 3.1}}}
+{"t": 11.292, "dur_s": 0.004, "bots": {"gravedigger": {"peak_dv_mps": 0.373, "parts": ["chassis"], "peak_z_m": 0.1515, "spin_before_radps": 160.67, "spin_after_radps": 159.98, "spin_energy_given_up": 0.009, "spin_energy_given_up_J": 277.8}, "hydra": {"peak_dv_mps": 3.74, "parts": ["weapon"], "peak_z_m": 0.271, "spin_before_radps": 16.83, "spin_after_radps": 0.87, "spin_energy_given_up": 0.997, "spin_energy_given_up_J": 353.2}}}
+{"t": 12.004, "dur_s": 0.0, "bots": {"gravedigger": {"peak_dv_mps": 2.802, "parts": ["weapon"], "peak_z_m": 0.292}, "hydra": {"peak_dv_mps": 2.138, "parts": ["weapon"], "peak_z_m": 1.6038, "spin_before_radps": 77.39, "spin_after_radps": 4.89, "spin_energy_given_up": 0.996, "spin_energy_given_up_J": 7455.9}}}
+{"t": 16.64, "dur_s": 0.012, "bots": {"gravedigger": {"peak_dv_mps": 1.393, "parts": ["fl_wheel"], "peak_z_m": 0.1525}, "hydra": {"peak_dv_mps": 1.781, "parts": ["weapon"], "peak_z_m": 0.152, "spin_before_radps": 2.08, "spin_after_radps": 1.39, "spin_energy_given_up": 0.559, "spin_energy_given_up_J": 3.0}}}
+{"t": 16.972, "dur_s": 0.46, "bots": {"gravedigger": {"peak_dv_mps": 0.586, "parts": ["fl_wheel"], "peak_z_m": 0.1511}, "hydra": {"peak_dv_mps": 3.431, "parts": ["weapon"], "peak_z_m": 0.3293, "spin_before_radps": 1.58, "spin_after_radps": 0.84, "spin_energy_given_up": 0.72, "spin_energy_given_up_J": 2.3}}}
+{"t": 18.328, "dur_s": 0.004, "bots": {"gravedigger": {"peak_dv_mps": 0.989, "parts": ["fl_wheel"], "peak_z_m": 0.1512}, "hydra": {"peak_dv_mps": 5.083, "parts": ["rr_wheel"], "peak_z_m": 0.4988, "spin_before_radps": 22.5, "spin_after_radps": 4.92, "spin_energy_given_up": 0.952, "spin_energy_given_up_J": 602.7}}}
+{"t": 20.98, "dur_s": 0.644, "bots": {"gravedigger": {"peak_dv_mps": 2.198, "parts": ["chassis"], "peak_z_m": 0.1537}, "hydra": {"peak_dv_mps": 1.546, "parts": ["weapon"], "peak_z_m": 0.2864, "spin_before_radps": 1.98, "spin_after_radps": 0.25, "spin_energy_given_up": 0.984, "spin_energy_given_up_J": 4.8}}}
+
+## v3_t3z07: hit events
+{"t": 4.98, "dur_s": 0.052, "bots": {"gravedigger": {"peak_dv_mps": 0.692, "parts": ["fl_wheel"], "peak_z_m": 0.1504, "spin_before_radps": 160.35, "spin_after_radps": 159.78, "spin_energy_given_up": 0.007, "spin_energy_given_up_J": 228.9}, "hydra": {"peak_dv_mps": 0.792, "parts": ["weapon"], "peak_z_m": 0.1532, "spin_before_radps": 1.71, "spin_after_radps": 0.82, "spin_energy_given_up": 0.772, "spin_energy_given_up_J": 2.8}}}
+{"t": 5.22, "dur_s": 2.54, "bots": {"gravedigger": {"peak_dv_mps": 0.929, "parts": ["chassis", "fl_wheel"], "peak_z_m": 0.1529, "spin_before_radps": 161.11, "spin_after_radps": 159.69, "spin_energy_given_up": 0.018, "spin_energy_given_up_J": 568.2}, "hydra": {"peak_dv_mps": 1.37, "parts": ["fl_wheel", "weapon"], "peak_z_m": 0.231, "spin_before_radps": 1.47, "spin_after_radps": 0.24, "spin_energy_given_up": 0.974, "spin_energy_given_up_J": 2.6}}}
+{"t": 9.1, "dur_s": 0.0, "bots": {"gravedigger": {"peak_dv_mps": 0.818, "parts": ["fl_wheel"], "peak_z_m": 0.1682, "spin_before_radps": 160.3, "spin_after_radps": 159.9, "spin_energy_given_up": 0.005, "spin_energy_given_up_J": 158.9}, "hydra": {"peak_dv_mps": 1.583, "parts": ["weapon"], "peak_z_m": 0.244, "spin_before_radps": 2.23, "spin_after_radps": 1.25, "spin_energy_given_up": 0.684, "spin_energy_given_up_J": 4.3}}}
+{"t": 9.252, "dur_s": 3.972, "bots": {"gravedigger": {"peak_dv_mps": 9.475, "parts": ["chassis", "fl_wheel", "fr_wheel"], "peak_z_m": 0.7488, "spin_before_radps": 160.3, "spin_after_radps": 15.16, "spin_energy_given_up": 0.991, "spin_energy_given_up_J": 31831.3}, "hydra": {"peak_dv_mps": 9.509, "parts": ["chassis", "fl_wheel", "fr_wheel", "rl_wheel", "weapon"], "peak_z_m": 0.5745, "spin_before_radps": 2.23, "spin_after_radps": 0.86, "spin_energy_given_up": 0.851, "spin_energy_given_up_J": 5.3}}}
+
+## v4_t2: hit events
+{"t": 6.248, "dur_s": 0.004, "bots": {"gravedigger": {"peak_dv_mps": 1.388, "parts": ["rl_wheel"], "peak_z_m": 0.1509, "spin_before_radps": 160.56, "spin_after_radps": 160.56, "spin_energy_given_up": 0.0, "spin_energy_given_up_J": 0.0}, "hydra": {"peak_dv_mps": 2.315, "parts": ["weapon"], "peak_z_m": 0.1706, "spin_before_radps": 1.57, "spin_after_radps": 1.02, "spin_energy_given_up": 0.577, "spin_energy_given_up_J": 1.8}}}
+{"t": 6.468, "dur_s": 0.0, "bots": {"gravedigger": {"peak_dv_mps": 0.47, "parts": ["rl_wheel"], "peak_z_m": 0.1502, "spin_before_radps": 163.36, "spin_after_radps": 160.06, "spin_energy_given_up": 0.04, "spin_energy_given_up_J": 1332.5}, "hydra": {"peak_dv_mps": 1.521, "parts": ["weapon"], "peak_z_m": 0.2053, "spin_before_radps": 1.57, "spin_after_radps": 0.75, "spin_energy_given_up": 0.774, "spin_energy_given_up_J": 2.4}}}
+{"t": 6.676, "dur_s": 0.156, "bots": {"gravedigger": {"peak_dv_mps": 0.501, "parts": ["fl_wheel"], "peak_z_m": 0.15, "spin_before_radps": 161.52, "spin_after_radps": 160.06, "spin_energy_given_up": 0.018, "spin_energy_given_up_J": 584.1}, "hydra": {"peak_dv_mps": 0.951, "parts": ["fl_wheel"], "peak_z_m": 0.2304, "spin_before_radps": 1.13, "spin_after_radps": 0.75, "spin_energy_given_up": 0.563, "spin_energy_given_up_J": 0.9}}}
+{"t": 7.656, "dur_s": 0.464, "bots": {"gravedigger": {"peak_dv_mps": 1.659, "parts": ["chassis", "fl_wheel"], "peak_z_m": 0.1768, "spin_before_radps": 160.24, "spin_after_radps": 159.14, "spin_energy_given_up": 0.014, "spin_energy_given_up_J": 440.3}, "hydra": {"peak_dv_mps": 3.359, "parts": ["fl_wheel", "weapon"], "peak_z_m": 0.5532, "spin_before_radps": 1.72, "spin_after_radps": 0.7, "spin_energy_given_up": 0.835, "spin_energy_given_up_J": 3.1}}}
+{"t": 8.944, "dur_s": 0.004, "bots": {"gravedigger": {"peak_dv_mps": 3.379, "parts": ["rl_wheel"], "peak_z_m": 0.2336, "spin_before_radps": 160.46, "spin_after_radps": 10.66, "spin_energy_given_up": 0.996, "spin_energy_given_up_J": 32041.3}, "hydra": {"peak_dv_mps": 4.854, "parts": ["fl_wheel"], "peak_z_m": 0.6212, "spin_before_radps": 21.45, "spin_after_radps": 10.01, "spin_energy_given_up": 0.782, "spin_energy_given_up_J": 450.2}}}
+{"t": 13.036, "dur_s": 0.028, "bots": {"gravedigger": {"peak_dv_mps": 4.415, "parts": ["chassis", "rl_wheel", "weapon"], "peak_z_m": 0.2977, "spin_before_radps": 160.23, "spin_after_radps": 122.39, "spin_energy_given_up": 0.417, "spin_energy_given_up_J": 13366.9}, "hydra": {"peak_dv_mps": 4.185, "parts": ["fl_wheel", "weapon"], "peak_z_m": 0.9889, "spin_before_radps": 20.4, "spin_after_radps": 6.69, "spin_energy_given_up": 0.892, "spin_energy_given_up_J": 464.1}}}
+{"t": 13.636, "dur_s": 0.004, "bots": {"gravedigger": {"peak_dv_mps": 0.687, "parts": ["chassis"], "peak_z_m": 0.1538}, "hydra": {"peak_dv_mps": 2.795, "parts": ["weapon"], "peak_z_m": 0.6998, "spin_before_radps": 22.2, "spin_after_radps": 22.2, "spin_energy_given_up": 0.0, "spin_energy_given_up_J": 0.0}}}
+=== sweep done 00:21:54 ===

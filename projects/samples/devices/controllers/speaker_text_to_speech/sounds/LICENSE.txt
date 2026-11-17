@@ -1,0 +1,46 @@
+Sound effect for the `speaker_text_to_speech` device sample.
+
+Contents
+--------
+* cow.wav — a cow "moo", embedded in the TTS demo's speech markup as
+  `<audio src="sounds/cow.wav">Meuh</audio>`
+  (speaker_text_to_speech.c:51, speaker_text_to_speech.py:45, and the worked
+  example in docs/reference/speaker.md:337).
+
+Status: UNRESOLVED — this is the weakest provenance of any audio file in the tree.
+---------------------------------------------------------------------------------
+Working election: Apache License, Version 2.0 — Copyright 1996-2024
+Cyberbotics Ltd. (https://www.apache.org/licenses/LICENSE-2.0), on the same
+basis as the rest of the Webots-inherited tree; see the "Derivation" section of
+the repository-root NOTICE.
+
+What the file itself says
+-------------------------
+NOTHING. cow.wav contains exactly two RIFF chunks — `fmt ` and `data`. There is
+no LIST/INFO chunk, no ID3 tag, no artist, no year, no software tag, no source
+URL. Every other `.wav` in this repository carries at least one metadata chunk;
+this one carries none, so there is no in-file evidence at all.
+
+Git evidence
+------------
+It entered this repository in the initial Webots import, commit
+0db6a18a74ba16fa2c10f744423405d153b87c7a ("Initial commit: OmniSim robotics
+simulator", 2026-04-11), and has not been modified since. This repository's
+history is a squashed import, so git cannot corroborate anything earlier.
+
+Why this one deserves particular scepticism
+-------------------------------------------
+An animal sound effect is exactly the class of asset most often taken from a
+free sound-effect library (freesound.org and similar), where the usual terms are
+CC BY (attribution required) or CC BY-NC (incompatible with an Apache-2.0
+redistribution). The stripped metadata is consistent with either an in-house
+recording or a download that was re-encoded; it distinguishes neither.
+
+What would settle it: a written confirmation from Cyberbotics Ltd. that cow.wav
+is their own work, OR identification of the upstream library entry and its
+terms. Until then this election is an inference, not a finding.
+
+Cheapest mitigation, if the maintainer does not want to carry the uncertainty:
+the file is decorative — it is one clause of one demo sentence. Replacing it
+with a CC0 equivalent, or deleting the `<audio>` clause from the three call
+sites listed above, removes the question entirely.

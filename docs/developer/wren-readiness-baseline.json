@@ -1,0 +1,80 @@
+{
+ "recorded_utc": "2026-08-23T11:32:13Z",
+ "groups": {
+  "api": {
+   "red": [
+    "accelerometer",
+    "asymmetric_friction",
+    "battery",
+    "billboard",
+    "brake",
+    "camera_color",
+    "camera_color_exposure",
+    "camera_color_focus",
+    "camera_color_motion_blur",
+    "camera_recognition",
+    "display",
+    "display_attach_camera",
+    "distance_sensor_enable_disable",
+    "distance_sensor_laser",
+    "distance_sensor_sonar",
+    "gps_speed",
+    "motor",
+    "motor2",
+    "motor2_velocity",
+    "motor3_velocity",
+    "pen_box",
+    "pen_capsule",
+    "pen_capsule_scaled",
+    "pen_cone",
+    "pen_cone_scaled",
+    "pen_cylinder",
+    "pen_cylinder_scaled",
+    "pen_elevation_grid",
+    "pen_elevation_grid_scaled",
+    "pen_indexed_face_set",
+    "pen_indexed_face_set_scaled",
+    "pen_sphere",
+    "pen_sphere_scaled",
+    "radar_occlusion",
+    "robot_multiple_step",
+    "supervisor_export_image",
+    "supervisor_force_torque",
+    "supervisor_get_velocity_with_joints",
+    "supervisor_import_remove_mf",
+    "supervisor_import_robot_node",
+    "supervisor_inertia",
+    "supervisor_node_set_joint_position",
+    "supervisor_node_set_visibility",
+    "supervisor_reset_physics",
+    "supervisor_reset_simulation",
+    "supervisor_set_hinge_position_dynamic",
+    "supervisor_set_hinge_position_kinematic",
+    "touch_sensor_kinematic",
+    "track",
+    "vacuum_gripper"
+   ],
+   "no_verdict": [
+    "motions_loop",
+    "motions_regular",
+    "motions_reverse",
+    "nested_def_nodes",
+    "robot_node",
+    "supervisor_reset_physics_hinge_joint",
+    "supervisor_update_after_reset_simulation"
+   ]
+  },
+  "rendering": {
+   "red": [
+    "cadshape_node",
+    "complex_relative_asset_resolution",
+    "derived_proto_relative_asset_resolution",
+    "mirror",
+    "relative_asset_resolution"
+   ],
+   "no_verdict": [
+    "smooth_shaded_cylinder"
+   ]
+  }
+ }
+}

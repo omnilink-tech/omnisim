@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!--
+Delphi ESR — long-range automotive radar. ±10 deg wide-FoV mid-range
+(<60 m) + ±4.5 deg narrow-FoV long-range (<175 m). Modelled here as a
+fan-shaped lidar at the long-range FoV with the long range setting.
+Radars do not have a dedicated Webots node, so they're emulated as a
+forward-facing planar lidar in the URDF importer.
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="delphi_esr" params="parent_link prefix:=delphi_esr *origin">
+    <link name="${prefix}_link">
+      <visual>
+        <origin xyz="0 0 0.020" rpy="0 0 0"/>
+        <geometry><box size="0.090 0.075 0.035"/></geometry>
+        <material name="${prefix}_dark"><color rgba="0.16 0.16 0.16 1.0"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.020" rpy="0 0 0"/>
+        <geometry><box size="0.090 0.075 0.035"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0.020" rpy="0 0 0"/>
+        <mass value="0.575"/>
+        <inertia ixx="3.0e-4" ixy="0" ixz="0" iyy="4.2e-4" iyz="0" izz="6.6e-4"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}_link"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+    <gazebo reference="${prefix}_link">
+      <sensor name="${prefix}" type="lidar">
+        <update_rate>20</update_rate>
+        <ray>
+          <scan><horizontal><samples>64</samples><min_angle>-0.07854</min_angle><max_angle>0.07854</max_angle></horizontal></scan>
+          <range><min>1.0</min><max>175.0</max></range>
+        </ray>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>

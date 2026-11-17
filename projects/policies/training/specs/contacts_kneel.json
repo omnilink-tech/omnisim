@@ -1,0 +1,113 @@
+{
+ "mu": 1.0,
+ "swing_tol": 0.012,
+ "terrain": {
+  "type": "flat",
+  "z": 0.0
+ },
+ "contacts": [
+  {
+   "name": "foot_L",
+   "body": "left_ankle_roll_link",
+   "half": [
+    0.085,
+    0.03
+   ],
+   "patch": [
+    0.035,
+    0.0,
+    -0.036
+   ]
+  },
+  {
+   "name": "foot_R",
+   "body": "right_ankle_roll_link",
+   "half": [
+    0.085,
+    0.03
+   ],
+   "patch": [
+    0.035,
+    0.0,
+    -0.036
+   ]
+  },
+  {
+   "name": "knee_L",
+   "body": "left_knee_link",
+   "half": [
+    0.025,
+    0.015
+   ],
+   "patch": [
+    0.064,
+    0.0,
+    -0.065
+   ],
+   "axes": [
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "knee_R",
+   "body": "right_knee_link",
+   "half": [
+    0.025,
+    0.015
+   ],
+   "patch": [
+    0.064,
+    0.0,
+    -0.065
+   ],
+   "axes": [
+    [
+     0.0,
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     1.0
+    ]
+   ]
+  },
+  {
+   "name": "toe_L",
+   "body": "left_ankle_roll_link",
+   "half": [
+    0.005,
+    0.03
+   ],
+   "patch": [
+    0.115,
+    0.0,
+    -0.036
+   ]
+  },
+  {
+   "name": "toe_R",
+   "body": "right_ankle_roll_link",
+   "half": [
+    0.005,
+    0.03
+   ],
+   "patch": [
+    0.115,
+    0.0,
+    -0.036
+   ]
+  }
+ ],
+ "_provenance": "sole/toe measured from the ankle_roll collision box (identical in g1_23dof_omnisim.mjcf and g1_23dof_omnisim_crawl.urdf; verified 2026-07-09); knee sub-patch measured from the crawl URDF's shin box (origin [0.012,0,-0.1375], size 0.104x0.072x0.355; +x ground face; bearing sub-strip z -0.05..-0.08). The base MJCF has NO knee collider: the knee patch is a modeling declaration for ghost design/validation. Toe strip centred at x=0.115 half 0.005 (NOT the design doc's 0.110/0.02: the box edge is at x=0.120 exactly, so 0.110+0.020 would overhang the collider)."
+}

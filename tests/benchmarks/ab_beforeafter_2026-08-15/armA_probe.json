@@ -1,0 +1,1162 @@
+{
+ "arm": "armA",
+ "root": "O:\\omnisim-ab\\armA",
+ "world": "projects/samples/demos/worlds/physics/newton_husky_swarm_drive.wbt",
+ "probes": {
+  "healthz": {
+   "status": 200,
+   "bytes": 44,
+   "ctype": "application/json",
+   "body": {
+    "ok": true,
+    "uptime_s": 0.4960978031158447
+   },
+   "ms": 13
+  },
+  "capabilities_no_world": {
+   "status": 200,
+   "bytes": 23485,
+   "ctype": "application/json",
+   "body": {
+    "ok": true,
+    "omnisim_wire": "1.1",
+    "service": "world_harness",
+    "sim_version": "6.0.0",
+    "build": {
+     "commit": null,
+     "binary": "O:\\omnisim-ab\\armA\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+     "omnisim_home": "O:\\omnisim-ab\\armA",
+     "harness_python": "3.12.9",
+     "pillow": true
+    },
+    "machine": {
+     "host": "LAPTOP-H61DJILS",
+     "platform": "win32",
+     "note": "the canonical machine id (GPU + CPU + engine/libController hashes) comes from python projects/policies/common/env_fingerprint.py"
+    },
+    "physics": {
+     "sidecar_path": "O:\\omnisim-ab\\armA\\_probe_log.txt.newton.json",
+     "backend": "unverified",
+     "source": "sidecar_absent",
+     "detail": "no .newton.json sidecar and no Newton finalise line in the engine log. Newton is the only backend, so this does NOT mean some other engine drove the world -- it means this run never reached world finalize (budget --duration >= 15 s, >= 45 s on slow or virtualised disks), or the runtime failed to come up. A too-short run proves nothing about the backend.",
+     "bodies": {
+      "dynamic_bodies_registered": null,
+      "static_bodies_registered": null,
+      "source": "log_unreadable"
+     }
+    },
+    "supervisor": {
+     "connected": false,
+     "host": "127.0.0.1",
+     "port": 6890,
+     "light": false,
+     "error": "supervisor not connected (load a world with with_supervisor=true)",
+     "commands": null,
+     "commands_source": null,
+     "snapshots": null
+    },
+    "world": {
+     "path": null,
+     "load_ok": null,
+     "load_ms": null,
+     "load_state": "idle"
+    },
+    "features": [
+     "world.load",
+     "world.hot_reload",
+     "world.diagnostics",
+     "world.screenshot",
+     "world.render_stats",
+     "scene.tree",
+     "scene.bounds",
+     "scene.bounds_probe",
+     "scene.node",
+     "scene.viewpoint",
+     "scene.look_at",
+     "scene.frame",
+     "scene.orbit",
+     "scene.visible",
+     "scene.spawn",
+     "scene.delete",
+     "scene.set_pose",
+     "sim.step",
+     "sim.reset",
+     "sim.snapshot",
+     "sim.restore",
+     "sim.contacts",
+     "sim.grips",
+     "sim.state",
+     "events.cursor",
+     "robot.joints",
+     "robot.devices",
+     "robot.damage",
+     "capabilities"
+    ],
+    "not_supported": [
+     {
+      "feature": "robot.sensor_read",
+      "code": "effector_unavailable",
+      "http": 501,
+      "reason": "OmniSim restricts device APIs to the controller that owns the device; the supervisor cannot honestly read a sibling robot's lidar/camera/IMU.",
+      "workaround": "GET /robot/<def>/joints for kinematic state, or a Robot Bridge (PROTOCOL.md \u00a75)."
+     },
+     {
+      "feature": "sim.pause",
+      "reason": "not implemented: Supervisor.simulationSetMode() is in the binding but not wired to HTTP.",
+      "workaround": "None for holding the world still between requests: the injected supervisor is non-synchronized, so the --mode=fast engine FREE-RUNS between your calls (measured; see docs/developer/harness-latency-2026-07-31.md). The read endpoints (/scene/tree, /robots, /sim/contacts, bounds) do pause the engine internally for the duration of their walk, so each response is a consistent single-instant snapshot -- but time keeps running between calls."
+     },
+     {
+      "feature": "entity.velocity",
+      "reason": "not implemented: Node.getVelocity()/setVelocity() are in the binding but not exposed.",
+      "workaround": "Differentiate positions across two /scene/tree reads, or /robot/<def>/joints velocity."
+     },
+     {
+      "feature": "scene.spawn_many",
+      "reason": "not implemented: /scene/spawn takes one node per call (no batch form yet).",
+      "workaround": "Loop /scene/spawn; each call is sub-second in light mode."
+     },
+     {
+      "feature": "scene.spawn(urdf) / scene.spawn(type=URDFRobot)",
+      "code": "SPAWN_REJECTED",
+      "reason": "an engine constraint, not a harness gap: `URDFRobot { url ... }` is a tokenizer-level SOURCE expansion applied only in OmTokenizer::tokenizeFile (src/omnisim/vrml/OmTokenizer.cpp:412). A supervisor import goes through tokenizeString, which never expands it, so OmParser::protoNodeList() treats URDFRobot as a PROTO and OmNodeOperations::importNode refuses it as not declared IMPORTABLE. The same refusal applies to any PROTO the loaded world does not declare in its IMPORTABLE EXTERNPROTO list.",
+      "workaround": "POST /scene/spawn {\"clone\": \"<DEF of an existing robot>\"} \u2014 the engine exports the ALREADY-EXPANDED node (Node.exportString) and that imports fine; or put the URDFRobot block in the .wbt and hot-reload."
+     },
+     {
+      "feature": "world.validate",
+      "reason": "not implemented (agent-native-api.md P5): omniworld.validation.validate() is in-tree and ~4 ms, but no endpoint calls it.",
+      "workaround": "python scripts/dev/omniworld.py validate <world.wbt>"
+     },
+     {
+      "feature": "world.generate",
+      "reason": "not implemented (agent-native-api.md P5): omniworld is CLI-only.",
+      "workaround": "python scripts/dev/omniworld.py generate <recipe> --seed N --out <path>"
+     },
+     {
+      "feature": "world.save",
+      "reason": "not implemented: Supervisor.worldSave() is in the binding but not exposed, so a scene composed with /scene/spawn cannot yet be persisted to a .wbt.",
+      "workaround": "Compose the same scene as text and POST /world/load it."
+     },
+     {
+      "feature": "worlds.list",
+      "reason": "not implemented: no GetAvailableWorlds equivalent.",
+      "workaround": "ls projects/samples/demos/worlds/ out of band."
+     },
+     {
+      "feature": "events.streaming",
+      "reason": "deliberately out of scope (PROTOCOL.md \u00a715); the cursor-paged /sim/events with dropped_sup / dropped_log counters covers the need.",
+      "workaround": "Poll GET /sim/events with both cursors."
+     },
+     {
+      "feature": "joint.motorised_balljoint_actuation",
+      "scope": "engine",
+      "reason": "MOTORISED BallJoint ACTUATION IS UNIMPLEMENTED. ODE realised it as an AMotor triple (per-axis torque, or an FMax + Vel pair); all of that is gone. The Newton d6 path exists but is gated OFF by default behind OMNISIM_NEWTON_BALL_HINGE2, because driving d6 POSITION targets through SolverMuJoCo is an upstream newton defect, not ours (verified 2026-08-08: our d6 reports model_ke/model_kd and mode=3 correctly).",
+      "symptom": "the joint does not move at all and its PositionSensor reads 0, while setPosition() and setVelocity() return success. The CONSTRAINT is honoured -- the bodies stay connected -- so the robot looks assembled and simply will not articulate.",
+      "source": "src/omnisim/nodes/OmBallJoint.cpp:523",
+      "diagnostic": "JOINT_REGISTRATION_FAILED (only when OMNISIM_NEWTON_BALL_HINGE2 is set; otherwise SILENT)",
+      "workaround": "model the DOF as a chain of HingeJoints (revolute and prismatic joints DO actuate on Newton), or verify motion from GET /robot/<def>/joints across two reads instead of trusting the command."
+     },
+     {
+      "feature": "joint.motorised_hinge2joint_actuation",
+      "scope": "engine",
+      "reason": "MOTORISED Hinge2Joint ACTUATION IS UNIMPLEMENTED. ODE realised it as per-axis hinge2 torques, or an FMax + Vel pair per axis; all of that is gone. Same default-OFF d6 gate and the same upstream cause as the BallJoint entry above.",
+      "symptom": "same as above: no motion, sensors read 0, commands succeed. Passive Hinge2 constraints (free-spinning casters) are unaffected and still work.",
+      "source": "src/omnisim/nodes/OmHinge2Joint.cpp:262",
+      "diagnostic": "JOINT_REGISTRATION_FAILED (only under OMNISIM_NEWTON_BALL_HINGE2; else SILENT)",
+      "workaround": "as above -- decompose into HingeJoints."
+     },
+     {
+      "feature": "sensor.touchsensor_force / force-3d",
+      "scope": "engine",
+      "reason": "the force source is the Newton mount-wrench readback, which can only answer for a sensor that was UN-FOLDED into a Newton body of its own; when it cannot answer there is NO force source at all, because the ODE mount-joint feedback it used to fall back to has been removed.",
+      "symptom": "getValue() returns 0.0 for ever. That 0 is 'not measured', never 'no force'.",
+      "source": "src/omnisim/nodes/OmTouchSensor.cpp:281 (and :353 for \"bumper\")",
+      "diagnostic": "SENSOR_NO_SOURCE",
+      "workaround": "check for the SENSOR_NO_SOURCE diagnostic on the load before believing any TouchSensor reading; infer contact from GET /sim/contacts, or prove the interaction geometrically."
+     },
+     {
+      "feature": "physics.backend_ode (physicsBackend \"ode\", defaultPhysicsBackend \"ode\")",
+      "scope": "engine",
+      "reason": "src/ode was DELETED (bdc02139). The field still parses, and what it now selects is OmOdeBackend's inert dispatcher stub -- every verb returns -1 -- so the Solid gets NO gravity and NO contact while the world loads clean. An explicit physicsBackend \"ode\" is no longer an opt-out of Newton; it is an opt-out of physics.",
+      "symptom": "the body never falls, never collides, and reports zero contact points for ever, with boundingObject and physics both present. The world loads with no error.",
+      "source": "src/omnisim/nodes/OmSolid.cpp:3150",
+      "diagnostic": "SOLID_ODE_PIN_INERT (one per pinned Solid that declares collision or mass; coalesced by this harness) -- and NEWTON_ZERO_DYNAMIC_BODIES when it was the world's only dynamic body",
+      "workaround": "delete the field. GET /scene/node/<def> -> fields.physics_backend.inert tells you per node, and GET /sim/contacts -> tracking.inert_pinned_solids lists them all."
+     },
+     {
+      "feature": "sound.contact",
+      "scope": "engine",
+      "reason": "CONTACT SOUND IS SILENT ON THE NEWTON BACKEND, and has been since Newton became the default -- not a consequence of retiring ODE. Its producer is odeContacts(), filled by odeNearCallback, which never fires for Newton bodies; and the whole subsystem is keyed on ODE GEOM ids, whereas native contacts are body-indexed. Contact-sound MASS WEIGHTING is separately unimplemented (both masses stay 0.0).",
+      "symptom": "collisions are mute. Motor sounds are unaffected.",
+      "source": "src/omnisim/sound/OmSoundEngine.cpp:228, src/omnisim/sound/OmContactSound.cpp:48",
+      "diagnostic": null,
+      "workaround": "none in-engine. Detect the collision from /sim/events contact.began and add audio in post."
+     },
+     {
+      "feature": "gui.contact_points_overlay",
+      "scope": "engine",
+      "reason": "the overlay renders from OmWorld::odeContacts(), whose only producer (appendOdeContact <- odeNearCallback) is gone, so the list is permanently empty. Fluid immersion was removed with it, so the immersion outline stays empty too.",
+      "symptom": "View > Optional Rendering > Show Contact Points draws nothing even while bodies are demonstrably in contact.",
+      "source": "src/omnisim/app/OmContactPointsRepresentation.cpp:124",
+      "diagnostic": null,
+      "workaround": "GET /sim/contacts -- the supervisor's per-Solid getContactPoints walk reads the NATIVE contact set and is unaffected by this."
+     },
+     {
+      "feature": "motor.force_feedback (getForceFeedback / getTorqueFeedback)",
+      "scope": "engine",
+      "reason": "the feedback read went through the ODE joint (dJointGetFeedback via OmBasicJoint::jointID()), and mJoint is now assigned NULL and nothing else -- so jointID() is permanently NULL and computeFeedback() returns 0.0 before doing any work. Propeller thrust/torque is the one exception: it is computed from the motor's own model, not from the solver.",
+      "symptom": "0.0 from every motorised joint's force/torque feedback, with no warning. (Relatedly: turning a motor OFF is unimplemented -- a motor switched off keeps whatever target the last per-tick Newton push wrote.)",
+      "source": "src/omnisim/nodes/OmRotationalMotor.cpp:54 and :77, src/omnisim/nodes/OmBasicJoint.cpp:178",
+      "diagnostic": null,
+      "workaround": "none. Do not use force feedback as a contact or load signal on this build."
+     },
+     {
+      "feature": "sensor.occlusion_rays vs a node DELETED at runtime",
+      "scope": "engine",
+      "reason": "occlusion itself WORKS again (fixed 2026-08-08: the ray carrier is now plain start/direction/length members answered by the Newton raycast service, the same pattern Receiver and LightSensor already used -- a wall between sensor and target now blocks it, verified by a control/differential pair in tests/test_newton_radar_occlusion_parity.py). What does NOT work is a node removed by the supervisor at runtime: there is no remove path from a deleted Solid to the MuJoCo model, so the deleted geometry stays in the model and keeps blocking rays.",
+      "symptom": "after wb_supervisor_node_remove_node(), a target that the removed node used to hide STILL reports as occluded. Measured on tests/api/worlds/camera_recognition.wbt: the 8-vs-7 occlusion count now passes, and the later assertion -- 1 object visible once the occluders are removed -- reads 0.",
+      "source": "src/omnisim/nodes/utils/OmObjectDetection.cpp (working); the gap is the absence of any removeBody/unregister path in src/omnisim/physics/OmNewtonBackend.hpp",
+      "diagnostic": "OCCLUSION_RAYS_UNANSWERED",
+      "workaround": "reload the world (POST /world/load) after removing collidable nodes. This is NOT limited to rays: CONTACTS against a deleted static are affected too, MEASURED 2026-08-08 -- a body resting on an elevated floor stayed at z=0.5999 for 61,440 steps after the floor was deleted, and the engine's own step log still listed the deleted floor's body at its authored pose. A deleted wall still stops a robot. Tested on one static Solid under the default CPU solver; dynamic bodies, robots and mujoco_warp are unmeasured."
+     },
+     {
+      "feature": "solid.setInertiaMatrixFromBoundingObject",
+      "scope": "engine",
+      "reason": "computing an inertia matrix from the bounding object is unavailable -- it ran ODE's mass integrator, and ODE has been removed. The inertiaMatrix fields are NOT modified.",
+      "symptom": "the call warns and leaves the fields as they were, so a body keeps whatever inertia it had (possibly the identity matrix).",
+      "source": "src/omnisim/nodes/OmSolid.cpp:1444",
+      "diagnostic": "INERTIA_FROM_BOUNDING_OBJECT_UNAVAILABLE",
+      "workaround": "author an explicit `inertiaMatrix` (and `centerOfMass`) in the Physics node."
+     },
+     {
+      "feature": "joint.fields (stopErp/stopCfm, springs+damping, suspension, Ball/Hinge2 hard stops, Connector snap alignment, Propeller inflow, Track force control, motor turn-off)",
+      "scope": "engine",
+      "reason": "each of these had ODE as its ONLY implementation and was deleted with it (commit 5b380175, which removed 46 dead odeBackend() call sites / ~113 verb calls that were writing into an inert stub while looking like working code). Specifically: HingeJointParameters.stopErp/stopCfm named ODE's error-reduction / constraint-force-mixing pair, and Newton's joint limits are a spring tuned by OMNISIM_NEWTON_LIMIT_KE/KD instead; spring/damping/staticFriction and suspension*/suspensionAxis were ODE motor state; Connector snap rotated the two parent ODE bodies (both handles are permanently NULL, so the whole snap chain computes a quaternion that lands nowhere -- the Newton weld attaches WITHOUT snapping); Propeller's axial inflow term needed a body point-velocity read, so V is pinned to 0 and only the omega^2 term survives; Track force control needed the belt body's mass from dBodyGetMass; turning a motor off zeroed the ODE motor velocity.",
+      "symptom": "the field is accepted and does nothing. A spring that does not push reads as a physics bug rather than as a missing feature -- which is why the engine warns per joint for the subset it can detect.",
+      "source": "src/omnisim/nodes/OmHingeJoint.cpp:155/226/234, OmHinge2Joint.cpp:205, OmBallJoint.cpp:773, OmConnector.cpp:277, OmPropeller.cpp:232, OmTrack.cpp:598, OmRotationalMotor.cpp:54, OmLinearMotor.cpp:48",
+      "diagnostic": "JOINT_FEATURE_UNIMPLEMENTED (Hinge2Joint / BallJoint only -- the others are SILENT)",
+      "workaround": "for limits, tune OMNISIM_NEWTON_LIMIT_KE/KD; for suspension and springs, model them as an actuated joint driven by your controller; for Track force control, use position or velocity control (both unaffected)."
+     }
+    ],
+    "limits": {
+     "supervisor_rpc_timeout_s": 120.0,
+     "max_steps_per_request": null,
+     "max_steps_per_request_note": "unbounded by the harness; the real limit is time \u2014 a step request that exceeds supervisor_rpc_timeout_s drops the supervisor socket, and `step` is not auto-retried",
+     "max_load_wait_s": 300.0,
+     "load_bind_hard_ceiling_s": 300.0,
+     "events_limit_default": 256,
+     "events_limit_max": 1024,
+     "log_buffer_events": 4096,
+     "step_cost": null,
+     "recommended_max_steps_per_request": null,
+     "step_cost_hint": "no /sim/step measured on this world yet \u2014 call GET /capabilities?probe_step=1 to measure one, or POST /sim/step {\"steps\": 1} and read the cost back here"
+    },
+    "endpoints": [
+     {
+      "method": "GET",
+      "path": "/capabilities",
+      "summary": "This document: backend, limits, event types, what is not supported."
+     },
+     {
+      "method": "GET",
+      "path": "/healthz",
+      "summary": "Liveness; never touches the simulator."
+     },
+     {
+      "method": "GET",
+      "path": "/world/diagnostics",
+      "summary": "Structured diagnostics from the current load."
+     },
+     {
+      "method": "GET",
+      "path": "/world/render_stats",
+      "summary": "Exposure statistics of a fresh render (0-255 scale)."
+     },
+     {
+      "method": "GET",
+      "path": "/scene/tree",
+      "summary": "Flat node list; ?bounds=1 attaches world-space bounds.",
+      "params": [
+       "bounds"
+      ]
+     },
+     {
+      "method": "GET",
+      "path": "/scene/node/<def>",
+      "summary": "Field dump + contacts for one node.",
+      "params": [
+       "bounds",
+       "probe"
+      ]
+     },
+     {
+      "method": "GET",
+      "path": "/scene/viewpoint",
+      "summary": "Read the live camera back, with resolved per-axis FOV."
+     },
+     {
+      "method": "GET",
+      "path": "/scene/visible",
+      "summary": "What is on screen now: frustum test, pixel bbox, angular offset.",
+      "params": [
+       "defs",
+       "all",
+       "limit"
+      ]
+     },
+     {
+      "method": "GET",
+      "path": "/sim/state",
+      "summary": "Harness session metadata (not scene state)."
+     },
+     {
+      "method": "GET",
+      "path": "/sim/contacts",
+      "summary": "Global contact set + `tracking` scope. Walked per call, so it answers in light mode too. An EMPTY list is never proof of no contact and the response never claims completeness: tracking.empty_set_reasons enumerates the real causes (a Solid pinned physicsBackend \"ode\" has no physics at all and is listed, measured, in tracking.inert_pinned_solids; a Newton runtime that never came up; a Solid the backend never registered). There is NO body-sleep mechanism in this engine, and ?wake=1 is a documented no-op kept for compatibility.",
+      "params": [
+       "wake",
+       "settle_steps"
+      ]
+     },
+     {
+      "method": "GET",
+      "path": "/sim/grips",
+      "summary": "Inferred grips + `tracking` scope. In light mode the tracker does not exist, so the list is empty with tracking.enabled=false (NOT measured, as distinct from nothing gripped)."
+     },
+     {
+      "method": "GET",
+      "path": "/sim/events",
+      "summary": "Cursor-paged unified event stream with drop counters.",
+      "params": [
+       "since",
+       "log_since",
+       "limit",
+       "types"
+      ]
+     },
+     {
+      "method": "GET",
+      "path": "/sim/snapshots",
+      "summary": "Named state snapshots taken in this world."
+     },
+     {
+      "method": "GET",
+      "path": "/robots",
+      "summary": "Every Robot in the scene with pose and joint count."
+     },
+     {
+      "method": "GET",
+      "path": "/robot/<def>/joints",
+      "summary": "Per-joint position/velocity/limits + hit_limit."
+     },
+     {
+      "method": "GET",
+      "path": "/robot/<def>/devices",
+      "summary": "Device inventory of a robot's subtree."
+     },
+     {
+      "method": "GET",
+      "path": "/robot/<def>/sensor/<name>",
+      "summary": "501 by design; see not_supported."
+     },
+     {
+      "method": "GET",
+      "path": "/robot/damage",
+      "summary": "Damage state of the tracked robot."
+     },
+     {
+      "method": "GET",
+      "path": "/robot/damage/events",
+      "summary": "Filtered view of damage.* events.",
+      "params": [
+       "since",
+       "limit"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/world/load",
+      "summary": "Load or hot-reload a .wbt; structured diagnostics.",
+      "body": [
+       "path",
+       "wait_s",
+       "with_supervisor",
+       "light"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/world/screenshot",
+      "summary": "Render a PNG (body or server-side path).",
+      "body": [
+       "path",
+       "quality"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/scene/look_at",
+      "summary": "Aim the camera from a position at a target.",
+      "body": [
+       "position",
+       "target",
+       "push"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/scene/frame",
+      "summary": "Aim AND distance from real bounds, with numeric verification.",
+      "body": [
+       "def",
+       "defs",
+       "target",
+       "radius",
+       "mode",
+       "margin",
+       "aspect",
+       "push"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/scene/orbit",
+      "summary": "Relative camera nudge around the current view.",
+      "body": [
+       "azimuth_deg",
+       "elevation_deg",
+       "dolly",
+       "pan",
+       "center",
+       "def",
+       "push"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/scene/spawn",
+      "summary": "Import a node into the live scene from VRML, a type+fields spec, or a clone of an existing DEF.",
+      "body": [
+       "vrml",
+       "type",
+       "fields",
+       "urdf",
+       "clone",
+       "def",
+       "name",
+       "translation",
+       "rotation",
+       "parent",
+       "index",
+       "settle_steps",
+       "reset_physics"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/scene/delete",
+      "summary": "Remove nodes by DEF.",
+      "body": [
+       "def",
+       "defs",
+       "settle_steps"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/scene/set_pose",
+      "summary": "Move an existing node by DEF.",
+      "body": [
+       "def",
+       "translation",
+       "rotation",
+       "reset_physics",
+       "settle_steps"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/sim/step",
+      "summary": "Advance N basic timesteps.",
+      "body": [
+       "steps"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/sim/reset",
+      "summary": "Rewind the clock and restore the authored state.",
+      "body": [
+       "restore",
+       "verify",
+       "settle_steps"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/sim/snapshot",
+      "summary": "Save a named engine-side state snapshot.",
+      "body": [
+       "name"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/sim/restore",
+      "summary": "Restore a named snapshot; reports how far it landed.",
+      "body": [
+       "name",
+       "settle_steps"
+      ]
+     },
+     {
+      "method": "POST",
+      "path": "/robot/damage/reset",
+      "summary": "Heal all parts without resetting the sim."
+     },
+     {
+      "method": "POST",
+      "path": "/robot/damage/inject",
+      "summary": "Set a part's damage state directly.",
+      "body": [
+       "part",
+       "state",
+       "hp_delta"
+      ]
+     }
+    ],
+    "endpoints_verification": {
+     "declared": 33,
+     "scanned_literals": 32,
+     "declared_not_found_in_source": [],
+     "undeclared_literals": [],
+     "verified": true,
+     "source": "declared table cross-checked against the request handler's source"
+    },
+    "event_types": [
+     "controller.log",
+     "world.warning",
+     "world.error"
+    ],
+    "event_types_detail": {
+     "harness": {
+      "types": [
+       "controller.log",
+       "world.warning",
+       "world.error"
+      ],
+      "emitters_found": [
+       "controller.log",
+       "world.error",
+       "world.warning"
+      ],
+      "undeclared": [],
+      "declared_not_emitted": [],
+      "verified": true,
+      "source": "scanned LogRingBuffer's emit sites in omnisim_harness.py"
+     },
+     "supervisor": null,
+     "note": "supervisor-side event types are served from the running supervisor (which scans its own emit() call sites); load a world with with_supervisor=true to see all ten"
+    },
+    "diagnostic_codes": [
+     "ASSET_DOWNLOAD_FAILED",
+     "CONTACT_PROPERTIES_IGNORED",
+     "CONTACT_QUERIES_BLIND",
+     "CONTROLLER_CRASHED",
+     "CONTROLLER_EXITED_NONZERO",
+     "CUDA_COMPUTE_CAPABILITY_TOO_OLD",
+     "CUDA_DEVICE_INIT_FAILED",
+     "CUDA_DRIVER_TOO_OLD",
+     "CUDA_GL_INTEROP_NOT_IMPLEMENTED",
+     "CUDA_KERNEL_EXECUTION_ERROR",
+     "CUDA_KERNEL_LAUNCH_FAILED",
+     "CUDA_MEMCPY_FAILED",
+     "CUDA_NOT_AVAILABLE",
+     "CUDA_OUT_OF_MEMORY",
+     "EXTERNPROTO_DOWNLOAD_FAILED",
+     "HEADER_INVALID",
+     "HEADER_MISSING",
+     "INERTIA_FROM_BOUNDING_OBJECT_UNAVAILABLE",
+     "JOINT_FEATURE_UNIMPLEMENTED",
+     "JOINT_REGISTRATION_FAILED",
+     "KINEMATIC_ARTICULATION",
+     "LAUNCHER_DLL_NOT_FOUND",
+     "MESH_READ_FAILED",
+     "NEWTON_BODIES_REGISTERED",
+     "NEWTON_ENFORCE_REFUSED",
+     "NEWTON_RUNTIME_ABSENT",
+     "NEWTON_RUNTIME_BROKEN",
+     "NEWTON_STATICS_NOT_REGISTERED",
+     "NEWTON_ZERO_DYNAMIC_BODIES",
+     "NO_PHYSICS_BACKEND",
+     "NO_STATIC_COLLISION_SURFACE",
+     "OCCLUSION_RAYS_UNANSWERED",
+     "PARSE_ERROR",
+     "PROTO_BASE_NAME_INVALID",
+     "PROTO_NAME_MISMATCH",
+     "PROTO_PARAM_ERROR",
+     "PROTO_RECURSIVE",
+     "RETIRED_ODE_SELECTOR",
+     "SENSOR_NO_SOURCE",
+     "SIMULATOR_EXITED_NONZERO",
+     "SOLID_ODE_PIN_INERT",
+     "SUPERVISOR_BIND_CEILING",
+     "SUPERVISOR_BIND_STALLED",
+     "TEXTURE_READ_FAILED",
+     "UNKNOWN",
+     "UNKNOWN_FIELD_IN_NODE",
+     "URDF_MESH_UNRESOLVED",
+     "WORLDINFO_PHYSICSBACKEND_MISNAMED",
+     "WORLD_FILE_EMPTY",
+     "WORLD_FILE_NOT_FOUND",
+     "WORLD_PARSE_INVALID_TOKENS",
+     "WORLD_PARSE_SYNTAX_ERROR",
+     "WORLD_WRONG_EXTENSION"
+    ],
+    "request_error_codes": [
+     "ARGUMENT_MISSING",
+     "BAD_VIEW_MODE",
+     "CLONE_DEF_NOT_FOUND",
+     "DEF_NOT_FOUND",
+     "DEF_TAKEN",
+     "FIELD_NOT_ON_NODE",
+     "PARENT_DEF_NOT_FOUND",
+     "POSE_UNSPECIFIED",
+     "SNAPSHOT_NAME_RESERVED",
+     "SNAPSHOT_NOT_FOUND",
+     "SPAWN_REJECTED",
+     "SPAWN_SPEC_INVALID",
+     "SUBJECT_BOUNDS_EMPTY",
+     "SUBJECT_BOUNDS_NOT_FOUND",
+     "SUBJECT_UNSPECIFIED"
+    ],
+    "step_probe": null
+   },
+   "ms": 93
+  },
+  "world_load": {
+   "status": 422,
+   "bytes": 11349,
+   "ctype": "application/json",
+   "body": {
+    "ok": false,
+    "world": "O:\\omnisim-ab\\armA\\projects\\samples\\demos\\worlds\\physics\\newton_husky_swarm_drive.wbt",
+    "load_ms": 13743,
+    "exit_code": null,
+    "diagnostics": [
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Could not listen to extern controllers and robot windows on port 1235. Port 1235 is already in use. Using port 1236 instead. This could be caused by another running instance of OmniSim. You should use the '--port' option to start several instances of OmniSim.",
+      "raw": "WARNING: Could not listen to extern controllers and robot windows on port 1235. Port 1235 is already in use. Using port 1236 instead. This could be caused by another running instance of OmniSim. You should use the '--port' option to start several instances of OmniSim."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Could not listen to extern controllers and robot windows on port 1234. Port 1234 is already in use. Using port 1236 instead. This could be caused by another running instance of OmniSim. You should use the '--port' option to start several instances of OmniSim.",
+      "raw": "WARNING: Could not listen to extern controllers and robot windows on port 1234. Port 1234 is already in use. Using port 1236 instead. This could be caused by another running instance of OmniSim. You should use the '--port' option to start several instances of OmniSim."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "error",
+      "message": "Cannot read file 'O:/omnisim-ab/armA/resources/proto-list.xml'.",
+      "raw": "ERROR: Cannot read file 'O:/omnisim-ab/armA/resources/proto-list.xml'."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "DEF SUN_MARKER OmniSimSunMarker: The <generic> robot window is not found. Please check your OmniSim installation.",
+      "raw": "WARNING: DEF SUN_MARKER OmniSimSunMarker: The <generic> robot window is not found. Please check your OmniSim installation."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_0\" > Solid \"top_plate_link\": As 'physics' is set to NULL, collisions will have no effect.",
+      "raw": "WARNING: Robot \"husky_0\" > Solid \"top_plate_link\": As 'physics' is set to NULL, collisions will have no effect."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_0\": The <generic> robot window is not found. Please check your OmniSim installation.",
+      "raw": "WARNING: Robot \"husky_0\": The <generic> robot window is not found. Please check your OmniSim installation."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_1\" > Solid \"top_plate_link\": As 'physics' is set to NULL, collisions will have no effect.",
+      "raw": "WARNING: Robot \"husky_1\" > Solid \"top_plate_link\": As 'physics' is set to NULL, collisions will have no effect."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_1\": The <generic> robot window is not found. Please check your OmniSim installation.",
+      "raw": "WARNING: Robot \"husky_1\": The <generic> robot window is not found. Please check your OmniSim installation."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_2\" > Solid \"top_plate_link\": As 'physics' is set to NULL, collisions will have no effect.",
+      "raw": "WARNING: Robot \"husky_2\" > Solid \"top_plate_link\": As 'physics' is set to NULL, collisions will have no effect."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_2\": The <generic> robot window is not found. Please check your OmniSim installation.",
+      "raw": "WARNING: Robot \"husky_2\": The <generic> robot window is not found. Please check your OmniSim installation."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_3\" > Solid \"top_plate_link\": As 'physics' is set to NULL, collisions will have no effect.",
+      "raw": "WARNING: Robot \"husky_3\" > Solid \"top_plate_link\": As 'physics' is set to NULL, collisions will have no effect."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_3\": The <generic> robot window is not found. Please check your OmniSim installation.",
+      "raw": "WARNING: Robot \"husky_3\": The <generic> robot window is not found. Please check your OmniSim installation."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_4\" > Solid \"top_plate_link\": As 'physics' is set to NULL, collisions will have no effect.",
+      "raw": "WARNING: Robot \"husky_4\" > Solid \"top_plate_link\": As 'physics' is set to NULL, collisions will have no effect."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_4\": The <generic> robot window is not found. Please check your OmniSim installation.",
+      "raw": "WARNING: Robot \"husky_4\": The <generic> robot window is not found. Please check your OmniSim installation."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_5\" > Solid \"top_plate_link\": As 'physics' is set to NULL, collisions will have no effect. (further occurrences in this session suppressed.)",
+      "raw": "WARNING: Robot \"husky_5\" > Solid \"top_plate_link\": As 'physics' is set to NULL, collisions will have no effect. (further occurrences in this session suppressed.)"
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_5\": The <generic> robot window is not found. Please check your OmniSim installation.",
+      "raw": "WARNING: Robot \"husky_5\": The <generic> robot window is not found. Please check your OmniSim installation."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_6\": The <generic> robot window is not found. Please check your OmniSim installation.",
+      "raw": "WARNING: Robot \"husky_6\": The <generic> robot window is not found. Please check your OmniSim installation."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"husky_7\": The <generic> robot window is not found. Please check your OmniSim installation.",
+      "raw": "WARNING: Robot \"husky_7\": The <generic> robot window is not found. Please check your OmniSim installation."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Robot \"harness_supervisor\": The <generic> robot window is not found. Please check your OmniSim installation.",
+      "raw": "WARNING: Robot \"harness_supervisor\": The <generic> robot window is not found. Please check your OmniSim installation."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Solid 'husky_0': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows.",
+      "raw": "WARNING: Solid 'husky_0': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Solid 'husky_1': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows.",
+      "raw": "WARNING: Solid 'husky_1': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Solid 'husky_2': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows.",
+      "raw": "WARNING: Solid 'husky_2': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Solid 'husky_3': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows.",
+      "raw": "WARNING: Solid 'husky_3': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Solid 'husky_4': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows.",
+      "raw": "WARNING: Solid 'husky_4': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Solid 'husky_5': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows.",
+      "raw": "WARNING: Solid 'husky_5': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Solid 'husky_6': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows.",
+      "raw": "WARNING: Solid 'husky_6': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows."
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Solid 'husky_7': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows.",
+      "raw": "WARNING: Solid 'husky_7': the physics collider is NOT the authored geometry -- using sphere r=0.001 (Robot wrapper placeholder). The body will contact the world at a different size or place than the scene shows."
+     },
+     {
+      "code": "NEWTON_BODIES_REGISTERED",
+      "severity": "info",
+      "message": "[OmNewtonBackend] registered 40 dynamic + 5 static Newton bodies (+45 this pass) (statics: floor, wall, wall#2, wall#3, wall#4)",
+      "dynamic_bodies_registered": 40,
+      "static_bodies_registered": 5,
+      "raw": "INFO: [OmNewtonBackend] registered 40 dynamic + 5 static Newton bodies (+45 this pass) (statics: floor, wall, wall#2, wall#3, wall#4)"
+     },
+     {
+      "code": "UNKNOWN",
+      "severity": "warning",
+      "message": "Joint motor 'front_left_wheel_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled.",
+      "raw": "WARNING: Joint motor 'front_left_wheel_motor' declares no position limits, so this physics backend configures it as a VELOCITY wheel: setPosition() on it will be IGNORED and setVelocity() is what drives it. If it is meant to be a servo, give its motor a minPosition/maxPosition (or its joint a minStop/maxStop) and it will be position-controlled."
+     }
+    ],
+    "load_state": "failed",
+    "supervisor": "not started (load failed)",
+    "hot_reloaded": false
+   },
+   "ms": 13759
+  },
+  "screenshot": {
+   "status": 200,
+   "bytes": 0,
+   "ctype": "image/png",
+   "body": "",
+   "ms": 5967
+  },
+  "robots": {
+   "status": 200,
+   "bytes": 2169,
+   "ctype": "application/json",
+   "body": {
+    "robots": [
+     {
+      "def": "#119",
+      "name": "husky_0",
+      "model": null,
+      "controller": "drive_forward",
+      "type": "Robot",
+      "position": [
+       37.58141326904297,
+       -42.0,
+       0.13199499249458313
+      ],
+      "orientation": [
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "num_joints": 4
+     },
+     {
+      "def": "#201",
+      "name": "husky_1",
+      "model": null,
+      "controller": "drive_forward",
+      "type": "Robot",
+      "position": [
+       37.58141326904297,
+       -30.0,
+       0.13199499249458313
+      ],
+      "orientation": [
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "num_joints": 4
+     },
+     {
+      "def": "#283",
+      "name": "husky_2",
+      "model": null,
+      "controller": "drive_forward",
+      "type": "Robot",
+      "position": [
+       37.58141326904297,
+       -18.0,
+       0.13199499249458313
+      ],
+      "orientation": [
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "num_joints": 4
+     },
+     {
+      "def": "#365",
+      "name": "husky_3",
+      "model": null,
+      "controller": "drive_forward",
+      "type": "Robot",
+      "position": [
+       37.58141326904297,
+       -5.999999046325684,
+       0.13199499249458313
+      ],
+      "orientation": [
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "num_joints": 4
+     },
+     {
+      "def": "#447",
+      "name": "husky_4",
+      "model": null,
+      "controller": "drive_forward",
+      "type": "Robot",
+      "position": [
+       37.58141326904297,
+       6.000000953674316,
+       0.13199499249458313
+      ],
+      "orientation": [
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "num_joints": 4
+     },
+     {
+      "def": "#529",
+      "name": "husky_5",
+      "model": null,
+      "controller": "drive_forward",
+      "type": "Robot",
+      "position": [
+       37.58141326904297,
+       18.0,
+       0.13199499249458313
+      ],
+      "orientation": [
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "num_joints": 4
+     },
+     {
+      "def": "#611",
+      "name": "husky_6",
+      "model": null,
+      "controller": "drive_forward",
+      "type": "Robot",
+      "position": [
+       37.58141326904297,
+       30.0,
+       0.13199499249458313
+      ],
+      "orientation": [
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "num_joints": 4
+     },
+     {
+      "def": "#693",
+      "name": "husky_7",
+      "model": null,
+      "controller": "drive_forward",
+      "type": "Robot",
+      "position": [
+       37.58141326904297,
+       42.0,
+       0.13199499249458313
+      ],
+      "orientation": [
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "num_joints": 4
+     },
+     {
+      "def": "#775",
+      "name": "harness_supervisor",
+      "model": null,
+      "controller": "harness_supervisor",
+      "type": "Robot",
+      "position": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "orientation": [
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "num_joints": 0
+     }
+    ]
+   },
+   "ms": 2163
+  },
+  "step_200": {
+   "status": 503,
+   "bytes": 45,
+   "ctype": "application/json",
+   "body": {
+    "error": "supervisor RPC failed: timed out"
+   },
+   "ms": 120003
+  },
+  "robots_after_step": {
+   "status": 503,
+   "bytes": 78,
+   "ctype": "application/json",
+   "body": {
+    "error": "supervisor not connected (load a world with with_supervisor=true)"
+   },
+   "ms": 3114
+  },
+  "reset": {
+   "status": 503,
+   "bytes": 78,
+   "ctype": "application/json",
+   "body": {
+    "error": "supervisor not connected (load a world with with_supervisor=true)"
+   },
+   "ms": 3109
+  },
+  "step_after_reset": {
+   "status": 503,
+   "bytes": 78,
+   "ctype": "application/json",
+   "body": {
+    "error": "supervisor not connected (load a world with with_supervisor=true)"
+   },
+   "ms": 3118
+  },
+  "robots_after_reset": {
+   "status": 503,
+   "bytes": 78,
+   "ctype": "application/json",
+   "body": {
+    "error": "supervisor not connected (load a world with with_supervisor=true)"
+   },
+   "ms": 3106
+  },
+  "sim_state": {
+   "status": 200,
+   "bytes": 735,
+   "ctype": "application/json",
+   "body": {
+    "world": "O:\\omnisim-ab\\armA\\projects\\samples\\demos\\worlds\\physics\\newton_husky_swarm_drive.wbt",
+    "running": true,
+    "exit_code": null,
+    "load_ok": false,
+    "load_ms": 13743,
+    "load_state": "failed",
+    "load_started_at": 1786542845.778181,
+    "load_completed_at": 1786542859.535274,
+    "supervisor_connected": false,
+    "supervisor_connected_at": null,
+    "supervisor_bind": {
+     "status": "connected",
+     "world": "O:\\omnisim-ab\\armA\\projects\\samples\\demos\\worlds\\physics\\newton_husky_swarm_drive.wbt",
+     "elapsed_s": 13.7,
+     "detail": ""
+    },
+    "sim_time_ms": null,
+    "basic_time_step_ms": null,
+    "sim_time_source": "supervisor not connected",
+    "binary": "O:\\omnisim-ab\\armA\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+    "webots_home": "O:\\omnisim-ab\\armA"
+   },
+   "ms": 2
+  },
+  "capture_load": {
+   "status": null,
+   "error": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+   "ms": 2030
+  },
+  "capture_shot_bare": {
+   "status": null,
+   "error": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+   "ms": 2019
+  },
+  "capture_shot_relname": {
+   "status": null,
+   "error": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+   "ms": 2026
+  },
+  "capture_shot_relsubdir": {
+   "status": null,
+   "error": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+   "ms": 2020
+  },
+  "capture_shot_bad": {
+   "status": null,
+   "error": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+   "ms": 2018
+  }
+ }
+}

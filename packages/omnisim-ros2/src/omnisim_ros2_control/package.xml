@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>omnisim_ros2_control</name>
+  <version>0.1.0</version>
+  <description>
+    ros2_control hardware interface for the OmniSim robotics simulator (Tier 3).
+    Presents an OmniSim robot to controller_manager as ordinary hardware, so stock
+    ros2_control controllers -- and therefore Nav2 and MoveIt -- drive it without
+    knowing OmniSim exists. State is read from the OmniSim World Harness
+    (GET /robot/&lt;def&gt;/joints); commands go to the robot's own bridge
+    (POST /set_velocity; joint streams to POST /servo_joint_positions when the
+    bridge advertises capabilities.servo, else POST /set_joint_positions). The
+    OmniSim engine itself carries no ROS dependency.
+  </description>
+
+  <maintainer email="info@omnilink-agents.com">OmniLink</maintainer>
+  <license file="LICENSE">Apache-2.0</license>
+
+  <url type="repository">https://github.com/omnilink-tech/omnisim</url>
+  <url type="bugtracker">https://github.com/omnilink-tech/omnisim/issues</url>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>hardware_interface</depend>
+  <depend>pluginlib</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+
+  <!-- The worked example: diff_drive_controller on the Husky. Runtime only -
+       nothing here links against them. -->
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>diff_drive_controller</exec_depend>
+  <exec_depend>joint_state_broadcaster</exec_depend>
+  <exec_depend>joint_trajectory_controller</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>xacro</exec_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <hardware_interface plugin="${prefix}/omnisim_ros2_control_plugin.xml"/>
+  </export>
+</package>

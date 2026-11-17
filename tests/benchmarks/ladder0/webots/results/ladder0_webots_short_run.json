@@ -1,0 +1,87 @@
+{
+  "arm": "webots",
+  "engine": "upstream Webots R2025a",
+  "generated_utc": "2026-08-12T15:07:11Z",
+  "fault": "short_run",
+  "rows": [
+    {
+      "rung": 0,
+      "sim": "webots",
+      "fault": "short_run",
+      "title": "empty world loads, steps, exits clean",
+      "measured": {
+        "steps": 125.0,
+        "sim_time_end": 0.5,
+        "exit_code": 0.0,
+        "n_samples": 125
+      },
+      "checks": [
+        {
+          "name": "steps_completed",
+          "measured": 125.0,
+          "expected": 250.0,
+          "tol": 0.0,
+          "unit": "steps",
+          "rel": false,
+          "error": -125.0,
+          "margin": -125.0,
+          "ok": false,
+          "why": "the controller must complete every step it asked for; a run that exits 0 having stepped zero times is the stale-libController signature, and it looks identical to a pass",
+          "key": "steps"
+        },
+        {
+          "name": "exit_code",
+          "measured": 0.0,
+          "expected": 0.0,
+          "tol": 0.0,
+          "unit": "rc",
+          "rel": false,
+          "error": 0.0,
+          "margin": 0.0,
+          "ok": true,
+          "why": "a clean exit is part of the rung",
+          "key": "exit_code"
+        },
+        {
+          "name": "finite_clock",
+          "measured": 0.5,
+          "expected": 1.0,
+          "tol": 0.008,
+          "unit": "s",
+          "rel": false,
+          "error": -0.5,
+          "margin": -0.492,
+          "ok": false,
+          "why": "the simulated clock must advance by steps x dt",
+          "key": "sim_time_end"
+        }
+      ],
+      "wall": {
+        "startup_s": 4.506331443786621,
+        "total_s": 4.887530326843262,
+        "step_s": 0.01813530921936035
+      },
+      "passed": false,
+      "meta": {
+        "sim": "webots",
+        "rung": 0,
+        "fault": "short_run",
+        "engine": "upstream Webots R2025a",
+        "webots_home": "/opt/upstream-webots/R2025a",
+        "port": 1604,
+        "error": null,
+        "exit_code": 0,
+        "timed_out": false,
+        "proc_t0": 1786547230.1574185,
+        "proc_t1": 1786547235.0449488,
+        "world": "o:\\omnisim\\tests\\benchmarks\\ladder0\\webots\\worlds\\rung0.wbt",
+        "cmd": "wsl.exe -e bash /mnt/o/omnisim/tests/benchmarks/ladder0/webots/run_cell.sh 0 short_run /mnt/o/omnisim/tests/benchmarks/ladder0/webots/results/rung0_short_run /mnt/o/omnisim/tests/benchmarks/ladder0/webots/worlds/rung0.wbt 120 1604",
+        "engine_version": "R2025a",
+        "engine_sha256_16": "c12c65e8680b579d",
+        "engine_complaints": [
+          "WARNING: It is not recommended to run Webots as root."
+        ]
+      }
+    }
+  ]
+}

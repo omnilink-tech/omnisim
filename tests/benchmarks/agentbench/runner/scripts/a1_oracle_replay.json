@@ -1,0 +1,98 @@
+{
+  "schema": "agentbench/script/v1",
+  "name": "a1_oracle_replay",
+  "description": "A1's known-good solution, expressed as tool calls through the SHELL tool set. This is the oracle re-expressed as a 'model': it proves the task is passable through the surface an LLM actually has, which is a stronger claim than the Python-level oracle makes. The world text is byte-for-byte the oracle's emitter output with the URDF url replaced by a placeholder. Declared token usage is SYNTHETIC (a replay has no list price, so the row's usd is null).",
+  "turns": [
+    {
+      "text": "Ten Huskies that move randomly, plus proof they moved. First: what is in my working directory, and where does the Husky URDF live?",
+      "usage": {
+        "tokens_in": 3500,
+        "tokens_out": 210
+      },
+      "tool_calls": [
+        {
+          "name": "list_dir",
+          "arguments": {
+            "path": "."
+          }
+        },
+        {
+          "name": "list_dir",
+          "arguments": {
+            "path": "{{REPO}}/projects/robots/clearpath/husky_description/urdf"
+          }
+        }
+      ]
+    },
+    {
+      "text": "husky.urdf is there. I will author one world with ten URDFRobot blocks on a 12 m ring inside a 60x60 m arena, drive each with the shipped husky_random controller and supervisor TRUE (its position-based stuck detection only runs for a supervisor), and pin newtonSolver \"mujoco\" -- XPBD has no bounded lateral wheel slip, so a skid-steer pivot jams all four wheels and the robots never leave spawn. Spawn headings are spread around the ring so the net displacement bearings are not a parade.",
+      "usage": {
+        "tokens_in": 4200,
+        "tokens_out": 2600
+      },
+      "tool_calls": [
+        {
+          "name": "write_file",
+          "arguments": {
+            "path": "husky_swarm_10.wbt",
+            "content": "#VRML_SIM R2025a utf8\n\n# Ten Huskies on a random walk. Built for the AgentBench A1 prompt:\n# \"Build me a scene with 10 Huskies in it and let them move randomly, and\n#  show me proof they actually moved.\"\n\nEXTERNPROTO \"omnisim://projects/objects/floors/protos/RectangleArena.proto\"\nEXTERNPROTO \"omnisim://projects/appearances/protos/Asphalt.proto\"\nEXTERNPROTO \"omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto\"\nEXTERNPROTO \"omnisim://projects/objects/lights/protos/OmniSimSun.proto\"\nEXTERNPROTO \"omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto\"\n\nWorldInfo {\n  basicTimeStep 32\n  title \"Ten Huskies, random walk\"\n  # A skid-steer pivot scrubs all four wheels sideways at once. XPBD's soft\n  # positional contact has no bounded lateral slip, so the wheels jam and the\n  # Huskies never leave their spawn. SolverMuJoCo slips correctly.\n  newtonSolver \"mujoco\"\n  # Arena walls have to be Newton collision surfaces or the Huskies drive out\n  # of the world.\n  newtonStatics TRUE\n  # Even sub-step count: the CUDA-graph replay is disabled on an odd one.\n  newtonSubsteps 6\n}\nViewpoint {\n  orientation 0.000000 1.000000 0.000000 1.570796\n  position 0.000 0.000 90.000\n}\nOmniSimSky { }\nDEF SUN OmniSimSun { }\nDEF SUN_MARKER OmniSimSunMarker { }\n\nRectangleArena {\n  floorSize 60 60\n  wallHeight 0.6\n  floorAppearance Asphalt {\n    colorOverride 0.55 0.57 0.60\n  }\n}\n\nURDFRobot {\n  url \"{{HUSKY_URDF}}\"\n  translation 12.0000 0.0000 0.2\n  rotation 0 0 1 -0.47852\n  name \"husky_0\"\n  controller \"husky_random\"\n  supervisor TRUE\n}\n\nURDFRobot {\n  url \"{{HUSKY_URDF}}\"\n  translation 9.7082 7.0534 0.2\n  rotation 0 0 1 0.86287\n  name \"husky_1\"\n  controller \"husky_random\"\n  supervisor TRUE\n}\n\nURDFRobot {\n  url \"{{HUSKY_URDF}}\"\n  translation 3.7082 11.4127 0.2\n  rotation 0 0 1 1.42231\n  name \"husky_2\"\n  controller \"husky_random\"\n  supervisor TRUE\n}\n\nURDFRobot {\n  url \"{{HUSKY_URDF}}\"\n  translation -3.7082 11.4127 0.2\n  rotation 0 0 1 2.38366\n  name \"husky_3\"\n  controller \"husky_random\"\n  supervisor TRUE\n}\n\nURDFRobot {\n  url \"{{HUSKY_URDF}}\"\n  translation -9.7082 7.0534 0.2\n  rotation 0 0 1 2.75875\n  name \"husky_4\"\n  controller \"husky_random\"\n  supervisor TRUE\n}\n\nURDFRobot {\n  url \"{{HUSKY_URDF}}\"\n  translation -12.0000 0.0000 0.2\n  rotation 0 0 1 2.75996\n  name \"husky_5\"\n  controller \"husky_random\"\n  supervisor TRUE\n}\n\nURDFRobot {\n  url \"{{HUSKY_URDF}}\"\n  translation -9.7082 -7.0534 0.2\n  rotation 0 0 1 3.49098\n  name \"husky_6\"\n  controller \"husky_random\"\n  supervisor TRUE\n}\n\nURDFRobot {\n  url \"{{HUSKY_URDF}}\"\n  translation -3.7082 -11.4127 0.2\n  rotation 0 0 1 3.87451\n  name \"husky_7\"\n  controller \"husky_random\"\n  supervisor TRUE\n}\n\nURDFRobot {\n  url \"{{HUSKY_URDF}}\"\n  translation 3.7082 -11.4127 0.2\n  rotation 0 0 1 4.85433\n  name \"husky_8\"\n  controller \"husky_random\"\n  supervisor TRUE\n}\n\nURDFRobot {\n  url \"{{HUSKY_URDF}}\"\n  translation 9.7082 -7.0534 0.2\n  rotation 0 0 1 6.24684\n  name \"husky_9\"\n  controller \"husky_random\"\n  supervisor TRUE\n}\n"
+          }
+        }
+      ]
+    },
+    {
+      "text": "Structural check before I spend time simulating: ten robot blocks, the solver pin, and the controller wiring.",
+      "usage": {
+        "tokens_in": 8000,
+        "tokens_out": 300
+      },
+      "tool_calls": [
+        {
+          "name": "run_shell",
+          "arguments": {
+            "command": "grep -c 'URDFRobot {' husky_swarm_10.wbt; grep -c 'controller \"husky_random\"' husky_swarm_10.wbt; grep -c 'supervisor TRUE' husky_swarm_10.wbt; grep -n 'newtonSolver' husky_swarm_10.wbt"
+          }
+        }
+      ]
+    },
+    {
+      "text": "Ten blocks, ten controllers, ten supervisors, solver pinned. Now run it headless and let it actually step -- a world that parses is not a world that moves.",
+      "usage": {
+        "tokens_in": 9000,
+        "tokens_out": 260
+      },
+      "tool_calls": [
+        {
+          "name": "run_shell",
+          "arguments": {
+            "command": "python -m omnisim run-headless '{{SCRATCH}}/husky_swarm_10.wbt' --duration 45",
+            "cwd": "{{REPO}}",
+            "timeout_s": 300
+          }
+        }
+      ]
+    },
+    {
+      "text": "Reading the engine's own log back rather than trusting the runner's summary: did the physics actually advance, and which backend drove it?",
+      "usage": {
+        "tokens_in": 10000,
+        "tokens_out": 240
+      },
+      "tool_calls": [
+        {
+          "name": "run_shell",
+          "arguments": {
+            "command": "echo -n 'physics step lines: '; grep -c 'WbNewtonBackend] step' \"$OMNISIM_LOG_PATH\" || true; echo -n 'world-finalise lines: '; grep -c 'world finalised' \"$OMNISIM_LOG_PATH\" || true; echo -n 'ERROR lines: '; grep -c '^ERROR' \"$OMNISIM_LOG_PATH\" || true; echo 'backend sidecar:'; cat \"$OMNISIM_LOG_PATH.newton.json\" 2>/dev/null || echo 'no newton sidecar'"
+          }
+        }
+      ]
+    },
+    {
+      "text": "Built husky_swarm_10.wbt: ten Huskies (husky.urdf) on a 12 m ring in a 60x60 m arena, each running the shipped husky_random walk with supervisor TRUE, under newtonSolver \"mujoco\" with newtonStatics and an even newtonSubsteps so the skid-steer wheels do not jam. Proof, from the engine's own log rather than from my expectations: the world loads and reaches Newton world-finalize, the backend sidecar reports backend=newton solver=MuJoCo degraded=false, the log's ERROR count is zero, and the physics step counter printed above is what the run actually advanced -- the counts are quoted verbatim in the turn above rather than restated here.",
+      "usage": {
+        "tokens_in": 11000,
+        "tokens_out": 420
+      }
+    }
+  ]
+}

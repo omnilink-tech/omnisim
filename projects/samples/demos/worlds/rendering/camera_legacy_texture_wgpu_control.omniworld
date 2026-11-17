@@ -1,0 +1,117 @@
+#OMNISIM R2025a utf8
+
+# THE CONTROL ARM for camera_legacy_texture_wgpu_smoke.omniworld: byte-for-byte the same
+# world with the `texture ImageTexture { ... }` field, and NOTHING else, removed. So the
+# board renders flat `Material.diffuseColor`, which is exactly what the wgpu renderer
+# produced for the TEXTURED world before P11 -- which is why "gate == control" is the red
+# arm and "gate != control" is the green one.
+#
+# P11 CONTROL WORLD (docs/developer/wren-deletion-runbook.md) -- a wgpu Camera pointed at a
+# colour-checker chart carried by a LEGACY `Appearance`, not a `PBRAppearance`.
+#
+# WHY IT HAD TO BE AUTHORED. Every texture-upload path in OmWgpuSceneRenderer.cpp sat
+# inside an `if (pbr)` guard, so a plain `Appearance { material Material {} texture
+# ImageTexture {} }` never had its image uploaded and the surface rendered as a flat,
+# LIT `Material.diffuseColor` where WREN shows the picture. No existing test could catch
+# it: `camera_color_spherical` and `camera_noise_mask` do put a chart on a legacy
+# Appearance, but their Cameras take Camera.wrl's default backend and never reach the
+# wgpu collector, and the ONE tracked world with a wgpu Camera (pen_wgpu_camera) uses
+# white256.png -- structurally incapable of going red.
+#
+# WHAT THE GATE ASSERTS, and why the diffuseColor is deliberately NOT white:
+#   RED       OMNISIM_WGPU_LEGACY_TEXTURE=0 -> this world's camera image is IDENTICAL to
+#             the sibling control camera_legacy_texture_wgpu_control.omniworld (the same
+#             scene with the `texture` field and nothing else removed). i.e. the texture
+#             contributes exactly nothing, which is what shipped before P11.
+#   GREEN     default -> the two differ, and the chart's own colours are recoverable from
+#             the image.
+#   WHITE-FORCING  the chart carries `diffuseColor 0.25 0.65 0.30`. WREN forces a textured
+#             Material's diffuseColor to WHITE (OmMaterial.cpp:151-152) so the picture is
+#             shown at full saturation; a port that uploads the texture but skips that
+#             forcing renders the whole chart tinted green. The gate counts DISTINCT hues
+#             and asserts a strongly red-dominant sample exists -- which a green-tinted
+#             chart cannot produce.
+#
+# Driven by the `camera_cloth_wgpu_smoke` controller (the generic wgpu-Camera sampler:
+# device name and sample steps come from the environment).
+#
+# Nothing here moves, so the two sample steps are close together; the animation assertion
+# is not part of this case.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 16
+  coordinateSystem "ENU"
+  title "P11 control -- the same scene with the texture field removed"
+}
+Viewpoint {
+  position -2.6 0 1.0
+  orientation 0 0 1 0
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+# The chart. A legacy `Appearance` + `Material` + `ImageTexture` -- the exact node
+# combination P11 is about. The board is a Box rather than a Plane so it is lit from the
+# front by the sun regardless of the up-axis convention.
+DEF CHART Solid {
+  translation 0 0 1.0
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          diffuseColor 0.25 0.65 0.30
+        }
+      }
+      geometry Box {
+        size 0.05 2.0 1.0
+      }
+    }
+  ]
+  name "chart"
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.36 0.40
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 8 8 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 8 8 0.1
+  }
+}
+# Camera rig: local +X is forward, so an identity rotation looks along world +X, straight
+# at the chart from 2.2 m out at the board's own height.
+DEF CAM_RIG Robot {
+  translation -2.2 0 1.0
+  children [
+    Camera {
+      name "chart_cam"
+      width 96
+      height 72
+      fieldOfView 0.9
+      near 0.05
+      far 20.0
+      renderBackend "wgpu"
+    }
+  ]
+  name "chart_cam_rig"
+  controller "camera_cloth_wgpu_smoke"
+  supervisor FALSE
+}

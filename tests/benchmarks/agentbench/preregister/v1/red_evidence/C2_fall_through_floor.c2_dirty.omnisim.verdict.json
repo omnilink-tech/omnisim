@@ -1,0 +1,322 @@
+{
+  "schema": "agenticsimbench/red-evidence/v1",
+  "suite": "agenticsimbench/v1",
+  "task": "C2_fall_through_floor",
+  "sim": "omnisim",
+  "fixture": "c2_dirty",
+  "fixture_kind": "targeted_live_adapter_evidence_fixture",
+  "expected_failures": [
+    "C2.1"
+  ],
+  "observed_failures": [
+    "C2.1"
+  ],
+  "outcome": "FAIL",
+  "qualifies_as_non_null_red_evidence": true,
+  "generated_utc": "2026-08-13T18:06:39.636110+00:00",
+  "engine_binary": {
+    "path": "msys64\\mingw64\\bin\\omnisim-bin.exe",
+    "sha256": "cbd80861c9f0d314f9760a39abc0f686ce161cac74337f80c41f5e2b5e0b836d"
+  },
+  "sources": [
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\run_final_red_fixtures.py",
+      "sha256": "fca4717c0fbf8217c9cf53676f5a653dc350960a3f1e3ca2340a528fbb158b9a"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\graders\\c2_core.py",
+      "sha256": "c56c983f0b786fd15248d5b59ba55bf713211250b01417571205f5d12fcdbeb5"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\tasks\\C2_fall_through_floor\\meta.json",
+      "sha256": "248bb48687a1fa454228fbb45f776d845bc66157e135fb0eb308cdad4fa73449"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\agents\\oracle_c2.py",
+      "sha256": "965fa7fa6530e726d2bc895bc4bfbc5be15a53b4131c9858021731fe8f7311ff"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\tasks\\C2_fall_through_floor\\initial\\fall_through.wbt",
+      "sha256": "eaa283643eedd92d40991a8b3f7921becc00062a73c4605b9f1a23f6b404e2ab"
+    }
+  ],
+  "staged_world_sha256": "a8b3658aee6354927eac7b519a708d797e1e0c816e47ded6b94d7c0d6ec653e3",
+  "answer": null,
+  "view": null,
+  "attribution_before_deliberate_strip": null,
+  "verdict": {
+    "task": "C2_fall_through_floor",
+    "outcome": "FAIL",
+    "progress": 3,
+    "progress_name": "artifact_runs",
+    "assertions": {
+      "C2.1": {
+        "ok": false,
+        "what": "the run is clean",
+        "measured": {
+          "exit code": 0,
+          "ERROR: lines": 1,
+          "recorder complete": true,
+          "timed out": false
+        },
+        "threshold": {
+          "exit code": 0,
+          "ERROR: lines": 0
+        },
+        "detail": "ERROR: 'O:/omnisim/.agentbench-v1-red-work/final-provenance-c2_dirty/project/worlds/_agentbench_phaseB_fall_through_floor.wbt':19:3: error: Skipped unknown 'agentbenchIntentionalUnknownField' field in WorldInfo node.",
+        "basis": "mixed",
+        "attested": [
+          "error stream + exit code: the per-run engine log at $OMNISIM_LOG_PATH plus the process exit code from the headless launch"
+        ],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "clean run",
+            "how_to_fail": "a non-zero exit code, an error-class line, a timeout, or a driver that never reached its target simulated time",
+            "witness": "the adapter captured the exit code AND the simulator's own error stream",
+            "witness_present": true,
+            "detail": ""
+          }
+        ]
+      },
+      "C2.2": {
+        "ok": true,
+        "what": "the robot stays up",
+        "measured": {
+          "min z over all samples (m)": 0.7363,
+          "z_end (m)": 0.7497
+        },
+        "threshold": {
+          "z (m)": "> -0.10"
+        },
+        "detail": "",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "vertical floor",
+            "how_to_fail": "one z sample at or below -0.10 m",
+            "witness": ">= 1 z sample",
+            "witness_present": true,
+            "detail": ""
+          }
+        ]
+      },
+      "C2.3": {
+        "ok": true,
+        "what": "it is still a dynamic body",
+        "measured": {
+          "Physics node attached": true
+        },
+        "threshold": true,
+        "detail": "",
+        "basis": "mixed",
+        "attested": [
+          "dynamics model: type=Robot num_joints=0 (recorder roster)"
+        ],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "dynamics attached",
+            "how_to_fail": "the agent 'fixed' the fall by removing the body's dynamics",
+            "witness": "the adapter answers 'is this body dynamic' either way, rather than returning None",
+            "witness_present": true,
+            "detail": ""
+          }
+        ]
+      },
+      "C2.4": {
+        "ok": true,
+        "what": "gravity still acts on it, and it came to rest",
+        "measured": {
+          "total descent (m)": 0.226,
+          "z spread over the last 1.0 s (m)": 0.0
+        },
+        "threshold": {
+          "descent (m)": ">= 0.10",
+          "rest band (m)": "<= 0.020"
+        },
+        "detail": "",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "descended then rested",
+            "how_to_fail": "a body pinned in place (no descent) or still moving at the end",
+            "witness": ">= 2 samples, and a recorded window longer than the 1.0 s rest test",
+            "witness_present": true,
+            "detail": "recorded 4.992 s"
+          }
+        ]
+      },
+      "C2.5": {
+        "ok": true,
+        "what": "it rests on the floor surface",
+        "measured": {
+          "z_end (m)": 0.7497,
+          "expected rest z (m)": 0.75,
+          "floor top z (m)": 0.55,
+          "robot half-height (m)": 0.2,
+          "error (m)": 0.0003
+        },
+        "threshold": {
+          "error (m)": "<= 0.15"
+        },
+        "detail": "",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "rests on the surface",
+            "how_to_fail": "a body resting more than 0.15 m from the top of the floor it built",
+            "witness": "world-space AABBs for BOTH the body and the floor at a frozen t=0",
+            "witness_present": true,
+            "detail": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)"
+          }
+        ]
+      }
+    },
+    "n_pass": 4,
+    "n_total": 5,
+    "failed_assertion": "C2.1",
+    "failed_assertions": [
+      "C2.1"
+    ],
+    "self_verified": false,
+    "attribution": {
+      "backend": "newton",
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "degraded": false,
+      "finalised": true,
+      "source": "<log>.newton.json sidecar"
+    },
+    "measurements": {
+      "phase_b": {
+        "world": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-c2_dirty\\project\\worlds\\fall_through_floor.wbt",
+        "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-c2_dirty\\project\\worlds\\_agentbench_phaseB_fall_through_floor.wbt",
+        "rc": 0,
+        "wall_s": 35.323417799998424,
+        "timed_out": false,
+        "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-c2_dirty\\phaseB\\phaseB_engine.log",
+        "sidecar": {
+          "backend": "newton",
+          "degraded": false,
+          "finalised": true,
+          "runtime": {
+            "device": "cpu",
+            "mujoco": "3.8.1",
+            "mujoco_warp": "3.8.0.3",
+            "newton": "1.2.0",
+            "warp": "1.13.0"
+          },
+          "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+          "present": true
+        },
+        "recorder_complete": true,
+        "rows": 313,
+        "n_robots": 1,
+        "n_tracks": 1,
+        "n_link_tracks": 0,
+        "n_solid_tracks": 0,
+        "links_truncated": false,
+        "scene_scan": {
+          "supported": true,
+          "cap": 128,
+          "found": 0,
+          "bounded": 0,
+          "truncated": false
+        },
+        "run_contacts": {
+          "supported": true,
+          "every_n_steps": 8,
+          "steps_sampled": 40,
+          "total_observed": 152,
+          "distinct_named": 152,
+          "unpaired": 0,
+          "truncated": false,
+          "error": null
+        },
+        "run_contact_pairs": [
+          "crate_bot/floor"
+        ],
+        "attempts_used": 1,
+        "launch_backend_env": {},
+        "tamper": [],
+        "error": null
+      }
+    },
+    "artifacts": {
+      "world": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-c2_dirty\\project\\worlds\\fall_through_floor.wbt"
+    },
+    "notes": [],
+    "basis": {
+      "core-physical": [
+        "C2.2",
+        "C2.4",
+        "C2.5"
+      ],
+      "mixed": [
+        "C2.1",
+        "C2.3"
+      ]
+    },
+    "vacuous_assertions": {}
+  },
+  "run": {
+    "world": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-c2_dirty\\project\\worlds\\fall_through_floor.wbt",
+    "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-c2_dirty\\project\\worlds\\_agentbench_phaseB_fall_through_floor.wbt",
+    "rc": 0,
+    "wall_s": 35.323417799998424,
+    "timed_out": false,
+    "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-c2_dirty\\phaseB\\phaseB_engine.log",
+    "sidecar": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.8.1",
+        "mujoco_warp": "3.8.0.3",
+        "newton": "1.2.0",
+        "warp": "1.13.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "present": true
+    },
+    "recorder_complete": true,
+    "rows": 313,
+    "n_robots": 1,
+    "n_tracks": 1,
+    "n_link_tracks": 0,
+    "n_solid_tracks": 0,
+    "links_truncated": false,
+    "scene_scan": {
+      "supported": true,
+      "cap": 128,
+      "found": 0,
+      "bounded": 0,
+      "truncated": false
+    },
+    "run_contacts": {
+      "supported": true,
+      "every_n_steps": 8,
+      "steps_sampled": 40,
+      "total_observed": 152,
+      "distinct_named": 152,
+      "unpaired": 0,
+      "truncated": false,
+      "error": null
+    },
+    "run_contact_pairs": [
+      "crate_bot/floor"
+    ],
+    "attempts_used": 1,
+    "launch_backend_env": {},
+    "tamper": [],
+    "error": null
+  },
+  "secondary_run": null
+}

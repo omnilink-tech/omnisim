@@ -1,0 +1,11 @@
+render: track rigid and deforming surfaces in temporal antialiasing
+
+Reproject temporal history with per-object transforms and previous deformation
+vertices. Reject new or unmatched surfaces, match MSAA motion/depth samples,
+and skip the extra draw pass for unchanged opaque geometry. Keep invariant
+vertex precision confined to the motion-enabled HDR viewport so sensors and
+TAA-off rendering retain their original pixels.
+
+Validated with 13 GPU shader cases, CPU history checks, 8 engine/renderer checks,
+1290 unit tests, documentation and license checks, and exact three-scene controls.
+Record bounded moving-object and live-cloth evidence and the comparison hatch.

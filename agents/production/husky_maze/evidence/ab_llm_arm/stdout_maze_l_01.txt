@@ -1,0 +1,7 @@
+[chat] using profile 'Husky Maze' (id=6f9ab49b-16fd-4ad5-b2a9-0be55b6f70ba) with 28 tools, engine=g1-engine
+[chat] pre-state: pose=(-10.00,+10.00) goal_reached=False
+[chat] usage baseline: input_units_24h=0 output_units_24h=20 credits_24h=0.0000
+[chat] sending: 'Read your mission brief with get_mission, plan a route, and drive the husky to the goal. Claim completion only once you are there.'
+
+[chat] turn 1: chat() raised after retries: OmniLinkAPIError: OmniLink API error [400]: invalid_grant: Invalid grant: account not found
+  Response body: {"error": "invalid_grant: Invalid grant: account not found", "requestId": "b5bf3e4d-c2b8-4283-bc33-1960982572a6"}

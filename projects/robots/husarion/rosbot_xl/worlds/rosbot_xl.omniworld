@@ -1,0 +1,50 @@
+#OMNISIM R2025a utf8
+
+# Husarion Rosbot XL baseline showcase, loaded from URDF via URDFRobot.
+# Replaces the legacy PROTO-based rosbot_xl.omniworld + its lidar/IMU slots.
+#
+# URDF was rendered from husarion/rosbot_ros (jazzy branch) xacro with
+# an empty components_config so the chassis ships standalone — sensor
+# bring-up belongs in a later pass when devices/ gains URDF-compatible
+# attachment.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Husarion Rosbot XL (URDF)"
+  info [
+    "Husarion Rosbot XL imported from URDF (rosbot_ros jazzy xacro, rendered)."
+    "Mecanum drive. No controller attached."
+  ]
+}
+
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 3.964 -4.219 4.038
+  exposure 1.4
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 5 5
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.23
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../rosbot_description/urdf/rosbot_xl.urdf"
+  translation 0 0 0.08
+  name "rosbot_xl"
+  supervisor TRUE
+  controller "<none>"
+}

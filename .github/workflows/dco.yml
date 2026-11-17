@@ -1,0 +1,78 @@
+# Copyright 2026 OmniLink
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Developer Certificate of Origin check.
+#
+# CONTRIBUTING.md asks every commit to carry a `Signed-off-by:` line -- the DCO,
+# the same lightweight inbound-provenance mechanism the Linux kernel, Docker and
+# GitLab use. Until now that was documented and unenforced, which for a public
+# repository means the first outside contribution arrives unsigned and provenance
+# gets negotiated after the fact.
+#
+# Deliberately scoped to `pull_request` ONLY, never `push`. The DCO is about
+# INBOUND contributions; a maintainer committing straight to main is already the
+# copyright holder and gains nothing from certifying it to themselves. Running on
+# push would just paint main red.
+name: DCO
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  dco:
+    name: Signed-off-by on every commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need the PR's commits AND the base, so fetch enough history to walk
+          # the range rather than just the tip.
+          fetch-depth: 0
+
+      - name: Check every commit in the pull request
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          missing=0
+          # %H then the body, so a commit is examined whole. Merge commits are
+          # skipped: they are created by GitHub, not by the contributor.
+          for sha in $(git rev-list --no-merges "$BASE..$HEAD"); do
+            if ! git log -1 --format='%B' "$sha" | grep -qiE '^Signed-off-by: .+ <.+@.+>'; then
+              subject=$(git log -1 --format='%s' "$sha")
+              echo "::error::missing Signed-off-by: ${sha:0:12}  $subject"
+              missing=$((missing + 1))
+            fi
+          done
+          if [ "$missing" -gt 0 ]; then
+            echo ""
+            echo "$missing commit(s) are missing a Developer Certificate of Origin sign-off."
+            echo ""
+            echo "The DCO (https://developercertificate.org) is a one-line certification that"
+            echo "you wrote this or have the right to submit it under Apache-2.0. There is no"
+            echo "CLA to sign and no account to register."
+            echo ""
+            echo "Fix the whole branch in one command:"
+            echo "    git rebase --signoff ${BASE}"
+            echo "    git push --force-with-lease"
+            echo ""
+            echo "And for future commits: git commit -s"
+            exit 1
+          fi
+          echo "All commits carry a Signed-off-by line."

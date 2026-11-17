@@ -1,0 +1,25 @@
+{
+  "checked_utc": "2026-09-24T21:15:25.357708+00:00",
+  "build_id": "92551636-fc64-4f05-9379-db9bf5a38168",
+  "revision": "omnilink-00235-p5c",
+  "all_changed_public_files_match": true,
+  "measurements_unchanged": true,
+  "archive_checksums_unchanged": true,
+  "files": [
+    {
+      "path": "index.html",
+      "sha256": "bb75609ca984fb442a085448973b51c805099e5faea40c75c9f84ee654146edf",
+      "http": 200
+    },
+    {
+      "path": "benchmarks/robotics-control/index.html",
+      "sha256": "51ad071dda3b8217074c1f973d15adf1a5e2e17817e7e0ce01391c95fa52e02a",
+      "http": 200
+    },
+    {
+      "path": "benchmarks/robotics-control/results.json",
+      "sha256": "caf7c9c660861277af544251a2d412a04c61619d70daf6c50b787f563b857a52",
+      "http": 200
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+=== OmniSim Log Started (pid=65840): 2026-09-20 02:32:34 ===
+INFO: [main] stdio: stdout inherited from the launcher (handle type 3: 1=file 2=char/null 3=pipe); stdio left as given, no console attached
+INFO: [OmNewtonBackend] warp + newton imports OK; FFI smoke OK (newton.ModelBuilder()); helper module loaded -- not a backend verdict: the backend is chosen at world finalise (default physicsBackend "auto" resolves to Newton when the runtime is present); authoritative verdict: the <log>.newton.json sidecar
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/angle-framing/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/angle-framing/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmWgpuBackend] wgpu-native init OK (instance + adapter + device + queue)
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmWgpuSurface] on-screen surface created + configured (source=windows-hwnd)
+INFO: [OmView3D] wgpu main view tonemap: HDR linear-light + AgX (exposure 0.85)
+INFO: [OmniLight] progress overlay active
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 456 tris, BVH 0 ms, trace 17 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 18 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+21 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 17 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 8, child=body 9) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 8, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 7, child=body 8) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 6, child=body 7) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 5, child=body 6) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 3, child=body 4) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 2, child=body 3) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 17, child=body 18) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 17, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 16, child=body 17) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 15, child=body 16) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 14, child=body 15) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 12, child=body 13) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 11, child=body 12) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmNewtonBackend] step 1 dt=0.002s b0=(3.000,2.000,0.200) b1=(2.000,2.000,0.200) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.681,-0.000,0.348) b6=(-0.485,-0.000,0.308) b7=(-0.387,0.000,0.288) b8=(-0.317,0.000,0.295) b9=(-0.249,0.006,0.302) b10=(-0.249,-0.006,0.302) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.680,-0.000,0.348) b15=(0.484,-0.000,0.309) b16=(0.386,0.000,0.289) b17=(0.317,0.000,0.296) b18=(0.248,-0.006,0.302) b19=(0.248,0.006,0.302)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 456 tris, BVH 0 ms, trace 32 ms
+INFO: [OmNewtonBackend] step 30 dt=0.002s b0=(3.000,2.000,0.182) b1=(2.000,2.000,0.182) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.682,-0.000,0.347) b6=(-0.486,-0.000,0.306) b7=(-0.388,0.000,0.285) b8=(-0.318,0.000,0.291) b9=(-0.250,0.017,0.297) b10=(-0.250,-0.015,0.297) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.601,-0.004,0.403) b15=(0.404,0.002,0.369) b16=(0.305,0.005,0.352) b17=(0.238,0.007,0.333) b18=(0.171,-0.032,0.313) b19=(0.173,0.049,0.316)
+INFO: [OmNewtonBackend] step 60 dt=0.002s b0=(3.000,2.000,0.128) b1=(2.000,2.000,0.128) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.682,-0.001,0.347) b6=(-0.486,-0.000,0.305) b7=(-0.388,0.000,0.284) b8=(-0.319,0.000,0.290) b9=(-0.250,0.017,0.296) b10=(-0.250,-0.015,0.296) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.498,-0.001,0.432) b15=(0.300,0.006,0.403) b16=(0.201,0.010,0.389) b17=(0.146,0.012,0.346) b18=(0.092,-0.026,0.302) b19=(0.093,0.054,0.305)
+INFO: [OmNewtonBackend] step 120 dt=0.002s b0=(3.000,2.000,-0.085) b1=(2.000,2.000,-0.085) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.682,-0.001,0.347) b6=(-0.486,-0.000,0.305) b7=(-0.388,0.000,0.284) b8=(-0.319,0.000,0.290) b9=(-0.251,0.017,0.295) b10=(-0.250,-0.015,0.295) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.386,0.003,0.421) b15=(0.187,0.012,0.439) b16=(0.087,0.016,0.448) b17=(0.067,0.017,0.381) b18=(0.047,-0.022,0.315) b19=(0.047,0.058,0.316)
+INFO: [OmNewtonBackend] step 240 dt=0.002s b0=(3.000,2.000,-0.935) b1=(2.000,2.000,-0.935) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.682,-0.001,0.347) b6=(-0.486,-0.000,0.305) b7=(-0.388,0.000,0.284) b8=(-0.319,0.000,0.290) b9=(-0.251,0.017,0.295) b10=(-0.250,-0.015,0.295) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.380,0.004,0.420) b15=(0.182,0.012,0.450) b16=(0.083,0.016,0.465) b17=(0.084,0.016,0.395) b18=(0.084,-0.024,0.326) b19=(0.084,0.056,0.326)
+INFO: [OmNewtonBackend] step 480 dt=0.002s b0=(3.000,2.000,-4.330) b1=(2.000,2.000,-4.330) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.682,-0.001,0.347) b6=(-0.486,-0.000,0.305) b7=(-0.388,0.000,0.284) b8=(-0.319,0.000,0.290) b9=(-0.251,0.017,0.295) b10=(-0.250,-0.015,0.295) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.379,0.004,0.419) b15=(0.182,0.012,0.450) b16=(0.083,0.016,0.465) b17=(0.084,0.016,0.395) b18=(0.084,-0.024,0.326) b19=(0.084,0.056,0.326)
+INFO: [OmNewtonBackend] step 960 dt=0.002s b0=(-0.058,0.043,0.010) b1=(0.085,0.016,0.017) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.682,-0.001,0.347) b6=(-0.486,-0.000,0.305) b7=(-0.388,0.000,0.284) b8=(-0.319,0.000,0.290) b9=(-0.251,0.017,0.295) b10=(-0.250,-0.015,0.295) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.380,0.004,0.420) b15=(0.182,0.012,0.449) b16=(0.083,0.016,0.464) b17=(0.084,0.016,0.395) b18=(0.084,-0.024,0.326) b19=(0.084,0.056,0.326)
+INFO: [OmNewtonBackend] step 1920 dt=0.002s b0=(-0.058,0.043,0.010) b1=(0.085,0.016,0.017) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.682,-0.001,0.347) b6=(-0.486,-0.000,0.305) b7=(-0.388,0.000,0.284) b8=(-0.319,0.000,0.290) b9=(-0.251,0.017,0.295) b10=(-0.250,-0.015,0.295) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.349,0.005,0.408) b15=(0.173,0.012,0.314) b16=(0.085,0.016,0.266) b17=(0.085,0.016,0.196) b18=(0.086,-0.024,0.128) b19=(0.086,0.056,0.128)
+INFO: [OmNewtonBackend] step 3840 dt=0.002s b0=(-0.058,0.042,0.009) b1=(0.029,0.025,0.098) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.448,0.003,0.432) b6=(-0.318,0.020,0.281) b7=(-0.253,0.029,0.206) b8=(-0.213,0.033,0.149) b9=(-0.176,0.050,0.092) b10=(-0.173,0.015,0.092) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.309,0.009,0.387) b15=(0.115,0.020,0.338) b16=(0.018,0.025,0.314) b17=(0.019,0.025,0.244) b18=(0.020,-0.001,0.175) b19=(0.020,0.052,0.175)
+INFO: [OmniLight] probe volume live: 12x10x5 (600 probes, 576 valid), 456 tris, BVH 0 ms, trace 15 ms
+INFO: [OmNewtonBackend] step 7680 dt=0.002s b0=(-0.051,0.053,0.010) b1=(-0.035,0.041,0.022) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.682,-0.001,0.347) b6=(-0.486,-0.000,0.305) b7=(-0.388,0.000,0.284) b8=(-0.319,0.000,0.290) b9=(-0.251,0.017,0.295) b10=(-0.250,-0.015,0.295) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.356,0.009,0.411) b15=(0.157,0.025,0.420) b16=(0.058,0.034,0.424) b17=(0.058,0.034,0.355) b18=(0.059,-0.007,0.286) b19=(0.059,0.075,0.286)
+INFO: [OmNewtonBackend] step 15360 dt=0.002s b0=(-0.051,0.053,0.010) b1=(-0.035,0.041,0.022) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.682,-0.001,0.347) b6=(-0.486,-0.000,0.305) b7=(-0.388,0.000,0.284) b8=(-0.319,0.000,0.290) b9=(-0.251,0.017,0.295) b10=(-0.250,-0.015,0.295) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.356,0.009,0.411) b15=(0.157,0.025,0.420) b16=(0.058,0.034,0.424) b17=(0.058,0.034,0.355) b18=(0.059,-0.007,0.286) b19=(0.059,0.075,0.286)
+INFO: [OmNewtonBackend] step 30720 dt=0.002s b0=(-0.051,0.053,0.010) b1=(-0.035,0.041,0.022) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.682,-0.001,0.347) b6=(-0.486,-0.000,0.305) b7=(-0.388,0.000,0.284) b8=(-0.319,0.000,0.290) b9=(-0.251,0.017,0.295) b10=(-0.250,-0.015,0.295) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.356,0.009,0.411) b15=(0.157,0.025,0.420) b16=(0.058,0.034,0.424) b17=(0.058,0.034,0.355) b18=(0.059,-0.007,0.286) b19=(0.059,0.075,0.286)
+INFO: [OmNewtonBackend] step 61440 dt=0.002s b0=(-0.051,0.053,0.010) b1=(-0.034,0.041,0.022) b2=(-0.469,0.000,0.000) b3=(-0.469,0.000,0.079) b4=(-0.469,0.000,0.127) b5=(-0.682,-0.001,0.347) b6=(-0.486,-0.000,0.305) b7=(-0.388,0.000,0.284) b8=(-0.319,0.000,0.290) b9=(-0.251,0.017,0.295) b10=(-0.250,-0.015,0.295) b11=(0.469,0.000,0.000) b12=(0.469,0.000,0.079) b13=(0.469,0.000,0.127) b14=(0.356,0.009,0.411) b15=(0.157,0.025,0.420) b16=(0.058,0.034,0.424) b17=(0.058,0.034,0.355) b18=(0.059,-0.007,0.286) b19=(0.059,0.075,0.286)
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/insertion-angle/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/insertion-angle/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 456 tris, BVH 0 ms, trace 23 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 18 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+21 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 17 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 8, child=body 9) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 8, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 7, child=body 8) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 6, child=body 7) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 5, child=body 6) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 3, child=body 4) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 2, child=body 3) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 17, child=body 18) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 17, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 16, child=body 17) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 15, child=body 16) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 14, child=body 15) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 12, child=body 13) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 11, child=body 12) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 456 tris, BVH 0 ms, trace 35 ms
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 456 tris, BVH 0 ms, trace 19 ms
+INFO: sun_marker: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: aloha_replay: Terminating.
+INFO: harness_supervisor: Terminating.
+INFO: [OmNewtonBackend] world torn down (next load re-opens a fresh Newton world)
+INFO: sun_marker: Starting controller: python.exe -u sun_marker.py
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/insertion-side/config.json
+INFO: aloha_replay: Starting controller: python.exe -u aloha_replay.py --config O:/omnisim/.tmp/aloha-battery/insertion-side/config.json
+INFO: harness_supervisor: Starting controller: python.exe -u harness_supervisor.py --light
+INFO: [OmView3D] main view now rendering through the wgpu backend (renderBackend "wgpu").
+INFO: [OmniLight] probe volume live: 12x10x7 (840 probes, 840 valid), 456 tris, BVH 0 ms, trace 25 ms
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] world opened (implicit ground plane requested; added at finalize only if the world declared a Plane collider)
+INFO: [OmNewtonBackend] registered 18 dynamic + 3 static Newton bodies (1 of the statics on the world body) (+21 this pass) (statics: table, aloha_left, aloha_right)
+INFO: [OmNewtonBackend] inertia provenance: 17 declared, 1 from geometry, 0 from the mass preset
+INFO: [OmNewtonBackend] solver preference set to 'mujoco'
+INFO: [OmNewtonBackend] contact cone set to 'elliptic', impratio 10.000000
+INFO: [OmNewtonBackend] contact condim set to 6
+INFO: [OmNewtonBackend] noslip iterations set to 5
+INFO: [OmNewtonBackend] contact/solver params from WorldInfo: mu=3 ke=0 kd=0 iters=0 ls_iters=0
+INFO: [OmNewtonBackend] hinge joint 0 (parent=body 8, child=body 9) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 1 (parent=body 8, child=body 10) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 2 (parent=body 7, child=body 8) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 3 (parent=body 6, child=body 7) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 4 (parent=body 5, child=body 6) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 5 (parent=body 4, child=body 5) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 6 (parent=body 3, child=body 4) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 7 (parent=body 2, child=body 3) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 8 (parent=body 17, child=body 18) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[0.005, 0.065] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 9 (parent=body 17, child=body 19) axis=(0, 1, 0) anchor=(0.0687, 0, 0) effort=15 velLim=0.2 lim=[-0.065, -0.005] [motorized: kd=7.5]
+INFO: [OmNewtonBackend] hinge joint 10 (parent=body 16, child=body 17) axis=(1, 0, 0) anchor=(0.069744, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 11 (parent=body 15, child=body 16) axis=(0, 1, 0) anchor=(0.1, 0, 0) effort=80 velLim=5 lim=[-1.8675, 2.23402] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 12 (parent=body 14, child=body 15) axis=(1, 0, 0) anchor=(0.2, 0, 0) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 13 (parent=body 13, child=body 14) axis=(0, 1, 0) anchor=(0.05955, 0, 0.3) effort=80 velLim=5 lim=[-1.76278, 1.6057] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 14 (parent=body 12, child=body 13) axis=(0, 1, 0) anchor=(0, 0, 0.04805) effort=80 velLim=5 lim=[-1.85005, 1.25664] [motorized: kd=40]
+INFO: [OmNewtonBackend] hinge joint 15 (parent=body 11, child=body 12) axis=(0, 0, 1) anchor=(0, 0, 0.079) effort=80 velLim=5 lim=[-3.14158, 3.14158] [motorized: kd=40]
+INFO: [OmNewtonBackend] world finalised (solver=MuJoCo (cpu/mj_step, WorldInfo.newtonSolver) +condim=6 +noslip=5)
+INFO: [OmniLight] probe volume live: 22x17x7 (2618 probes, 2618 valid), 456 tris, BVH 0 ms, trace 32 ms
+INFO: [OmniLight] probe volume live: 12x10x6 (720 probes, 720 valid), 456 tris, BVH 0 ms, trace 21 ms

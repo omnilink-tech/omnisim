@@ -1,0 +1,12 @@
+{
+  "schema": "agenticsimbench/build-scale-freeze/v1",
+  "suite": "agenticsimbench/v1",
+  "frozen_utc": "2026-08-13",
+  "hash_rule": "sha256 over LF-normalised bytes",
+  "files": {
+    "preregister/v1/build_scale_spec.json": "4249e823bbf9fee5ca72b19a6489758f14588dc540939902fc5d8a8e45627a55",
+    "preregister/v1/build_scale_core.py": "e83a7897fe1f058d46d3842e1b9c6ebb50162069a164cdc25cd0031bbd7abd67",
+    "graders/test_build_scale_core.py": "c6a3ffe92fac7a4e8776bb3038f8011cb6b0a869d2066a65092923453ce7907e",
+    "preregister/v1/test_build_scale_freeze.py": "eb224337fcad9fb6d4230ee13e14c110f9cf227a818ae1f6576d5a2f17a5fa44"
+  }
+}

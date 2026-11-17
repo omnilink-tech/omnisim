@@ -1,0 +1,42 @@
+{
+  "name": "omnisim",
+  "version": "0.1.0",
+  "description": "Build, inspect, run, and debug OmniSim robotics worlds from ChatGPT and Codex.",
+  "author": {
+    "name": "OmniLink",
+    "email": "info@omnilink-agents.com",
+    "url": "https://www.omnilink-agents.com/omnisim"
+  },
+  "homepage": "https://github.com/omnilink-tech/omnisim",
+  "repository": "https://github.com/omnilink-tech/omnisim",
+  "license": "Apache-2.0",
+  "keywords": [
+    "robotics",
+    "simulation",
+    "mcp",
+    "ros2",
+    "agents"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "OmniSim",
+    "shortDescription": "Build and debug live robot simulations",
+    "longDescription": "Use plain-language requests to load an OmniSim world, inspect geometry and robots, frame the camera, capture screenshots, step physics, read contacts and diagnostics, and verify edits through the first-party World Harness.",
+    "developerName": "OmniLink",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "websiteURL": "https://www.omnilink-agents.com/omnisim",
+    "privacyPolicyURL": "https://www.omnilink-agents.com/privacy",
+    "termsOfServiceURL": "https://www.omnilink-agents.com/terms",
+    "defaultPrompt": [
+      "Build and verify a robot simulation from my description.",
+      "Inspect this OmniSim world and diagnose what is wrong.",
+      "Frame the robot, run the scene, and show me the result."
+    ],
+    "brandColor": "#FF5A1F"
+  },
+  "mcpServers": "./.mcp.json"
+}

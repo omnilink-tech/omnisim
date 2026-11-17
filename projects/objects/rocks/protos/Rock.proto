@@ -1,0 +1,163 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/rocks/protos/Rock.proto
+# keywords: exterior/obstacle
+# A boulder that sits flat on the ground: a lumpy dome cut off by the z = 0 plane, so it
+# rests on terrain without floating or sinking. `regular` is a ~20 cm stone, `flat` a
+# wide low slab. The lumps are generated, not sculpted, so the mesh follows `scale` exactly.
+# template language: javascript
+
+PROTO Rock [
+  field SFVec3f                     translation       0 0 0
+  field SFRotation                  rotation          0 0 1 0
+  field SFString                    name              "rock"
+  field SFString{"regular", "flat"} type              "regular"            # Defines the rock variant.
+  field SFFloat                     scale             1                    # Defines the scale of the rock.
+  field MFString                    texture           "omnisim://projects/default/worlds/textures/rock.jpg"  # Defines the texture used for the rock.
+  field SFColor                     color             1 1 1                # Defines the base color of the rock.
+  field SFNode                      physics           NULL                 # Is `Solid.physics`.
+  field SFBool                      locked            FALSE                # Is `Solid.locked`.
+]
+{
+  %<
+    const wantScale = fields.scale.value;
+    const scale = wantScale > 0 ? wantScale : fields.scale.defaultValue;
+    if (scale !== wantScale)
+      console.error('Rock: \'scale\' must be strictly positive. Reset to ' + scale + '.');
+
+    const flat = fields.type.value === 'flat';
+
+    // Half-extents of the dome before lumping. Chosen so that at scale 1 and a granite-ish
+    // density of 2500 kg/m3 the regular rock lands near 5 kg and the flat one near 70 kg
+    // (the volume of a half-ellipsoid is 2/3 pi abc).
+    const RX = flat ? 0.368 : 0.126;
+    const RY = flat ? 0.333 : 0.099;
+    const RZ = flat ? 0.109 : 0.094;
+
+    const SEGMENTS = 16;  // facets around the rock
+    const RINGS = 6;      // apex down to the ground rim
+
+    // Each ring carries one extra vertex: a duplicate of its first, sitting at the same
+    // place but with u = 1 instead of u = 0. Without it the last column of quads would run
+    // u from 0.94 back to 0 and squash a whole copy of the texture into one facet.
+    const WIDTH = SEGMENTS + 1;
+
+    // Low-frequency lumping. The azimuth multipliers are whole numbers, so the surface
+    // closes on itself at theta = 2 pi with no visible join. The hash term adds a little
+    // grit on top of the two smooth lobes.
+    const grit = (a, b) => {
+      const v = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
+      return v - Math.floor(v);
+    };
+
+    const lump = (theta, phi, i, r) => {
+      let k = 1;
+      k += 0.20 * Math.sin(3 * theta + 1.7) * Math.sin(2 * phi + 0.6);
+      k += 0.11 * Math.sin(5 * theta - 0.8) * Math.cos(3 * phi);
+      k += 0.05 * (grit(i % SEGMENTS, r) - 0.5);  // modulo keeps the seam pair identical
+      return k;
+    };
+
+    const coords = [];
+    const uvs = [];
+
+    // Apex.
+    coords.push({x: 0, y: 0, z: RZ * lump(0, 0, 0, 0)});
+    uvs.push({u: 0.5, v: 1});
+
+    // Rings from just below the apex down to the ground rim (phi = pi/2 exactly, z = 0).
+    for (let r = 1; r <= RINGS; ++r) {
+      const phi = 0.5 * Math.PI * r / RINGS;
+      const onRim = r === RINGS;
+      for (let i = 0; i < WIDTH; ++i) {
+        const theta = 2 * Math.PI * i / SEGMENTS;
+        const k = lump(theta, phi, i, r);
+        coords.push({
+          x: RX * k * Math.sin(phi) * Math.cos(theta),
+          y: RY * k * Math.sin(phi) * Math.sin(theta),
+          // Pin the last ring to the ground plane so the underside really is flat.
+          z: onRim ? 0 : RZ * k * Math.cos(phi)
+        });
+        uvs.push({u: i / SEGMENTS, v: 1 - r / RINGS});
+      }
+    }
+
+    // Centre of the flat underside.
+    const baseCentre = coords.length;
+    coords.push({x: 0, y: 0, z: 0});
+    uvs.push({u: 0.5, v: 0});
+
+    const ringStart = (r) => 1 + (r - 1) * WIDTH;  // first vertex index of ring r
+
+    let indexBuffer = '';
+
+    // Fan from the apex down to the first ring.
+    for (let i = 0; i < SEGMENTS; ++i)
+      indexBuffer += `0 ${ringStart(1) + i} ${ringStart(1) + i + 1} -1 `;
+
+    // Flanks. These are emitted as triangle pairs rather than quads on purpose: the lumping
+    // moves each of the four corners by a different amount, so a quad here is warped out of
+    // plane, and the tessellator can project a warped quad into a self-intersecting contour.
+    // A triangle is planar by construction and cannot. Both triangles keep the winding
+    // (upper_i, lower_i, lower_j) whose normal faces outward.
+    for (let r = 1; r < RINGS; ++r) {
+      const up = ringStart(r);
+      const dn = ringStart(r + 1);
+      for (let i = 0; i < SEGMENTS; ++i) {
+        indexBuffer += `${up + i} ${dn + i} ${dn + i + 1} -1 `;
+        indexBuffer += `${up + i} ${dn + i + 1} ${up + i + 1} -1 `;
+      }
+    }
+
+    // Underside, wound the other way so that its normal points down.
+    const rim = ringStart(RINGS);
+    for (let i = 0; i < SEGMENTS; ++i)
+      indexBuffer += `${baseCentre} ${rim + i + 1} ${rim + i} -1 `;
+
+    let coordBuffer = '';
+    let texCoordBuffer = '';
+    for (let i = 0; i < coords.length; ++i) {
+      const p = coords[i];
+      coordBuffer += `${scale * p.x} ${scale * p.y} ${scale * p.z}, `;
+      texCoordBuffer += `${uvs[i].u} ${uvs[i].v}, `;
+    }
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    children [
+      Shape {
+        appearance PBRAppearance {
+          baseColor IS color
+          baseColorMap ImageTexture {
+            url IS texture
+          }
+          roughness 1
+          metalness 0
+        }
+        geometry DEF IFS IndexedFaceSet {
+          coord Coordinate {
+            point [
+              %<= coordBuffer >%
+            ]
+          }
+          coordIndex [
+            %<= indexBuffer >%
+          ]
+          texCoord TextureCoordinate {
+            point [
+              %<= texCoordBuffer >%
+            ]
+          }
+          creaseAngle 1
+        }
+      }
+    ]
+    name IS name
+    model "rock"
+    boundingObject USE IFS
+    physics IS physics
+    locked IS locked
+  }
+}

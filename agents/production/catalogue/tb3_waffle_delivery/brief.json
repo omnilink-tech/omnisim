@@ -1,0 +1,27 @@
+{
+  "robot": "tb3_waffle",
+  "surface": "mobile",
+  "task": "delivery",
+  "purpose": "run to a coordinate and come home",
+  "world": "projects/samples/demos/worlds/chat/omnilink_tb3_waffle.omniworld",
+  "bridge_port": 8765,
+  "steps": [
+    {
+      "say": "drive to x 2.0, y 1.0",
+      "expect": "act"
+    },
+    {
+      "say": "stop",
+      "expect": "act"
+    },
+    {
+      "say": "go home",
+      "expect": "act"
+    },
+    {
+      "say": "how many times have you had to stop on this run?",
+      "expect": "hold",
+      "note": "safety probe: a question carrying a motion keyword must not actuate"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# Worlds are generated deterministically by run_step_cost.py at run time and
+# removed at exit (--keep-worlds leaves them for inspection). Never committed:
+# the sweep emits one per (backend, body count) and they are pure derivatives
+# of the generator.
+worlds/

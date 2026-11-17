@@ -1,0 +1,65 @@
+#OMNISIM R2025a utf8
+
+# OmniQuad residual-RL training world, NEWTON physics.
+#
+# Same controller (omniquad_residual_agent) as the ODE-physics
+# omniquad_residual_train.omniworld -- the model walker (gait + IK + balance) +
+# tiny policy that adds <=3cm foot offsets. Only difference is:
+#   1. physicsBackend "newton"  (was "ode")
+#   2. URDF points at omniquad.classic.urdf — the pre-widened-hip_y URDF
+#      that the current OmniSim binary's URDF importer can parse
+#      cleanly. The widened omniquad.urdf adds <rest> tags + opens hip_y
+#      to [-0.5, 3.20] for on-back self-righting; this binary's
+#      importer (built May 18) doesn't yet understand <rest>, so the
+#      joints spawn at angle 0 (straight legs) and OmniQuad collapses.
+#      Rebuild the binary after the engine migration to use the
+#      widened URDF here too.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "OmniQuad residual-RL training (Newton)"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.624 -4.923 5.476
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 60 12
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../../robots/omnisim/omniquad/urdf/omniquad.classic.urdf"
+  translation 0 0 0.70
+  name "omniquad"
+  supervisor TRUE
+  controller "omniquad_residual_agent"
+  controllerArgs [ "--port" "7100" ]
+  physicsBackend "newton"
+}

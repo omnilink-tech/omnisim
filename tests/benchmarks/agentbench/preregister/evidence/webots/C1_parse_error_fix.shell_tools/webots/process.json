@@ -1,0 +1,10 @@
+{
+ "exit_code": 0,
+ "timed_out": false,
+ "wall_s": 4.562,
+ "attempts_used": 1,
+ "perf_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools\\webots\\perf.txt",
+ "webots_version": "R2025a",
+ "command": "WEBOTS_HOME=/opt/upstream-webots/R2025a timeout 420 xvfb-run -a /opt/upstream-webots/R2025a/webots --batch --mode=fast --no-rendering --minimize --stdout --stderr --log-performance=\"/tmp/agentbench_webots/parse_error_6add2ca7/out/perf.txt\",312 --port=1504 \"/tmp/agentbench_webots/parse_error_6add2ca7/project/worlds/parse_error.wbt\"",
+ "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\preregister\\runs\\webots\\C1_parse_error_fix.shell_tools\\scratch\\parse_error.wbt"
+}

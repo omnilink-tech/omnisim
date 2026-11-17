@@ -1,0 +1,127 @@
+#OMNISIM R2025a utf8
+
+# Authored simulation demo: approach, pinch, lift, carry, release.
+# Run ../pickplace_demo.py; this is not a replay of the real recording.
+# Cube and container dimensions, friction and servo parameters are assumptions.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 2
+  newtonCondim 4
+  newtonCompoundColliders TRUE
+  newtonSolver "mujoco"
+  newtonGroundMu 3
+  newtonCone "elliptic"
+  newtonImpratio 10
+  title "SO-101 physical pick and place"
+  info [
+    "Authored motor trajectory with contact friction; no payload attachment."
+    "Simulation demonstration; no hardware dynamics validation."
+  ]
+}
+
+Viewpoint {
+  orientation -0.278945293 0.120681249 0.952693844 2.359689255
+  position 0.90439 -0.857616 0.866857
+  exposure 1.5
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# The table top the arm is clamped to. Static, so it costs no Newton body.
+DEF TABLE Solid {
+  translation 0.25 0 -0.01
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.88 0.88 0.87 roughness 0.55 metalness 0 }
+      geometry Box { size 1.4 1.2 0.02 }
+    }
+  ]
+  boundingObject Box { size 1.4 1.2 0.02 }
+  name "table"
+}
+
+# White backdrop. Kinematic set-dressing: NO boundingObject.
+DEF BACKDROP Solid {
+  translation 0.25 0.42 0.25
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.93 0.93 0.93 roughness 0.9 metalness 0 }
+      geometry Box { size 1.4 0.02 0.5 }
+    }
+  ]
+  name "backdrop"
+}
+
+# The pink box, an OPEN-TOPPED container -- the task is "place it IN the pink
+# box", which a solid block cannot satisfy. Base + four walls, 6.5 cm tall to
+# approximate the reference container. Static.
+DEF PINK_BOX Solid {
+  translation 0.200 -0.080 0
+  children [
+    Pose {
+      translation 0 0 0.002
+      children [ Shape { appearance PBRAppearance { baseColor 0.85 0.60 0.63 roughness 0.85 metalness 0 }
+                         geometry Box { size 0.075 0.075 0.004 } } ]
+    }
+    Pose {
+      translation 0.0355 0 0.0325
+      children [ Shape { appearance PBRAppearance { baseColor 0.85 0.60 0.63 roughness 0.85 metalness 0 }
+                         geometry Box { size 0.004 0.075 0.065 } } ]
+    }
+    Pose {
+      translation -0.0355 0 0.0325
+      children [ Shape { appearance PBRAppearance { baseColor 0.85 0.60 0.63 roughness 0.85 metalness 0 }
+                         geometry Box { size 0.004 0.075 0.065 } } ]
+    }
+    Pose {
+      translation 0 0.0355 0.0325
+      children [ Shape { appearance PBRAppearance { baseColor 0.85 0.60 0.63 roughness 0.85 metalness 0 }
+                         geometry Box { size 0.075 0.004 0.065 } } ]
+    }
+    Pose {
+      translation 0 -0.0355 0.0325
+      children [ Shape { appearance PBRAppearance { baseColor 0.85 0.60 0.63 roughness 0.85 metalness 0 }
+                         geometry Box { size 0.075 0.004 0.065 } } ]
+    }
+  ]
+  boundingObject Group {
+    children [
+      Pose { translation 0 0 0.002     children [ Box { size 0.075 0.075 0.004 } ] }
+      Pose { translation 0.0355 0 0.0325  children [ Box { size 0.004 0.075 0.065 } ] }
+      Pose { translation -0.0355 0 0.0325 children [ Box { size 0.004 0.075 0.065 } ] }
+      Pose { translation 0 0.0355 0.0325  children [ Box { size 0.075 0.004 0.065 } ] }
+      Pose { translation 0 -0.0355 0.0325 children [ Box { size 0.075 0.004 0.065 } ] }
+    ]
+  }
+  name "pink_box"
+}
+
+# The green cube at an estimated position. DYNAMIC: it has to
+# be picked up, so it carries mass and a collider.
+DEF GREEN_CUBE Solid {
+  rotation 0 0 1 -0.29
+  translation 0.2241462595058276 -0.15932843267874947 0.02
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.36 0.72 0.55 roughness 0.8 metalness 0 }
+      geometry Box { size 0.04 0.04 0.04 }
+    }
+  ]
+  boundingObject Box { size 0.04 0.04 0.04 }
+  physics Physics { density -1 mass 0.02 }
+  name "green_cube"
+}
+
+DEF SO101 URDFRobot {
+  url "../so101/so101.urdf"
+  translation 0 0 0
+  name "so101"
+  supervisor TRUE
+  staticBase TRUE
+  controller "so101_replay"
+}

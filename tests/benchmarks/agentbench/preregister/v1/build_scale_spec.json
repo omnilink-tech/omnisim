@@ -1,0 +1,41 @@
+{
+  "schema": "agenticsimbench/build-scale-spec/v1",
+  "suite": "agenticsimbench/v1",
+  "status": "frozen_before_first_scored_row",
+  "frozen_utc": "2026-08-13",
+  "levels": [10, 25, 50, 100, 250],
+  "prompt_template": "Build a portable simulation containing exactly {robots} independently controlled mobile robots. Place them without initial interpenetration, make at least 90% drive under their own control for 20 simulated seconds, keep robot-robot collisions within the benchmark bound, and ensure the artifact reopens and passes from a clean directory. Do not teleport or attach robots to another moving body.",
+  "sampling": {
+    "settle_s": 1.0,
+    "motion_window_s": 20.0,
+    "maximum_sample_period_s": 0.1
+  },
+  "thresholds": {
+    "minimum_initial_aabb_clearance_m": 0.05,
+    "initial_contact_steps": 10,
+    "minimum_moving_fraction": 0.9,
+    "minimum_net_displacement_m": 1.0,
+    "minimum_path_length_m": 2.0,
+    "maximum_xy_distance_from_start_m": 25.0,
+    "maximum_z_drop_from_start_m": 0.5,
+    "maximum_single_sample_step_m": 0.25,
+    "maximum_speed_m_s": 5.0,
+    "maximum_robot_collision_pairs_formula": "floor(0.02 * requested_robots)",
+    "minimum_clean_replay_attempts": 1,
+    "minimum_clean_replay_passes": 1
+  },
+  "assertions": {
+    "BS.1": "portable artifact loads, reaches the requested duration, exits cleanly, and identifies the simulator backend",
+    "BS.2": "the live scene contains exactly the requested number of distinct robot-class bodies",
+    "BS.3": "every robot has its own attributed runtime controller instance, every instance started, and the controllers contain no forbidden world-pose mutation path",
+    "BS.4": "initial interpenetration is absent: robots are separated by at least 0.05 m at t=0 and have no robot-robot contact in the first 10 steps",
+    "BS.5": "at least 90% of robots move at least 1.0 m net and travel at least 2.0 m during the 20 s window",
+    "BS.6": "runaway is absent: all recorded poses are finite; no robot travels more than 25 m from its start or drops more than 0.5 m",
+    "BS.7": "unique robot-robot collision pairs over the full window do not exceed floor(0.02 * requested robots)",
+    "BS.8": "teleportation is absent: no single sampled step exceeds 0.25 m and no measured speed exceeds 5.0 m/s at a sample period no larger than 0.1 s",
+    "BS.9": "the collected artifact has no missing or absolute host dependencies and passes at least one clean-directory replay"
+  },
+  "outcome": "PASS requires all nine assertions; missing grader evidence is INVALID, never zero",
+  "unsupported_policy": "an adapter may explicitly mark a level unsupported; it remains visible and stops the BuildScale frontier",
+  "scoring": "highest level with at least 8 valid PASS repetitions out of 10; levels are contiguous and a failed lower level stops the frontier"
+}

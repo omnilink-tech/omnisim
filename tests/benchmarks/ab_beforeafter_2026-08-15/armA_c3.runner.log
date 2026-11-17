@@ -1,0 +1,10 @@
+[stage] rebuilding the omnisim template: the repo's tracked-file selection has changed since it was built at 2026-08-12T11:39:43Z (aec66d874443640b8027aa5419fa74bb4a6f2fb29cf3e218e7d06d5f6a36b658 != 269d31f6c305139e30e3d9a56c3f467f2cacdf181175a0b400a1069a55a65f38)
+search visibility: {"controller_dirs": {"visible_to_search": 253, "present_on_disk": 476, "hidden_behind_links": 223}, "worlds": {"visible_to_search": 375, "present_on_disk": 746, "hidden_behind_links": 371}}
+repo artifact sweep (post_session): preserved_and_deleted projects/default/controllers/fleet_pose_recorder/fleet_pose_recorder.py
+repo artifact sweep (post_session): removed_empty_dir O:\omnisim\projects\default\controllers\fleet_pose_recorder
+containment guard: saw 53 tool call(s), denied 0
+
+=== A1_husky_swarm_10 / omnisim / claude_code ===
+outcome=FAIL failed=no_artifact
+metrics={"turns": 111, "tool_calls": 53, "usd": null, "t_agent_s": null, "tokens_in": null, "tokens_out": null, "tokens_cache_read": null, "tokens_cache_write": null}
+rows -> O:\omnisim\tests\benchmarks\agentbench\results\cc_lane\20260812_ba_armA_c3\rows.jsonl

@@ -1,0 +1,77 @@
+Licence notice for quaternion.min.js
+====================================
+
+`quaternion.min.js` in this directory carries a copyright line and names its
+licence, but does NOT carry the licence's permission notice:
+
+    /*
+    Quaternion.js v1.2.1 27/07/2021
+
+    Copyright (c) 2021, Robert Eisele (robert@xarg.org)
+    Licensed under the MIT license.
+    */
+
+The MIT licence requires that "the above copyright notice and this permission
+notice shall be included in all copies or substantial portions of the
+Software". The copyright notice travels with the file; the permission notice
+does not, so it is supplied here beside it. The .js file itself is
+byte-unmodified.
+
+
+-------------------------------------------------------------------------
+The MIT Licence
+-------------------------------------------------------------------------
+
+Copyright (c) 2021, Robert Eisele (robert@xarg.org)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-------------------------------------------------------------------------
+
+
+Provenance and sourcing
+-----------------------
+
+Upstream project   Quaternion.js -- https://github.com/rawify/Quaternion.js
+Copyright holder   Robert Eisele (from the file's own banner)
+Licence            MIT (from the file's own banner)
+Version vendored   1.2.1, dated 27/07/2021 (from the file's own banner)
+
+Holder, year, licence name and version are all read out of the vendored file.
+The MIT text above is the standard, unmodified form of that licence.
+
+
+The other files in this directory
+---------------------------------
+
+  glm-js.min.js    Self-covered. Carries "(c) humbletim",
+                   "Copyright (c) 2015-2016 humbletim" and the full MIT
+                   permission notice inline, plus the embedded MIT notice of
+                   gl-matrix ("Copyright (c) 2013 Brandon Jones"). No sidecar
+                   needed.
+
+  libtess.min.js   Self-covered. Carries "Copyright 2000, Silicon Graphics,
+                   Inc." and "Copyright 2015, Google Inc." with the full
+                   SGI FreeB / MIT-style text inline, including the SGI
+                   attribution requirement. No sidecar needed.
+
+  ansi_up.js       See LICENSE-ansi_up.txt (MIT declared, no copyright line).
+
+  assimpjs.js      See LICENSE-assimpjs.txt (no header at all; the .wasm is a
+  assimpjs.wasm    compiled Assimp needing a BSD-3 notice beside it).

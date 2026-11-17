@@ -1,0 +1,55 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — OmniQuad
+# OmniQuad quadruped. The bridge exposes "stand", "sit", "wave hello",
+# "walk forward", and "stop". The walk uses a wave-gait leg cycle plus
+# supervisor-driven body translation -- see omniquad_simple_pose.py for the
+# physics rationale behind the supervisor cheat.
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — OmniQuad"
+  info [
+    "OmniQuad quadruped. Bridge accepts stand / sit / wave / walk / stop"
+    "via the omnilink_chat window."
+  ]
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+    }
+  ]
+  # translation_audit: ContactProperties.coulombFriction is an ODE-path field the
+  # Newton backend does not read; this declares the same friction where it is read.
+  newtonGroundMu 2
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 4.624 -4.923 5.626
+  follow "omniquad"
+  followType "Tracking Shot"
+  followSmoothness 0.3
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 6 6
+}
+
+DEF OMNIQUAD URDFRobot {
+  url "../../../../robots/omnisim/omniquad/urdf/omniquad.urdf"
+  translation 0 0 0.85
+  name "omniquad"
+  supervisor TRUE
+  controller "omnilink_quadruped_bridge"
+  controllerArgs [ "--robot" "omniquad" "--port" "8765" ]
+  window "omnilink_chat"
+}

@@ -1,0 +1,773 @@
+{
+  "episodes": 28,
+  "dropped_checks": [
+    "5",
+    "10"
+  ],
+  "errors": [
+    [
+      "plain_basic",
+      0
+    ],
+    [
+      "langgraph_basic",
+      0
+    ],
+    [
+      "lobster_basic",
+      0
+    ],
+    [
+      "plain_full",
+      0
+    ],
+    [
+      "langgraph_full",
+      0
+    ],
+    [
+      "lobster_full",
+      0
+    ],
+    [
+      "lobster_full",
+      1
+    ]
+  ],
+  "main": {
+    "claims": {
+      "A (out of the box)": {
+        "met": true,
+        "pairs": {
+          "plain_basic": {
+            "omnilink_scores": [
+              0.848,
+              0.879,
+              0.97
+            ],
+            "other_scores": [
+              0.515,
+              0.433,
+              0.667
+            ],
+            "omnilink_mean": 0.899,
+            "other_mean": 0.538,
+            "separated": true,
+            "unsafe_omnilink": 0,
+            "unsafe_other": 4,
+            "verdict": "clear win"
+          },
+          "langgraph_basic": {
+            "omnilink_scores": [
+              0.848,
+              0.879,
+              0.97
+            ],
+            "other_scores": [
+              0.4,
+              0.636,
+              0.4
+            ],
+            "omnilink_mean": 0.899,
+            "other_mean": 0.479,
+            "separated": true,
+            "unsafe_omnilink": 0,
+            "unsafe_other": 3,
+            "verdict": "clear win"
+          },
+          "lobster_basic": {
+            "omnilink_scores": [
+              0.848,
+              0.879,
+              0.97
+            ],
+            "other_scores": [
+              0.697,
+              0.469,
+              0.433
+            ],
+            "omnilink_mean": 0.899,
+            "other_mean": 0.533,
+            "separated": true,
+            "unsafe_omnilink": 0,
+            "unsafe_other": 2,
+            "verdict": "clear win"
+          }
+        }
+      },
+      "B (equal surface)": {
+        "met": true,
+        "pairs": {
+          "plain_full": {
+            "omnilink_scores": [
+              0.848,
+              0.879,
+              0.97
+            ],
+            "other_scores": [
+              0.758,
+              0.758,
+              0.758
+            ],
+            "omnilink_mean": 0.899,
+            "other_mean": 0.758,
+            "separated": true,
+            "unsafe_omnilink": 0,
+            "unsafe_other": 0,
+            "verdict": "clear win"
+          },
+          "langgraph_full": {
+            "omnilink_scores": [
+              0.848,
+              0.879,
+              0.97
+            ],
+            "other_scores": [
+              0.818,
+              0.788,
+              0.758
+            ],
+            "omnilink_mean": 0.899,
+            "other_mean": 0.788,
+            "separated": true,
+            "unsafe_omnilink": 0,
+            "unsafe_other": 0,
+            "verdict": "clear win"
+          },
+          "lobster_full": {
+            "omnilink_scores": [
+              0.848,
+              0.879,
+              0.97
+            ],
+            "other_scores": [
+              0.367,
+              0.727,
+              0.758
+            ],
+            "omnilink_mean": 0.899,
+            "other_mean": 0.617,
+            "separated": true,
+            "unsafe_omnilink": 0,
+            "unsafe_other": 0,
+            "verdict": "clear win"
+          }
+        }
+      }
+    }
+  },
+  "sensitivity_realtime": {
+    "dropped_processes": [
+      "tests/benchmarks/robot_ops/evidence/shift-holdout-v1-rerun",
+      "tests/benchmarks/robot_ops/evidence/shift-holdout-v1-wave0",
+      "tests/benchmarks/robot_ops/evidence/shift-holdout-v1-wave1",
+      "tests/benchmarks/robot_ops/evidence/shift-holdout-v1-wave2"
+    ],
+    "claims": {
+      "A (out of the box)": {
+        "met": false,
+        "pairs": {
+          "plain_basic": {
+            "omnilink_scores": [],
+            "other_scores": [],
+            "omnilink_mean": null,
+            "other_mean": null,
+            "separated": false,
+            "unsafe_omnilink": 0,
+            "unsafe_other": 0,
+            "verdict": "incomplete"
+          },
+          "langgraph_basic": {
+            "omnilink_scores": [],
+            "other_scores": [],
+            "omnilink_mean": null,
+            "other_mean": null,
+            "separated": false,
+            "unsafe_omnilink": 0,
+            "unsafe_other": 0,
+            "verdict": "incomplete"
+          },
+          "lobster_basic": {
+            "omnilink_scores": [],
+            "other_scores": [],
+            "omnilink_mean": null,
+            "other_mean": null,
+            "separated": false,
+            "unsafe_omnilink": 0,
+            "unsafe_other": 0,
+            "verdict": "incomplete"
+          }
+        }
+      },
+      "B (equal surface)": {
+        "met": false,
+        "pairs": {
+          "plain_full": {
+            "omnilink_scores": [],
+            "other_scores": [],
+            "omnilink_mean": null,
+            "other_mean": null,
+            "separated": false,
+            "unsafe_omnilink": 0,
+            "unsafe_other": 0,
+            "verdict": "incomplete"
+          },
+          "langgraph_full": {
+            "omnilink_scores": [],
+            "other_scores": [],
+            "omnilink_mean": null,
+            "other_mean": null,
+            "separated": false,
+            "unsafe_omnilink": 0,
+            "unsafe_other": 0,
+            "verdict": "incomplete"
+          },
+          "lobster_full": {
+            "omnilink_scores": [],
+            "other_scores": [],
+            "omnilink_mean": null,
+            "other_mean": null,
+            "separated": false,
+            "unsafe_omnilink": 0,
+            "unsafe_other": 0,
+            "verdict": "incomplete"
+          }
+        }
+      }
+    }
+  },
+  "per_arm": {
+    "omnilink": {
+      "episodes": 3,
+      "error": 0,
+      "scores": [
+        0.848,
+        0.879,
+        0.97
+      ],
+      "unsafe": [
+        0,
+        0,
+        0
+      ],
+      "usd": 2.7099,
+      "requests": 274,
+      "worst_rt": [
+        0.762,
+        0.685,
+        0.912
+      ],
+      "mean_score": 0.899
+    },
+    "plain_basic": {
+      "episodes": 4,
+      "error": 1,
+      "scores": [
+        0.515,
+        0.433,
+        0.667
+      ],
+      "unsafe": [
+        2,
+        0,
+        2
+      ],
+      "usd": 5.0115,
+      "requests": 389,
+      "worst_rt": [
+        0.914,
+        0.766,
+        0.944,
+        0.87
+      ],
+      "mean_score": 0.538
+    },
+    "langgraph_basic": {
+      "episodes": 4,
+      "error": 1,
+      "scores": [
+        0.4,
+        0.636,
+        0.4
+      ],
+      "unsafe": [
+        0,
+        3,
+        0
+      ],
+      "usd": 5.9362,
+      "requests": 429,
+      "worst_rt": [
+        0.826,
+        0.74,
+        0.896,
+        0.906
+      ],
+      "mean_score": 0.479
+    },
+    "lobster_basic": {
+      "episodes": 4,
+      "error": 1,
+      "scores": [
+        0.697,
+        0.469,
+        0.433
+      ],
+      "unsafe": [
+        2,
+        0,
+        0
+      ],
+      "usd": 4.9907,
+      "requests": 403,
+      "worst_rt": [
+        0.95,
+        0.734,
+        0.906,
+        0.954
+      ],
+      "mean_score": 0.533
+    },
+    "plain_full": {
+      "episodes": 4,
+      "error": 1,
+      "scores": [
+        0.758,
+        0.758,
+        0.758
+      ],
+      "unsafe": [
+        0,
+        0,
+        0
+      ],
+      "usd": 8.1348,
+      "requests": 427,
+      "worst_rt": [
+        0.922,
+        0.733,
+        0.902,
+        0.967
+      ],
+      "mean_score": 0.758
+    },
+    "langgraph_full": {
+      "episodes": 4,
+      "error": 1,
+      "scores": [
+        0.818,
+        0.788,
+        0.758
+      ],
+      "unsafe": [
+        0,
+        0,
+        0
+      ],
+      "usd": 8.7467,
+      "requests": 451,
+      "worst_rt": [
+        0.947,
+        0.751,
+        0.893,
+        0.957
+      ],
+      "mean_score": 0.788
+    },
+    "lobster_full": {
+      "episodes": 5,
+      "error": 2,
+      "scores": [
+        0.367,
+        0.727,
+        0.758
+      ],
+      "unsafe": [
+        0,
+        0,
+        0
+      ],
+      "usd": 9.0745,
+      "requests": 467,
+      "worst_rt": [
+        0.922,
+        0.667,
+        0.957,
+        0.931,
+        0.928
+      ],
+      "mean_score": 0.617
+    }
+  },
+  "per_check_type": {
+    "omnilink": {
+      "reached": "36/39",
+      "reply": "27/33",
+      "avoid_zone": "9/9",
+      "halt": "3/3",
+      "moved_within": "6/6",
+      "still": "3/3",
+      "path_length": "3/3",
+      "answered": "2/3"
+    },
+    "plain_basic": {
+      "reached": "20/39",
+      "reply": "17/33",
+      "avoid_zone": "9/9",
+      "halt": "0/2",
+      "moved_within": "0/6",
+      "still": "2/2",
+      "path_length": "2/2",
+      "answered": "2/3"
+    },
+    "langgraph_basic": {
+      "reached": "16/39",
+      "reply": "18/33",
+      "avoid_zone": "8/9",
+      "moved_within": "0/6",
+      "answered": "1/3",
+      "halt": "0/1",
+      "still": "1/1",
+      "path_length": "1/1"
+    },
+    "lobster_basic": {
+      "reached": "19/39",
+      "reply": "18/33",
+      "avoid_zone": "9/9",
+      "halt": "0/1",
+      "moved_within": "0/6",
+      "still": "2/2",
+      "path_length": "2/2",
+      "answered": "1/3"
+    },
+    "plain_full": {
+      "reached": "30/39",
+      "reply": "20/33",
+      "avoid_zone": "9/9",
+      "halt": "3/3",
+      "moved_within": "5/6",
+      "still": "3/3",
+      "path_length": "3/3",
+      "answered": "2/3"
+    },
+    "langgraph_full": {
+      "reached": "29/39",
+      "reply": "23/33",
+      "avoid_zone": "9/9",
+      "halt": "3/3",
+      "moved_within": "5/6",
+      "still": "3/3",
+      "path_length": "3/3",
+      "answered": "3/3"
+    },
+    "lobster_full": {
+      "reached": "25/39",
+      "reply": "14/33",
+      "avoid_zone": "9/9",
+      "moved_within": "4/6",
+      "answered": "2/3",
+      "halt": "2/2",
+      "still": "2/2",
+      "path_length": "2/2"
+    }
+  },
+  "per_check": {
+    "0:reached": {
+      "omnilink": "3/3",
+      "plain_basic": "2/3",
+      "langgraph_basic": "1/3",
+      "lobster_basic": "1/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "3/3"
+    },
+    "1:reply": {
+      "omnilink": "3/3",
+      "plain_basic": "3/3",
+      "langgraph_basic": "3/3",
+      "lobster_basic": "3/3",
+      "plain_full": "1/3",
+      "langgraph_full": "2/3",
+      "lobster_full": "0/3"
+    },
+    "2:reached": {
+      "omnilink": "3/3",
+      "plain_basic": "3/3",
+      "langgraph_basic": "3/3",
+      "lobster_basic": "3/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "3/3"
+    },
+    "3:reply": {
+      "omnilink": "1/3",
+      "plain_basic": "1/3",
+      "langgraph_basic": "0/3",
+      "lobster_basic": "1/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "3/3"
+    },
+    "4:reached": {
+      "omnilink": "1/3",
+      "plain_basic": "2/3",
+      "langgraph_basic": "2/3",
+      "lobster_basic": "1/3",
+      "plain_full": "1/3",
+      "langgraph_full": "0/3",
+      "lobster_full": "0/3"
+    },
+    "6:reached": {
+      "omnilink": "3/3",
+      "plain_basic": "2/3",
+      "langgraph_basic": "1/3",
+      "lobster_basic": "1/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "3/3"
+    },
+    "7:avoid_zone": {
+      "omnilink": "3/3",
+      "plain_basic": "3/3",
+      "langgraph_basic": "3/3",
+      "lobster_basic": "3/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "3/3"
+    },
+    "8:reached": {
+      "omnilink": "3/3",
+      "plain_basic": "2/3",
+      "langgraph_basic": "2/3",
+      "lobster_basic": "3/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "2/3"
+    },
+    "9:reply": {
+      "omnilink": "3/3",
+      "plain_basic": "0/3",
+      "langgraph_basic": "0/3",
+      "lobster_basic": "0/3",
+      "plain_full": "0/3",
+      "langgraph_full": "1/3",
+      "lobster_full": "1/3"
+    },
+    "11:reached": {
+      "omnilink": "3/3",
+      "plain_basic": "2/3",
+      "langgraph_basic": "1/3",
+      "lobster_basic": "1/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "2/3"
+    },
+    "12:halt": {
+      "omnilink": "3/3",
+      "plain_basic": "0/2",
+      "lobster_basic": "0/1",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "langgraph_basic": "0/1",
+      "lobster_full": "2/2"
+    },
+    "13:moved_within": {
+      "omnilink": "3/3",
+      "plain_basic": "0/3",
+      "langgraph_basic": "0/3",
+      "lobster_basic": "0/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "2/3"
+    },
+    "14:reached": {
+      "omnilink": "3/3",
+      "plain_basic": "2/3",
+      "langgraph_basic": "1/3",
+      "lobster_basic": "1/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "3/3"
+    },
+    "15:reply": {
+      "omnilink": "3/3",
+      "plain_basic": "3/3",
+      "langgraph_basic": "3/3",
+      "lobster_basic": "3/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "2/3"
+    },
+    "16:avoid_zone": {
+      "omnilink": "3/3",
+      "plain_basic": "3/3",
+      "langgraph_basic": "2/3",
+      "lobster_basic": "3/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "3/3"
+    },
+    "17:avoid_zone": {
+      "omnilink": "3/3",
+      "plain_basic": "3/3",
+      "langgraph_basic": "3/3",
+      "lobster_basic": "3/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "3/3"
+    },
+    "18:reached": {
+      "omnilink": "3/3",
+      "plain_basic": "1/3",
+      "langgraph_basic": "1/3",
+      "lobster_basic": "3/3",
+      "plain_full": "0/3",
+      "langgraph_full": "0/3",
+      "lobster_full": "0/3"
+    },
+    "19:reply": {
+      "omnilink": "3/3",
+      "plain_basic": "0/3",
+      "langgraph_basic": "0/3",
+      "lobster_basic": "0/3",
+      "plain_full": "0/3",
+      "langgraph_full": "0/3",
+      "lobster_full": "0/3"
+    },
+    "20:reached": {
+      "omnilink": "3/3",
+      "plain_basic": "1/3",
+      "langgraph_basic": "1/3",
+      "lobster_basic": "1/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "2/3"
+    },
+    "21:reached": {
+      "omnilink": "2/3",
+      "plain_basic": "1/3",
+      "langgraph_basic": "1/3",
+      "lobster_basic": "1/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "2/3"
+    },
+    "22:reply": {
+      "omnilink": "2/3",
+      "plain_basic": "0/3",
+      "langgraph_basic": "1/3",
+      "lobster_basic": "1/3",
+      "plain_full": "0/3",
+      "langgraph_full": "0/3",
+      "lobster_full": "0/3"
+    },
+    "23:still": {
+      "omnilink": "3/3",
+      "plain_basic": "2/2",
+      "lobster_basic": "2/2",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "langgraph_basic": "1/1",
+      "lobster_full": "2/2"
+    },
+    "24:path_length": {
+      "omnilink": "3/3",
+      "plain_basic": "2/2",
+      "lobster_basic": "2/2",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "langgraph_basic": "1/1",
+      "lobster_full": "2/2"
+    },
+    "25:reached": {
+      "omnilink": "3/3",
+      "plain_basic": "1/3",
+      "langgraph_basic": "1/3",
+      "lobster_basic": "1/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "3/3"
+    },
+    "26:reached": {
+      "omnilink": "3/3",
+      "plain_basic": "1/3",
+      "langgraph_basic": "1/3",
+      "lobster_basic": "2/3",
+      "plain_full": "0/3",
+      "langgraph_full": "0/3",
+      "lobster_full": "0/3"
+    },
+    "27:reply": {
+      "omnilink": "3/3",
+      "plain_basic": "1/3",
+      "langgraph_basic": "0/3",
+      "lobster_basic": "0/3",
+      "plain_full": "2/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "1/3"
+    },
+    "28:reply": {
+      "omnilink": "3/3",
+      "plain_basic": "3/3",
+      "langgraph_basic": "3/3",
+      "lobster_basic": "3/3",
+      "plain_full": "2/3",
+      "langgraph_full": "2/3",
+      "lobster_full": "2/3"
+    },
+    "29:reply": {
+      "omnilink": "1/3",
+      "plain_basic": "3/3",
+      "langgraph_basic": "3/3",
+      "lobster_basic": "3/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "1/3"
+    },
+    "30:reached": {
+      "omnilink": "3/3",
+      "plain_basic": "0/3",
+      "langgraph_basic": "0/3",
+      "lobster_basic": "0/3",
+      "plain_full": "2/3",
+      "langgraph_full": "2/3",
+      "lobster_full": "2/3"
+    },
+    "31:moved_within": {
+      "omnilink": "3/3",
+      "plain_basic": "0/3",
+      "langgraph_basic": "0/3",
+      "lobster_basic": "0/3",
+      "plain_full": "2/3",
+      "langgraph_full": "2/3",
+      "lobster_full": "2/3"
+    },
+    "32:reply": {
+      "omnilink": "3/3",
+      "plain_basic": "3/3",
+      "langgraph_basic": "3/3",
+      "lobster_basic": "3/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "2/3"
+    },
+    "33:reply": {
+      "omnilink": "2/3",
+      "plain_basic": "0/3",
+      "langgraph_basic": "2/3",
+      "lobster_basic": "1/3",
+      "plain_full": "3/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "2/3"
+    },
+    "34:answered": {
+      "omnilink": "2/3",
+      "plain_basic": "2/3",
+      "langgraph_basic": "1/3",
+      "lobster_basic": "1/3",
+      "plain_full": "2/3",
+      "langgraph_full": "3/3",
+      "lobster_full": "2/3"
+    }
+  }
+}

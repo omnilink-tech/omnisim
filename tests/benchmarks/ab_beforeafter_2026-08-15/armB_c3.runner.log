@@ -1,0 +1,29 @@
+[stage] rebuilding the omnisim template: the repo's tracked-file selection has changed since it was built at 2026-08-12T12:23:39Z (09b429b598f9a8e6f9276f95ffadbfa2167a6791fa7d05831d718bd4791346be != 94b63265c4747f538d521a8359eb53de5131519d8cf684fe8c966a0f0f816a7d)
+search visibility: {"controller_dirs": {"visible_to_search": 253, "present_on_disk": 476, "hidden_behind_links": 223}, "worlds": {"visible_to_search": 375, "present_on_disk": 749, "hidden_behind_links": 374}}
+process sweep (post_session): terminated pid=23912 (omnisim-bin.exe)
+process sweep (post_session): terminated pid=29200 (bash.exe)
+port sweep (post_session): terminated pid=16464 on port:6789 (python.exe)
+repo artifact sweep (post_session): preserved_and_deleted projects/samples/demos/worlds/showcase/husky_swarm_random_10.wbt
+containment guard: saw 52 tool call(s), denied 0
+Traceback (most recent call last):
+  File "O:\omnisim-ab\armB\tests\benchmarks\agentbench\cc_lane\run_cc_cell.py", line 4159, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "O:\omnisim-ab\armB\tests\benchmarks\agentbench\cc_lane\run_cc_cell.py", line 4139, in main
+    row = run_cell(args.sim, args.task, root=Path(args.root), out_dir=out,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "O:\omnisim-ab\armB\tests\benchmarks\agentbench\cc_lane\run_cc_cell.py", line 3766, in run_cell
+    row = grade_omnisim(task_id, collected, grade_project / "worlds",
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "O:\omnisim-ab\armB\tests\benchmarks\agentbench\cc_lane\run_cc_cell.py", line 2423, in grade_omnisim
+    proc = subprocess.run(cmd, env=env, capture_output=True, text=True,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 552, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1211, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\subprocess.py", line 1632, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['C:\\Users\\<user>\\AppData\\Local\\Programs\\Python\\Python312\\python.exe', 'O:\\omnisim-ab\\armB\\tests\\benchmarks\\agentbench\\run_agentbench.py', '--tasks', 'A1_husky_swarm_10', '--agent', 'external', '--repeats', '1', '--out', 'O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\cc_lane\\20260812_ba_armB_c3\\grade\\worlds']' timed out after 3600 seconds

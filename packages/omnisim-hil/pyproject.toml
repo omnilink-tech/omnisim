@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omnisim-hil"
+version = "0.1.0"
+description = "Hardware-in-the-loop support for OmniSim: a dependency-free MAVLink v2 codec wire-compatible with PX4 and ArduPilot."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "OmniLink", email = "info@omnilink-agents.com" }]
+requires-python = ">=3.9"
+keywords = ["omnisim", "mavlink", "hil", "px4", "ardupilot", "simulation", "robotics"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Robotics",
+]
+# Intentionally empty. The codec has to run inside an OmniSim controller
+# interpreter, which is not guaranteed to have anything installed.
+dependencies = []
+
+[project.urls]
+Homepage      = "https://github.com/omnilink-tech/omnisim"
+Repository    = "https://github.com/omnilink-tech/omnisim"
+Documentation = "https://github.com/omnilink-tech/omnisim/tree/main/packages/omnisim-hil"
+Issues        = "https://github.com/omnilink-tech/omnisim/issues"
+
+[project.optional-dependencies]
+# pymavlink is the byte-for-byte oracle the codec is verified against. It is a
+# TEST dependency only -- importing it at runtime would defeat the point.
+dev = ["pytest>=7", "pymavlink>=2.4", "ruff>=0.4"]
+
+[tool.setuptools]
+license-files = ["LICENSE"]
+
+[tool.setuptools.packages.find]
+include = ["omnisim_hil*"]

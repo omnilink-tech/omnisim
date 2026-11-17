@@ -1,0 +1,170 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/factory/pallet/protos/WoodenPalletStack.proto
+# tags: nonDeterministic
+# keywords: industrial/other
+# A stack of wooden pallets, each built from real slats: a top deck of `palletLathNumber`
+# boards over three bearers over a three-runner bottom deck. Pallets are dealt onto the pile
+# with a small random misalignment, so no two stacks in a warehouse look alike.
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/RoughPine.proto"
+
+PROTO WoodenPalletStack [
+  field SFVec3f    translation              0 0 0
+  field SFRotation rotation                 0 0 1 0
+  field SFString   name                     "wooden pallet stack"
+  field SFInt32    palletNumber             8                      # Defines the number of pallet in the stack (vertically).
+  field SFVec3f    palletSize               1.2 0.8 0.14           # Defines the size of one pallet.
+  field SFInt32    palletLathNumber         6                      # Defines the number of lath of each pallets.
+  field SFFloat    palletLathWidth          0.08                   # Defines the width of the pallet laths.
+  field SFFloat    lateralMisalignment      0.1                    # Defines the maximum lateral misalignment between two pallets.
+  field SFFloat    longitudinalMisalignment 0.05                   # Defines the maximum longitudinal misalignment between two pallets.
+  field SFFloat    palletMass               0                      # Defines the mass of one pallet in kg. A value smaller or equal to 0 remove the physics of the stack.
+  field SFBool     boundingObject           TRUE                   # Defines whether the bounding object should be enabled.
+  field SFBool     locked                   FALSE                  # Is `Solid.locked`.
+]
+{
+%<
+  // A Lehmer generator seeded from the node id: every stack in a world gets its own
+  // misalignment pattern, but any given stack rebuilds identically on every load. It is
+  // kept in floating point (48271 * 2^31 stays well inside a double's exact integer range)
+  // so it does not depend on 32-bit wrap-around behaviour.
+  let seed = ((typeof context.id === 'number' ? Math.abs(context.id) : 1) % 2147483646) + 1;
+  const random = () => {
+    seed = (seed * 48271) % 2147483647;
+    return (seed - 1) / 2147483646;  // [0, 1)
+  };
+
+  let size = fields.palletSize.value;
+  if (size.x <= 0 || size.y <= 0 || size.z <= 0) {
+    size = fields.palletSize.defaultValue;
+    console.error('WoodenPalletStack: \'palletSize\' must be strictly positive. Reset to (' + size.x + ', ' + size.y + ', ' + size.z + ').');
+  }
+
+  let count = fields.palletNumber.value;
+  if (count <= 0) {
+    count = fields.palletNumber.defaultValue;
+    console.error('WoodenPalletStack: \'palletNumber\' must be strictly positive. Reset to ' + count + '.');
+  }
+
+  // A pallet may not be jogged so far that it hangs clean off the one below it.
+  const limitSlip = (value, ceiling, label) => {
+    if (value < 0) {
+      console.error('WoodenPalletStack: \'' + label + '\' must not be negative. Set to 0.');
+      return 0;
+    }
+    if (value > ceiling) {
+      console.error('WoodenPalletStack: \'' + label + '\' must not exceed half the pallet. Clamped to ' + ceiling + '.');
+      return ceiling;
+    }
+    return value;
+  };
+  const slipY = limitSlip(fields.lateralMisalignment.value, 0.5 * size.y, 'lateralMisalignment');
+  const slipX = limitSlip(fields.longitudinalMisalignment.value, 0.5 * size.x, 'longitudinalMisalignment');
+
+  let lathCount = fields.palletLathNumber.value;
+  if (lathCount < 2) {
+    lathCount = fields.palletLathNumber.defaultValue;
+    console.error('WoodenPalletStack: \'palletLathNumber\' must be at least 2. Reset to ' + lathCount + '.');
+  }
+
+  let lathWidth = fields.palletLathWidth.value;
+  const lathCeiling = size.x / lathCount;  // the deck boards must not grow into each other
+  if (lathWidth <= 0 || lathWidth > lathCeiling) {
+    lathWidth = Math.min(fields.palletLathWidth.defaultValue, lathCeiling);
+    console.error('WoodenPalletStack: \'palletLathWidth\' must fit within the deck. Reset to ' + lathWidth + '.');
+  }
+
+  // A pallet in section, bottom to top: bottom runners, then the bearers the fork tines
+  // slide between, then the load-bearing top deck. The three add back up to palletSize.z.
+  const bottomT = 0.16 * size.z;
+  const bearerH = 0.68 * size.z;
+  const topT = size.z - bottomT - bearerH;
+  const bearerW = 0.14 * size.y;
+  const runnerW = 0.16 * size.x;
+
+  // Deal the pallets, remembering how far the pile actually wandered so that the bounding
+  // box can be grown to contain it.
+  const offsets = [];
+  let driftX = 0;
+  let driftY = 0;
+  for (let p = 0; p < count; ++p) {
+    const dx = slipX * (random() - 0.5);
+    const dy = slipY * (random() - 0.5);
+    offsets.push({x: dx, y: dy});
+    driftX = Math.max(driftX, Math.abs(dx));
+    driftY = Math.max(driftY, Math.abs(dy));
+  }
+
+  // Declare the wood material once and reference it from every board thereafter.
+  let materialDeclared = false;
+  const wood = () => {
+    if (materialDeclared)
+      return 'USE PALLET_WOOD';
+    materialDeclared = true;
+    return 'DEF PALLET_WOOD RoughPine { colorOverride 0.78 0.65 0.47 textureTransform TextureTransform { scale 3 1 } }';
+  };
+
+  const board = (cx, cy, cz, sx, sy, sz) => {
+    return `Pose { translation ${cx} ${cy} ${cz} children [ Shape { appearance ${wood()} geometry Box { size ${sx} ${sy} ${sz} } } ] }`;
+  };
+
+  // One pallet, modelled with its origin on its own underside so that pallet p simply
+  // stacks at z = p * palletSize.z.
+  const pallet = () => {
+    const parts = [];
+
+    const bottomZ = 0.5 * bottomT;
+    for (let i = 0; i < 3; ++i)
+      parts.push(board((i - 1) * 0.5 * (size.x - runnerW), 0, bottomZ, runnerW, size.y, bottomT));
+
+    const bearerZ = bottomT + 0.5 * bearerH;
+    for (let i = 0; i < 3; ++i)
+      parts.push(board(0, (i - 1) * 0.5 * (size.y - bearerW), bearerZ, size.x, bearerW, bearerH));
+
+    const topZ = bottomT + bearerH + 0.5 * topT;
+    const span = size.x - lathWidth;  // outermost boards sit flush with the pallet ends
+    for (let i = 0; i < lathCount; ++i)
+      parts.push(board(-0.5 * span + span * i / (lathCount - 1), 0, topZ, lathWidth, size.y, topT));
+
+    return parts.join('\n        ');
+  };
+>%
+Solid {
+  translation IS translation
+  rotation IS rotation
+  children [
+    %< for (let p = 0; p < count; ++p) { >%
+    Solid {
+      translation %<= offsets[p].x >% %<= offsets[p].y >% %<= p * size.z >%
+      name %<= '"wooden pallet' + p + '"' >%
+      model "wooden pallet"
+      children [
+        %<= pallet() >%
+      ]
+    }
+    %< } >%
+  ]
+  name IS name
+  model "wooden pallet stack"
+  %< if (fields.boundingObject.value) { >%
+  boundingObject Pose {
+    translation 0 0 %<= 0.5 * count * size.z >%
+    children [
+      Box {
+        size %<= size.x + 2 * driftX >% %<= size.y + 2 * driftY >% %<= count * size.z >%
+      }
+    ]
+  }
+  %< } >%
+  %< if (fields.palletMass.value > 0) { >%
+  physics Physics {
+    density -1
+    mass %<= fields.palletMass.value * count >%
+  }
+  %< } >%
+  locked IS locked
+}
+}

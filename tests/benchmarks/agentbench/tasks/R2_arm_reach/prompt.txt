@@ -1,0 +1,14 @@
+Create or import a fixed-base robotic arm with at least six actuated revolute joints and make its end effector reach three target poses in sequence.
+
+Target positions in the robot base frame:
+1. (0.45, 0.00, 0.45) m
+2. (0.35, 0.25, 0.35) m
+3. (0.35, -0.25, 0.50) m
+
+Requirements:
+- Use joint actuation through the simulator, not direct end-effector teleportation.
+- Hold each target for at least 0.5 simulated seconds within 5 cm position error.
+- Avoid self-collision and ground collision.
+- Complete all three targets within 30 simulated seconds.
+
+Execute the trajectory before submitting.

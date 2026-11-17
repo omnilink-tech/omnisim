@@ -1,0 +1,81 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/physics/protos/PassiveHingeJointRobot.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteEmitter.proto"
+EXTERNPROTO "omnisim://tests/default/protos/TestSuiteSupervisor.proto"
+
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.0651577121892404 0.9606241797067249 0.27010305052895356 2.49816
+  position 3.5017 2.75854 -3.43857
+}
+Background {
+  skyColor [
+    0.4 0.7 1
+  ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  ambientIntensity 1
+  direction -0.33 -1 -0.5
+  castShadows TRUE
+}
+DEF SUN_MARKER Solid {
+  translation 0 0 8
+  name "sun_marker"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1.0 0.9 0.55
+        emissiveColor 1.0 0.85 0.45
+        emissiveIntensity 35
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Sphere {
+        radius 0.9
+        subdivision 3
+      }
+      castShadows FALSE
+    }
+  ]
+}
+Robot {
+  name "sun_marker_driver"
+  controller "sun_marker"
+  supervisor TRUE
+  children [
+  ]
+}
+PassiveHingeJointRobot {
+  name "r1"
+}
+PassiveHingeJointRobot {
+  translation 0.3 0 0
+  name "r2"
+  dampingConstant 1
+}
+PassiveHingeJointRobot {
+  translation 0.6 0 0
+  name "r3"
+  dampingConstant 2
+}
+PassiveHingeJointRobot {
+  translation 0.9 0 0.01
+  rotation 0 1 0 4.71239
+  name "r4"
+  dampingConstant 2
+}
+Robot {
+  children [
+    Receiver {
+    }
+    TestSuiteEmitter {
+    }
+  ]
+  controller "hinge_joint_damping"
+}
+TestSuiteSupervisor {
+}

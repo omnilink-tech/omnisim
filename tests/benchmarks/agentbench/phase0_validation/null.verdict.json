@@ -1,0 +1,102 @@
+{
+  "task": "A1_husky_swarm_10",
+  "outcome": "FAIL",
+  "progress": 0,
+  "progress_name": "no_artifact",
+  "assertions": {
+    "A1.1": {
+      "ok": false,
+      "what": "exactly ten Huskies",
+      "measured": 0,
+      "threshold": 10,
+      "detail": "no .wbt artifact was produced"
+    },
+    "A1.2": {
+      "ok": false,
+      "what": "ten distinct robots",
+      "measured": null,
+      "threshold": null,
+      "detail": "no artifact"
+    },
+    "A1.3": {
+      "ok": false,
+      "what": "none interpenetrating at t=0",
+      "measured": null,
+      "threshold": null,
+      "detail": "no artifact"
+    },
+    "A1.4": {
+      "ok": false,
+      "what": "all ten are controlled",
+      "measured": null,
+      "threshold": null,
+      "detail": "no artifact"
+    },
+    "A1.5": {
+      "ok": false,
+      "what": "all ten moved >= 2.0 m",
+      "measured": null,
+      "threshold": null,
+      "detail": "no artifact"
+    },
+    "A1.6": {
+      "ok": false,
+      "what": "they drove, not slid (path length)",
+      "measured": null,
+      "threshold": null,
+      "detail": "no artifact"
+    },
+    "A1.7": {
+      "ok": false,
+      "what": "nobody fell through or tipped over",
+      "measured": null,
+      "threshold": null,
+      "detail": "no artifact"
+    },
+    "A1.8": {
+      "ok": false,
+      "what": "the motion is random, not a parade",
+      "measured": null,
+      "threshold": null,
+      "detail": "no artifact"
+    },
+    "A1.9": {
+      "ok": false,
+      "what": "the run exited cleanly",
+      "measured": null,
+      "threshold": null,
+      "detail": "no artifact"
+    },
+    "A1.10": {
+      "ok": false,
+      "what": "backend attribution recorded",
+      "measured": null,
+      "threshold": null,
+      "detail": "no artifact"
+    }
+  },
+  "n_pass": 0,
+  "n_total": 10,
+  "failed_assertion": "A1.1",
+  "failed_assertions": [
+    "A1.1",
+    "A1.2",
+    "A1.3",
+    "A1.4",
+    "A1.5",
+    "A1.6",
+    "A1.7",
+    "A1.8",
+    "A1.9",
+    "A1.10"
+  ],
+  "self_verified": false,
+  "attribution": {},
+  "measurements": {},
+  "artifacts": {
+    "trace": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\20260726_111707\\A1_husky_swarm_10.null.r0\\trace.jsonl"
+  },
+  "notes": [
+    "A1.3 t=0 geometry measured by the grader-owned recorder: the harness free-runs and cannot report t=0."
+  ]
+}

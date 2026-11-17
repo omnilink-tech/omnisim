@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "reasons": [],
+  "metrics": {
+    "braking_qualified": true,
+    "max_achieved_speed_m_s": 0.40321454405784607,
+    "max_ground_tilt_rad": 0.0006903222930515227,
+    "sample_count": 271,
+    "sample_period_s": 0.016,
+    "max_forward_excursion_m": 0.02306506037712097,
+    "initial_speed_m_s": 0.4031323492527008,
+    "stop_time_s": 0.11199999999999988,
+    "observed_command_delay_s": 0.0,
+    "request_time_s": 1.824,
+    "rollback_m": 0.0,
+    "final_speed_m_s": 2.4542665661393917e-10
+  },
+  "scope": "rosbot_xl physical-wheel model/controller; simulation only"
+}

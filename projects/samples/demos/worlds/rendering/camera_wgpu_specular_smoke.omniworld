@@ -1,0 +1,64 @@
+#OMNISIM R2025a utf8
+
+# T1.1 specular HDR-source smoke world: a mid-grey box that fills the frame, with
+# roughness 0.85 so a BROAD Blinn-Phong specular highlight covers the flat front
+# face (only on the AgX path). Why 0.85 and not 0: the engine light is fixed at
+# (0.3,0.4,-0.85) and the flat front face has a constant normal (-1,0,0), so the
+# half-vector gives a constant nDotH across the face; at roughness 0 (shininess
+# 256) that is ~0.8^256 ~ 0 -- no visible highlight. A mid roughness broadens the
+# lobe so the whole face lifts measurably, which is what a flat face at an
+# off-axis light can actually show headless.
+#
+# Verified by A/B against camera_wgpu_specular_rough_smoke.omniworld (identical but
+# roughness 1.0 -> smoothness 0 -> specular branch skipped): with AgX on, this
+# smooth box's centre pixel is brighter than the rough twin's, isolating the
+# specular contribution. AgX off (plain kSolidLit) ignores smoothness on both,
+# proving non-AgX paths are untouched.
+#
+# See engine-migration-plan.md S8.1 T1.1. Companion to camera_wgpu_golden.omniworld,
+# camera_wgpu_emissive_smoke.omniworld.
+
+WorldInfo {
+  info [
+    "T1.1 specular HDR source - smooth (rough 0.85) box, Blinn-Phong via AgX"
+  ]
+  title "wgpu specular HDR smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Camera {
+      name "cam_wgpu"
+      width 64
+      height 48
+      fieldOfView 0.8
+      near 0.05
+      far 10.0
+      renderBackend "wgpu"
+    }
+    DEF SPECULAR_BOX Solid {
+      translation 1.0 0 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0.5 0.5 0.5
+            roughness 0.85
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "specular box"
+    }
+  ]
+  controller "camera_wgpu_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

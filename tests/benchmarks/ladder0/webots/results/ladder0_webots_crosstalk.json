@@ -1,0 +1,186 @@
+{
+  "arm": "webots",
+  "engine": "upstream Webots R2025a",
+  "generated_utc": "2026-08-12T19:37:54Z",
+  "fault": "crosstalk",
+  "rows": [
+    {
+      "rung": 7,
+      "sim": "webots",
+      "fault": "crosstalk",
+      "title": "five robots, five commands, one floor",
+      "measured": {
+        "steps": 1625.0,
+        "sim_time_end": 6.5,
+        "exit_code": 0.0,
+        "n_samples": 1625,
+        "distance_worst": 0.9999999999999465,
+        "wheel_omega_worst": 0.9999573349716588,
+        "lateral_worst": 3.658432092379371e-06,
+        "ride_worst": 0.00017412750000500576,
+        "roll_overrun_worst": 0.0006313076481632152,
+        "per_robot": {
+          "r0": {
+            "omega_cmd": 2.0,
+            "expect_m": 0.8,
+            "distance_m": 1.5999999999999572,
+            "distance_rel_err": 0.9999999999999465,
+            "lateral_m": 3.658432092379371e-06,
+            "ride_dev_m": 0.00017412750000500576,
+            "omega_meas": 3.9999146699433177,
+            "roll_overrun": 0.0006313076481621049
+          },
+          "r1": {
+            "omega_cmd": 3.0,
+            "expect_m": 1.2000000000000002,
+            "distance_m": 1.5999999999999572,
+            "distance_rel_err": 0.3333333333332975,
+            "lateral_m": 3.6584320819432747e-06,
+            "ride_dev_m": 0.00017412750000500576,
+            "omega_meas": 3.9999146699433172,
+            "roll_overrun": 0.0006313076481629931
+          },
+          "r2": {
+            "omega_cmd": 4.0,
+            "expect_m": 1.6,
+            "distance_m": 1.5999999999999583,
+            "distance_rel_err": -2.609024107869118e-14,
+            "lateral_m": 3.6584320894444045e-06,
+            "ride_dev_m": 0.00017412750000500576,
+            "omega_meas": 3.999914669943319,
+            "roll_overrun": 0.0006313076481632152
+          },
+          "r3": {
+            "omega_cmd": 5.0,
+            "expect_m": 2.0,
+            "distance_m": 1.5999999999999572,
+            "distance_rel_err": -0.20000000000002138,
+            "lateral_m": 3.6584320819432747e-06,
+            "ride_dev_m": 0.00017412750000500576,
+            "omega_meas": 3.9999146699433172,
+            "roll_overrun": 0.0006313076481629931
+          },
+          "r4": {
+            "omega_cmd": 6.0,
+            "expect_m": 2.4000000000000004,
+            "distance_m": 1.5999999999999572,
+            "distance_rel_err": -0.33333333333335124,
+            "lateral_m": 3.658432092379371e-06,
+            "ride_dev_m": 0.00017412750000500576,
+            "omega_meas": 3.9999146699433177,
+            "roll_overrun": 0.0006313076481621049
+          }
+        },
+        "n_robots_seen": 5,
+        "min_separation": 1.4999999999999893,
+        "min_clearance": 0.9999999999999893
+      },
+      "checks": [
+        {
+          "name": "distance_worst",
+          "measured": 0.9999999999999465,
+          "expected": 0.0,
+          "tol": 0.05,
+          "unit": "-",
+          "rel": false,
+          "error": 0.9999999999999465,
+          "margin": -0.9499999999999464,
+          "ok": false,
+          "why": "worst relative error over the 5 robots of d_i vs omega_i r t, each judged against the distance it would travel ALONE over the 4.0 s window.  This IS the non-interference assertion: a robot perturbed by a neighbour misses its own solo target",
+          "key": "distance_worst"
+        },
+        {
+          "name": "wheel_omega_worst",
+          "measured": 0.9999573349716588,
+          "expected": 0.0,
+          "tol": 0.01,
+          "unit": "-",
+          "rel": false,
+          "error": 0.9999573349716588,
+          "margin": -0.9899573349716588,
+          "ok": false,
+          "why": "worst relative error of any robot's mean wheel rate against ITS OWN command; five different commands, so a command that leaked between robots shows up here",
+          "key": "wheel_omega_worst"
+        },
+        {
+          "name": "min_separation",
+          "measured": 1.4999999999999893,
+          "expected": 1.5,
+          "tol": 0.1,
+          "unit": "m",
+          "rel": false,
+          "error": -1.0658141036401503e-14,
+          "margin": 0.09999999999998935,
+          "ok": true,
+          "why": "minimum over the WHOLE run of every robot pair's planar centre distance.  All five start abreast 1.5 m apart and travel at different speeds, so they can only separate: the minimum is the lane spacing, at t=0.  Asserted geometrically rather than as a contact count, because a contact read that returns nothing is indistinguishable from nothing touching",
+          "key": "min_separation"
+        },
+        {
+          "name": "lateral_worst",
+          "measured": 3.658432092379371e-06,
+          "expected": 0.0,
+          "tol": 0.1,
+          "unit": "m",
+          "rel": false,
+          "error": 3.658432092379371e-06,
+          "margin": 0.09999634156790763,
+          "ok": true,
+          "why": "worst |y - y_0| over every robot and every sample: each robot must stay in its own lane",
+          "key": "lateral_worst"
+        },
+        {
+          "name": "roll_overrun_worst",
+          "measured": 0.0006313076481632152,
+          "expected": 0.0,
+          "tol": 0.05,
+          "unit": "-",
+          "rel": false,
+          "error": 0.0006313076481632152,
+          "margin": 0.04936869235183679,
+          "ok": true,
+          "why": "rung 4's one-sided kinematic invariant, over the fleet and the whole run: no body may outrun its own wheels",
+          "key": "roll_overrun_worst"
+        },
+        {
+          "name": "ride_worst",
+          "measured": 0.00017412750000500576,
+          "expected": 0.0,
+          "tol": 0.02,
+          "unit": "m",
+          "rel": false,
+          "error": 0.00017412750000500576,
+          "margin": 0.019825872499994995,
+          "ok": true,
+          "why": "worst axle deviation from floor_top + wheel_radius over every robot and every sample after the initial settle",
+          "key": "ride_worst"
+        }
+      ],
+      "wall": {
+        "startup_s": 4.0505592823028564,
+        "total_s": 12.291580200195312,
+        "step_s": 7.772512912750244
+      },
+      "passed": false,
+      "meta": {
+        "sim": "webots",
+        "rung": 7,
+        "fault": "crosstalk",
+        "engine": "upstream Webots R2025a",
+        "webots_home": "/opt/upstream-webots/R2025a",
+        "port": 1604,
+        "error": null,
+        "exit_code": 0,
+        "timed_out": false,
+        "proc_t0": 1786563468.5821977,
+        "proc_t1": 1786563480.8737779,
+        "world": "O:\\omnisim\\tests\\benchmarks\\ladder0\\webots\\worlds\\rung7.wbt",
+        "cmd": "wsl.exe -e bash /mnt/o/omnisim/tests/benchmarks/ladder0/webots/run_cell.sh 7 crosstalk /mnt/o/omnisim/tests/benchmarks/ladder0/webots/results/rung7_crosstalk /mnt/o/omnisim/tests/benchmarks/ladder0/webots/worlds/rung7.wbt 240 1604",
+        "engine_version": "R2025a",
+        "engine_sha256_16": "c12c65e8680b579d",
+        "engine_complaints": [
+          "WARNING: It is not recommended to run Webots as root."
+        ]
+      }
+    }
+  ]
+}

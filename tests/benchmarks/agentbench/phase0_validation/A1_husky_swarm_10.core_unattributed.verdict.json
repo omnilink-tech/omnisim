@@ -1,0 +1,456 @@
+{
+  "task": "A1_husky_swarm_10",
+  "outcome": "INVALID",
+  "progress": 3,
+  "progress_name": "artifact_runs",
+  "assertions": {
+    "A1.1": {
+      "ok": true,
+      "what": "exactly ten Huskies",
+      "measured": {
+        "robot-class bodies": 10,
+        "declared robot instances in the artifact": 10
+      },
+      "threshold": {
+        "robot bodies": 10,
+        "declarations": 10
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "robot identity in the live scene: synthetic: robot_class is set on the fixture",
+        "robot declarations in the artifact: synthetic: declared_count is given",
+        "inventory source: synthetic live query"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "count",
+          "how_to_fail": "eight or eleven robot-class bodies in the scene",
+          "witness": "a readable body inventory",
+          "witness_present": true,
+          "detail": "synthetic live query"
+        },
+        {
+          "clause": "identity",
+          "how_to_fail": "the ten bodies are not the robot the task named (a swarm of some other robot scores zero)",
+          "witness": "the adapter answers the identity predicate on live bodies AND counts matching declarations in the artifact",
+          "witness_present": true,
+          "detail": "synthetic: robot_class is set on the fixture"
+        }
+      ]
+    },
+    "A1.2": {
+      "ok": true,
+      "what": "ten distinct robots",
+      "measured": {
+        "distinct non-empty names": 10,
+        "distinct body ids": 10
+      },
+      "threshold": 10,
+      "detail": "",
+      "basis": "core-structural",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "distinct names",
+          "how_to_fail": "ten references to one body, or ten bodies sharing a name",
+          "witness": ">= 2 bodies in the inventory",
+          "witness_present": true,
+          "detail": ""
+        },
+        {
+          "clause": "distinct ids",
+          "how_to_fail": "ten scene entries resolving to the same body id",
+          "witness": ">= 2 bodies carrying an adapter-supplied id",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "A1.4": {
+      "ok": true,
+      "what": "all ten are controlled",
+      "measured": {
+        "bodies with a behaviour field set": 10,
+        "behaviour processes started": {
+          "husky_random": 10
+        }
+      },
+      "threshold": {
+        "behaviours": 10,
+        "starts": {
+          "husky_random": 10
+        }
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "behaviour-process starts: synthetic process table"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "behaviour attached",
+          "how_to_fail": "a robot body with no behaviour/controller attached",
+          "witness": ">= 1 robot body whose behaviour field is readable",
+          "witness_present": true,
+          "detail": ""
+        },
+        {
+          "clause": "processes started",
+          "how_to_fail": "fewer behaviour processes started than the scene declares",
+          "witness": "the adapter can count behaviour-process starts and cites where the count came from",
+          "witness_present": true,
+          "detail": "synthetic process table"
+        }
+      ]
+    },
+    "A1.3": {
+      "ok": true,
+      "what": "none interpenetrating at t=0",
+      "measured": {
+        "min pairwise AABB clearance (m)": 1.86,
+        "worst pair": [
+          2,
+          3
+        ],
+        "robot-robot contacts in first 10 steps": 0,
+        "robots without bounds": 0
+      },
+      "threshold": {
+        "clearance (m)": 0.05,
+        "contacts": 0
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "contact pairing: synthetic contact scan"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "AABB separation",
+          "how_to_fail": "two robots whose world AABBs overlap on all three axes at t=0",
+          "witness": ">= 2 robot bodies with world-space AABBs, read at a frozen instant",
+          "witness_present": true,
+          "detail": "synthetic frozen scan"
+        },
+        {
+          "clause": "no robot-robot contact",
+          "how_to_fail": "a contact naming two distinct robot bodies inside the first 10 steps",
+          "witness": "the contact query produced at least one contact naming two DISTINCT bodies (an empty list from a query that can only ever return self-pairs proves nothing)",
+          "witness_present": true,
+          "detail": "contacts of any kind: 40; naming two distinct bodies: 12"
+        }
+      ]
+    },
+    "A1.5": {
+      "ok": true,
+      "what": "all ten moved >= 2.0 m",
+      "measured": {
+        "min net displacement (m)": 6.0,
+        "n robots": 10,
+        "recorded window (s)": 30.016000000000002
+      },
+      "threshold": {
+        "net displacement (m)": 2.0,
+        "n robots": 10,
+        "window (s)": 30.0
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "displacement floor",
+          "how_to_fail": "a robot whose net displacement over the window is < 2.0 m",
+          "witness": ">= 2 pose samples per body, so a displacement is defined",
+          "witness_present": true,
+          "detail": "939 samples"
+        }
+      ]
+    },
+    "A1.6": {
+      "ok": true,
+      "what": "they drove, not slid (path length)",
+      "measured": {
+        "min path length (m)": 6.0
+      },
+      "threshold": {
+        "path length (m)": 4.0
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "path floor",
+          "how_to_fail": "a robot whose integrated path is < 4.0 m",
+          "witness": ">= 2 pose samples per body, integrated every step",
+          "witness_present": true,
+          "detail": "939 samples"
+        }
+      ]
+    },
+    "A1.7": {
+      "ok": true,
+      "what": "nobody fell through or tipped over",
+      "measured": {
+        "max |dz| (m)": 0.0,
+        "min z over all samples (m)": 0.2
+      },
+      "threshold": {
+        "|dz| (m)": 0.3,
+        "z (m)": -0.1
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "vertical band",
+          "how_to_fail": "a robot that sinks below -0.10 m or moves 0.30 m vertically",
+          "witness": ">= 1 z sample per body",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "A1.8": {
+      "ok": true,
+      "what": "the motion is random, not a parade",
+      "measured": {
+        "circular resultant R": 0.0,
+        "robots with an undefined bearing (net displacement < 0.05 m)": 0
+      },
+      "threshold": {
+        "R": "< 0.70",
+        "undefined bearings": 0
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "bearing spread",
+          "how_to_fail": "ten robots on one heading (R = 1.0 for a parade)",
+          "witness": "every robot has a defined bearing (net displacement >= 0.05 m)",
+          "witness_present": true,
+          "detail": "0 of 10 bearings undefined"
+        }
+      ]
+    },
+    "A1.9": {
+      "ok": true,
+      "what": "the run exited cleanly",
+      "measured": {
+        "exit code": 0,
+        "error lines": 0,
+        "driver reached a clean quit": true,
+        "finalize evidence": "driver completed 30s of sim",
+        "timed out": false
+      },
+      "threshold": {
+        "exit code": 0,
+        "error lines": 0
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "error stream + exit code: adapter-supplied"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "clean exit",
+          "how_to_fail": "a non-zero exit code, an error-class line, or a timeout",
+          "witness": "the adapter captured the exit code AND the simulator's own error stream",
+          "witness_present": true,
+          "detail": ""
+        },
+        {
+          "clause": "reached finalize",
+          "how_to_fail": "a world that never finalized (a failed load still exits 0 in 2-4 s, so the exit code cannot see this)",
+          "witness": "the adapter answers 'did the world finalize' either way, from a marker or from the driver's own completion record",
+          "witness_present": true,
+          "detail": "driver completed 30s of sim"
+        }
+      ]
+    },
+    "A1.10": {
+      "ok": false,
+      "what": "backend attribution recorded",
+      "measured": null,
+      "threshold": "an engine/solver attribution with a citation",
+      "detail": "",
+      "basis": "adapter-attested",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "attribution present",
+          "how_to_fail": "a run with no engine verdict record, no explicit engine pin and no documented engine invariant -- which is INVALID, not FAIL",
+          "witness": "the adapter names the channel it read the attribution from",
+          "witness_present": true,
+          "detail": "unattributed"
+        }
+      ]
+    }
+  },
+  "n_pass": 9,
+  "n_total": 10,
+  "failed_assertion": "A1.10",
+  "failed_assertions": [
+    "A1.10"
+  ],
+  "self_verified": false,
+  "attribution": {},
+  "measurements": {
+    "robots_seen": 10,
+    "robots_qualifying": 10,
+    "per_robot": {
+      "net_displacement_m": [
+        6.0,
+        6.0,
+        6.0,
+        6.0,
+        6.0,
+        6.0,
+        6.0,
+        6.0,
+        6.0,
+        6.0
+      ],
+      "path_length_m": [
+        6.0,
+        6.0,
+        6.0,
+        6.0,
+        6.0,
+        6.0,
+        6.0,
+        6.0,
+        6.0,
+        6.0
+      ],
+      "z_first_last_min_max_absdz": [
+        [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.0
+        ],
+        [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.0
+        ],
+        [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.0
+        ],
+        [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.0
+        ],
+        [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.0
+        ],
+        [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.0
+        ],
+        [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.0
+        ],
+        [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.0
+        ],
+        [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.0
+        ],
+        [
+          0.2,
+          0.2,
+          0.2,
+          0.2,
+          0.0
+        ]
+      ],
+      "bearing_rad": [
+        0.0,
+        0.6283,
+        1.2566,
+        1.885,
+        2.5133,
+        3.1416,
+        -2.5133,
+        -1.885,
+        -1.2566,
+        -0.6283
+      ]
+    }
+  },
+  "artifacts": {
+    "world": "/synthetic/husky_swarm_10.wbt"
+  },
+  "notes": [
+    "no physics-engine attribution: the adapter could not name the engine that drove this run from any channel it has. An unattributed physics result is not a result (SPEC A1.10).",
+    "core-level evidence: synthetic EvidenceBundle (graders/test_neutral_core.a1_bundle, attribution=None); no engine was run. See COVERAGE.md, A1.10."
+  ],
+  "basis": {
+    "core-physical": [
+      "A1.5",
+      "A1.6",
+      "A1.7",
+      "A1.8"
+    ],
+    "core-structural": [
+      "A1.2"
+    ],
+    "adapter-attested": [
+      "A1.10"
+    ],
+    "mixed": [
+      "A1.1",
+      "A1.4",
+      "A1.3",
+      "A1.9"
+    ]
+  },
+  "vacuous_assertions": {}
+}

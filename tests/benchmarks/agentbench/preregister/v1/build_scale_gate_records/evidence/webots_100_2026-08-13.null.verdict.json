@@ -1,0 +1,323 @@
+{
+  "task": "BuildScale_100",
+  "outcome": "FAIL",
+  "progress": 3,
+  "progress_name": "artifact_runs",
+  "assertions": {
+    "BS.1": {
+      "ok": true,
+      "what": "portable artifact loads, reaches the requested duration, exits cleanly, and identifies the simulator backend",
+      "measured": {
+        "live_load_ok": true,
+        "exit_code": 0,
+        "timed_out": false,
+        "error_lines": 0,
+        "driver_completed": true,
+        "backend": "ode"
+      },
+      "threshold": "load true; clean exit; driver completed; attributed backend",
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "upstream Webots R2025a ships ODE as its ONLY physics engine -- a documented structural invariant of that simulator rather than a per-run reading, because it exposes no engine-selection field and writes no backend-verdict file to read. Its own R2025a WorldInfo reference documents the ODE solver constants directly (basicTimeStep, ERP, and the ERP/CFM-bearing contactProperties) and documents WorldInfo.physics as the path to an ODE *physics plugin*: https://cyberbotics.com/doc/reference/worldinfo and https://cyberbotics.com/doc/reference/physics-plugin. Install and invocation for this arm: docs/developer/webots-control-baseline.md."
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "clean attributable run",
+          "how_to_fail": "load failure, simulator error, timeout, short run, or missing backend identity",
+          "witness": "simulator log, recorder completion flag, and backend citation",
+          "witness_present": true,
+          "detail": "the captured stdout+stderr of the webots process (launched --stdout --stderr) plus its exit code. WARNING: upstream Webots writes NO log file -- there is no post-hoc equivalent of $OMNISIM_LOG_PATH, so whatever was not captured at launch does not exist"
+        }
+      ]
+    },
+    "BS.2": {
+      "ok": true,
+      "what": "the live scene contains exactly the requested number of distinct robot-class bodies",
+      "measured": {
+        "robot bodies": 100,
+        "distinct ids": 100,
+        "distinct names": 100
+      },
+      "threshold": 100,
+      "detail": "",
+      "basis": "core-structural",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "exact distinct count",
+          "how_to_fail": "one robot missing, duplicated, or replaced by a non-robot body",
+          "witness": "a frozen inventory of every live body",
+          "witness_present": true,
+          "detail": "the grader-owned in-world Supervisor recorder's roster scan. Upstream has no HTTP/scene-tree surface (webots-control-baseline.md sec. 6), so a Supervisor controller is the only scene reader that exists"
+        }
+      ]
+    },
+    "BS.3": {
+      "ok": true,
+      "what": "every robot has its own attributed runtime controller instance, every instance started, and the controllers contain no forbidden world-pose mutation path",
+      "measured": {
+        "robots with channel": 100,
+        "distinct channels": 100,
+        "runtime controller instances started": 100,
+        "forbidden world-pose mutation calls": []
+      },
+      "threshold": 100,
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "live Robot controller fields + captured per-name controller start counts; upstream launches an isolated controller instance per Robot; collected sources scanned for pose writes"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "independent addressability",
+          "how_to_fail": "two robots share a channel or one robot's controller instance did not start, or a controller can write world poses",
+          "witness": "per-robot runtime instance ids, process-start evidence, and an adapter-owned source scan",
+          "witness_present": true,
+          "detail": null
+        }
+      ]
+    },
+    "BS.4": {
+      "ok": true,
+      "what": "initial interpenetration is absent: robots are separated by at least 0.05 m at t=0 and have no robot-robot contact in the first 10 steps",
+      "measured": {
+        "minimum AABB clearance (m)": 1.6,
+        "worst pair": [
+          18,
+          19
+        ],
+        "missing bounds": 0,
+        "initial robot collision pairs": 0
+      },
+      "threshold": {
+        "clearance_m": 0.05,
+        "collision_pairs": 0,
+        "steps": 10
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "AABB separation",
+          "how_to_fail": "two initial robot AABBs overlap or are closer than the margin",
+          "witness": "frozen world-space AABBs for all robots",
+          "witness_present": true,
+          "detail": "the grader-owned Supervisor recorder's t=0 scan. The recorder is synchronization TRUE, so the world is genuinely frozen while it walks the scene -- but upstream exposes no bounds API, so each world-space AABB is one the recorder computed itself from the body's boundingObject geometry and pose"
+        },
+        {
+          "clause": "initial contacts",
+          "how_to_fail": "a named robot-robot contact occurs",
+          "witness": "a contact channel proven able to name two distinct bodies",
+          "witness_present": true,
+          "detail": "contacts of any kind: 32800; naming two distinct bodies: 100"
+        }
+      ]
+    },
+    "BS.5": {
+      "ok": false,
+      "what": "at least 90% of robots move at least 1.0 m net and travel at least 2.0 m during the 20 s window",
+      "measured": {
+        "moving robots": 0,
+        "moving fraction": 0.0,
+        "minimum net displacement (m)": 3.202573134621778e-10,
+        "minimum path length (m)": 4.2133082508530163e-08,
+        "recorded window (s)": 20.0
+      },
+      "threshold": {
+        "moving robots": 90,
+        "net displacement_m": 1.0,
+        "path_length_m": 2.0,
+        "window_s": 20.0
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "movement fraction",
+          "how_to_fail": "more than 10% of robots remain stationary or only jitter in place",
+          "witness": ">=2 pose samples for every robot over the full window",
+          "witness_present": true,
+          "detail": "the grader-owned Supervisor recorder: every tracked body's world position sampled once per basic timestep in simulated seconds, metres (trajectory.json)"
+        }
+      ]
+    },
+    "BS.6": {
+      "ok": true,
+      "what": "runaway is absent: all recorded poses are finite; no robot travels more than 25 m from its start or drops more than 0.5 m",
+      "measured": {
+        "all poses finite": true,
+        "maximum xy distance from start (m)": 1.4392056770207951e-08,
+        "maximum z drop from start (m)": 0.15068160000000003
+      },
+      "threshold": {
+        "maximum_xy_m": 25.0,
+        "maximum_z_drop_m": 0.5
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "runaway bound",
+          "how_to_fail": "a NaN/Inf pose, a robot leaving the 25 m envelope, or a 0.5 m fall",
+          "witness": "full-window pose samples for every robot",
+          "witness_present": true,
+          "detail": "the grader-owned Supervisor recorder: every tracked body's world position sampled once per basic timestep in simulated seconds, metres (trajectory.json)"
+        }
+      ]
+    },
+    "BS.7": {
+      "ok": true,
+      "what": "unique robot-robot collision pairs over the full window do not exceed floor(0.02 * requested robots)",
+      "measured": {
+        "unique robot collision pairs": 0,
+        "contact window (s)": 20.0
+      },
+      "threshold": {
+        "maximum pairs": 2,
+        "window_s": 20.0
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "collision bound",
+          "how_to_fail": "more unique robot pairs collide than the level permits",
+          "witness": "full-window contacts able to name two distinct bodies",
+          "witness_present": true,
+          "detail": "contacts of any kind: 32800; naming two distinct bodies: 100"
+        }
+      ]
+    },
+    "BS.8": {
+      "ok": true,
+      "what": "teleportation is absent: no single sampled step exceeds 0.25 m and no measured speed exceeds 5.0 m/s at a sample period no larger than 0.1 s",
+      "measured": {
+        "maximum sample period (s)": 0.03200000000000003,
+        "maximum single-sample step (m)": 0.05022720000000003,
+        "maximum speed (m/s)": 1.5696000000000008
+      },
+      "threshold": {
+        "sample_period_s": 0.1,
+        "step_m": 0.25,
+        "speed_m_s": 5.0
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "teleport bound",
+          "how_to_fail": "one robot jumps farther or faster than the physical bound",
+          "witness": "pose samples no more than 0.1 s apart",
+          "witness_present": true,
+          "detail": "the grader-owned Supervisor recorder: every tracked body's world position sampled once per basic timestep in simulated seconds, metres (trajectory.json)"
+        }
+      ]
+    },
+    "BS.9": {
+      "ok": false,
+      "what": "the collected artifact has no missing or absolute host dependencies and passes at least one clean-directory replay",
+      "measured": {
+        "artifact files": 2,
+        "missing dependencies": [],
+        "absolute host dependencies": [],
+        "clean replay attempts": 1,
+        "clean replay passes": 0,
+        "clean replay verdicts": [
+          "FAIL"
+        ]
+      },
+      "threshold": {
+        "missing": 0,
+        "absolute": 0,
+        "replay_attempts": 1,
+        "replay_passes": 1
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "dependency scan + grader-owned clean-directory project replay"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "clean replay",
+          "how_to_fail": "an asset is missing, resolves through an absolute authoring-machine path, or the clean replay fails",
+          "witness": "dependency scan plus a grader-owned clean-directory replay",
+          "witness_present": true,
+          "detail": null
+        }
+      ]
+    }
+  },
+  "n_pass": 7,
+  "n_total": 9,
+  "failed_assertion": "BS.5",
+  "failed_assertions": [
+    "BS.5",
+    "BS.9"
+  ],
+  "self_verified": false,
+  "attribution": {
+    "backend": "ode",
+    "solver": "ode",
+    "degraded": false,
+    "engine_invariant": true,
+    "webots_version": "R2025a",
+    "coordinate_system": "ENU",
+    "ode_physics_plugin": null,
+    "basic_time_step_ms": 32.0,
+    "source": "upstream Webots R2025a ships ODE as its ONLY physics engine -- a documented structural invariant of that simulator rather than a per-run reading, because it exposes no engine-selection field and writes no backend-verdict file to read. Its own R2025a WorldInfo reference documents the ODE solver constants directly (basicTimeStep, ERP, and the ERP/CFM-bearing contactProperties) and documents WorldInfo.physics as the path to an ODE *physics plugin*: https://cyberbotics.com/doc/reference/worldinfo and https://cyberbotics.com/doc/reference/physics-plugin. Install and invocation for this arm: docs/developer/webots-control-baseline.md."
+  },
+  "measurements": {
+    "requested_robots": 100,
+    "provenance": {
+      "sim": "webots",
+      "adapter": "agentbench.adapters.webots.build_scale",
+      "roster": "the grader-owned in-world Supervisor recorder's roster scan. Upstream has no HTTP/scene-tree surface (webots-control-baseline.md sec. 6), so a Supervisor controller is the only scene reader that exists",
+      "t0": "the grader-owned Supervisor recorder's t=0 scan. The recorder is synchronization TRUE, so the world is genuinely frozen while it walks the scene -- but upstream exposes no bounds API, so each world-space AABB is one the recorder computed itself from the body's boundingObject geometry and pose",
+      "trajectory": "the grader-owned Supervisor recorder: every tracked body's world position sampled once per basic timestep in simulated seconds, metres (trajectory.json)",
+      "controls": "live Robot controller fields + captured per-name controller start counts; upstream launches an isolated controller instance per Robot; collected sources scanned for pose writes",
+      "portability": "dependency scan + grader-owned clean-directory project replay"
+    }
+  },
+  "artifacts": {
+    "artifact": "O:\\omnisim\\tests\\benchmarks\\agentbench\\adapters\\webots\\build_scale_lane\\worlds\\build_scale_100_null.wbt"
+  },
+  "notes": [
+    "upstream Webots exposes no HTTP/JSON authoring surface, no scene-tree query, no hot reload and no structured load diagnostics (webots-control-baseline.md sec. 6), so there is no live-session pass on this arm. 'the artifact loaded' is evidenced instead by the in-world recorder having enumerated the scene at all.",
+    "upstream Webots has no --duration and no auto-exit: a headless run terminates only when an in-world Supervisor calls simulationQuit(), or when something kills it. 'the run exited cleanly' therefore rests on the recorder's own quit record, not on a wall-clock timeout.",
+    "1 EXTERNPROTO import(s) in this world are fetched over the network on first load (the R2025a distribution ships zero .proto files; webots-control-baseline.md sec. 5.1). That is against this suite's local-asset-only rule: a network hiccup on a cold cache becomes a benchmark result."
+  ],
+  "basis": {
+    "core-physical": [
+      "BS.4",
+      "BS.5",
+      "BS.6",
+      "BS.7",
+      "BS.8"
+    ],
+    "core-structural": [
+      "BS.2"
+    ],
+    "mixed": [
+      "BS.1",
+      "BS.3",
+      "BS.9"
+    ]
+  },
+  "vacuous_assertions": {}
+}

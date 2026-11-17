@@ -1,0 +1,8 @@
+{
+  "metric": "mean absolute 8-bit channel error against correctly aligned history",
+  "fixture": "16x16 checker, one-pixel horizontal translation, 0.02 stable history offset, central 12x12 ROI",
+  "result": {
+    "camera_only": 33.5,
+    "object_motion": 0.0
+  }
+}

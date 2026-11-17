@@ -1,0 +1,137 @@
+#OMNISIM R2025a utf8
+
+# P1 GATE WORLD (docs/developer/wren-deletion-runbook.md) -- a wgpu Camera pointed at a
+# draping Cloth.
+#
+# WHY IT HAD TO BE AUTHORED. Before this file, ZERO tracked worlds paired a `Camera {`
+# with a `Cloth {`, which is precisely why the defect it exists to catch survived: Cloth
+# and SoftBody were made to render on the wgpu MAIN VIEW in `d5897ff7d`, but the fix was
+# appended downstream of collectWorldDraws in OmView3D and collectDeformableDraws then had
+# exactly ONE caller in the tree. Every wgpu-rendered Camera / RangeFinder / Lidar saw
+# nothing. Under WREN they saw the sheet (OmCloth's renderable carries VM_REGULAR, which
+# every sensor visibility mask intersects), so that was a REGRESSION AGAINST WREN.
+#
+# WHAT THE GATE ASSERTS, and why the third one is the one that matters:
+#   RED       OMNISIM_WGPU_SENSOR_DYNAMIC=0 -> this world's camera image is IDENTICAL to
+#             the sibling control world camera_cloth_wgpu_control.omniworld (same scene,
+#             no Cloth). i.e. the instrument can go red.
+#   GREEN     default -> the two differ substantially.
+#   ANIMATION default -> the image at two well-separated steps DIFFERS. A cloth frozen at
+#             its rest pose passes both of the assertions above and is exactly what the
+#             shared-static-pump bug produced (see OmWgpuMeshCache::vertexEpochIs): the
+#             main view consumed the "clock advanced" edge, so the Camera's own mesh cache
+#             uploaded the sheet ONCE and never again. Only a cross-frame comparison sees it.
+#
+# Driven by the `camera_cloth_wgpu_smoke` controller, which dumps the raw camera readback
+# as PPM at three sample steps plus a stats line per sample.
+#
+# Kept deliberately small: 16x16 cells = 289 particles at 8 ms, so the whole run is a few
+# seconds on CPU. The sheet carries a plain PBRAppearance (no texture maps) because the
+# assertion is "did these pixels change", not "does the weave read as cotton" -- the
+# textured version of this scene is projects/samples/demos/worlds/physics/newton_cloth_drape.omniworld.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  title "P1 gate -- wgpu Camera sees a draping Cloth"
+  # SolverMuJoCo owns the rigid scene, SolverVBD owns the cloth particles, and
+  # SolverCoupledProxy exchanges forces over ONE Model. Same choice as
+  # newton_cloth_drape.omniworld.
+  newtonSolver "mujoco+vbd"
+  newtonStatics TRUE
+  newtonGroundMu 1
+}
+Viewpoint {
+  position -2.2 -2.4 1.9
+  orientation 0.36 -0.30 -0.88 1.24
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+DEF FLOOR Solid {
+  translation 0 0 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.36 0.40
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 6 6 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 6 6 0.1
+  }
+}
+# The obstacle the sheet drapes over. Top face at z = 0.5.
+DEF TABLE Solid {
+  translation 0 0 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.40 0.25
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.5 0.5 0.5
+      }
+    }
+  ]
+  name "table"
+  boundingObject Box {
+    size 0.5 0.5 0.5
+  }
+}
+# The camera rig. The Robot carries no geometry of its own so nothing but the scene
+# reaches the readback; the Camera's local +X is its forward axis, and with an identity
+# rotation that is world +X -- i.e. straight at the sheet from 1.6 m out, slightly above
+# the table top.
+DEF CAM_RIG Robot {
+  translation -1.6 0 0.85
+  children [
+    Camera {
+      name "cloth_cam"
+      width 96
+      height 72
+      fieldOfView 0.9
+      near 0.05
+      far 20.0
+      renderBackend "wgpu"
+    }
+  ]
+  name "cloth_cam_rig"
+  controller "camera_cloth_wgpu_smoke"
+  supervisor FALSE
+}
+# 17 x 17 particles at 5 cm spacing = a 0.8 m square sheet, pinned along +Y so it hinges
+# and folds over the box. Bright red against a grey floor and a brown table, so a
+# cloth-vs-no-cloth pixel diff is unambiguous.
+DEF SHEET Cloth {
+  translation -0.4 -0.4 1.0
+  dimX 16
+  dimY 16
+  cellX 0.05
+  cellY 0.05
+  mass 0.001
+  particleRadius 0.01
+  fixTop TRUE
+  diffuseColor 0.85 0.25 0.25
+  appearance PBRAppearance {
+    baseColor 0.80 0.18 0.15
+    roughness 0.9
+    metalness 0
+  }
+}

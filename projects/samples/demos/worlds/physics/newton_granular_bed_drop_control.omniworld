@@ -1,0 +1,198 @@
+#OMNISIM R2025a utf8
+
+# THE CONTROL ARM of newton_granular_bed_drop.omniworld. This file is that world
+# with EXACTLY ONE NODE REMOVED -- the `DEF BED GranularBed` -- and nothing else
+# changed. The scene half below is copied verbatim, so the two cannot drift.
+#
+# WHY A WHOLE SECOND WORLD EXISTS. The failure mode of the GranularBed node is
+# not a crash, a warning or a missing render: it is a bed that parses, registers,
+# DRAWS, and is silently skipped by the solver. The runtime's batched-substep
+# branch drives mj_step directly and never calls solver.step(), so an MPM solver
+# that fails to reach the runtime's `solver_mpm` slot never advances a single
+# particle -- with no exception and nothing in the log. In that state the cube
+# falls straight through the sand and lands on the floor, i.e. HERE.
+#
+#   THE DISCRIMINATOR:  CUBE rest z.
+#     this world (no bed)     ->  z = 0.08 exactly, half the 0.16 cube on a
+#                                 floor whose top is z = 0
+#     the demo world (bed)    ->  clearly above the bed's top surface at z = 0.20
+#   If the demo agrees with this file to within a millimetre, the sand is not
+#   being simulated -- whatever the picture shows.
+#
+# ⚠ THE TWO ARMS DO NOT RUN THE IDENTICAL RIGID SOLVER. Any particle source
+# forces the model onto CUDA and the runtime then moves the MuJoCo entry from CPU
+# mj_step to mujoco_warp; this world has no particles, so it stays on CPU
+# mj_step. That is worth millimetres, not the 0.12 m the discriminator turns on.
+# For a strict same-solver comparison run BOTH arms with
+# OMNISIM_NEWTON_CLOTH_CPU_MJ=1.
+#
+# ⚠ AND THIS WORLD NEEDS NO CUDA AT ALL, which is the other reason it is useful:
+# the demo REFUSES to finalize without a CUDA device (the MPM CPU path measures
+# 0.15-0.25x realtime and the runtime raises rather than degrades), so on a box
+# with no GPU this control still runs and still tells you what the floor answer
+# looks like.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  # ⚠ newtonSolver is deliberately NOT declared. The coupling is selected by the
+  # NODES this world carries, never by that string -- and its schema enum has no
+  # "mujoco+mpm" value to declare, so writing one would be a parse warning and a
+  # second source of truth that can disagree with the nodes. Leaving it unset is
+  # also what keeps this file and the control arm identical apart from the bed.
+  newtonSubsteps 2
+  newtonStatics TRUE
+  newtonGroundMu 1
+}
+Viewpoint {
+  position 3.303 -3.516 3.240
+  orientation -0.278945 0.120681 0.952694 2.359689
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.36 0.40
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 2 2 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 2 2 0.1
+  }
+}
+# The four retaining walls. Sand at these settings is COHESIONLESS (yieldStress
+# 0 = newton's default), so without them the bed spreads across the floor over
+# the first few seconds and the cube ends up on bare ground -- which would then
+# look exactly like the "MPM was skipped" failure this world is built to detect.
+# The walls are ordinary static Solids and the bed collides with them through
+# the same proxy the cube uses.
+#
+# Each wall carries its OWN inline Shape and its own inline boundingObject Box
+# rather than sharing one through DEF/USE. Sharing a Shape between a child list
+# and a second Solid's boundingObject is legal VRML and is exactly the kind of
+# aliasing that is fine until it is not; four short blocks cost nothing and
+# cannot surprise anyone.
+DEF WALL_XN Solid {
+  translation -0.45 0 0.15
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.31 0.34
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 0.02 0.92 0.3
+      }
+    }
+  ]
+  name "wall_xn"
+  boundingObject Box {
+    size 0.02 0.92 0.3
+  }
+}
+DEF WALL_XP Solid {
+  translation 0.45 0 0.15
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.31 0.34
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 0.02 0.92 0.3
+      }
+    }
+  ]
+  name "wall_xp"
+  boundingObject Box {
+    size 0.02 0.92 0.3
+  }
+}
+DEF WALL_YN Solid {
+  translation 0 -0.45 0.15
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.31 0.34
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 0.92 0.02 0.3
+      }
+    }
+  ]
+  name "wall_yn"
+  boundingObject Box {
+    size 0.92 0.02 0.3
+  }
+}
+DEF WALL_YP Solid {
+  translation 0 0.45 0.15
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.31 0.34
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 0.92 0.02 0.3
+      }
+    }
+  ]
+  name "wall_yp"
+  boundingObject Box {
+    size 0.92 0.02 0.3
+  }
+}
+# ⚠ THE MEASUREMENT, and the ONE number both arms are read on. Released from
+# z = 0.60 with nothing holding it, directly above the middle of the bed. With
+# no sand it rests at z = 0.08 exactly -- half of the 0.16 cube, on a floor whose
+# top is z = 0. With sand it must come to rest clearly higher, held up by the
+# bed. That DIFFERENCE is the proof of two-way coupling -- the bed pushing back
+# on a MuJoCo body -- and no screenshot substitutes for it.
+#
+# (This comment is identical in both arms on purpose: the two files share one
+# scene, byte for byte, and differ only by the presence of the bed.)
+DEF CUBE Solid {
+  translation 0 0 0.6
+  children [
+    DEF CUBE_SHAPE Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.42 0.28
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 0.16 0.16 0.16
+      }
+    }
+  ]
+  name "cube"
+  boundingObject USE CUBE_SHAPE
+  physics Physics {
+    density -1
+    mass 2
+  }
+}

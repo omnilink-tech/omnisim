@@ -1,0 +1,49 @@
+#VRML_SIM R2025a utf8
+# AgentBench Phase W bring-up world: two Pioneer 3-AT UGVs driving gentle
+# arcs on a flat arena, under upstream Webots R2025a. Authored from UPSTREAM
+# assets only (webots-control-baseline.md sec. 4: upstream ships no Husky;
+# the Pioneer 3-AT is the sanctioned 4-wheel skid-steer analogue).
+#
+# Baseline sec. 5 traps honoured here:
+#   - trap 1: every EXTERNPROTO below resolves from the pre-seeded
+#     ~/.cache/Cyberbotics asset cache, so the run works offline;
+#   - trap 2: no lidar, no camera -- CPU-only;
+#   - trap 3: no rotation angle is at exactly +/-pi (yaw values are nudged:
+#     2.9 and -0.4, never 3.14159...).
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/adept/pioneer3/protos/Pioneer3at.proto"
+
+WorldInfo {
+  info [
+    "AgentBench Phase W bring-up: two Pioneer 3-AT UGVs, upstream R2025a."
+  ]
+  title "AgentBench Webots bring-up"
+  basicTimeStep 16
+}
+Viewpoint {
+  orientation 0.35 0.35 -0.87 1.7
+  position -14 -14 10
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 30 30
+  wallHeight 0.5
+}
+DEF P3AT0 Pioneer3at {
+  translation -4 -2 0.11
+  rotation 0 0 1 2.9
+  name "p3at0"
+  controller "bringup_drive"
+}
+DEF P3AT1 Pioneer3at {
+  translation 4 2 0.11
+  rotation 0 0 1 -0.4
+  name "p3at1"
+  controller "bringup_drive"
+}

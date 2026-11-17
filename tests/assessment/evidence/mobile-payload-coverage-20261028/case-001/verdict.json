@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "reasons": [],
+  "metrics": {
+    "braking_qualified": true,
+    "max_achieved_speed_m_s": 0.42368441820144653,
+    "max_ground_tilt_rad": 0.0,
+    "sample_count": 272,
+    "sample_period_s": 0.016,
+    "max_forward_excursion_m": 0.042230576276779175,
+    "initial_speed_m_s": 0.41157397627830505,
+    "stop_time_s": 0.20799999999999996,
+    "observed_command_delay_s": 0.0,
+    "request_time_s": 1.84,
+    "rollback_m": 0.0,
+    "final_speed_m_s": 1.0503442939643347e-10
+  },
+  "scope": "jackal physical-wheel model/controller; simulation only"
+}

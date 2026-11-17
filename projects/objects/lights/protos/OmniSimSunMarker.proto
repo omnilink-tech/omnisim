@@ -1,0 +1,60 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# tags: no3dView
+# keywords: primitive/light
+# OmniSim canonical sun marker (draggable Unreal-style sun position).
+#
+# Part of the standard OmniSim world recipe (see docs/WORLD_RECIPE.md).
+# Pair with OmniSimSky + OmniSimSun — all three together reproduce
+# the Spot demo lighting that is the canonical look across every demo,
+# sample, generated, and RL world in this repo.
+#
+# This PROTO collapses the original spot.omniworld pattern of `DEF SUN_MARKER
+# Solid { ... }` + a separate `Robot { name "sun_marker_driver" ... }`
+# into a single Robot node whose own translation IS the sun marker. The
+# emissive sphere is its visual child. The supervisor controller is the
+# same `sun_marker` controller used by spot.omniworld — it reads SUN_MARKER's
+# translation and pipes it into DEF SUN's `direction` field every step,
+# so dragging the glowing sphere in the 3D viewport orbits the sun live.
+# Press V in the viewport to hide / show.
+#
+# Instantiation MUST be `DEF SUN_MARKER OmniSimSunMarker { ... }` at
+# world level so the controller can locate itself via getFromDef.
+#
+# Defaults: ~8 m above the origin, ~0.9 m glowing sphere — same as the
+# spot.omniworld block. Extend by adding new optional fields with defaults —
+# that is a backward-compatible change.
+
+PROTO OmniSimSunMarker [
+  field SFVec3f translation       0 0 8
+  field SFString name             "sun_marker_driver"
+  field SFFloat radius            0.9
+  field SFColor baseColor         1.0 0.9 0.55
+  field SFColor emissiveColor     1.0 0.85 0.45
+  field SFFloat emissiveIntensity 35
+]
+{
+  Robot {
+    translation IS translation
+    name        IS name
+    controller  "sun_marker"
+    supervisor  TRUE
+    children    [
+      Shape {
+        appearance PBRAppearance {
+          baseColor         IS baseColor
+          emissiveColor     IS emissiveColor
+          emissiveIntensity IS emissiveIntensity
+          roughness         1.0
+          metalness         0.0
+        }
+        geometry Sphere {
+          radius      IS radius
+          subdivision 3
+        }
+        castShadows FALSE
+      }
+    ]
+  }
+}

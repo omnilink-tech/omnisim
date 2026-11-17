@@ -1,0 +1,113 @@
+#OMNISIM R2025a utf8
+
+# The real-time pacing probe world.
+#
+# The scene is deliberately near-empty. What is being measured is the ENGINE's
+# pacing floor -- how closely the QTimer that drives OmSimulationWorld tracks
+# wall clock -- so any scene cost here is confounding, not interesting. One
+# static floor, one small dynamic box so Newton has a body to integrate and
+# writes its verdict sidecar, and the probe Robot itself, which carries no
+# physics and no boundingObject and therefore costs the solver nothing.
+#
+# basicTimeStep 8 is an exact integer, which is the case the QTimer::start(int)
+# path handles correctly. The sibling world hil_timing_probe_fractional.omniworld
+# is identical except for a fractional basicTimeStep, and exists to test the
+# truncation hazard.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 20.5
+  newtonSolver "mujoco"
+  newtonGroundMu 0.8
+  title "HIL Real-Time Pacing Probe (basicTimeStep 20.5)"
+  info [
+    "Measures how closely the engine's real-time pacing tracks wall clock."
+    "The scene is minimal on purpose: this is the pacing floor, not a"
+    "scene-cost benchmark. Driven by packages/omnisim-hil/tools/measure_realtime.py."
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 3.2 -3.4 2.4
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+# Static floor. A Box rather than a Plane so the collision surface is the one
+# authored here, not the implicit ground plane the MuJoCo converter substitutes
+# for a dropped Plane collider.
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  name "floor"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.37 0.40
+        roughness 0.85
+        metalness 0.0
+      }
+      geometry Box {
+        size 4 4 0.1
+      }
+    }
+  ]
+  boundingObject Box {
+    size 4 4 0.1
+  }
+}
+
+# One dynamic body, resting. Present so the world has something for the solver
+# to integrate -- a world with zero dynamic bodies is a degenerate case the
+# engine reports separately -- and small enough that its cost is negligible.
+DEF SETTLE_BOX Solid {
+  translation 0 0 0.05
+  name "settle_box"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.95 0.78 0.25
+        roughness 0.6
+        metalness 0.05
+      }
+      geometry Box {
+        size 0.1 0.1 0.1
+      }
+    }
+  ]
+  boundingObject Box {
+    size 0.1 0.1 0.1
+  }
+  physics Physics {
+    density -1
+    mass 0.2
+  }
+}
+
+# The probe. Supervisor only so it can quit the engine when the recording is
+# complete; it makes no supervisor call inside the timed loop.
+DEF PROBE Robot {
+  translation 0 0 0.5
+  name "hil_timing_probe"
+  controller "hil_timing_probe"
+  controllerArgs [
+    "--ticks" "1200"
+  ]
+  supervisor TRUE
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.20 0.65 0.95
+        roughness 0.5
+        metalness 0.1
+      }
+      geometry Sphere {
+        radius 0.06
+        subdivision 2
+      }
+    }
+  ]
+}

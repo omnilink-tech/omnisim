@@ -1,0 +1,158 @@
+{
+ "arm_a": [
+  {
+   "cell": "20260812_ba_armA_c1",
+   "path": "o:\\omnisim\\tests\\benchmarks\\agentbench\\results\\cc_lane\\20260812_ba_armA_c1",
+   "source": "tests/benchmarks/agentbench/results/cc_lane/20260812_ba_armA_c1\\transcript.jsonl",
+   "tool_calls": 53,
+   "defect_encounters": 1,
+   "transcript_encounters": 1,
+   "by_signature": {
+    "zero_motion_reading": 1
+   },
+   "hits": [
+    {
+     "sig": "zero_motion_reading",
+     "call": 42,
+     "t_s": 421.5,
+     "tool": "Bash",
+     "note": "the agent measured a fleet that did not move",
+     "excerpt": "{\"command\": \"cd \\\"C:\\\\Users\\\\<user>\\\\AppData\\\\Local\\\\Temp\\\\agentbench_cc_armA\\\\instances\\\\20260812_132746_omnis => == loading projects/samples/demos/worlds/physics/husky_random_swarm_10.wbt (light=true) ==\r\n   ok=True  in 3.6s\r\n   physics: backend=newton solver=MuJoCo (cpu/m"
+    }
+   ],
+   "report_hits": [],
+   "context": {
+    "measured_under_concurrency": 0,
+    "sweep_kills": 2,
+    "sweep_skipped_other_cell": 0
+   },
+   "error_calls": 15,
+   "calls_lost_to_defects": 1,
+   "error_call_pct": 28.3,
+   "time_to_first_working_scene_s": 167.0,
+   "first_working_scene": {
+    "call": 21,
+    "t_s": 167.0,
+    "tool": "Bash",
+    "excerpt": "./AGENTS.md:58:- **\u26a0\ufe0f MORE THAN ~8 WHEELED ROBOTS ON `mujoco_warp`? RAISE `WorldInfo.newtonNjmax` / `newtonNconmax` \u2014 the 256 default overflows SILENTLY.** mujo"
+   },
+   "outcome": "FAIL",
+   "failed_assertion": "A1.9",
+   "assertions_passed": 9,
+   "assertions_total": 10,
+   "t_agent_s": null,
+   "usd": null,
+   "engine_sha": "8a6f8bc54194dd582d65744ebb58a732142c269ae768c677ad2bddac2f6455df",
+   "pinned_model": "claude-opus-5"
+  },
+  {
+   "cell": "20260812_ba_armA_c2",
+   "path": "o:\\omnisim\\tests\\benchmarks\\agentbench\\results\\cc_lane\\20260812_ba_armA_c2",
+   "source": "tests/benchmarks/agentbench/results/cc_lane/20260812_ba_armA_c2\\transcript.jsonl",
+   "tool_calls": 53,
+   "defect_encounters": 3,
+   "transcript_encounters": 3,
+   "by_signature": {
+    "stale_ode_doc_claim": 1,
+    "http_503": 1,
+    "reset_freeze": 1
+   },
+   "hits": [
+    {
+     "sig": "stale_ode_doc_claim",
+     "call": 22,
+     "t_s": 185.5,
+     "tool": "Write",
+     "note": "agent wrote/tuned an ODE-era field the engine does not read",
+     "excerpt": "{\"file_path\": \"C:\\\\Users\\\\<user>\\\\AppData\\\\Local\\\\Temp\\\\agentbench_cc_armA\\\\instances\\\\20260812_133943_omnisim_A1\\\\projects\\\\samples\\\\demos\\\\worlds\\\\physics\\\\newton_husky_swarm_random.wbt\", \"content\": \"#OMNISIM R2025a utf"
+    },
+    {
+     "sig": "http_503",
+     "call": 34,
+     "t_s": 299.6,
+     "tool": "Bash",
+     "note": "the service answered 503",
+     "excerpt": "{\"command\": \"cd \\\"C:/Users/<user>/AppData/Local/Temp/agentbench_cc_armA/instances/20260812_133943_omnisim_A1\\\"  => --- reset ---\nHTTP/1.0 503 Service Unavailable\r\nServer: BaseHTTP/0.6 Python/3.12.9\r\nDate: Wed, 12 Aug 2026 11:44:50 GMT\r\nContent-Type: application/json\r\nContent"
+    },
+    {
+     "sig": "reset_freeze",
+     "call": 46,
+     "t_s": 500.4,
+     "tool": "Bash",
+     "note": "/sim/reset left the robots frozen",
+     "excerpt": "{\"command\": \"cd \\\"C:/Users/<user>/AppData/Local/Temp/agentbench_cc_armA/instances/20260812_133943_omnisim_A1\\\"  => === A: fresh load (no reset) ===\r\nload ok: True ms: 3451\r\n  HUSKY_0 [-24.0, -12.0, 0.1322] -> [-24.0, -12.0, 0.1322] FROZEN\r\n  HUSKY_1 [-12.0, -12.0, 0.1322] ->"
+    }
+   ],
+   "report_hits": [],
+   "context": {
+    "measured_under_concurrency": 0,
+    "sweep_kills": 0,
+    "sweep_skipped_other_cell": 0
+   },
+   "error_calls": 17,
+   "calls_lost_to_defects": 8,
+   "error_call_pct": 32.1,
+   "time_to_first_working_scene_s": 199.3,
+   "first_working_scene": {
+    "call": 25,
+    "t_s": 199.3,
+    "tool": "Bash",
+    "excerpt": "{\"ok\": true, \"uptime_s\": 2.549774646759033}\n--- harness stdout ---"
+   },
+   "outcome": "FAIL",
+   "failed_assertion": "A1.9",
+   "assertions_passed": 9,
+   "assertions_total": 10,
+   "t_agent_s": null,
+   "usd": null,
+   "engine_sha": "8a6f8bc54194dd582d65744ebb58a732142c269ae768c677ad2bddac2f6455df",
+   "pinned_model": "claude-opus-5"
+  },
+  {
+   "cell": "20260812_ba_armA_c3",
+   "path": "o:\\omnisim\\tests\\benchmarks\\agentbench\\results\\cc_lane\\20260812_ba_armA_c3",
+   "source": "tests/benchmarks/agentbench/results/cc_lane/20260812_ba_armA_c3\\transcript.jsonl",
+   "tool_calls": 53,
+   "defect_encounters": 1,
+   "transcript_encounters": 1,
+   "by_signature": {
+    "robots_counts_supervisor": 1
+   },
+   "hits": [
+    {
+     "sig": "robots_counts_supervisor",
+     "call": 34,
+     "t_s": 306.6,
+     "tool": "Bash",
+     "note": "/robots included the harness's own supervisor",
+     "excerpt": "{\"command\": \"cd \\\"C:/Users/<user>/AppData/Local/Temp/agentbench_cc_armA/instances/20260812_135132_omnisim_A1\\\"  => === /sim/state ===\n{\r\n    \"world\": \"C:\\\\Users\\\\<user>\\\\AppData\\\\Local\\\\Temp\\\\agentbench_cc_armA\\\\instances\\\\20260812_135132_omnisim_A1\\\\projects\\\\samples\\\\demos\\"
+    }
+   ],
+   "report_hits": [],
+   "context": {
+    "measured_under_concurrency": 0,
+    "sweep_kills": 0,
+    "sweep_skipped_other_cell": 0
+   },
+   "error_calls": 16,
+   "calls_lost_to_defects": 2,
+   "error_call_pct": 30.2,
+   "time_to_first_working_scene_s": 73.5,
+   "first_working_scene": {
+    "call": 13,
+    "t_s": 73.5,
+    "tool": "Bash",
+    "excerpt": "    _sys_for_log.stdout = _Tee(_sys_for_log.__stdout__, _log_fp)\n    _sys_for_log.stderr = _Tee(_sys_for_log.__stderr__, _log_fp)\n    print(f\"[husky_omnilink_br"
+   },
+   "outcome": "FAIL",
+   "failed_assertion": "no_artifact",
+   "assertions_passed": 0,
+   "assertions_total": 0,
+   "t_agent_s": null,
+   "usd": null,
+   "engine_sha": "8a6f8bc54194dd582d65744ebb58a732142c269ae768c677ad2bddac2f6455df",
+   "pinned_model": "claude-opus-5"
+  }
+ ],
+ "arm_b": []
+}

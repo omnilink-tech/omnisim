@@ -1,0 +1,61 @@
+#OMNISIM R2025a utf8
+
+# R5g azimuth-orientation test: a single-layer Lidar with a box offset to +y
+# (LEFT of the sensor) so only +theta rays hit it. In the Webots lidar
+# convention a point is r*(cos(theta), sin(theta), 0) in the sensor frame, so
+# +theta -> +y (left). This world DEFINITIVELY verifies the wgpu path's azimuth
+# direction: a centred/symmetric box cannot catch a left-right mirror, but an
+# offset box can -- the box must appear in +theta (early, left) columns.
+#
+# Box at (1.0, 0.6, 0) size 0.4: nearest corner (0.8, 0.4) is at azimuth
+# atan(0.4/0.8)=0.46 rad; it spans roughly theta in [0.46, 0.7]. All hitting
+# columns must have theta > 0.
+#
+# Companion to docs/developer/engine-migration-plan.md R5 WbLidar wide-FOV.
+
+WorldInfo {
+  info [
+    "R5g azimuth test -- box offset +y must map to +theta (left)"
+  ]
+  title "R5g wgpu Lidar azimuth-orientation"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Lidar {
+      name "lidar_wgpu"
+      horizontalResolution 96
+      fieldOfView 1.4
+      verticalFieldOfView 0.1
+      numberOfLayers 1
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+      type "fixed"
+    }
+    DEF CYAN_BOX Solid {
+      translation 1.0 0.6 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.4 0.4 0.4
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "lidar_wgpu_azimuth_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

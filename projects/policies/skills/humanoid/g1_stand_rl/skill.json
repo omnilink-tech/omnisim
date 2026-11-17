@@ -1,0 +1,75 @@
+{
+  "schema": 2,
+  "name": "g1_stand_rl",
+  "title": "Stand (RL specialist: hold a still two-leg stand, BATON-blendable)",
+  "class": "humanoid",
+  "robots": [
+    "g1"
+  ],
+  "kind": "rl",
+  "method": "shadowing",
+  "status": "verified",
+  "motion_class": "static",
+  "summary": "The RL stand specialist: a policy trained in one 400-iter burst against a CONSTANT stand ghost (unitree-default pose == the walker's nominal), in the SAME LSTM+REF_OBS obs family as the walker, so BATON only swaps weights + reference tables. Dead-still (|roll| 0.02 deg, |vx| 0.00) -- 38x stiller than a velocity-conditioned monolith's stand. This is the BATON pause/hold state between locomotion segments. Distinct from the deterministic 'balance_two_legs' core (kind=deterministic) which is the shipped static-stand/push-recovery path.",
+  "ghost": {
+    "lut": "projects/policies/ghosts/g1/ghost_stand_v1_lut.json",
+    "provenance": "solved",
+    "validator": "WARN",
+    "owner_signoff": "2026-07-06",
+    "notes": "Constant unitree-default pose, arms v3 hang, level attitude. Validator WARNs (it is walk-calibrated; a constant lut trips symmetry/clearance rules -- motion-class awareness is a validator TODO)."
+  },
+  "policy": {
+    "checkpoint": "projects/policies/training/runs/wr_stander.pt",
+    "arch": "lstm",
+    "hidden": 256,
+    "obs": {
+      "family": "whole_body",
+      "ref_obs_k": 3,
+      "ref_obs_wb": false,
+      "dim": 120
+    },
+    "action": {
+      "dim": 23,
+      "space": "whole_body",
+      "decode": "ghost(phase) + residual*GHOST_RESIDUAL"
+    }
+  },
+  "baton": {
+    "blend": "cyclic",
+    "mode": "stand",
+    "nb": 64,
+    "vx": "0",
+    "attractor": "stand",
+    "handover_in": "warm",
+    "notes": "Constant-ghost cyclic member (nb 64) so it blends with walk/carry. It IS the stand attractor -- a locomotion specialist must enter COLD after standing here. Course/schedule keyword: stand."
+  },
+  "train": {
+    "trainer": "projects.policies.training.g1_walk_recipe:g1_walk_recipe_step",
+    "launcher": "projects/policies/training/run_walk_rl.sh",
+    "recipe_env": {
+      "GHOST_LUT_JSON": "projects/policies/ghosts/g1/ghost_stand_v1_lut.json"
+    },
+    "status": "reconstructed",
+    "notes": "One 400-iter burst at HARNESS_LAM0=0.9, same era/arch/obs as the flagship walker (seeds 0.945-0.950). VERIFY frozen bundle before re-training; memory project_baton_policy_switching (Shipped section)."
+  },
+  "deploy": {
+    "specialist": {
+      "note": "Emitted as a BATON_SPECIALISTS entry (mode|checkpoint|ghost_lut|vx) with vx=0."
+    },
+    "primary_env": {
+      "GHOST_RESIDUAL": "0.100"
+    }
+  },
+  "verification": {
+    "date": "2026-07-08",
+    "engine": "Newton/mujoco_warp",
+    "result": "Dead-still stand phases in the box-delivery sequence (vx 0.00, roll 0.001, z 0.778), 0 falls across all switches."
+  },
+  "doc": "docs/developer/policy-switching.md",
+  "memory": "project_baton_policy_switching",
+  "related": [
+    "g1_walk",
+    "g1_carry_box",
+    "balance_two_legs"
+  ]
+}

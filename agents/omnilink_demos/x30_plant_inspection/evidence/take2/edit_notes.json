@@ -1,0 +1,71 @@
+{
+ "fps": 25,
+ "source_frames": 5866,
+ "output_frames": 4395,
+ "idle_frames_cut": 375,
+ "idle_keep_s": 1.0,
+ "prompt_card_s": 3.0,
+ "answer_card_s": 4.5,
+ "frozen_frames": 0,
+ "fast_frames_dropped": 1248,
+ "fast_after_s": 12.0,
+ "fast_x": 2,
+ "marks": [
+  {
+   "i": 1,
+   "text": "Walk forward 2 metres.",
+   "k_send": 12,
+   "k_reply": 196,
+   "answer": "Walk (distance=2.0)."
+  },
+  {
+   "i": 2,
+   "text": "Head over to the feed pump and check on it.",
+   "k_send": 207,
+   "k_reply": 1097,
+   "answer": "I've arrived at feed pump P-101. My measured position is [2.51, -5.83] meters, and I am standing facing the pump and its discharge pressure gauge."
+  },
+  {
+   "i": 3,
+   "text": "Go to the tank.",
+   "k_send": 1108,
+   "k_reply": 1136,
+   "answer": "Did you mean storage tank T-1 at the north-west side or storage tank T-2 at the north-east side?"
+  },
+  {
+   "i": 4,
+   "text": "Tank T-2, please.",
+   "k_send": 1147,
+   "k_reply": 2851,
+   "answer": "I have arrived at storage tank T-2. My measured position is [3.51, 4.83] meters, and I am facing the tank and its level gauge."
+  },
+  {
+   "i": 5,
+   "text": "Now go to valve manifold V-7.",
+   "k_send": 2862,
+   "k_reply": 3316,
+   "answer": "Stopped. I cancelled the rest of that request because you told me to stop; tell me what to do next."
+  },
+  {
+   "i": 6,
+   "text": "Stop.",
+   "k_send": 3315,
+   "k_reply": 3368,
+   "answer": "Stopped - measured 0.000 m/s over 0.50 s, so it is standing still."
+  },
+  {
+   "i": 7,
+   "text": "Where are you?",
+   "k_send": 3380,
+   "k_reply": 3402,
+   "answer": "I am currently at coordinates [2.97, 3.94] meters, facing west on the walkway."
+  },
+  {
+   "i": 8,
+   "text": "Change of plan: inspect tank T-1, then return to the dock.",
+   "k_send": 3412,
+   "k_reply": 5848,
+   "answer": "I have completed the inspection. I visited storage tank T-1, measuring my position at [-3.51, 4.83] meters, and I am now back at the charging dock at [-9.97, -5.01] meters."
+  }
+ ]
+}

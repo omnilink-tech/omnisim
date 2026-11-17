@@ -1,0 +1,10 @@
+[stage] rebuilding the omnisim template: the repo's tracked-file selection has changed since it was built at 2026-08-12T12:11:35Z (09b429b598f9a8e6f9276f95ffadbfa2167a6791fa7d05831d718bd4791346be != 94b63265c4747f538d521a8359eb53de5131519d8cf684fe8c966a0f0f816a7d)
+search visibility: {"controller_dirs": {"visible_to_search": 253, "present_on_disk": 476, "hidden_behind_links": 223}, "worlds": {"visible_to_search": 375, "present_on_disk": 748, "hidden_behind_links": 373}}
+repo artifact sweep (post_session): preserved_and_deleted projects/samples/demos/worlds/physics/.tmp_nocollider.wbt
+repo artifact sweep (post_session): preserved_and_deleted projects/samples/demos/worlds/physics/newton_husky_random_10.wbt
+containment guard: saw 91 tool call(s), denied 0
+
+=== A1_husky_swarm_10 / omnisim / claude_code ===
+outcome=FAIL failed=A1.8
+metrics={"t_agent_s": null, "t_total_s": 71.159, "turns": 123, "tool_calls": 31, "tokens_in": null, "tokens_out": null, "tokens_cache_read": null, "tokens_cache_write": null, "usd": null}
+rows -> O:\omnisim\tests\benchmarks\agentbench\results\cc_lane\20260812_ba_armB_c2\rows.jsonl

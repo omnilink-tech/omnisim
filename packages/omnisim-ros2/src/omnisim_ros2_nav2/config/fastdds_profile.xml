@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================================
+  fastdds_profile.xml  -  FALLBACK-ONLY Fast-DDS (rmw_fastrtps_cpp) profile
+  ============================================================================
+
+  THIS FILE IS A FALLBACK. IN THE STANDARD OmniSim x Nav2 SETUP YOU DO NOT
+  NEED IT.
+
+  In the normal configuration ALL ROS 2 nodes (Nav2 and everything else) run
+  INSIDE WSL. Because every DDS participant lives on the same host (the WSL
+  guest), DDS traffic never crosses the host boundary and no special transport
+  configuration is required. The only WSL <-> Windows hop is plain HTTP, which
+  is tunneled for you by tools/wsl_harness_link.py (NOT by DDS).
+
+  Use this profile ONLY if you deliberately run some ROS 2 nodes on
+  Windows-native ROS 2 while others stay in WSL, so that DDS discovery must
+  actually cross the WSL <-> Windows boundary. It defines an explicit UDPv4
+  user transport to make that cross-host discovery more robust.
+
+  To enable it, set the following on BOTH hosts (Windows-native and WSL):
+      export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+      export FASTRTPS_DEFAULT_PROFILES_FILE=/absolute/path/to/fastdds_profile.xml
+
+  Cyclone DDS alternative: install ros-jazzy-rmw-cyclonedds-cpp and set
+  `export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp` on both sides instead.
+  ============================================================================
+-->
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+
+    <!-- Explicit UDPv4 user transport descriptor. -->
+    <transport_descriptors>
+        <transport_descriptor>
+            <transport_id>udp_transport</transport_id>
+            <type>UDPv4</type>
+        </transport_descriptor>
+    </transport_descriptors>
+
+    <!-- Default participant profile: uses the UDPv4 user transport above,
+         while keeping the builtin transports enabled for local discovery. -->
+    <participant profile_name="default_participant" is_default_profile="true">
+        <rtps>
+            <userTransports>
+                <transport_id>udp_transport</transport_id>
+            </userTransports>
+            <useBuiltinTransports>true</useBuiltinTransports>
+        </rtps>
+    </participant>
+
+</profiles>

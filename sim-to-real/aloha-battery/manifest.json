@@ -1,0 +1,1744 @@
+{
+  "created": "2026-09-20",
+  "updated": "2026-09-20",
+  "hash_algorithm": "SHA-256",
+  "placement_checkpoint": "4d8ffea56",
+  "archive_files": [
+    {
+      "path": "sim-to-real/aloha-battery/.gitattributes",
+      "bytes": 170,
+      "sha256": "f5910cde2b4c54b67c8b020266bf715272f53901fe552372e1196f4282f33363",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/compose_comparison.py",
+      "bytes": 6495,
+      "sha256": "d3d8c6c31783f4b771399ce6ac198f798a4a3417635b573cae4503399b75344f",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored/config.json",
+      "bytes": 381863,
+      "sha256": "5c314f1f022e73460105eae35e62962d768318a71b0496cbe98a3ed0dd6a3b0f",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored/controller.py",
+      "bytes": 7493,
+      "sha256": "7626a5377e94eaaad1fe40475a5d2a711c2ac8e7780faff9c50731d338e4a09e",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored/engine.log",
+      "bytes": 40097,
+      "sha256": "e0b3838658f05cb3494ba9846496581a5005a53a91e8d0cbf4061c7604f74375",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored/engine.newton.json",
+      "bytes": 231,
+      "sha256": "48b61e647dc0dadc8faec93373bb07c60cf5987faf7ce0a8c1e33cfdb7bc80bf",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored/poses.jsonl",
+      "bytes": 3636099,
+      "sha256": "2e3f8306bd06f067faf38bfbd5284ca680a54f3c3fd86e636d052c2d791eb348",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored/result.json",
+      "bytes": 1641,
+      "sha256": "ff350bbc8d15cfeeb397b39b3e3b7cf8b296ce8d67ed65c9fb65efce64215b2a",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored/run_manifest.json",
+      "bytes": 549,
+      "sha256": "6a23ae881440c9316b98f246aac297cce92c741ba584d18eb788a0b5e0cdf0bd",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored/trace.jsonl",
+      "bytes": 1199490,
+      "sha256": "4fb681f4193a564a524a940b476a17a915bc06661d5b7853392a329754d616c3",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored/world.omniworld.txt",
+      "bytes": 5000,
+      "sha256": "2f88e20e0ddef5fe378e83ad35d564c0dcded1055e8495a6e45735c218f2b88d",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored-repeat/config.json",
+      "bytes": 381825,
+      "sha256": "51170fe6be0123ec4047c7fc2e01b0054db4e067c03585180490284d64973d27",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored-repeat/engine.newton.json",
+      "bytes": 231,
+      "sha256": "48b61e647dc0dadc8faec93373bb07c60cf5987faf7ce0a8c1e33cfdb7bc80bf",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored-repeat/poses.jsonl",
+      "bytes": 3636099,
+      "sha256": "2e3f8306bd06f067faf38bfbd5284ca680a54f3c3fd86e636d052c2d791eb348",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored-repeat/result.json",
+      "bytes": 1641,
+      "sha256": "ff350bbc8d15cfeeb397b39b3e3b7cf8b296ce8d67ed65c9fb65efce64215b2a",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored-repeat/run_manifest.json",
+      "bytes": 582,
+      "sha256": "0e9cee5737763cbb4465348a93184131093d6fcec0e5b4a2feb163d05f1749c4",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored-repeat/trace.jsonl",
+      "bytes": 1199490,
+      "sha256": "4fb681f4193a564a524a940b476a17a915bc06661d5b7853392a329754d616c3",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/authored-repeat/world.omniworld.txt",
+      "bytes": 5014,
+      "sha256": "a8ed7939650e9df473dc9a73e2af0dec7d895880decdb173d02ce50ae73400f4",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/environment.json",
+      "bytes": 2223,
+      "sha256": "fe0fd6cb3831fe89f8b978da249b57e2703e4899cf0a45c8e50f758dac451244",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/insertion-angle/camera-verification.json",
+      "bytes": 883,
+      "sha256": "e4fd9fafa36b46f4c00b0af83e3ac92b264be42ebbebb691d4b11a7c9002d198",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/insertion-angle/config.json",
+      "bytes": 382063,
+      "sha256": "d71f17fb1a79e1aae3aa451c7d65d35a4a2db33e8207bc6f3512c8c86c351693",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/insertion-angle/controller.py.snapshot",
+      "bytes": 7493,
+      "sha256": "7626a5377e94eaaad1fe40475a5d2a711c2ac8e7780faff9c50731d338e4a09e",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/insertion-angle/engine.log",
+      "bytes": 21573,
+      "sha256": "d183dac7f68961ca46a411480af50c2cb8aee1da474c59f697e4f8d89eff078c",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/insertion-angle/engine.newton.json",
+      "bytes": 231,
+      "sha256": "48b61e647dc0dadc8faec93373bb07c60cf5987faf7ce0a8c1e33cfdb7bc80bf",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/insertion-angle/environment.json",
+      "bytes": 2195,
+      "sha256": "db991298821949500640142d583b789237963c256c8de739d649cb6f48e18eef",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/insertion-angle/poses.jsonl",
+      "bytes": 3636099,
+      "sha256": "2e3f8306bd06f067faf38bfbd5284ca680a54f3c3fd86e636d052c2d791eb348",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/insertion-angle/result.json",
+      "bytes": 1641,
+      "sha256": "ff350bbc8d15cfeeb397b39b3e3b7cf8b296ce8d67ed65c9fb65efce64215b2a",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/insertion-angle/run_manifest.json",
+      "bytes": 573,
+      "sha256": "1f41d9e024fc218a42f21847813df44bbd07eff93228d1d0bc78b09abb9f7da9",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/insertion-angle/trace.jsonl",
+      "bytes": 1199490,
+      "sha256": "4fb681f4193a564a524a940b476a17a915bc06661d5b7853392a329754d616c3",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/insertion-angle/visibility.json",
+      "bytes": 2305,
+      "sha256": "fec24762c09f0bb5281d7dec52620af9cec710a56a6209422d48ad21be962e6c",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/insertion-angle/world.omniworld.txt",
+      "bytes": 5024,
+      "sha256": "19fb41942aad194ea7ec522c0f678ebb7bf630f0d3a019c8265f6f176ca649e8",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/launch-check.json",
+      "bytes": 1446,
+      "sha256": "ca81d4092c2a5381905f27b5eab85e7b22e23ca707091851251a5c67b7f26ae9",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/open-gripper/config.json",
+      "bytes": 381822,
+      "sha256": "f37599d62d61e71004852732fa95920afd2f95ec81f7057829cc4801d99899a5",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/open-gripper/engine.newton.json",
+      "bytes": 231,
+      "sha256": "48b61e647dc0dadc8faec93373bb07c60cf5987faf7ce0a8c1e33cfdb7bc80bf",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/open-gripper/poses.jsonl",
+      "bytes": 3600247,
+      "sha256": "4f0a0fb396096b70556eed9e55e86977f233a622ec068975a63033aa1dd5731d",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/open-gripper/result.json",
+      "bytes": 1446,
+      "sha256": "ca81d4092c2a5381905f27b5eab85e7b22e23ca707091851251a5c67b7f26ae9",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/open-gripper/run_manifest.json",
+      "bytes": 548,
+      "sha256": "733ce19be67aad49758bc1b436d10407c02cc775a633bfaa355e2f8529e0f421",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/open-gripper/trace.jsonl",
+      "bytes": 1106990,
+      "sha256": "b767e7b343d31d177d8e80a74165ca4cab2f7939454c6eb82ffcd7fab7514a58",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/open-gripper/world.omniworld.txt",
+      "bytes": 5010,
+      "sha256": "42c8f7f4df5aaefc3a42356ba7a49a10f923af3919f258e4fdf1343c0b748028",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/recorded-actions/config.json",
+      "bytes": 414266,
+      "sha256": "e0a7a528fa254957c3ab390a29204afcd6571fe4123ba0bd269562efde69bfc6",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/recorded-actions/engine.newton.json",
+      "bytes": 231,
+      "sha256": "48b61e647dc0dadc8faec93373bb07c60cf5987faf7ce0a8c1e33cfdb7bc80bf",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/recorded-actions/poses.jsonl",
+      "bytes": 3587794,
+      "sha256": "77ef6be1e8c1633b5900d45db07859026885792af31aacb4c10487e9f981bbca",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/recorded-actions/result.json",
+      "bytes": 1619,
+      "sha256": "165f0760bc807c2b885d9ce38816eaf5b3dd81db9cdb386e02447cd3e5a7a250",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/recorded-actions/run_manifest.json",
+      "bytes": 557,
+      "sha256": "01119ad72bf833b3c9f937c7e3978aa50f39ac48f0e56c831b192340fca00f98",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/recorded-actions/trace.jsonl",
+      "bytes": 1209278,
+      "sha256": "70a6c88961391d5120173f78d0cc566d67df31195cf34fee5f665d8d5bf75b0a",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/recorded-actions/world.omniworld.txt",
+      "bytes": 5018,
+      "sha256": "08c788d5bcc5e6e225db4bde7ddb0806b16a6abb9c1a9058a91d4bbe6aeaeda9",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/config.json",
+      "bytes": 1350655,
+      "sha256": "ad497c607a649713c244e68a49e3d898df242dee1f2c2ab226c433f7f0541e06",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/engine.log",
+      "bytes": 101363,
+      "sha256": "aef3a4e21c08c7c5cad8aeee89f8948125a2356cd3f8eead9070d58aeefaada5",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/engine.newton.json",
+      "bytes": 231,
+      "sha256": "48b61e647dc0dadc8faec93373bb07c60cf5987faf7ce0a8c1e33cfdb7bc80bf",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/executed_targets.json",
+      "bytes": 417398,
+      "sha256": "9beed273bb3b90f92331b8f7e5297ba62c57ba81142a1d6e3c76557b0bc01a86",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/keyframes/sim_00175.jpg",
+      "bytes": 236565,
+      "sha256": "4bc4dda540ddeb447abb29322d5c7daa95d1a120610c2debbcc9522e3207ad33",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/keyframes/sim_00420.jpg",
+      "bytes": 162048,
+      "sha256": "9c4f454ba1aac2db7ec2bc50daceee08c745585fae1bc87d3f701e31c2ee7d78",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/keyframes/sim_00580.jpg",
+      "bytes": 154091,
+      "sha256": "74b9d2a4f766a0f563201ad77889ed844e7b1348886e0d0158d4894934296f84",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/keyframes/sim_00650.jpg",
+      "bytes": 157051,
+      "sha256": "6ecac7e336e73b594be75e53ab86748ad06e7467cc6d41a01a6dcbddb9f04a83",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/keyframes/sim_00850.jpg",
+      "bytes": 216878,
+      "sha256": "2df83eed89a6a76c876d41856119c2c4a46da8ebe4cf55408612b71a9091f5d1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/keyframes/sim_00950.jpg",
+      "bytes": 166307,
+      "sha256": "8c5375ee8415536d3e6129ec13ff58852e7a89740a609a823b834cfb915cd50c",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/keyframes/sim_01050.jpg",
+      "bytes": 161190,
+      "sha256": "46517cc81b49ab7e0228d785cdb7a3b1bfe77e5b464dae40d26822ff9535c7e4",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/keyframes/sim_01399.jpg",
+      "bytes": 136493,
+      "sha256": "b8057b219026fdecdd133b8f08ac03c439ca84d3df7949e9d6ddde540f773465",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/mechanism-audit.json",
+      "bytes": 356,
+      "sha256": "83e7682a709ab507b820ddc13eb59157c79992433a75f22c4450dc56e0012ba5",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/poses.jsonl",
+      "bytes": 9299283,
+      "sha256": "8117b99170c74db9646cca42cc9e76bac854aed05e69598f4674624b87d814e1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/result.json",
+      "bytes": 2675,
+      "sha256": "63f8bd82d9570b9d1e075b03b5c7bd59f279f4b245226b83ff3b7f6229aa4345",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/run_manifest.json",
+      "bytes": 1360,
+      "sha256": "c2c6014c81c805dd67362da94ff56415f741f41be8c4e64601c5b02707f63285",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/sources/aloha_left_spring.urdf",
+      "bytes": 12781,
+      "sha256": "0dc5c2c95fca0c0ab4b4828e145708c07e6538d8f13d65c2579d5513ae314b4c",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/sources/aloha_right_spring.urdf",
+      "bytes": 12829,
+      "sha256": "4445ce7588e15e99cdb8d0291f0ade32e4c3cdd4965110f0d91676cf04c05cee",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/sources/compartment.py",
+      "bytes": 4954,
+      "sha256": "cc0cd49aa2eea6ed4679303b1431b30c768a33a8ce555deb875ba55bcf9da1b1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/sources/controllers/aloha_replay/aloha_replay.py",
+      "bytes": 11705,
+      "sha256": "2b85a777bbbad84ba5444d5e11a3bc8abcca245b3a7972d3e2fbd3d1522bf65c",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/sources/controllers/battery_compartment/battery_compartment.py",
+      "bytes": 8044,
+      "sha256": "d870583574bbc76586fb9828593803c2bf209d98651887f4c9d229c0d2fd1697",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/sources/evaluate.py",
+      "bytes": 6297,
+      "sha256": "5f0098238f23805ab42535cf616027daa4af8ace9125f755cd80f6c1299c5a48",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/sources/insertion_control.py",
+      "bytes": 3462,
+      "sha256": "2495810c008acf37835049d9d67f46e3540b76a147efe147fc2d93af46eb1412",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/sources/kinematics.py",
+      "bytes": 4178,
+      "sha256": "e8bced4a3a08cf2dc07c584671b1caed4b894147c6ba7e44bad1ff5a02058faa",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/spring.jsonl",
+      "bytes": 508238,
+      "sha256": "7936e739d41181dda589e6e42f5f5e12881830057e190ae8d2435d8a403a686a",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/trace.jsonl",
+      "bytes": 4037015,
+      "sha256": "2cc91c0253e9f96d955ae0aa050e1c8f6a526067a013a943cf3e6e3e419ac042",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-insertion/world.omniworld.txt",
+      "bytes": 62908,
+      "sha256": "9c716d8fc782d887abf4b1227c2a65874f926f24216093fcee3f72a121a9d664",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/config.json",
+      "bytes": 1350911,
+      "sha256": "4f68d860085917ba468901b73ebeeb19faa1211182cd0352b6e6b176524dc849",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/engine.log",
+      "bytes": 106461,
+      "sha256": "9cbb0106390468f6504d8fda977f18581a25c3cc93cbe0487bbe78f0334b32c5",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/engine.newton.json",
+      "bytes": 231,
+      "sha256": "48b61e647dc0dadc8faec93373bb07c60cf5987faf7ce0a8c1e33cfdb7bc80bf",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/executed_targets.json",
+      "bytes": 408394,
+      "sha256": "65056b6b71cf3b2a67be4ac4b151cfb96e124225e96167e4f02ddeb1e9df37cb",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/mechanism-audit.json",
+      "bytes": 222,
+      "sha256": "7a25940f92e21b9d791d6188d5799e6a063ace7da1ed1da8636f212ab2f7c009",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/poses.jsonl",
+      "bytes": 9305456,
+      "sha256": "b1aa600482937178871d2577823984dbf1dfc4bbbf50c9e4322d1dc7e61f6a5e",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/result.json",
+      "bytes": 2430,
+      "sha256": "7066af76cafb0401f0c7761e248e9c59b43a2a7c0faef02be914a183d10f6ed5",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/run_manifest.json",
+      "bytes": 1421,
+      "sha256": "59d290048499416a7e3f489ce7b88b7584a15c829b9ad33d71b2a62286dbff70",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/sources/aloha_left_spring.urdf",
+      "bytes": 12781,
+      "sha256": "0dc5c2c95fca0c0ab4b4828e145708c07e6538d8f13d65c2579d5513ae314b4c",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/sources/aloha_right_spring.urdf",
+      "bytes": 12829,
+      "sha256": "4445ce7588e15e99cdb8d0291f0ade32e4c3cdd4965110f0d91676cf04c05cee",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/sources/compartment.py",
+      "bytes": 4954,
+      "sha256": "cc0cd49aa2eea6ed4679303b1431b30c768a33a8ce555deb875ba55bcf9da1b1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/sources/controllers/aloha_replay/aloha_replay.py",
+      "bytes": 11705,
+      "sha256": "2b85a777bbbad84ba5444d5e11a3bc8abcca245b3a7972d3e2fbd3d1522bf65c",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/sources/controllers/battery_compartment/battery_compartment.py",
+      "bytes": 8080,
+      "sha256": "bd89e5457be376403b3c26275090030ee51054dccf77898d0a723961031f4e7f",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/sources/evaluate.py",
+      "bytes": 6297,
+      "sha256": "5f0098238f23805ab42535cf616027daa4af8ace9125f755cd80f6c1299c5a48",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/sources/insertion_control.py",
+      "bytes": 3462,
+      "sha256": "2495810c008acf37835049d9d67f46e3540b76a147efe147fc2d93af46eb1412",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/sources/kinematics.py",
+      "bytes": 4178,
+      "sha256": "e8bced4a3a08cf2dc07c584671b1caed4b894147c6ba7e44bad1ff5a02058faa",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/spring.jsonl",
+      "bytes": 398712,
+      "sha256": "92f8c5ddc029d888c0f47641582b2a0efbe280c7373f6895311c5b2c625ab284",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/trace.jsonl",
+      "bytes": 3713959,
+      "sha256": "71d52954f7bd34e8e079cb5329e5e50fa6e920664754a1dcc6f738a314818a0e",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-no-grip/world.omniworld.txt",
+      "bytes": 62908,
+      "sha256": "2429f0e23f07c8ef09794698b882f95106f447e4c90a12c8c4dabb5156863ac5",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/gravity-drop/config.json",
+      "bytes": 107,
+      "sha256": "e85f800b13ae8c0c2d6b839b4b87744f614d2036d7c9ba908a75a88bcc1f39e9",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/gravity-drop/sources/battery_compartment.py",
+      "bytes": 8116,
+      "sha256": "4d2fd7e81e3c0ef871034342ba1d86a37ef97df125ec50e10d3e8d8064cc1e06",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/gravity-drop/sources/build_spring_scene.py",
+      "bytes": 2992,
+      "sha256": "a1f6153309eae7a226374feb01b0b2d75344e2f497a42dcaadbb74c1033c0fda",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/gravity-drop/sources/compartment.py",
+      "bytes": 4954,
+      "sha256": "cc0cd49aa2eea6ed4679303b1431b30c768a33a8ce555deb875ba55bcf9da1b1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/gravity-drop/sources/evaluate.py",
+      "bytes": 6297,
+      "sha256": "5f0098238f23805ab42535cf616027daa4af8ace9125f755cd80f6c1299c5a48",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/gravity-drop/sources/probe_spring.py",
+      "bytes": 3161,
+      "sha256": "0b92b62efd3ddf25bf9acea7b14806b67ed7b67f58ab2f0e0a9109df2cbadc71",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/gravity-drop/sources-sha256.json",
+      "bytes": 461,
+      "sha256": "f545dc039fe39034210a6bfecd1a5ebc63867a9cb8d33def88fa2bfa509e9d0d",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/gravity-drop/spring-result.json",
+      "bytes": 1717,
+      "sha256": "c0b17bce77f9c3da18bf45bb4858d1a2455f970a9a234394215c0a262fc91b5e",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/gravity-drop/spring.jsonl",
+      "bytes": 1836625,
+      "sha256": "b97882563b951a0cc42eb511a849654266182a19090fc02b5cda571b01d23054",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/gravity-drop/world.omniworld.txt",
+      "bytes": 62296,
+      "sha256": "43d114189fc7b5f863263df5ed50f2cad8a207f63fbaf6d45f8590ceaa93bc66",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention/config.json",
+      "bytes": 117,
+      "sha256": "be64ea6bb01f3c849ab0becb0f7417a2e26bdb53b22de9a348402e89e0f17f6c",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention/sources/battery_compartment.py",
+      "bytes": 8116,
+      "sha256": "4d2fd7e81e3c0ef871034342ba1d86a37ef97df125ec50e10d3e8d8064cc1e06",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention/sources/build_spring_scene.py",
+      "bytes": 2992,
+      "sha256": "a1f6153309eae7a226374feb01b0b2d75344e2f497a42dcaadbb74c1033c0fda",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention/sources/compartment.py",
+      "bytes": 4954,
+      "sha256": "cc0cd49aa2eea6ed4679303b1431b30c768a33a8ce555deb875ba55bcf9da1b1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention/sources/evaluate.py",
+      "bytes": 6297,
+      "sha256": "5f0098238f23805ab42535cf616027daa4af8ace9125f755cd80f6c1299c5a48",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention/sources/probe_spring.py",
+      "bytes": 3161,
+      "sha256": "0b92b62efd3ddf25bf9acea7b14806b67ed7b67f58ab2f0e0a9109df2cbadc71",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention/sources-sha256.json",
+      "bytes": 461,
+      "sha256": "f545dc039fe39034210a6bfecd1a5ebc63867a9cb8d33def88fa2bfa509e9d0d",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention/spring-result.json",
+      "bytes": 3711,
+      "sha256": "37cb118f5e37550e7d53fb864b54740b31069cca20813c1560c64642fd966aad",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention/spring.jsonl",
+      "bytes": 4526302,
+      "sha256": "a65b7f9dcebf7e29bca99761fad58e5d8667f24b9964cac0452b8ee67723c0af",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention/world.omniworld.txt",
+      "bytes": 62321,
+      "sha256": "52c4f2ee747ba16260c305c487958ceb7a1a1b08d2725e064122b6ffa41f3d73",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention-disabled/config.json",
+      "bytes": 202,
+      "sha256": "c94eb6de6232e5b333a7d57486511673042c5da071ffdca65a799d75e32ed44e",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention-disabled/sources/battery_compartment.py",
+      "bytes": 8116,
+      "sha256": "4d2fd7e81e3c0ef871034342ba1d86a37ef97df125ec50e10d3e8d8064cc1e06",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention-disabled/sources/build_spring_scene.py",
+      "bytes": 2992,
+      "sha256": "a1f6153309eae7a226374feb01b0b2d75344e2f497a42dcaadbb74c1033c0fda",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention-disabled/sources/compartment.py",
+      "bytes": 4954,
+      "sha256": "cc0cd49aa2eea6ed4679303b1431b30c768a33a8ce555deb875ba55bcf9da1b1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention-disabled/sources/evaluate.py",
+      "bytes": 6297,
+      "sha256": "5f0098238f23805ab42535cf616027daa4af8ace9125f755cd80f6c1299c5a48",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention-disabled/sources/probe_spring.py",
+      "bytes": 3161,
+      "sha256": "0b92b62efd3ddf25bf9acea7b14806b67ed7b67f58ab2f0e0a9109df2cbadc71",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention-disabled/sources-sha256.json",
+      "bytes": 461,
+      "sha256": "f545dc039fe39034210a6bfecd1a5ebc63867a9cb8d33def88fa2bfa509e9d0d",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention-disabled/spring-result.json",
+      "bytes": 1748,
+      "sha256": "225a9f1f47cb81d105bc18da3444bad45b4bf8cf027500e194f9a00a675cd598",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention-disabled/spring.jsonl",
+      "bytes": 2472694,
+      "sha256": "41ec9ab028190d0906bba184afd7491431d61141d4b003327ee341f50153a333",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/retention-disabled/world.omniworld.txt",
+      "bytes": 62327,
+      "sha256": "cbb896f50ac8db21558f5cd9595279f6edfad1d01ca3d2eb2de25706cc18fe7b",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-disabled/config.json",
+      "bytes": 194,
+      "sha256": "2cd1aa2dc66be4f74f0b6f97c2f976a56a5cecca0a89a5accb697c070bcc471a",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-disabled/sources/battery_compartment.py",
+      "bytes": 8080,
+      "sha256": "bd89e5457be376403b3c26275090030ee51054dccf77898d0a723961031f4e7f",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-disabled/sources/build_spring_scene.py",
+      "bytes": 2992,
+      "sha256": "a1f6153309eae7a226374feb01b0b2d75344e2f497a42dcaadbb74c1033c0fda",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-disabled/sources/compartment.py",
+      "bytes": 4954,
+      "sha256": "cc0cd49aa2eea6ed4679303b1431b30c768a33a8ce555deb875ba55bcf9da1b1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-disabled/sources/evaluate.py",
+      "bytes": 6297,
+      "sha256": "5f0098238f23805ab42535cf616027daa4af8ace9125f755cd80f6c1299c5a48",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-disabled/sources/probe_spring.py",
+      "bytes": 3161,
+      "sha256": "0b92b62efd3ddf25bf9acea7b14806b67ed7b67f58ab2f0e0a9109df2cbadc71",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-disabled/sources-sha256.json",
+      "bytes": 461,
+      "sha256": "62113c9a35f1651d980434aa67e8091186e02524b46b549589fe874e60a4c4ee",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-disabled/spring-result.json",
+      "bytes": 611,
+      "sha256": "3fd04e220a64fbf082627b398787e79120d1e208af4345558a7631b4487e737c",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-disabled/spring.jsonl",
+      "bytes": 375622,
+      "sha256": "c2338ab1f9ec1efe3fbc9c95149bbc7b4d155a3eb42538b9e12a814e63821a15",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-disabled/world.omniworld.txt",
+      "bytes": 56925,
+      "sha256": "4979839488eabc50a5654a81cb5ac91e9ddba88c047daafc79d3aeacc457387e",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-law/config.json",
+      "bytes": 110,
+      "sha256": "51a5d7894134c032ad81e5c7b80fb285708ef9449c190cc28496bd40260ad34f",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-law/sources/battery_compartment.py",
+      "bytes": 8080,
+      "sha256": "bd89e5457be376403b3c26275090030ee51054dccf77898d0a723961031f4e7f",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-law/sources/build_spring_scene.py",
+      "bytes": 2992,
+      "sha256": "a1f6153309eae7a226374feb01b0b2d75344e2f497a42dcaadbb74c1033c0fda",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-law/sources/compartment.py",
+      "bytes": 4954,
+      "sha256": "cc0cd49aa2eea6ed4679303b1431b30c768a33a8ce555deb875ba55bcf9da1b1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-law/sources/evaluate.py",
+      "bytes": 6297,
+      "sha256": "5f0098238f23805ab42535cf616027daa4af8ace9125f755cd80f6c1299c5a48",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-law/sources/probe_spring.py",
+      "bytes": 3161,
+      "sha256": "0b92b62efd3ddf25bf9acea7b14806b67ed7b67f58ab2f0e0a9109df2cbadc71",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-law/sources-sha256.json",
+      "bytes": 461,
+      "sha256": "62113c9a35f1651d980434aa67e8091186e02524b46b549589fe874e60a4c4ee",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-law/spring-result.json",
+      "bytes": 605,
+      "sha256": "b9f2ae83dde929a37ea675a5f003b4927434091e94afc93cae6383ae2e8d53c3",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-law/spring.jsonl",
+      "bytes": 364131,
+      "sha256": "93a494f8605edb253f16fbf7853166dbd4142f5058cad2e813fdafa1d0ddff78",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/spring-law/world.omniworld.txt",
+      "bytes": 56920,
+      "sha256": "ec516917796381fc8b2134ac9a04f3851917a7d9189cb359f6739a87182bb997",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/table/config.json",
+      "bytes": 109,
+      "sha256": "0cbaa0a70034222a6a2e42c31f995a7022de8fa57fc50c302bdecfb8208e3b55",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/table/sources/battery_compartment.py",
+      "bytes": 8116,
+      "sha256": "4d2fd7e81e3c0ef871034342ba1d86a37ef97df125ec50e10d3e8d8064cc1e06",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/table/sources/build_spring_scene.py",
+      "bytes": 2992,
+      "sha256": "a1f6153309eae7a226374feb01b0b2d75344e2f497a42dcaadbb74c1033c0fda",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/table/sources/compartment.py",
+      "bytes": 4954,
+      "sha256": "cc0cd49aa2eea6ed4679303b1431b30c768a33a8ce555deb875ba55bcf9da1b1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/table/sources/evaluate.py",
+      "bytes": 6297,
+      "sha256": "5f0098238f23805ab42535cf616027daa4af8ace9125f755cd80f6c1299c5a48",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/table/sources/probe_spring.py",
+      "bytes": 3161,
+      "sha256": "0b92b62efd3ddf25bf9acea7b14806b67ed7b67f58ab2f0e0a9109df2cbadc71",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/table/sources-sha256.json",
+      "bytes": 461,
+      "sha256": "f545dc039fe39034210a6bfecd1a5ebc63867a9cb8d33def88fa2bfa509e9d0d",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/table/spring-result.json",
+      "bytes": 2037,
+      "sha256": "1cd138d6577fc964bad59608f1e5760e96c9274c8702487b8d3549b5c49531ef",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/table/spring.jsonl",
+      "bytes": 1974449,
+      "sha256": "b9683439c1548c0b30e0f1c9971f495e4006b49e2deae7048555660212d917fd",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/table/world.omniworld.txt",
+      "bytes": 62293,
+      "sha256": "88aa3ce0964f2534b573713f4a5f374ad8517f646024e3502a7922e87922cdc1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-probes/verification.json",
+      "bytes": 740,
+      "sha256": "75b0d207ae229ca2aab50085343e83c91fff69102756fcee850da16894f8ae86",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/config.json",
+      "bytes": 1350668,
+      "sha256": "4aa76cb6439126f27cac92041edd0c810ecdc53341cc8b26683286e833fa5c46",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/engine.log",
+      "bytes": 96268,
+      "sha256": "b861b8aca752c00d15f69fbe74039b2040eab01ae4383f523040c0adf69349ef",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/engine.newton.json",
+      "bytes": 231,
+      "sha256": "48b61e647dc0dadc8faec93373bb07c60cf5987faf7ce0a8c1e33cfdb7bc80bf",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/executed_targets.json",
+      "bytes": 417398,
+      "sha256": "9beed273bb3b90f92331b8f7e5297ba62c57ba81142a1d6e3c76557b0bc01a86",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/mechanism-audit.json",
+      "bytes": 356,
+      "sha256": "83e7682a709ab507b820ddc13eb59157c79992433a75f22c4450dc56e0012ba5",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/poses.jsonl",
+      "bytes": 9299283,
+      "sha256": "8117b99170c74db9646cca42cc9e76bac854aed05e69598f4674624b87d814e1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/result.json",
+      "bytes": 2675,
+      "sha256": "63f8bd82d9570b9d1e075b03b5c7bd59f279f4b245226b83ff3b7f6229aa4345",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/run_manifest.json",
+      "bytes": 1360,
+      "sha256": "b2ab356f503b9d7f7c9b9dd3dc62a23e6d30dd623ea1b5e6c4e0f6b7f3e98970",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/sources/aloha_left_spring.urdf",
+      "bytes": 12781,
+      "sha256": "0dc5c2c95fca0c0ab4b4828e145708c07e6538d8f13d65c2579d5513ae314b4c",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/sources/aloha_right_spring.urdf",
+      "bytes": 12829,
+      "sha256": "4445ce7588e15e99cdb8d0291f0ade32e4c3cdd4965110f0d91676cf04c05cee",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/sources/compartment.py",
+      "bytes": 4954,
+      "sha256": "cc0cd49aa2eea6ed4679303b1431b30c768a33a8ce555deb875ba55bcf9da1b1",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/sources/controllers/aloha_replay/aloha_replay.py",
+      "bytes": 11705,
+      "sha256": "2b85a777bbbad84ba5444d5e11a3bc8abcca245b3a7972d3e2fbd3d1522bf65c",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/sources/controllers/battery_compartment/battery_compartment.py",
+      "bytes": 8044,
+      "sha256": "d870583574bbc76586fb9828593803c2bf209d98651887f4c9d229c0d2fd1697",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/sources/evaluate.py",
+      "bytes": 6297,
+      "sha256": "5f0098238f23805ab42535cf616027daa4af8ace9125f755cd80f6c1299c5a48",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/sources/insertion_control.py",
+      "bytes": 3462,
+      "sha256": "2495810c008acf37835049d9d67f46e3540b76a147efe147fc2d93af46eb1412",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/sources/kinematics.py",
+      "bytes": 4178,
+      "sha256": "e8bced4a3a08cf2dc07c584671b1caed4b894147c6ba7e44bad1ff5a02058faa",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/spring.jsonl",
+      "bytes": 508238,
+      "sha256": "7936e739d41181dda589e6e42f5f5e12881830057e190ae8d2435d8a403a686a",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/trace.jsonl",
+      "bytes": 4037015,
+      "sha256": "2cc91c0253e9f96d955ae0aa050e1c8f6a526067a013a943cf3e6e3e419ac042",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-repeat/world.omniworld.txt",
+      "bytes": 62899,
+      "sha256": "409f2bf7bf92b6036969a9c9946efc256e905348237cf9024a8cb96ca7e2cf01",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/spring-verification.json",
+      "bytes": 4652,
+      "sha256": "d14de0102ab04819241e4f94d5299e65da36645dcf973afac7785b5853b32b7f",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/evidence/verification.json",
+      "bytes": 2493,
+      "sha256": "45488b9bf13918efe1a0146b539e98e77b4d998aa455aa21cf1cdad0748481f6",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/README.md",
+      "bytes": 9833,
+      "sha256": "25db1049d69c3c8d633ec409ec6266317a1f73bc197cb9b1a4c2920f8df2eeac",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/source/dataset-info.json",
+      "bytes": 4986,
+      "sha256": "7731c3266c8167657303e6d25e824b5a20076ddc800c2f7d9a4eb8704a142a42",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/source/downloads.json",
+      "bytes": 11525,
+      "sha256": "8edc317cb3646d65539ead49a3ef90346c4864da2d316c40cf2bd5c9b509bf62",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/source/episode-000-high.mp4",
+      "bytes": 4233469,
+      "sha256": "b4729bc4288ed641b95fe19f938d59dc032abe4f56af173f8c3f28090161a57b",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/source/episode-000-low.mp4",
+      "bytes": 3527860,
+      "sha256": "7670c0e9ed44cd93ec6ff84a792137afbfe6d0dd805ae9845aede7255218e463",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/source/episode-000.parquet",
+      "bytes": 45305,
+      "sha256": "bf1f6897989131cf7d20d9e9edeba20cb9047091b5d04d4aae099b6c2cb936c5",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/source/episodes.parquet",
+      "bytes": 146292,
+      "sha256": "b7f0aec971cd4ee4937c9778f05e8a99ff316f82fe32e448ad96b849d040747c",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/source/LICENSE-2.0.txt",
+      "bytes": 11558,
+      "sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/source/README.md",
+      "bytes": 1615,
+      "sha256": "a7b2c9d5814aaf4d571f3bb771b1fbf17a2b3814c46a5c0bd057176a51ee610a",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/source/tasks.parquet",
+      "bytes": 2271,
+      "sha256": "918ee9a9eb40af91a0a97951fc370c6db50e88d513946d24cd42c0c85934e27d",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/update_manifest.py",
+      "bytes": 2322,
+      "sha256": "93d0845203888d448dcbe47de4e74028b8cf008e33061442985b7824deb78149",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/videos/native-authored-slot-view.mp4",
+      "bytes": 3508468,
+      "sha256": "b94d96132d7eb286c0d9016118ad623db0c485b37890bb0a24faae35c2b39785",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/videos/native-authored.mp4",
+      "bytes": 2257105,
+      "sha256": "bb1ab6adf8c9670d176c4791473c69e0b640397f5022315735ad6686aaf606e7",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/videos/native-recorded-actions.mp4",
+      "bytes": 2847984,
+      "sha256": "213954e0de447d958b709d353bb0d76b1b427ce0d0d2b343dcc74915cd403238",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/videos/native-spring-insertion.mp4",
+      "bytes": 7791137,
+      "sha256": "c3f6fe8d63e3ddcbdaeacefa16de4819f7edef48b8265ae02b8c45bfb5bf64f8",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/videos/real-vs-authored-slot-placement.mp4",
+      "bytes": 5654328,
+      "sha256": "5418ee4395894cabe57953dea1e84b94f2734430814f837f72733095235962ea",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/videos/real-vs-authored.mp4",
+      "bytes": 5230334,
+      "sha256": "3a4c011c39e89e2a917120a9c120c4a5e22b13253f6cfc61badd7db0c6aeebe0",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/videos/real-vs-recorded-actions.mp4",
+      "bytes": 5435693,
+      "sha256": "e35ccb1ebd39b846b56141c5d7ba32d1478615e665d91ee56b5e006440ac1375",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/videos/real-vs-spring-insertion.ass",
+      "bytes": 153969,
+      "sha256": "f7cf779ae4e08e0af8a9fbf133a56d204f6f1a56731ad584c1b27f09e6bc33e3",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/videos/real-vs-spring-insertion.mp4",
+      "bytes": 6818511,
+      "sha256": "b1f28c762729508e5725a00608ef984d319171968b57e8f51181ed253a6d8806",
+      "normalization": "none"
+    },
+    {
+      "path": "sim-to-real/aloha-battery/videos/spring-insertion-poster.png",
+      "bytes": 547896,
+      "sha256": "9f5f11641e89de0b4bf4447cbf734d667dc9923efef5e331fbe8cb9ddc38835a",
+      "normalization": "none"
+    }
+  ],
+  "canonical_implementation_files": [
+    {
+      "path": "docs/reference/environment-variables.md",
+      "bytes": 125416,
+      "sha256": "e84460eafcefac74faf8d6d060a94436e73d8b5aada74d148af387591177b1db",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/MECHANISM.md",
+      "bytes": 6956,
+      "sha256": "33b36aaf9193d7f9959828b1dbc080474293412bfa47ba4a3151e591f5b81d71",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/PROVENANCE.md",
+      "bytes": 6816,
+      "sha256": "ec6c3f456aa18e995901234d26f499678ac1aebaceeb161eac6bd52759e6a2a6",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/README.md",
+      "bytes": 3954,
+      "sha256": "5a9b16ff473c7fa667f71c9fbb0673860703f24c997c496d736640ed97b090b1",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/aloha_left.urdf",
+      "bytes": 12781,
+      "sha256": "3ddf2ef130d4e85ff29ff1ebfc91d85a03ec2cba12d2980ee549ca6cb7305875",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/aloha_left_spring.urdf",
+      "bytes": 12781,
+      "sha256": "4618ff17e2427ec9da5258ed087ab7582fe568e11849fae804d77c6b7e3b6478",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/aloha_right.urdf",
+      "bytes": 12829,
+      "sha256": "0981c0f302490d5d11427a25bbdaf48d1ee56cf249d9456d43336d380cf277ca",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/aloha_right_spring.urdf",
+      "bytes": 12829,
+      "sha256": "55b97cfba248332db13fe4abbe576cbc08bb1df9c8c7daac3e3a99a3d7d4045a",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/author_insertion.py",
+      "bytes": 4870,
+      "sha256": "4b4b3769474bddfc012e1976785ecb96935c8df994857696f88dfd9e3b531203",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/author_motion.py",
+      "bytes": 4186,
+      "sha256": "6c542bc94d72ba4c4e4033b596bd8d4d66549e241ef0d142500da8b0385a7abd",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/authored_motion.json",
+      "bytes": 381785,
+      "sha256": "2dc8b52dd7ad82ef9a0b37e76e20220e125ad7faf732951577cec1e2d257a8c5",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/build_model.py",
+      "bytes": 8498,
+      "sha256": "92782cf8570c94309c0119e1402a453d67ead84997fb50a5b795abcf34ff7d05",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/build_scene.py",
+      "bytes": 4413,
+      "sha256": "6d72a0f8963117b13a14b77446187d0231b79eb9e985dbceb1b79b332ab43e22",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/build_spring_scene.py",
+      "bytes": 2992,
+      "sha256": "a1f6153309eae7a226374feb01b0b2d75344e2f497a42dcaadbb74c1033c0fda",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/compartment.py",
+      "bytes": 4954,
+      "sha256": "cc0cd49aa2eea6ed4679303b1431b30c768a33a8ce555deb875ba55bcf9da1b1",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/controllers/aloha_replay/aloha_replay.py",
+      "bytes": 11705,
+      "sha256": "2b85a777bbbad84ba5444d5e11a3bc8abcca245b3a7972d3e2fbd3d1522bf65c",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/controllers/battery_compartment/battery_compartment.py",
+      "bytes": 8116,
+      "sha256": "4d2fd7e81e3c0ef871034342ba1d86a37ef97df125ec50e10d3e8d8064cc1e06",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/episode.json",
+      "bytes": 414025,
+      "sha256": "fd4e3a26e9054931d08233a08ffa7b99d7f25ef5159f2d9240f5c505f088f0e2",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/evaluate.py",
+      "bytes": 6297,
+      "sha256": "5f0098238f23805ab42535cf616027daa4af8ace9125f755cd80f6c1299c5a48",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/insertion_control.py",
+      "bytes": 3462,
+      "sha256": "2495810c008acf37835049d9d67f46e3540b76a147efe147fc2d93af46eb1412",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/kinematics.py",
+      "bytes": 4178,
+      "sha256": "e8bced4a3a08cf2dc07c584671b1caed4b894147c6ba7e44bad1ff5a02058faa",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/left_left_finger_link_collision_0.stl",
+      "bytes": 1484,
+      "sha256": "7821bebee986b2fda32918d3a416c6ec305983766e80748af18b5342de27ae95",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/left_left_finger_link_collision_1.stl",
+      "bytes": 884,
+      "sha256": "5cd9075b84e7fdfb54dc5b54739eb78c0676dd6819c300453d7c43d562953b1d",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/left_left_finger_link_collision_2.stl",
+      "bytes": 884,
+      "sha256": "025c6ce3012a90815300361cb5a1dfa9edd4aa17d8a3dbdfdd6cfc6e3102c84b",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/left_left_finger_link_collision_3.stl",
+      "bytes": 1084,
+      "sha256": "ec4562f1533f421ebe36afe6364e2d09855785926b97ca667271dde5f9c984f0",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/left_left_finger_link_collision_4.stl",
+      "bytes": 884,
+      "sha256": "dd0c3c2d22aabf97753492e63c7274e4686acccacdf924067c4964bb587742cb",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/left_right_finger_link_collision_0.stl",
+      "bytes": 1484,
+      "sha256": "10eed226d56f8b853508f85526d1d55cb3532276044e50c067eb5feb4ff1bac9",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/left_right_finger_link_collision_1.stl",
+      "bytes": 884,
+      "sha256": "263ea485af51a2f773e5cd3fac6e5322fb488f3ce88bdc5bdfe06aa0a1c1ca6f",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/left_right_finger_link_collision_2.stl",
+      "bytes": 884,
+      "sha256": "c7f3580d44d1c62d1ea63ad717e99b0fd9ecfa1247d4087220ee25f4cc30e3e7",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/left_right_finger_link_collision_3.stl",
+      "bytes": 1084,
+      "sha256": "3c4e71610bfcc3523fc1845f04663e0d5ee5032d47bb00f9b2c265855cd8c297",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/left_right_finger_link_collision_4.stl",
+      "bytes": 884,
+      "sha256": "96f9cbe731117db280b7d212b49379a6195e1f46e1b2a57cbc2505f21a1689e0",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/right_left_finger_link_collision_0.stl",
+      "bytes": 1484,
+      "sha256": "7821bebee986b2fda32918d3a416c6ec305983766e80748af18b5342de27ae95",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/right_left_finger_link_collision_1.stl",
+      "bytes": 884,
+      "sha256": "5cd9075b84e7fdfb54dc5b54739eb78c0676dd6819c300453d7c43d562953b1d",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/right_left_finger_link_collision_2.stl",
+      "bytes": 884,
+      "sha256": "025c6ce3012a90815300361cb5a1dfa9edd4aa17d8a3dbdfdd6cfc6e3102c84b",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/right_left_finger_link_collision_3.stl",
+      "bytes": 1084,
+      "sha256": "ec4562f1533f421ebe36afe6364e2d09855785926b97ca667271dde5f9c984f0",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/right_left_finger_link_collision_4.stl",
+      "bytes": 884,
+      "sha256": "dd0c3c2d22aabf97753492e63c7274e4686acccacdf924067c4964bb587742cb",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/right_right_finger_link_collision_0.stl",
+      "bytes": 1484,
+      "sha256": "10eed226d56f8b853508f85526d1d55cb3532276044e50c067eb5feb4ff1bac9",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/right_right_finger_link_collision_1.stl",
+      "bytes": 884,
+      "sha256": "263ea485af51a2f773e5cd3fac6e5322fb488f3ce88bdc5bdfe06aa0a1c1ca6f",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/right_right_finger_link_collision_2.stl",
+      "bytes": 884,
+      "sha256": "c7f3580d44d1c62d1ea63ad717e99b0fd9ecfa1247d4087220ee25f4cc30e3e7",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/right_right_finger_link_collision_3.stl",
+      "bytes": 1084,
+      "sha256": "3c4e71610bfcc3523fc1845f04663e0d5ee5032d47bb00f9b2c265855cd8c297",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/right_right_finger_link_collision_4.stl",
+      "bytes": 884,
+      "sha256": "96f9cbe731117db280b7d212b49379a6195e1f46e1b2a57cbc2505f21a1689e0",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/vx300s_10_custom_finger_left.stl",
+      "bytes": 83384,
+      "sha256": "3077396bda439ce0632e94d32b0fbe35e18206fda7da199d5ccc6b48a271558b",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/vx300s_10_custom_finger_right.stl",
+      "bytes": 83384,
+      "sha256": "0e38c3b38f8c0eef038fa018f2b7df59396fd4916238588781f0e6bed841f1f4",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/vx300s_1_base.stl",
+      "bytes": 99984,
+      "sha256": "fb75e97b67c47f45f7cf28b19ec845c4255f5f48cc7e9cb99f3831ae9e9a9f7c",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/vx300s_2_shoulder.stl",
+      "bytes": 63884,
+      "sha256": "c2a86dfe7e07a23eaf9049a63f5034bac4419f61b1cbc72ee299097631e3fabf",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/vx300s_3_upper_arm.stl",
+      "bytes": 102984,
+      "sha256": "8d15542e9a4e08118c97bb17a9d24972a85cdf6cd7ebce776f35632a68b36358",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/vx300s_4_upper_forearm.stl",
+      "bytes": 49584,
+      "sha256": "61266201101b4081c026658344c7f48985c5e655ba5b3e60ebd26fb2c3a7f8c4",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/vx300s_5_lower_forearm.stl",
+      "bytes": 99884,
+      "sha256": "0da70247b0ac44d080ed9acdba30aa5e95da07c8808c7ac15b2907f1c11e1232",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/vx300s_6_wrist.stl",
+      "bytes": 70784,
+      "sha256": "3f0baa840b8daec6aa9d9df65e3c45350ab1d36f057a852c75fecd97062a4b8b",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/vx300s_7_gripper.stl",
+      "bytes": 450084,
+      "sha256": "18dfa310dc1b914bb78b1ea5cd635e68d575ea2ad08759d89c6f0c92897879c6",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/vx300s_8_gripper_prop.stl",
+      "bytes": 31684,
+      "sha256": "1fdc71bdc1bac5301953178606e9df3c07dffb0e39f4b52fdf9752900e47f09e",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/meshes/vx300s_9_gripper_bar.stl",
+      "bytes": 379484,
+      "sha256": "6d6bb9538aefea679843a6736c16311b4fb074543cfd29d4afea1aad768109e8",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/prepare_episode.py",
+      "bytes": 1743,
+      "sha256": "e644fc7cfcfc8ce66b2b47c76e8744716105ada3d6ab5da1ebd4f24383fe640c",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/probe_spring.py",
+      "bytes": 3161,
+      "sha256": "0b92b62efd3ddf25bf9acea7b14806b67ed7b67f58ab2f0e0a9109df2cbadc71",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/replay.py",
+      "bytes": 9277,
+      "sha256": "d5657a3dd14db5cd1dcea057668c968f12917eb19d7f07f5bdb0bfa867deb592",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/requirements-dev.txt",
+      "bytes": 293,
+      "sha256": "02bba53ca02b59fec6331b37addf0e89ded99d09d4787d44f1e4f0b347bdbdb9",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/LICENSE",
+      "bytes": 1069,
+      "sha256": "4666c312da313e6c46929f6695d06cf98a2e7359b9c7dcbb0ea232d01b32cd42",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/README.md",
+      "bytes": 3500,
+      "sha256": "5059f601c1f0409556fd467150b99e93208de5d5594e9049f87ca92b24a5e7a2",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/bimanual_viperx_ee_insertion.xml",
+      "bytes": 3589,
+      "sha256": "4b06ed8281af253229db966d869729a3087245d555bce62755b23f62891f873b",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/bimanual_viperx_ee_transfer_cube.xml",
+      "bytes": 2313,
+      "sha256": "f206b36e128975685add6d73f7ae0d73b90e923d1c7f8a9f7b20fd996bd7d890",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/bimanual_viperx_insertion.xml",
+      "bytes": 4261,
+      "sha256": "5da2b62720aff42dbc741c76b810f22fbfd12a38c7a15f8f0a376fe235b8c31c",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/bimanual_viperx_transfer_cube.xml",
+      "bytes": 2985,
+      "sha256": "ff520a803d0de93661d84d0bdf20289401a63e57443b53bdb5b7ac41b27588f8",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/scene.xml",
+      "bytes": 1694,
+      "sha256": "7928fe2c986159493c71cc74d5ab4606fafa8b651805f98df40a26ef141afd9b",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/tabletop.stl",
+      "bytes": 684,
+      "sha256": "76a1571d1aa36520f2bd81c268991b99816c2a7819464d718e0fd9976fe30dce",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_10_custom_finger_left.stl",
+      "bytes": 83384,
+      "sha256": "df73ae5b9058e5d50a6409ac2ab687dade75053a86591bb5e23ab051dbf2d659",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_10_custom_finger_right.stl",
+      "bytes": 83384,
+      "sha256": "56fb3cc1236d4193106038adf8e457c7252ae9e86c7cee6dabf0578c53666358",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_10_gripper_finger.stl",
+      "bytes": 42884,
+      "sha256": "a4baacd9a64df1be60ea5e98f50f3c660e1b7a1fe9684aace6004c5058c09483",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_11_ar_tag.stl",
+      "bytes": 3884,
+      "sha256": "a18a1601074d29ed1d546ead70cd18fbb063f1db7b5b96b9f0365be714f3136a",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_1_base.stl",
+      "bytes": 99984,
+      "sha256": "d100cafe656671ca8fde98fb6a4cf2d1b746995c51c61c25ad9ea2715635d146",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_2_shoulder.stl",
+      "bytes": 63884,
+      "sha256": "139745a74055cb0b23430bb5bc032bf68cf7bea5e4975c8f4c04107ae005f7f0",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_3_upper_arm.stl",
+      "bytes": 102984,
+      "sha256": "900f236320dd3d500870c5fde763b2d47502d51e043a5c377875e70237108729",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_4_upper_forearm.stl",
+      "bytes": 49584,
+      "sha256": "4104fc54bbfb8a9b533029f1e7e3ade3d54d638372b3195daa0c98f57e0295b5",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_5_lower_forearm.stl",
+      "bytes": 99884,
+      "sha256": "66814e27fa728056416e25e02e89eb7d34c51d51c51e7c3df873829037ddc6b8",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_6_wrist.stl",
+      "bytes": 70784,
+      "sha256": "90eb145c85627968c3776ae6de23ccff7e112c9dd713c46bc9acdfdaa859a048",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_7_gripper.stl",
+      "bytes": 450084,
+      "sha256": "786c1077bfd226f14219581b11d5f19464ca95b17132e0bb7532503568f5af90",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_8_gripper_prop.stl",
+      "bytes": 31684,
+      "sha256": "d1275a93fe2157c83dbc095617fb7e672888bdd48ec070a35ef4ab9ebd9755b0",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_9_gripper_bar.stl",
+      "bytes": 379484,
+      "sha256": "a4de62c9a2ed2c78433010e4c05530a1254b1774a7651967f406120c9bf8973e",
+      "normalization": "none"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_dependencies.xml",
+      "bytes": 1271,
+      "sha256": "7d1000c9206e654ce76fe04eb131edab33efbafb5e74c8011e8e2ae758089274",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_left.xml",
+      "bytes": 6500,
+      "sha256": "335b72f4bdd0e166e72de303c8ea0d987b54766960fba980aca8daed06a04086",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/assets/vx300s_right.xml",
+      "bytes": 6555,
+      "sha256": "1977f05fcc800b8071b2e353202c3fec1ec58ef29d86f3982607b52b6235fb23",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/act/constants.py",
+      "bytes": 4021,
+      "sha256": "2e27d4412e2b7e1f2e4148105fdf514d8c52ec6c8f1c86ef0549c475e8b91d86",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/hardware/LICENSE",
+      "bytes": 1069,
+      "sha256": "4666c312da313e6c46929f6695d06cf98a2e7359b9c7dcbb0ea232d01b32cd42",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/hardware/aloha_scripts/constants.py",
+      "bytes": 3371,
+      "sha256": "cef81cfcbb41bb3a2e835d909f7a29e57527563cb4a150580ee1f195b7c4da83",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/hardware/aloha_scripts/real_env.py",
+      "bytes": 9583,
+      "sha256": "30482952e73c0385bd8edfb238ceb4201458ce5fa5afae218cf03b75549150f4",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/source/hardware/revision.txt",
+      "bytes": 42,
+      "sha256": "7ea6c96687b7e1353505e65febe6b97ab76a22425915af7cfe91db42f3bd2f0d",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/spring_motion.json",
+      "bytes": 1350363,
+      "sha256": "937e1034b30f4a469ca1ed597b97d49689e2664d99896294c3d03bb7c27e74c8",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/tests/test_evaluate.py",
+      "bytes": 2375,
+      "sha256": "93f885402a997aff68679dfc015172ace8eb4e6b26968e8d23d6dd5fd1e64b15",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/tests/test_insertion.py",
+      "bytes": 4175,
+      "sha256": "8d8d8a838c2d94cfcb29aa40b45e909a067663bd773d3123f80e6feb8ab1978d",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/verify_insertion.py",
+      "bytes": 3623,
+      "sha256": "2b406c18eb1275bb488b96298ad658d13030059fbe03f0051601116a93fc53a3",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/verify_model.py",
+      "bytes": 1373,
+      "sha256": "1dd76590562d6ea95ab899bbff824a526611a7a922ac0b3163d46d64dca7d8e1",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/worlds/aloha_battery.omniworld",
+      "bytes": 4840,
+      "sha256": "2b822f6367be73b8d9f3718a74e680ac0b3a2a3825016ffd50f2357cb6ee1f80",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "projects/robots/trossen/aloha/worlds/aloha_battery_spring.omniworld",
+      "bytes": 62622,
+      "sha256": "a813a499da02cfe6acc624c8171de93be948bd7b64c358abe0c1f8250e0d204a",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "src/omnisim/physics/omnisim_newton_runtime.py",
+      "bytes": 634367,
+      "sha256": "31b473e2c75eaf6f19b27c2ca91b913313d1edb4c59ea9344f8a3e66a7d06ebe",
+      "normalization": "CRLF to LF"
+    },
+    {
+      "path": "tests/test_newton_multiccd.py",
+      "bytes": 3215,
+      "sha256": "556213ad7b8ba9a5f6e7f5a2a8d00c6d3ebefcb714acb47ac2fabefdfcad4f26",
+      "normalization": "CRLF to LF"
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-28T18:16:53.545662+00:00",
+  "git_head": "0437ceab9170dca6c85af6f4b92a98430c7e0238",
+  "sources_sha256": {
+    "projects/assessments/worlds/husky_braking.omniworld": "e5f4f701e8681b83d694595b005eb19041280769215feafcbf5e2583d3ed5403",
+    "projects/assessments/robots/husky.json": "b54982aaf42bb810b9cec91bc0ffeb0ae0768e316bb668833e4daf60d7672688",
+    "projects/assessments/controllers/husky_braking/husky_braking.py": "046e30cbee51ac1534fb6c2c33f5dd51c30172310b387c0c4463fe36dd965f16",
+    "projects/samples/demos/controllers/omnilink_mobile_bridge/_mobile_configs.py": "a3e9f1f8f3a6155995b49909782d0c7b251179e1f1d7394f38b52c99fabd13af",
+    "omnisim/assessment/__init__.py": "e450d1de035b748a044659ea3e89fe0c41f29a40ce3ec8e24f0a30a9f2195095",
+    "omnisim/assessment/campaign.py": "fe6d5a6bdfdadec56f06f6e645bdfd1076ce252b0b8972135b71dfe82c6d880b",
+    "omnisim/assessment/cli.py": "e74e44a03209dcbf29b60b53e1f972273f9fa808c99c439722bbc8c0524afaf1",
+    "omnisim/assessment/oracles.py": "9203affc501ccf7f591709f598cba4f6717fa27304567b06e951b1d034227e73",
+    "omnisim/assessment/registry.py": "5c098e9ce2395614b20a1ee3fde4d0ab0f5f017d9db474ae4a0c0089e14b73cf",
+    "omnisim/assessment/report.py": "ce87b50f8c8476ec033f48432d8f633fe181057bfc4bbdcd58d88de65ffe6f9d",
+    "omnisim/assessment/runner.py": "4fd1e307fc421504cdfd38286aa50611c1cfd31e1ff207a0696e5897bdcab3f6",
+    "omnisim/assessment/scenarios.py": "ec5d0b7caf98247e1e74be2d0f91988d6c70aa25d500c7c1965a3f3d6595c149",
+    "omnisim/assessment/schema.py": "978afabe5d22062ebd924a6f85aca4d9934237a3786f83b901623c7cc24bd94c",
+    "projects/robots/clearpath/jackal_description/LICENSE.upstream": "4ad00f8acc11d40b1444a7df0cdfd31a0a610d5195b9ae662e285b27b28623e0",
+    "projects/robots/clearpath/jackal_description/meshes/ark_enclosure.stl": "e1b035f6b39c933b7b64b0359e431797434162ec991ff7066553f0d5b37efd7a",
+    "projects/robots/clearpath/jackal_description/meshes/camera-bracket.stl": "aa52da6a073d05a44a1fd6fb52839401a9db467c8d4b0c9702a3b931f967780d",
+    "projects/robots/clearpath/jackal_description/meshes/jackal-base.stl": "c3b5f30039d8cc3152218f743072f8bc6968484017b989bad2ed41ee2dbda818",
+    "projects/robots/clearpath/jackal_description/meshes/jackal-fender.stl": "adadb2ad503eed172beec9c13c1fd6c5028091f98ed291869e05fb296f8875aa",
+    "projects/robots/clearpath/jackal_description/meshes/jackal-wheel.stl": "a39bc365311f097b1328f7b39426939c98a299f1ef3d745f590168509d367fe4",
+    "projects/robots/clearpath/jackal_description/meshes/kinect_mount.stl": "ed6f03b03f68c6d1087b7f6e30ea89fafdf7d8259f43733a36c5bf273c3c311c",
+    "projects/robots/clearpath/jackal_description/meshes/novatel-smart6.stl": "2c908a199b5b6907e4e426e5a4745b9b532767f8cb1ede71bc3ea7d6543ad6b9",
+    "projects/robots/clearpath/jackal_description/meshes/novatel-smart7.stl": "b98e0d7685c471bb38e7c70c1442c43f5fcefc0ef23692f4b8856a6a5bd6f1f1",
+    "projects/robots/clearpath/jackal_description/meshes/sick-lms1xx-inverted-bracket.stl": "b488b601c3c154bc18aa6a9fd79c97eb363cb005e43b628b034d713a34cd6983",
+    "projects/robots/clearpath/jackal_description/meshes/sick-lms1xx-upright-bracket.stl": "4f91ca844d5d86ef99f5dd96896a38ddcab18c905ea38c85f6f1e79abcbb03b3",
+    "projects/robots/clearpath/jackal_description/meshes/velodyne_tower.stl": "8d9c479235f946107213099d65d592ad7f0029c9812cb0529e12f8ec093b461b",
+    "projects/robots/clearpath/jackal_description/urdf/jackal.urdf": "2b5a1b309262ccef680a3756ef223117ff329e3b662e351993e71bbbdf1fee2a"
+  },
+  "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+  "binary_sha256": "1a5283b9e47e3037c08c96c084ca9c381d946d2b9857d55370a982cb1174f9ae",
+  "runtime_sha256": {
+    "lib\\controller\\Controller.dll": "0bd8db2b5018d7fe181cdaf7ea9a54d8e968066e7e93dca10b348fbb66082736",
+    "msys64\\mingw64\\bin\\newton-runtime\\site-packages\\omnisim_newton_runtime.py": "f2f8135589fb6fe07086869a533b37525a1109c37704f3062ff93ec95bd229f1"
+  },
+  "parent_case": null,
+  "capture": false,
+  "controller_kind": "standalone deterministic, no OmniLink/model calls",
+  "world": "world.omniworld",
+  "runtime_settings": {
+    "solver": "mujoco",
+    "newtonGroundMu": 0.4,
+    "newtonSubsteps": 8
+  },
+  "fixture": {
+    "original_model": "projects/robots/clearpath/jackal_description/urdf/jackal.urdf",
+    "base_urdf_mass_kg": 18.432,
+    "importer_root_mass_kg": 0.0,
+    "expected_total_mass_kg": 20.432,
+    "payload_mount": "rigid fixed joint, chassis_link-frame offset; not loose cargo",
+    "downhill_tangent": [
+      1.0,
+      0,
+      -0.0
+    ],
+    "ground_normal": [
+      0.0,
+      0,
+      1.0
+    ],
+    "slope_deg": 0.0,
+    "ground_mu": 0.4,
+    "payload_kg": 2.0,
+    "wheel_count": 4
+  },
+  "motion": "wheel motor velocity only; no pose writes",
+  "wall_watchdog_s": 90,
+  "owned_pid": 25324,
+  "engine_exit_code": 0,
+  "cleanup_errors": [],
+  "owned_children": [
+    436,
+    4732,
+    14504,
+    15808,
+    22132,
+    22160,
+    26456,
+    49104,
+    49208,
+    60708
+  ],
+  "wall_elapsed_s": 28.93699999997625,
+  "launch_error": null,
+  "artifacts_sha256": {
+    "adoption.json": "506ab99cfe16cdd219b76976057a03f6328c074c3fc0c639c6a55f9160e2b09a",
+    "commands.jsonl": "5db78db4c485ad4fcfdb9531ef0ad9a0b3a4ca73693509fdfa82efa604f9a885",
+    "compiled-model.txt": "90ea5a80fc16ee511cc6672335fda8bd385d9153911341f71d8148d2d22ca2e5",
+    "completion.json": "16aa4632d38b99e63598b23c32803a5b13ddcdd897323183ae373a1f7295bc5c",
+    "engine.log": "f1c09f9049854b148b9a2c15c51067ec7757f19fb961186d766f1b17f7e2944b",
+    "engine.log.newton.json": "409162864ace2f05a66f92072c0a3175d4fe5eb13aa1afc6fb82718f198c4631",
+    "fingerprint.json": "1e4699c48c1744660a545d969ec0596502b251225cf1a80964d3656c3f8e6741",
+    "model.urdf": "8e22cdd65eb7bbf67f1bcff1fd31c1942bdc0df7aac7f004285d767578025ec3",
+    "spec.json": "e196f0c50df0884fcbb4d3eef02cf8543fc655c17df415e840fe4b5998100eae",
+    "stdout.log": "74eb262b58b11bb6dee041b1e4ba63ed79fdf103330cd4830a1be9083b6df2d2",
+    "trace.jsonl": "326900ba8044c7df26bc5b8bb1b35786e7f42cfc036ed2d0465b4be0b4d3f65e",
+    "world.omniworld": "fd4a77fab6cdff02ceea1d5a035e076e2313b90c1be054c4f6d635100627e535"
+  }
+}

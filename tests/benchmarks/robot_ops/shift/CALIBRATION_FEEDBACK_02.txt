@@ -1,0 +1,13 @@
+Calibration feedback 02 -- 2026-09-26, from evidence/shift-calibration-holdout-02-p0..p2 (12 oracle +
+9 oracle_bad runs, 3 processes of 7). Check ids and names only.
+
+shift_holdout_v1 (sha256 c7847e37...)
+  oracle (must pass every check):
+    12:halt       window_step_never_fired    failed in 12 of 12 runs
+    34:answered   unanswered_or_unfired      failed in 12 of 12 runs (follows from the step above)
+    (Under oracle_bad the same check 12 fails as did_not_halt, i.e. its step DOES fire when the
+    robot drives the wrong way -- so under the correct script the robot does not travel the
+    trigger distance after the previous step fired.)
+  oracle_bad (must fail every check except `answered`) did NOT fail, identically in all 9 runs:
+    0:reached, 2:reached, 4:reached, 5:reached, 6:reached, 8:reached, 10:prop_still, 11:reached,
+    13:reached, 18:reached, 20:reached, 21:path_length, 26:reached, 30:reached, 33:path_length

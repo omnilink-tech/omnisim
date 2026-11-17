@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8"><title>husky: acquire and brake</title>
+<style>body{font:16px system-ui;margin:40px auto;max-width:1100px;color:#233243;background:#f7f9fb}table{border-collapse:collapse;background:white;width:100%}td,th{padding:12px;border-bottom:1px solid #ddd;text-align:left}img{max-width:100%}a{color:#236bb5}</style>
+<h1>husky: acquire and brake</h1><p>Measured in OmniSim using the configured robot model and a dedicated deterministic wheel controller.
+Simulation only. Each spec records robot, surface, incline, mounted payload and any controller delay;
+these findings do not establish vendor hardware or firmware performance.
+The requirement is frozen in each spec.json. Verdicts are recomputable from the saved per-step traces.</p>
+<img src="braking.svg" alt="Measured forward travel after stop request">
+<table><tr><th>Case</th><th>Verdict</th><th>Initial m/s</th><th>Forward m</th><th>Stop s</th><th>Command delay s</th><th>Reasons</th></tr><tr><td><a href="./verdict.json">case-056</a></td><td>PASS</td><td>0.6028</td><td>0.1578</td><td>0.4960</td><td>0.0000</td><td></td></tr></table>
+<p>Cases link to verdict.json. Each case also contains spec.json, manifest.json, commands.jsonl, trace.jsonl,
+completion.json and the engine log/Newton sidecar. Missing observations produce INCONCLUSIVE, never PASS.
+Compare cases with identical requirements and speed; confirmation at another speed is a separate condition.</p>

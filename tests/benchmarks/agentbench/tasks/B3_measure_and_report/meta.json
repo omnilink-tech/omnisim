@@ -1,0 +1,39 @@
+{
+  "id": "B3_measure_and_report",
+  "tier": "inspect",
+  "flagship": false,
+  "prompt_file": "prompt.txt",
+  "grader": "agentbench.graders.b3",
+  "par_s": 240,
+  "timeout_s": 720,
+  "repeats_default": 1,
+  "stresses": "reading real geometry rather than guessing; honest numeric reporting",
+  "initial_state": "two Huskies, one on a 0.40 m plinth",
+  "initial_files": [
+    "two_huskies.wbt"
+  ],
+  "deliverable": "the agent's final message (there is no artifact)",
+  "phases": {
+    "harness": {
+      "enabled": false
+    },
+    "standalone": {
+      "settle_s": 0.0,
+      "duration_s": 1.0,
+      "contact_steps": 1,
+      "note": "the run exists only to freeze t=0 and read the geometry the agent was asked about"
+    }
+  },
+  "constants": {
+    "DISTANCE_TOL_M": 0.3
+  },
+  "budget": {
+    "rule": "timeout_s = min(3 x par_s, TASK_HARD_CEILING_S)",
+    "hard_ceiling_s": 2700,
+    "truncated_by_ceiling": false,
+    "ratio_to_par": 3.0,
+    "runs_per_cell": 1,
+    "variance_measured": false,
+    "note": "the full 3x-par rule applies under the 2700 s (45 min) ceiling. ONE run per (task, arm): a single observation is an OUTCOME, never a rate -- pass@1 and a confidence interval are undefined at n = 1 (SPEC 3.5)."
+  }
+}

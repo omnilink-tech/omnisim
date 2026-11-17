@@ -1,0 +1,6 @@
+[{"tag":"c24","n":24,"solver":"mujoco"},
+ {"tag":"c32","n":32,"solver":"mujoco"},
+ {"tag":"rest12","n":12,"z":0.130},
+ {"tag":"rest12_env64","n":12,"z":0.130,"env_extra":{"OMNISIM_NEWTON_NJMAX":"64","OMNISIM_NEWTON_NCONMAX":"64"}},
+ {"tag":"air12_env64","n":12,"env_extra":{"OMNISIM_NEWTON_NJMAX":"64","OMNISIM_NEWTON_NCONMAX":"64"}},
+ {"tag":"auto12","n":12,"njmax":-1,"nconmax":-1}]

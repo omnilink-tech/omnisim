@@ -1,0 +1,232 @@
+[
+  {
+    "scene": "warehouse",
+    "description": "Temporary variant: eight existing ceiling lights cast shadows; conveyor animation stopped",
+    "source_world": "projects/samples/demos/worlds/flagship/warehouse_industrial.omniworld",
+    "source_sha256": "a21bac1e806dfaa3f7156667f2e24c6ace58355eba3158356b0faa5a42a66229",
+    "repeat": 0,
+    "draw_fps_cap": 5,
+    "before": {
+      "dumped": true,
+      "errors": 0,
+      "warnings": 2,
+      "render_ms": 15,
+      "profile": {
+        "samples": 43,
+        "warmup_frames": 60,
+        "timing_scope": "CPU collect/render calls and local-shadow encoding; not GPU timestamps or FPS",
+        "collectUs": {
+          "p50": 515.4,
+          "p95": 652.8
+        },
+        "renderUs": {
+          "p50": 14445.4,
+          "p95": 20755.9
+        },
+        "localShadowUs": {
+          "p50": 3365.3,
+          "p95": 4214.0
+        },
+        "localCandidates": {
+          "p50": 76650.0,
+          "p95": 76650.0
+        },
+        "localDraws": {
+          "p50": 76650.0,
+          "p95": 76650.0
+        },
+        "localFaces": {
+          "p50": 42.0,
+          "p95": 42.0
+        },
+        "local_cache_hit_fraction": 0.0
+      },
+      "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+      "binary_sha256": "85f9f1920022787e69056ee5cbe48c9d99c679f85f35689b7e0fb7c362b7e139",
+      "world_sha256": "ea98b5d64de08a5014ecf812f66fcc0daa9c4d4949b3beda274c074e59f87b33",
+      "environment": {
+        "OMNISIM_BINARY": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+        "OMNISIM_WGPU_TAA": "0",
+        "OMNISIM_WGPU_CAMFX": "0",
+        "OMNISIM_WGPU_AUTOEXP": "0",
+        "OMNISIM_WGPU_REPORT_EVERY": "1",
+        "OMNILIGHT": "0",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CACHE": "0",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CULL": "0"
+      }
+    },
+    "after": {
+      "dumped": true,
+      "errors": 0,
+      "warnings": 2,
+      "render_ms": 5,
+      "profile": {
+        "samples": 45,
+        "warmup_frames": 60,
+        "timing_scope": "CPU collect/render calls and local-shadow encoding; not GPU timestamps or FPS",
+        "collectUs": {
+          "p50": 511.2,
+          "p95": 799.6
+        },
+        "renderUs": {
+          "p50": 5178.0,
+          "p95": 6057.2
+        },
+        "localShadowUs": {
+          "p50": 92.7,
+          "p95": 106.7
+        },
+        "localCandidates": {
+          "p50": 76650.0,
+          "p95": 76650.0
+        },
+        "localDraws": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localFaces": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "local_cache_hit_fraction": 1.0
+      },
+      "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+      "binary_sha256": "85f9f1920022787e69056ee5cbe48c9d99c679f85f35689b7e0fb7c362b7e139",
+      "world_sha256": "ea98b5d64de08a5014ecf812f66fcc0daa9c4d4949b3beda274c074e59f87b33",
+      "environment": {
+        "OMNISIM_BINARY": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+        "OMNISIM_WGPU_TAA": "0",
+        "OMNISIM_WGPU_CAMFX": "0",
+        "OMNISIM_WGPU_AUTOEXP": "0",
+        "OMNISIM_WGPU_REPORT_EVERY": "1",
+        "OMNILIGHT": "0",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CACHE": "1",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CULL": "1"
+      }
+    },
+    "diff": {
+      "same_size": true,
+      "mean_abs": 0.0,
+      "max_abs": 0,
+      "pixels_over_threshold": 0,
+      "threshold": 3,
+      "total_pixels": 2110248
+    },
+    "verdict": "MATCH"
+  },
+  {
+    "scene": "warehouse",
+    "description": "Temporary variant: eight existing ceiling lights cast shadows; conveyor animation stopped",
+    "source_world": "projects/samples/demos/worlds/flagship/warehouse_industrial.omniworld",
+    "source_sha256": "a21bac1e806dfaa3f7156667f2e24c6ace58355eba3158356b0faa5a42a66229",
+    "repeat": 1,
+    "draw_fps_cap": 5,
+    "after": {
+      "dumped": true,
+      "errors": 0,
+      "warnings": 3,
+      "render_ms": 5,
+      "profile": {
+        "samples": 44,
+        "warmup_frames": 60,
+        "timing_scope": "CPU collect/render calls and local-shadow encoding; not GPU timestamps or FPS",
+        "collectUs": {
+          "p50": 544.9,
+          "p95": 707.4
+        },
+        "renderUs": {
+          "p50": 4667.7,
+          "p95": 5924.1
+        },
+        "localShadowUs": {
+          "p50": 68.9,
+          "p95": 105.5
+        },
+        "localCandidates": {
+          "p50": 76650.0,
+          "p95": 76650.0
+        },
+        "localDraws": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "localFaces": {
+          "p50": 0.0,
+          "p95": 0.0
+        },
+        "local_cache_hit_fraction": 1.0
+      },
+      "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+      "binary_sha256": "85f9f1920022787e69056ee5cbe48c9d99c679f85f35689b7e0fb7c362b7e139",
+      "world_sha256": "ea98b5d64de08a5014ecf812f66fcc0daa9c4d4949b3beda274c074e59f87b33",
+      "environment": {
+        "OMNISIM_BINARY": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+        "OMNISIM_WGPU_TAA": "0",
+        "OMNISIM_WGPU_CAMFX": "0",
+        "OMNISIM_WGPU_AUTOEXP": "0",
+        "OMNISIM_WGPU_REPORT_EVERY": "1",
+        "OMNILIGHT": "0",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CACHE": "1",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CULL": "1"
+      }
+    },
+    "before": {
+      "dumped": true,
+      "errors": 0,
+      "warnings": 2,
+      "render_ms": 17,
+      "profile": {
+        "samples": 44,
+        "warmup_frames": 60,
+        "timing_scope": "CPU collect/render calls and local-shadow encoding; not GPU timestamps or FPS",
+        "collectUs": {
+          "p50": 589.8,
+          "p95": 670.5
+        },
+        "renderUs": {
+          "p50": 17492.3,
+          "p95": 24274.2
+        },
+        "localShadowUs": {
+          "p50": 4440.8,
+          "p95": 7337.7
+        },
+        "localCandidates": {
+          "p50": 76650.0,
+          "p95": 76650.0
+        },
+        "localDraws": {
+          "p50": 76650.0,
+          "p95": 76650.0
+        },
+        "localFaces": {
+          "p50": 42.0,
+          "p95": 42.0
+        },
+        "local_cache_hit_fraction": 0.0
+      },
+      "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+      "binary_sha256": "85f9f1920022787e69056ee5cbe48c9d99c679f85f35689b7e0fb7c362b7e139",
+      "world_sha256": "ea98b5d64de08a5014ecf812f66fcc0daa9c4d4949b3beda274c074e59f87b33",
+      "environment": {
+        "OMNISIM_BINARY": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-shadow.exe",
+        "OMNISIM_WGPU_TAA": "0",
+        "OMNISIM_WGPU_CAMFX": "0",
+        "OMNISIM_WGPU_AUTOEXP": "0",
+        "OMNISIM_WGPU_REPORT_EVERY": "1",
+        "OMNILIGHT": "0",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CACHE": "0",
+        "OMNISIM_WGPU_LOCAL_SHADOW_CULL": "0"
+      }
+    },
+    "diff": {
+      "same_size": true,
+      "mean_abs": 0.0,
+      "max_abs": 0,
+      "pixels_over_threshold": 0,
+      "threshold": 3,
+      "total_pixels": 2110248
+    },
+    "verdict": "MATCH"
+  }
+]

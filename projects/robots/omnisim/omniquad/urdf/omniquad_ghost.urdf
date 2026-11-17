@@ -1,0 +1,729 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="omniquad_ghost">
+    <link name="body">
+		<visual>
+			<origin xyz="0.0064 0 -0.0039" rpy="0 0 0" />
+			<geometry>
+				<box size="0.700 0.215 0.176" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.2980 0 -0.0039" rpy="0 0 0" />
+			<geometry>
+				<box size="0.140 0.230 0.150" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="-0.2980 0 -0.0039" rpy="0 0 0" />
+			<geometry>
+				<box size="0.140 0.230 0.150" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.3720 0 -0.0039" rpy="0 0 0" />
+			<geometry>
+				<box size="0.090 0.160 0.120" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="-0.3590 0 -0.0039" rpy="0 0 0" />
+			<geometry>
+				<box size="0.090 0.160 0.120" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0064 0 0.0830" rpy="0 0 0" />
+			<geometry>
+				<box size="0.440 0.130 0.014" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.4020 0 0.0300" rpy="0 1.5708 0" />
+			<geometry>
+				<cylinder radius="0.028" length="0.03" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+	</link>
+
+    <link name="base_link" />
+    <joint name="base_link_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="body" />
+    </joint>
+
+    <link name="front_rail" />
+    <joint name="front_rail_joint" type="fixed">
+        <origin xyz="0.223 0 0.0805" rpy="0 0 0" />
+        <parent link="body" />
+        <child link="front_rail" />
+    </joint>
+
+    <link name="real_front_rail" />
+    <joint name="real_front_rail_joint" type="fixed">
+        <origin xyz="0.2075 0 0.0805" rpy="0 0 0" />
+        <parent link="body" />
+        <child link="real_front_rail" />
+    </joint>
+
+    <link name="rear_rail" />
+    <joint name="rear_rail_joint" type="fixed">
+        <origin xyz="-0.223 0 0.0805" rpy="0 0 0" />
+        <parent link="body" />
+        <child link="rear_rail" />
+    </joint>
+
+    <link name="real_rear_rail" />
+    <joint name="real_rear_rail_joint" type="fixed">
+        <origin xyz="-0.415 0 0" rpy="0 0 0" />
+        <parent link="real_front_rail" />
+        <child link="real_rear_rail" />
+    </joint>
+
+    <link name="front_left_hip">
+		<visual>
+			<origin xyz="-0.0242 +0.0060 0.0000" rpy="0 1.5708 0" />
+			<geometry>
+				<cylinder radius="0.056" length="0.144" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="-0.0242 +0.0400 0.0000" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.044" length="0.056" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="-0.0242 +0.0660 0.0000" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.03" length="0.012" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+	</link>
+    <joint name="front_left_hip_x" type="revolute">
+        <origin xyz="0.29785 0.05500 0.00000" rpy="0 0 0" />
+        <axis xyz="1 0 0" />
+        <parent link="body" />
+        <child link="front_left_hip" />
+        <dynamics damping="0.05" />
+        
+        <limit effort="80" velocity="20" lower="-1.50" upper="1.50" />
+        <rest>0.30</rest>
+    </joint>
+    <link name="front_left_upper_leg">
+		<visual>
+			<origin xyz="0.0000 -0.0084 0.0000" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.05" length="0.116" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0000 -0.0084 -0.1750" rpy="0 0 0" />
+			<geometry>
+				<box size="0.084 0.076 0.290" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0000 -0.0084 -0.1100" rpy="0 0 0" />
+			<geometry>
+				<box size="0.088 0.080 0.016" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0200 -0.0084 -0.3205" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.032" length="0.08" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+	</link>
+    <joint name="front_left_hip_y" type="revolute">
+        <origin xyz="0.0 0.110945 0.0" rpy="0 0 0" />
+        <axis xyz="0 1 0" />
+        <parent link="front_left_hip" />
+        <child link="front_left_upper_leg" />
+        <dynamics damping="0.05" />
+        
+        <limit effort="80" velocity="20" lower="-0.50" upper="3.20" />
+        
+        <rest>0.30</rest>
+    </joint>
+    <link name="front_left_lower_leg">
+		<visual>
+			<origin xyz="0 0 0" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.034" length="0.07" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.0750" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.026" length="0.15" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.1500" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.028" length="0.014" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.2350" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.019" length="0.17" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.3200" rpy="0 0 0" />
+			<geometry>
+				<sphere radius="0.035" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+	</link>
+    <joint name="front_left_knee" type="revolute">
+        <origin xyz="0.025 0.000 -0.3205" rpy="0 0 0" />
+        <axis xyz="0 1 0" />
+        <parent link="front_left_upper_leg" />
+        <child link="front_left_lower_leg" />
+        <dynamics damping="0.05" />
+        <limit effort="80" velocity="20" lower="-1.20" upper="-0.01" />
+    </joint>
+    <link name="front_right_hip">
+		<visual>
+			<origin xyz="-0.0242 -0.0060 0.0000" rpy="0 1.5708 0" />
+			<geometry>
+				<cylinder radius="0.056" length="0.144" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="-0.0242 -0.0400 0.0000" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.044" length="0.056" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="-0.0242 -0.0660 0.0000" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.03" length="0.012" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+	</link>
+    <joint name="front_right_hip_x" type="revolute">
+        <origin xyz="0.29785 -0.05500 0.00000" rpy="0 0 0" />
+        <axis xyz="1 0 0" />
+        <parent link="body" />
+        <child link="front_right_hip" />
+        <dynamics damping="0.05" />
+        
+        <limit effort="80" velocity="20" lower="-1.50" upper="1.50" />
+        <rest>-0.30</rest>
+    </joint>
+    <link name="front_right_upper_leg">
+		<visual>
+			<origin xyz="0.0000 +0.0084 0.0000" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.05" length="0.116" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0000 +0.0084 -0.1750" rpy="0 0 0" />
+			<geometry>
+				<box size="0.084 0.076 0.290" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0000 +0.0084 -0.1100" rpy="0 0 0" />
+			<geometry>
+				<box size="0.088 0.080 0.016" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0200 +0.0084 -0.3205" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.032" length="0.08" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+	</link>
+    <joint name="front_right_hip_y" type="revolute">
+        <origin xyz="0.0 -0.110945 0.0" rpy="0 0 0" />
+        <axis xyz="0 1 0" />
+        <parent link="front_right_hip" />
+        <child link="front_right_upper_leg" />
+        <dynamics damping="0.05" />
+        
+        <limit effort="80" velocity="20" lower="-0.50" upper="3.20" />
+        <rest>0.30</rest>
+    </joint>
+    <link name="front_right_lower_leg">
+		<visual>
+			<origin xyz="0 0 0" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.034" length="0.07" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.0750" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.026" length="0.15" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.1500" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.028" length="0.014" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.2350" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.019" length="0.17" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.3200" rpy="0 0 0" />
+			<geometry>
+				<sphere radius="0.035" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+	</link>
+    <joint name="front_right_knee" type="revolute">
+        <origin xyz="0.025 0.000 -0.3205" rpy="0 0 0" />
+        <axis xyz="0 1 0" />
+        <parent link="front_right_upper_leg" />
+        <child link="front_right_lower_leg" />
+        <dynamics damping="0.05" />
+        <limit effort="80" velocity="20" lower="-1.20" upper="-0.01" />
+    </joint>
+    <link name="rear_left_hip">
+		<visual>
+			<origin xyz="+0.0240 +0.0060 0.0000" rpy="0 1.5708 0" />
+			<geometry>
+				<cylinder radius="0.056" length="0.144" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="+0.0240 +0.0400 0.0000" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.044" length="0.056" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="+0.0240 +0.0660 0.0000" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.03" length="0.012" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+	</link>
+    <joint name="rear_left_hip_x" type="revolute">
+        <origin xyz="-0.29785 0.05500 0.00000" rpy="0 0 0" />
+        <axis xyz="1 0 0" />
+        <parent link="body" />
+        <child link="rear_left_hip" />
+        <dynamics damping="0.05" />
+        
+        <limit effort="80" velocity="20" lower="-1.50" upper="1.50" />
+        <rest>0.30</rest>
+    </joint>
+    <link name="rear_left_upper_leg">
+		<visual>
+			<origin xyz="0.0000 -0.0084 0.0000" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.05" length="0.116" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0000 -0.0084 -0.1750" rpy="0 0 0" />
+			<geometry>
+				<box size="0.084 0.076 0.290" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0000 -0.0084 -0.1100" rpy="0 0 0" />
+			<geometry>
+				<box size="0.088 0.080 0.016" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0200 -0.0084 -0.3205" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.032" length="0.08" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+	</link>
+    <joint name="rear_left_hip_y" type="revolute">
+        <origin xyz="0.0 0.110945 0.0" rpy="0 0 0" />
+        <axis xyz="0 1 0" />
+        <parent link="rear_left_hip" />
+        <child link="rear_left_upper_leg" />
+        <dynamics damping="0.05" />
+        
+        <limit effort="80" velocity="20" lower="-0.50" upper="3.20" />
+        <rest>0.30</rest>
+    </joint>
+    <link name="rear_left_lower_leg">
+		<visual>
+			<origin xyz="0 0 0" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.034" length="0.07" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.0750" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.026" length="0.15" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.1500" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.028" length="0.014" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.2350" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.019" length="0.17" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.3200" rpy="0 0 0" />
+			<geometry>
+				<sphere radius="0.035" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+	</link>
+    <joint name="rear_left_knee" type="revolute">
+        <origin xyz="0.025 0.000 -0.3205" rpy="0 0 0" />
+        <axis xyz="0 1 0" />
+        <parent link="rear_left_upper_leg" />
+        <child link="rear_left_lower_leg" />
+        <dynamics damping="0.05" />
+        <limit effort="80" velocity="20" lower="-1.20" upper="-0.01" />
+    </joint>
+    <link name="rear_right_hip">
+		<visual>
+			<origin xyz="+0.0240 -0.0060 0.0000" rpy="0 1.5708 0" />
+			<geometry>
+				<cylinder radius="0.056" length="0.144" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="+0.0240 -0.0400 0.0000" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.044" length="0.056" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="+0.0240 -0.0660 0.0000" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.03" length="0.012" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+	</link>
+    <joint name="rear_right_hip_x" type="revolute">
+        <origin xyz="-0.29785 -0.05500 0.00000" rpy="0 0 0" />
+        <axis xyz="1 0 0" />
+        <parent link="body" />
+        <child link="rear_right_hip" />
+        <dynamics damping="0.05" />
+        
+        <limit effort="80" velocity="20" lower="-1.50" upper="1.50" />
+        <rest>-0.30</rest>
+    </joint>
+    <link name="rear_right_upper_leg">
+		<visual>
+			<origin xyz="0.0000 +0.0084 0.0000" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.05" length="0.116" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0000 +0.0084 -0.1750" rpy="0 0 0" />
+			<geometry>
+				<box size="0.084 0.076 0.290" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0000 +0.0084 -0.1100" rpy="0 0 0" />
+			<geometry>
+				<box size="0.088 0.080 0.016" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0.0200 +0.0084 -0.3205" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.032" length="0.08" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+	</link>
+    <joint name="rear_right_hip_y" type="revolute">
+        <origin xyz="0.0 -0.110945 0.0" rpy="0 0 0" />
+        <axis xyz="0 1 0" />
+        <parent link="rear_right_hip" />
+        <child link="rear_right_upper_leg" />
+        <dynamics damping="0.05" />
+        
+        <limit effort="80" velocity="20" lower="-0.50" upper="3.20" />
+        <rest>0.30</rest>
+    </joint>
+    <link name="rear_right_lower_leg">
+		<visual>
+			<origin xyz="0 0 0" rpy="1.5708 0 0" />
+			<geometry>
+				<cylinder radius="0.034" length="0.07" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.0750" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.026" length="0.15" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.1500" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.028" length="0.014" />
+			</geometry>
+			<material name="omnisim_accent">
+				<color rgba="0.965 0.780 0.204 1.0" />
+				<omnisim roughness="0.35" metalness="0.2" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.2350" rpy="0 0 0" />
+			<geometry>
+				<cylinder radius="0.019" length="0.17" />
+			</geometry>
+			<material name="omnisim_shell">
+				<color rgba="0.898 0.894 0.882 1.0" />
+				<omnisim roughness="0.42" metalness="0.0" />
+			</material>
+		</visual>
+		<visual>
+			<origin xyz="0 0 -0.3200" rpy="0 0 0" />
+			<geometry>
+				<sphere radius="0.035" />
+			</geometry>
+			<material name="omnisim_joint">
+				<color rgba="0.129 0.129 0.137 1.0" />
+				<omnisim roughness="0.28" metalness="0.85" />
+			</material>
+		</visual>
+	</link>
+    <joint name="rear_right_knee" type="revolute">
+        <origin xyz="0.025 0.000 -0.3205" rpy="0 0 0" />
+        <axis xyz="0 1 0" />
+        <parent link="rear_right_upper_leg" />
+        <child link="rear_right_lower_leg" />
+        <dynamics damping="0.05" />
+        <limit effort="80" velocity="20" lower="-1.20" upper="-0.01" />
+    </joint>
+
+</robot>

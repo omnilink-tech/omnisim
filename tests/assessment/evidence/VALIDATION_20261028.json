@@ -1,0 +1,38 @@
+{
+  "validated_utc": "2026-10-28T18:23:34.761278+00:00",
+  "campaigns": [
+    {
+      "name": "husky-envelope-20261028",
+      "episodes": 64,
+      "complete": true,
+      "all_evidence_valid": true,
+      "campaign_sha256": "f2880ffcf49694e8d073f32989170193f53961166476c5c546c944e806de4e35"
+    },
+    {
+      "name": "mobile-coverage-20261028",
+      "episodes": 28,
+      "complete": true,
+      "all_evidence_valid": true,
+      "campaign_sha256": "6ef84039b06723b491eb01c18ad67792fb135afb5bb3e689b2fc230a7c089dee"
+    },
+    {
+      "name": "mobile-payload-coverage-20261028",
+      "episodes": 7,
+      "complete": true,
+      "all_evidence_valid": true,
+      "campaign_sha256": "0b2f74b89c89d29edcc35d1de476121a2d83d17b2f02b5c6129db59b298a13ee"
+    }
+  ],
+  "total_campaign_episodes": 99,
+  "checks": [
+    "all offline verdicts match saved verdicts",
+    "compiled total mass/friction/surface orientation valid",
+    "zero configured and observed command delay",
+    "no owned process left alive",
+    "four boundary confirmations match outcomes and distances",
+    "current-source natural failure reproduces exactly",
+    "legacy schema-1 regrades preserved",
+    "document/media references checked"
+  ],
+  "scope": "Simulation-only deterministic physical-wheel controller; other robot classes are asset inventory, not tested adapters"
+}

@@ -1,0 +1,53 @@
+#OMNISIM R2025a utf8
+
+# Unitree G1 DETERMINISTIC quasi-static walk (no RL). Same robot/physics/recipe
+# as the deterministic stand (g1_hstand_deploy.omniworld) -- the only change is the
+# controller (humanoid_static_walk), which layers a slow, statically-stable gait
+# on the proven squat nominal. The camera tracks the G1 as it shuffles forward.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 deterministic quasi-static walk"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position -7.706 -4.571 5.547
+  follow "g1"
+  followType "Tracking Shot"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 30 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation -12 0 0.78
+  name "g1"
+  supervisor TRUE
+  controller "humanoid_static_walk"
+  physicsBackend "newton"
+}

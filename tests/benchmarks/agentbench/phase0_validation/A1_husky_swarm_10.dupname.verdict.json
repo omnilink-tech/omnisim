@@ -1,0 +1,518 @@
+{
+  "task": "A1_husky_swarm_10",
+  "outcome": "FAIL",
+  "progress": 3,
+  "progress_name": "artifact_runs",
+  "assertions": {
+    "A1.1": {
+      "ok": true,
+      "what": "exactly ten Huskies",
+      "measured": {
+        "robot_nodes_ge_4_joints": 10,
+        "husky.urdf refs in the artifact": 10
+      },
+      "threshold": {
+        "robot_nodes": 10,
+        "husky.urdf refs": 10
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "robot identity in the live scene: a scene node whose type is Robot or URDFRobot carrying >= 4 joints. OmniSim expands URDFRobot { url ... } into a plain Robot at parse time (WbUrdfImporter::expandUrdfRobotBlocks), so the loaded node cannot carry the model name and the joint count is the only structural signal left in the live scene.",
+        "robot declarations in the artifact: top-level Robot/URDFRobot blocks in the artifact text whose url basename is husky.urdf (the reference survives only in the file, because the engine expands it away at parse time)",
+        "inventory source: GET /robots on a per-run private harness instance (free-running: static fields only, no t=0 question is answerable here)"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "count",
+          "how_to_fail": "eight or eleven robot-class bodies in the scene",
+          "witness": "a readable body inventory",
+          "witness_present": true,
+          "detail": "GET /robots on a per-run private harness instance (free-running: static fields only, no t=0 question is answerable here)"
+        },
+        {
+          "clause": "identity",
+          "how_to_fail": "the ten bodies are not the robot the task named (a swarm of some other robot scores zero)",
+          "witness": "the adapter answers the identity predicate on live bodies AND counts matching declarations in the artifact",
+          "witness_present": true,
+          "detail": "a scene node whose type is Robot or URDFRobot carrying >= 4 joints. OmniSim expands URDFRobot { url ... } into a plain Robot at parse time (WbUrdfImporter::expandUrdfRobotBlocks), so the loaded node cannot carry the model name and the joint count is the only structural signal left in the live scene."
+        }
+      ]
+    },
+    "A1.2": {
+      "ok": false,
+      "what": "ten distinct robots",
+      "measured": {
+        "distinct non-empty names": 9,
+        "distinct node ids": 10
+      },
+      "threshold": 10,
+      "detail": "",
+      "basis": "core-structural",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "distinct names",
+          "how_to_fail": "ten references to one body, or ten bodies sharing a name",
+          "witness": ">= 2 bodies in the inventory",
+          "witness_present": true,
+          "detail": ""
+        },
+        {
+          "clause": "distinct ids",
+          "how_to_fail": "ten scene entries resolving to the same body id",
+          "witness": ">= 2 bodies carrying an adapter-supplied id",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "A1.4": {
+      "ok": true,
+      "what": "all ten are controlled",
+      "measured": {
+        "non-empty controller fields": 10,
+        "controller processes started": {
+          "sun_marker": 1,
+          "husky_random": 10,
+          "agentbench_recorder": 1
+        }
+      },
+      "threshold": {
+        "controller fields": 10,
+        "starts": {
+          "husky_random": 10
+        }
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "behaviour-process starts: 'INFO: <name>: Starting controller:' lines in the engine log at $OMNISIM_LOG_PATH"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "behaviour attached",
+          "how_to_fail": "a robot body with no behaviour/controller attached",
+          "witness": ">= 1 robot body whose behaviour field is readable",
+          "witness_present": true,
+          "detail": ""
+        },
+        {
+          "clause": "processes started",
+          "how_to_fail": "fewer behaviour processes started than the scene declares",
+          "witness": "the adapter can count behaviour-process starts and cites where the count came from",
+          "witness_present": true,
+          "detail": "'INFO: <name>: Starting controller:' lines in the engine log at $OMNISIM_LOG_PATH"
+        }
+      ]
+    },
+    "A1.3": {
+      "ok": true,
+      "what": "none interpenetrating at t=0",
+      "measured": {
+        "min pairwise AABB clearance (m)": 4.8805,
+        "worst pair": [
+          6,
+          7
+        ],
+        "robot-robot contacts in first 10 steps": 0,
+        "robots without bounds": 0
+      },
+      "threshold": {
+        "clearance (m)": 0.05,
+        "contacts": 0
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "contact pairing: the recorder's per-step contact scan (harness_supervisor.observe.list_contacts, world-point pairing), filtered to pairs whose two participants resolve to DISTINCT Robot subtrees"
+      ],
+      "vacuous": true,
+      "falsifiability": [
+        {
+          "clause": "AABB separation",
+          "how_to_fail": "two robots whose world AABBs overlap on all three axes at t=0",
+          "witness": ">= 2 robot bodies with world-space AABBs, read at a frozen instant",
+          "witness_present": true,
+          "detail": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)"
+        },
+        {
+          "clause": "no robot-robot contact",
+          "how_to_fail": "a contact naming two distinct robot bodies inside the first 10 steps",
+          "witness": "the contact query produced at least one contact naming two DISTINCT bodies (an empty list from a query that can only ever return self-pairs proves nothing)",
+          "witness_present": false,
+          "detail": "contacts of any kind: 0; naming two distinct bodies: 0"
+        }
+      ]
+    },
+    "A1.5": {
+      "ok": false,
+      "what": "all ten moved >= 2.0 m",
+      "measured": {
+        "min net displacement (m)": 0.0,
+        "n robots": 10,
+        "recorded window (s)": 30.016
+      },
+      "threshold": {
+        "net displacement (m)": 2.0,
+        "n robots": 10,
+        "window (s)": 30.0
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "displacement floor",
+          "how_to_fail": "a robot whose net displacement over the window is < 2.0 m",
+          "witness": ">= 2 pose samples per body, so a displacement is defined",
+          "witness_present": true,
+          "detail": "939 samples"
+        }
+      ]
+    },
+    "A1.6": {
+      "ok": false,
+      "what": "they drove, not slid (path length)",
+      "measured": {
+        "min path length (m)": 0.0
+      },
+      "threshold": {
+        "path length (m)": 4.0
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "path floor",
+          "how_to_fail": "a robot whose integrated path is < 4.0 m",
+          "witness": ">= 2 pose samples per body, integrated every step",
+          "witness_present": true,
+          "detail": "939 samples"
+        }
+      ]
+    },
+    "A1.7": {
+      "ok": true,
+      "what": "nobody fell through or tipped over",
+      "measured": {
+        "max |dz| (m)": 0.0032,
+        "min z over all samples (m)": 0.1297
+      },
+      "threshold": {
+        "|dz| (m)": 0.3,
+        "z (m)": -0.1
+      },
+      "detail": "",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "vertical band",
+          "how_to_fail": "a robot that sinks below -0.10 m or moves 0.30 m vertically",
+          "witness": ">= 1 z sample per body",
+          "witness_present": true,
+          "detail": ""
+        }
+      ]
+    },
+    "A1.8": {
+      "ok": false,
+      "what": "the motion is random, not a parade",
+      "measured": {
+        "circular resultant R": null,
+        "robots with an undefined bearing (net displacement < 0.05 m)": 1
+      },
+      "threshold": {
+        "R": "< 0.70",
+        "undefined bearings": 0
+      },
+      "detail": "bearing undefined for 1 robot(s): they did not move, so 'random' is not measurable",
+      "basis": "core-physical",
+      "attested": [],
+      "vacuous": true,
+      "falsifiability": [
+        {
+          "clause": "bearing spread",
+          "how_to_fail": "ten robots on one heading (R = 1.0 for a parade)",
+          "witness": "every robot has a defined bearing (net displacement >= 0.05 m)",
+          "witness_present": false,
+          "detail": "1 of 10 bearings undefined"
+        }
+      ]
+    },
+    "A1.9": {
+      "ok": true,
+      "what": "the run exited cleanly",
+      "measured": {
+        "exit code": 0,
+        "ERROR: lines": 0,
+        "recorder reached quit(0)": true,
+        "finalize evidence": "newton log marker",
+        "timed out": false
+      },
+      "threshold": {
+        "exit code": 0,
+        "ERROR: lines": 0
+      },
+      "detail": "",
+      "basis": "mixed",
+      "attested": [
+        "error stream + exit code: the per-run engine log at $OMNISIM_LOG_PATH plus the process exit code from the headless launch"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "clean exit",
+          "how_to_fail": "a non-zero exit code, an error-class line, or a timeout",
+          "witness": "the adapter captured the exit code AND the simulator's own error stream",
+          "witness_present": true,
+          "detail": ""
+        },
+        {
+          "clause": "reached finalize",
+          "how_to_fail": "a world that never finalized (a failed load still exits 0 in 2-4 s, so the exit code cannot see this)",
+          "witness": "the adapter answers 'did the world finalize' either way, from a marker or from the driver's own completion record",
+          "witness_present": true,
+          "detail": "newton log marker"
+        }
+      ]
+    },
+    "A1.10": {
+      "ok": true,
+      "what": "backend attribution recorded",
+      "measured": {
+        "backend": "newton",
+        "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+        "degraded": false,
+        "finalised": true,
+        "source": "<log>.newton.json sidecar"
+      },
+      "threshold": "a sidecar verdict or an explicit pin",
+      "detail": "",
+      "basis": "adapter-attested",
+      "attested": [
+        "engine attribution: <log>.newton.json sidecar"
+      ],
+      "vacuous": false,
+      "falsifiability": [
+        {
+          "clause": "attribution present",
+          "how_to_fail": "a run with no engine verdict record, no explicit engine pin and no documented engine invariant -- which is INVALID, not FAIL",
+          "witness": "the adapter names the channel it read the attribution from",
+          "witness_present": true,
+          "detail": "<log>.newton.json sidecar"
+        }
+      ]
+    }
+  },
+  "n_pass": 6,
+  "n_total": 10,
+  "failed_assertion": "A1.2",
+  "failed_assertions": [
+    "A1.2",
+    "A1.5",
+    "A1.6",
+    "A1.8"
+  ],
+  "self_verified": false,
+  "attribution": {
+    "backend": "newton",
+    "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+    "degraded": false,
+    "finalised": true,
+    "source": "<log>.newton.json sidecar"
+  },
+  "measurements": {
+    "husky_url_blocks": 10,
+    "harness": {
+      "ok": true,
+      "error": null,
+      "timings_s": {
+        "start": 1.5389790999761317,
+        "world_load": 27.600206200004322,
+        "robots": 22.92247759999009,
+        "contacts": 22.58332700000028
+      },
+      "n_robots": 10
+    },
+    "robots_seen": 10,
+    "robots_qualifying": 10,
+    "phase_b": {
+      "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\redfix_live2\\A1_husky_swarm_10.dupname.r0\\scratch\\husky_swarm_10.wbt",
+      "injected_world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\redfix_live2\\A1_husky_swarm_10.dupname.r0\\scratch\\_agentbench_phaseB_husky_swarm_10.wbt",
+      "rc": 0,
+      "wall_s": 31.186387299996568,
+      "timed_out": false,
+      "log_path": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\redfix_live2\\A1_husky_swarm_10.dupname.r0\\phaseB\\phaseB_engine.log",
+      "sidecar": {
+        "backend": "newton",
+        "degraded": false,
+        "finalised": true,
+        "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+        "present": true
+      },
+      "recorder_complete": true,
+      "rows": 939,
+      "n_robots": 10,
+      "attempts_used": 2,
+      "launch_backend_env": {},
+      "tamper": [],
+      "error": null
+    },
+    "per_robot": {
+      "net_displacement_m": [
+        11.3031,
+        0.0,
+        14.2709,
+        14.1762,
+        14.5365,
+        14.3816,
+        14.2453,
+        13.1825,
+        14.04,
+        14.8458
+      ],
+      "path_length_m": [
+        15.2819,
+        0.0,
+        15.1189,
+        14.9319,
+        15.1075,
+        15.2731,
+        14.8098,
+        14.8958,
+        14.878,
+        15.1817
+      ],
+      "z_first_last_min_max_absdz": [
+        [
+          0.1321,
+          0.1323,
+          0.1301,
+          0.1472,
+          0.0001
+        ],
+        [
+          0.1322,
+          0.1322,
+          0.1322,
+          0.1322,
+          0.0
+        ],
+        [
+          0.1322,
+          0.1317,
+          0.1297,
+          0.1395,
+          0.0005
+        ],
+        [
+          0.1321,
+          0.1321,
+          0.1305,
+          0.1457,
+          0.0001
+        ],
+        [
+          0.1321,
+          0.1323,
+          0.13,
+          0.1392,
+          0.0001
+        ],
+        [
+          0.1321,
+          0.1321,
+          0.1305,
+          0.1483,
+          0.0001
+        ],
+        [
+          0.1322,
+          0.1321,
+          0.1307,
+          0.1393,
+          0.0001
+        ],
+        [
+          0.1322,
+          0.1322,
+          0.1304,
+          0.1484,
+          0.0
+        ],
+        [
+          0.132,
+          0.1352,
+          0.1301,
+          0.1533,
+          0.0032
+        ],
+        [
+          0.1319,
+          0.1321,
+          0.1301,
+          0.1408,
+          0.0002
+        ]
+      ],
+      "bearing_rad": [
+        -1.907,
+        0.0,
+        0.7776,
+        2.82,
+        -2.6109,
+        2.7802,
+        2.9961,
+        -3.1388,
+        -0.623,
+        -0.6525
+      ]
+    }
+  },
+  "artifacts": {
+    "world": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\redfix_live2\\A1_husky_swarm_10.dupname.r0\\scratch\\husky_swarm_10.wbt",
+    "trace": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\redfix_live2\\A1_husky_swarm_10.dupname.r0\\trace.jsonl",
+    "engine_log": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\redfix_live2\\A1_husky_swarm_10.dupname.r0\\phaseB\\phaseB_engine.log",
+    "recorder_csv": "O:\\omnisim\\tests\\benchmarks\\agentbench\\results\\redfix_live2\\A1_husky_swarm_10.dupname.r0\\phaseB\\phaseB.csv"
+  },
+  "notes": [
+    "A1.3 t=0 geometry measured by the grader-owned recorder: the harness free-runs and cannot report t=0."
+  ],
+  "basis": {
+    "core-physical": [
+      "A1.5",
+      "A1.6",
+      "A1.7",
+      "A1.8"
+    ],
+    "core-structural": [
+      "A1.2"
+    ],
+    "adapter-attested": [
+      "A1.10"
+    ],
+    "mixed": [
+      "A1.1",
+      "A1.4",
+      "A1.3",
+      "A1.9"
+    ]
+  },
+  "vacuous_assertions": {
+    "A1.3": [
+      "no robot-robot contact"
+    ],
+    "A1.8": [
+      "bearing spread"
+    ]
+  }
+}

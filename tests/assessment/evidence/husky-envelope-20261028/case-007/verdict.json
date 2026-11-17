@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "reasons": [],
+  "metrics": {
+    "braking_qualified": true,
+    "max_achieved_speed_m_s": 0.5999722480773926,
+    "max_ground_tilt_rad": 0.0006903770056012219,
+    "sample_count": 257,
+    "sample_period_s": 0.016,
+    "max_forward_excursion_m": 0.04552486538887024,
+    "initial_speed_m_s": 0.5999722480773926,
+    "stop_time_s": 0.15999999999999992,
+    "observed_command_delay_s": 0.0,
+    "request_time_s": 1.6,
+    "rollback_m": 0.0,
+    "final_speed_m_s": 3.8991327000912353e-10
+  },
+  "scope": "husky physical-wheel model/controller; simulation only"
+}

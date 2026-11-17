@@ -1,0 +1,112 @@
+# ros2_control controllers for the OmniSim Husky.
+#
+#   ros2 launch omnisim_ros2_control husky_diff_drive.launch.py
+#
+# ⚠ update_rate IS NOT THE ACTUATION RATE. The OmniSim hardware plugin does its
+# HTTP on a background thread at `comms_rate_hz` (25 Hz in the description), so
+# a 50 Hz controller manager is a 50 Hz controller reading a 25 Hz sensor and
+# writing a 25 Hz actuator. Raising update_rate costs nothing and buys nothing;
+# raising comms_rate_hz costs TCP connections, and OmniSim's HTTP/1.0 servers
+# give you no keep-alive. The measured ceiling is in the package README.
+controller_manager:
+  ros__parameters:
+    update_rate: 50  # Hz
+
+    # ⚠ TRUE, DELIBERATELY, AND IT MATTERS MORE HERE THAN IN A GAZEBO BRINGUP.
+    # The harness runs its worlds with `--mode=fast`: measured 13.24x realtime
+    # on this machine. Under wall-clock time diff_drive_controller would
+    # integrate 13x less odometry than the robot actually travelled, and every
+    # velocity ramp would be 13x too slow in simulated terms. With sim time the
+    # period handed to the controllers is simulated seconds, which is the clock
+    # the robot moves in. Needs `clock_node` publishing /clock (the launch file
+    # starts it).
+    use_sim_time: true
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+
+joint_state_broadcaster:
+  ros__parameters:
+    use_sim_time: true
+
+diff_drive_controller:
+  ros__parameters:
+    use_sim_time: true
+
+    left_wheel_names: ["front_left_wheel", "rear_left_wheel"]
+    right_wheel_names: ["front_right_wheel", "rear_right_wheel"]
+
+    # ⚠ MUST MATCH the <ros2_control> params in husky_omnisim.urdf.xacro and the
+    # bridge's own wheel_radius_m / 2*half_track_m. The plugin folds the
+    # per-wheel velocity commands back into a body twist; that fold is an exact
+    # inverse of the numbers below and a silent scaling error if they differ.
+    wheel_separation: 0.5708
+    wheel_radius: 0.1651
+    wheel_separation_multiplier: 1.0
+    left_wheel_radius_multiplier: 1.0
+    right_wheel_radius_multiplier: 1.0
+
+    # Odometry is integrated from the WHEEL ENCODERS the plugin reads out of
+    # OmniSim, so it drifts like real wheel odometry -- unlike Tier 2's
+    # `odom_node`, which reports the simulator's ground-truth pose. Use this one
+    # to exercise a localisation stack; use odom_node when you want a
+    # drift-free pose. Do not run both: they publish the same odom->base_link
+    # transform and tf2 will report the conflict.
+    publish_rate: 25.0
+    odom_frame_id: odom
+    base_frame_id: base_link
+    enable_odom_tf: true
+    open_loop: false
+    position_feedback: true
+
+    # Zeros mean "unknown" in ROS convention, which is the honest value here:
+    # nothing in this pipeline measures encoder noise.
+    pose_covariance_diagonal: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    twist_covariance_diagonal: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    # The bridge CLAMPS anything faster to v_max_linear = 6.0 rad/s * 0.1651 m =
+    # 0.9906 m/s and v_max_angular = 6.0 * 0.1651 / 0.2854 = 3.471 rad/s, and it
+    # reports the clamp in its reply. Limiting here instead means the controller
+    # knows what it actually asked for.
+    linear:
+      x:
+        has_velocity_limits: true
+        max_velocity: 0.99
+        min_velocity: -0.99
+        has_acceleration_limits: true
+        max_acceleration: 1.0
+        min_acceleration: -1.0
+    angular:
+      z:
+        has_velocity_limits: true
+        max_velocity: 3.4
+        min_velocity: -3.4
+        has_acceleration_limits: true
+        max_acceleration: 3.0
+        min_acceleration: -3.0
+
+    # ⚠ 2.0 s, NOT the 0.5 s you would use on real hardware, AND THE REASON IS
+    # NOT CONSERVATISM. cmd_vel is a continuous interface: diff_drive_controller
+    # halts when the newest command is older than cmd_vel_timeout, measured on
+    # ITS OWN clock -- which `use_sim_time: true` makes SIMULATION time. The
+    # harness runs worlds at ~13x realtime, so a publisher sending at 20 Hz of
+    # WALL time delivers roughly 1.5 Hz in simulated time: 0.66 simulated
+    # seconds between commands, past a 0.5 s timeout, on every single message.
+    #
+    # MEASURED 2026-08-17 at cmd_vel_timeout 0.5 with exactly this stack: the
+    # controller accepted the topic, `/diff_drive_controller/cmd_vel_out`
+    # published all zeros throughout, the hardware plugin reported 0 failures at
+    # its full 19.99 Hz, and the Husky moved 0.0000 m against a commanded
+    # 0.2 m/s. Nothing anywhere reported an error -- the only way to see it was
+    # to read the robot's pose out of the simulator.
+    #
+    # 2.0 s of simulated time is ~150 ms of wall time at 13.24x, so it still
+    # stops a robot promptly when the publisher really dies, and it tolerates a
+    # realtime factor up to ~40x at a 20 Hz wall publish rate. Scale it with the
+    # factor you measure, not with the one written here.
+    cmd_vel_timeout: 2.0
+    use_stamped_vel: false
+    publish_limited_velocity: true

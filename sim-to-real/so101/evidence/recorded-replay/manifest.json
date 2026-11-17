@@ -1,0 +1,57 @@
+{
+  "world": "O:\\omnisim\\projects\\robots\\therobotstudio\\worlds\\.harness_so101_ff00849b650340dcb8f6bf0d158fb705.omniworld",
+  "world_sha256": "08feb3603bbcbcc6b49b379fb65f9dfdb039b3c7923da0cd5e62b44dc20ea52a",
+  "urdf_sha256": "6c6d185fdef14875e30a3a59f1a132c819506be864917cd878ab774074a2604e",
+  "trajectory_sha256": "9cb41be1d46556f2653fced8592687baabc51c5b1feb1c18b0af09fd78ba5f4d",
+  "mode": "recorded-replay",
+  "calibration": {
+    "status": "estimated",
+    "units": "normalised",
+    "description": "Diagnostic estimate only. Encoder spans inferred from follower observation quantisation; signs assumed positive, zeros estimated. Not hardware calibration.",
+    "encoder_spans_ticks": [
+      2441,
+      2316,
+      2231,
+      2392,
+      3864,
+      907
+    ],
+    "ticks_per_revolution": 4096,
+    "joints": {
+      "shoulder_pan": {
+        "scale_deg_per_unit": 1.072705078125,
+        "offset_deg": 0
+      },
+      "shoulder_lift": {
+        "scale_deg_per_unit": 1.0177734375,
+        "offset_deg": 0
+      },
+      "elbow_flex": {
+        "scale_deg_per_unit": 0.980419921875,
+        "offset_deg": -5
+      },
+      "wrist_flex": {
+        "scale_deg_per_unit": 1.051171875,
+        "offset_deg": -6
+      },
+      "wrist_roll": {
+        "scale_deg_per_unit": 1.698046875,
+        "offset_deg": 0
+      },
+      "gripper": {
+        "scale_deg_per_unit": 0.79716796875,
+        "offset_deg": -4
+      }
+    }
+  },
+  "source": {
+    "path": "O:\\omnisim\\.tmp\\so101-recovery\\dataset\\data\\chunk-000\\file-000.parquet",
+    "sha256": "1389458555b049b5e444230293d9fdd570f175b24fdd4bd3271a6503fa7cceb0",
+    "episode": 0,
+    "column": "action",
+    "first_frame": 0,
+    "frames": 457
+  },
+  "actuation": "Motor.setPosition",
+  "timed_episode_pose_writes": 0
+}

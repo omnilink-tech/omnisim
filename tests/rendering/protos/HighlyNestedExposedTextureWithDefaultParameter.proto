@@ -1,0 +1,15 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "./depth_2/NestedExposedTextureWithParameter.proto"
+
+PROTO HighlyNestedExposedTextureWithDefaultParameter [
+]
+{
+  Pose {
+    children[
+      NestedExposedTextureWithParameter {
+        name "HighlyNestedExposedTextureWithDefaultParameter"
+      }
+    ]
+  }
+}

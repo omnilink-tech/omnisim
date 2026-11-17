@@ -1,0 +1,73 @@
+#OMNISIM R2025a utf8
+
+# OmniArm 6 cobot sample scene.
+# A generic 6-DOF collaborative arm sitting on a low pedestal in
+# the middle of an empty floor. The robot is loaded from its URDF via the
+# native URDFRobot importer. The omniarm6_wave controller drives all six joints
+# with slow sinusoidal targets so the arm has visible motion at startup.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniArm 6"
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 3.303 -3.516 3.695
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+# Key light from the SE so the arm picks up shoulder highlights.
+# Fill light from the opposite side to keep the back of the arm readable.
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+Floor {
+  size 6 6
+  tileSize 6 6
+  appearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# Low brushed-aluminium pedestal so the cobot is at a believable working
+# height instead of sitting flat on the asphalt.
+DEF PEDESTAL Solid {
+  translation 0 0 0.075
+  children [
+    Shape {
+      appearance BrushedAluminium {
+      }
+      geometry Box {
+        size 0.4 0.4 0.15
+      }
+    }
+  ]
+  name "pedestal"
+  boundingObject Box {
+    size 0.4 0.4 0.15
+  }
+}
+
+URDFRobot {
+  url "../omniarm6.urdf"
+  # 5 mm gap above the pedestal top. The base collision hull and the pedestal
+  # box would otherwise share a face and ODE narrow-phase would chew through
+  # the dense hull on every step.
+  translation 0 0 0.155
+  name "omniarm6"
+  controller "omniarm6_wave"
+  staticBase TRUE
+}

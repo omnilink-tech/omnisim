@@ -1,0 +1,11 @@
+Shift v2 calibration feedback 02 -- 2026-09-27, from evidence/shift-v2-calibration-03 (4 oracle +
+3 oracle_bad, one process of 7; judge gemini-2.5-pro).
+
+shift_holdout_v2 (sha256 0d2a6e6e...)
+  oracle: 41/41 in 3 of 4 runs; 1 run failed 27:reply (count_visits: measured 6, scripted reply said 5 --
+    a correct route passed through that station once more than planned).
+    Fix: make that oracle reply report the MEASURED count with the new _reply option
+    {"count_visits_so_far": {"at": [x, y], "radius": r}, "prefix": "...", "suffix": "..."}
+    (same station and radius as check 27), added in the harness for this.
+  oracle_bad: still does NOT fail 3:avoid_zone and 8:prop_still after two rounds --
+    per PREREGISTRATION_V2 they are dropped before the freeze. No further work on them.

@@ -1,0 +1,494 @@
+{
+  "schema": "agenticsimbench/red-evidence/v1",
+  "suite": "agenticsimbench/v1",
+  "task": "B2_subject_in_frame",
+  "sim": "omnisim",
+  "fixture": "b2_no_claim",
+  "fixture_kind": "targeted_live_adapter_evidence_fixture",
+  "expected_failures": [
+    "B2.5",
+    "B2.6"
+  ],
+  "observed_failures": [
+    "B2.5",
+    "B2.6"
+  ],
+  "outcome": "FAIL",
+  "qualifies_as_non_null_red_evidence": true,
+  "generated_utc": "2026-08-13T18:08:57.632855+00:00",
+  "engine_binary": {
+    "path": "msys64\\mingw64\\bin\\omnisim-bin.exe",
+    "sha256": "cbd80861c9f0d314f9760a39abc0f686ce161cac74337f80c41f5e2b5e0b836d"
+  },
+  "sources": [
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\run_final_red_fixtures.py",
+      "sha256": "fca4717c0fbf8217c9cf53676f5a653dc350960a3f1e3ca2340a528fbb158b9a"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\graders\\b2_core.py",
+      "sha256": "845e92640e21942ccb3589fbb2b9b13c08ffcd329963a78163da692d7b42e20b"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\tasks\\B2_subject_in_frame\\meta.json",
+      "sha256": "9f9497f68a2448472bd126cbf459aae92d32457349722f54439623d3ffed0b0a"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\agents\\b2_fixtures.py",
+      "sha256": "bd0ad8e375abe819a567112499d85c38109aad47c8d7c8c029cc592cf48ebbfa"
+    },
+    {
+      "path": "scripts\\harness\\spatial.py",
+      "sha256": "43e2385b5c1db5c6365c3e373514a8f35eb3f6d9bee35a4a5c5421dd4a459184"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\fixtures\\final\\controllers\\agentbench_view_probe\\agentbench_view_probe.py",
+      "sha256": "0af4939d65fa77c52f3e9ea069144aa652431fd695f4081ae3b908092e5ebe30"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\tasks\\B2_subject_in_frame\\initial\\frame_the_cylinder.wbt",
+      "sha256": "8ccfb37e7f67072583c955e50717abc3d16bd7f27a8c49264fe97cdf1e21b318"
+    }
+  ],
+  "staged_world_sha256": "a8cce40c6330157d7a11bca14a02b91e24b835a29e5693792f6725084c37e5ea",
+  "answer": "I moved the camera to the requested subject.",
+  "view": {
+    "final": {
+      "position": [
+        14.0,
+        14.0,
+        3.2
+      ],
+      "forward": [
+        -0.6824794801622681,
+        -0.682479477560132,
+        -0.26161712838934986
+      ],
+      "up": [
+        -0.1849912471009234,
+        -0.18499124401639844,
+        0.9651717350468315
+      ],
+      "fov_h_rad": 0.785398,
+      "fov_v_rad": 0.4578222326585305,
+      "aspect": 1.7777777777777777,
+      "source": "live Supervisor Viewpoint fields after engine load; camera axes and per-axis FOV resolved by scripts/harness/spatial.py"
+    },
+    "initial": {
+      "position": [
+        0.0,
+        0.0,
+        5.0
+      ],
+      "forward": [
+        -0.3708157160416096,
+        -0.8343353657237241,
+        -0.40789729373851946
+      ],
+      "up": [
+        -0.16566278160367062,
+        -0.372741257483717,
+        0.9130278187222957
+      ],
+      "fov_h_rad": 0.785398,
+      "fov_v_rad": 0.4578222326585305,
+      "aspect": 1.7777777777777777,
+      "source": "live Supervisor Viewpoint fields after engine load; camera axes and per-axis FOV resolved by scripts/harness/spatial.py"
+    },
+    "artifact_parsed": true,
+    "artifact": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-b2_no_claim\\project\\worlds\\subject_in_frame.wbt",
+    "source": "live Supervisor Viewpoint fields after engine load; camera axes and per-axis FOV resolved by scripts/harness/spatial.py",
+    "error": null
+  },
+  "attribution_before_deliberate_strip": null,
+  "verdict": {
+    "task": "B2_subject_in_frame",
+    "outcome": "FAIL",
+    "progress": 3,
+    "progress_name": "artifact_runs",
+    "assertions": {
+      "B2.1": {
+        "ok": true,
+        "what": "the camera was aimed somewhere new",
+        "measured": {
+          "aim change (deg)": 21.689,
+          "camera moved (m)": 19.8806,
+          "scene readable": true
+        },
+        "threshold": {
+          "aim change (deg)": ">= 1.00",
+          "or camera moved (m)": ">= 0.05"
+        },
+        "detail": "",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "the camera changed",
+            "how_to_fail": "a camera left exactly where the task shipped it",
+            "witness": "both the initial and the final camera pose were recovered",
+            "witness_present": true,
+            "detail": "initial from live Supervisor Viewpoint fields after engine load; camera axes and per-axis FOV resolved by scripts/harness/spatial.py; final from live Supervisor Viewpoint fields after engine load; camera axes and per-axis FOV resolved by scripts/harness/spatial.py"
+          }
+        ]
+      },
+      "B2.2": {
+        "ok": true,
+        "what": "the subject sits inside the frame with angular margin",
+        "measured": {
+          "clearance to nearest frame edge (deg)": 11.2459,
+          "off-axis (deg)": 1.8697,
+          "yaw (deg)": 0.0,
+          "pitch (deg)": -1.8697,
+          "half field of view h/v (deg)": [
+            22.5,
+            13.1156
+          ],
+          "in front of the camera": true,
+          "range (m)": 8.8747,
+          "method": "per-axis frustum test (an up axis was reported)"
+        },
+        "threshold": {
+          "clearance (deg)": ">= 2.00"
+        },
+        "detail": "both angles reported",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "the subject is in frame",
+            "how_to_fail": "a camera whose forward axis is further from the subject centre than its own half field of view",
+            "witness": "a measured camera pose and a measured subject centre",
+            "witness_present": true,
+            "detail": "live Supervisor Viewpoint fields after engine load; camera axes and per-axis FOV resolved by scripts/harness/spatial.py"
+          },
+          {
+            "clause": "the field of view is known",
+            "how_to_fail": "a camera with a field of view so wide that nothing is ever out of frame",
+            "witness": "the camera reported at least one field-of-view angle",
+            "witness_present": true,
+            "detail": "both angles reported"
+          }
+        ]
+      },
+      "B2.3": {
+        "ok": true,
+        "what": "the subject is big enough on screen to be the subject",
+        "measured": {
+          "angular diameter (deg)": 10.0562,
+          "range (m)": 8.8747,
+          "bounding radius (m)": 0.7778
+        },
+        "threshold": {
+          "angular diameter (deg)": ">= 2.00"
+        },
+        "detail": "",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "the subject is large enough",
+            "how_to_fail": "a camera aimed correctly from so far away that the subject is a speck",
+            "witness": "the subject has measured world-space bounds, so a radius and a range exist",
+            "witness_present": true,
+            "detail": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)"
+          }
+        ]
+      },
+      "B2.4": {
+        "ok": true,
+        "what": "the subject is the best-centred body in the scene",
+        "measured": {
+          "subject off-axis (deg)": 1.8697,
+          "closest distractor": "green_cylinder",
+          "its off-axis (deg)": 12.1778,
+          "every distractor (deg)": {
+            "blue_cylinder": 23.0456,
+            "green_cylinder": 12.1778,
+            "grey_sphere": 36.1476,
+            "yellow_crate": 31.9165
+          }
+        },
+        "threshold": {
+          "subject off-axis (deg)": "<= the best distractor's + 0.10"
+        },
+        "detail": "",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "the subject beats every distractor",
+            "how_to_fail": "a camera aimed at one of the other bodies instead",
+            "witness": "at least one distractor body was found with world-space bounds",
+            "witness_present": true,
+            "detail": "found 4 of 4 named distractors"
+          }
+        ]
+      },
+      "B2.5": {
+        "ok": false,
+        "what": "the answer commits to an in-frame claim backed by a number",
+        "measured": {
+          "claim": null,
+          "numbers in the answer": 0,
+          "angles (deg)": [],
+          "lengths (m)": []
+        },
+        "threshold": {
+          "claim": "in_frame",
+          "numbers": ">= 1"
+        },
+        "detail": "",
+        "basis": "core-structural",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "a claim was made",
+            "how_to_fail": "an answer that describes the work but never states, with a number, that the subject ended up in frame",
+            "witness": "the agent's final message was captured",
+            "witness_present": true,
+            "detail": ""
+          }
+        ]
+      },
+      "B2.6": {
+        "ok": false,
+        "what": "the committed proof agrees with the measured geometry",
+        "measured": {
+          "claim": null,
+          "measured in frame": true,
+          "stated off-axis (deg)": null,
+          "chosen by": "the answer states no such quantity",
+          "measured readings (deg)": [
+            1.8697,
+            0.0,
+            1.8697
+          ],
+          "off-axis error (deg)": null,
+          "stated range (m)": null,
+          "chosen by (range)": "the answer states no such quantity",
+          "measured range (m)": 8.8747,
+          "range error (m)": null,
+          "numbers stated but not scored": []
+        },
+        "threshold": {
+          "claim": "matches the measured framing",
+          "off-axis error (deg)": "<= 2.00",
+          "range error (m)": "<= 1.00"
+        },
+        "detail": "",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": true,
+        "falsifiability": [
+          {
+            "clause": "the claim matches the geometry",
+            "how_to_fail": "an answer asserting the subject is in frame while the measured clearance is negative, or an answer that states no conclusion at all",
+            "witness": "a measured clearance from the camera pose",
+            "witness_present": true,
+            "detail": ""
+          },
+          {
+            "clause": "the stated off-axis angle is true",
+            "how_to_fail": "an answer quoting a small, confident off-axis angle it never measured",
+            "witness": "the answer committed to an off-axis angle",
+            "witness_present": false,
+            "detail": "the answer states no such quantity"
+          },
+          {
+            "clause": "the stated range is true",
+            "how_to_fail": "an answer quoting a range that is not the camera's",
+            "witness": "the answer committed to a camera-to-subject range",
+            "witness_present": false,
+            "detail": "the answer states no such quantity"
+          }
+        ]
+      }
+    },
+    "n_pass": 4,
+    "n_total": 6,
+    "failed_assertion": "B2.5",
+    "failed_assertions": [
+      "B2.5",
+      "B2.6"
+    ],
+    "self_verified": false,
+    "attribution": {},
+    "measurements": {
+      "camera_evidence": {
+        "source": "live Supervisor Viewpoint fields after engine load; camera axes and per-axis FOV resolved by scripts/harness/spatial.py",
+        "error": null,
+        "artifact_parsed": true,
+        "problems": []
+      },
+      "answer": "I moved the camera to the requested subject.",
+      "truth": {
+        "distance_m": 8.8747,
+        "offaxis_deg": 1.8697,
+        "yaw_deg": 0.0,
+        "pitch_deg": -1.8697,
+        "clearance_deg": 11.2459,
+        "in_front": true,
+        "method": "per-axis frustum test (an up axis was reported)",
+        "half_fov_h_deg": 22.5,
+        "half_fov_v_deg": 13.1156,
+        "fov_note": "both angles reported",
+        "subject": "red_cylinder",
+        "subject_centre_m": [
+          8.0,
+          8.0,
+          0.6
+        ],
+        "subject_radius_m": 0.7778,
+        "angular_size_deg": 10.0562,
+        "distractor_offaxis_deg": {
+          "blue_cylinder": 23.0456,
+          "green_cylinder": 12.1778,
+          "yellow_crate": 31.9165,
+          "grey_sphere": 36.1476
+        },
+        "aim_change_deg": 21.689,
+        "camera_move_m": 19.8806
+      },
+      "committed_proof": {
+        "polarity": null,
+        "offaxis_deg": null,
+        "offaxis_how": "the answer states no such quantity",
+        "range_m": null,
+        "range_how": "the answer states no such quantity",
+        "all_angles_deg": [],
+        "all_lengths_m": [],
+        "all_numbers": []
+      }
+    },
+    "artifacts": {},
+    "notes": [
+      "every threshold here is an angle or a metre computed from the camera pose and the subject's own world-space bounds; no pixel, screenshot or render statistic is read (SPEC 6.2.6)"
+    ],
+    "basis": {
+      "core-physical": [
+        "B2.1",
+        "B2.2",
+        "B2.3",
+        "B2.4",
+        "B2.6"
+      ],
+      "core-structural": [
+        "B2.5"
+      ]
+    },
+    "vacuous_assertions": {
+      "B2.6": [
+        "the stated off-axis angle is true",
+        "the stated range is true"
+      ]
+    }
+  },
+  "run": {
+    "world": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-b2_no_claim\\project\\worlds\\subject_in_frame.wbt",
+    "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-b2_no_claim\\project\\worlds\\_agentbench_phaseB_subject_in_frame.wbt",
+    "rc": 0,
+    "wall_s": 13.428913899999316,
+    "timed_out": false,
+    "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-b2_no_claim\\phaseB\\phaseB_engine.log",
+    "sidecar": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.8.1",
+        "mujoco_warp": "3.8.0.3",
+        "newton": "1.2.0",
+        "warp": "1.13.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "present": true
+    },
+    "recorder_complete": false,
+    "rows": 1,
+    "n_robots": 1,
+    "n_tracks": 1,
+    "n_link_tracks": 0,
+    "n_solid_tracks": 0,
+    "links_truncated": false,
+    "scene_scan": {
+      "supported": true,
+      "cap": 128,
+      "found": 1,
+      "bounded": 0,
+      "truncated": false
+    },
+    "run_contacts": {
+      "supported": true,
+      "every_n_steps": 8,
+      "steps_sampled": 1,
+      "total_observed": 0,
+      "distinct_named": 0,
+      "unpaired": 0,
+      "truncated": false,
+      "error": null
+    },
+    "run_contact_pairs": [],
+    "attempts_used": 1,
+    "launch_backend_env": {},
+    "tamper": [],
+    "error": null
+  },
+  "secondary_run": {
+    "world": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-b2_no_claim\\initial_probe\\project\\worlds\\initial_subject_in_frame.wbt",
+    "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-b2_no_claim\\initial_probe\\project\\worlds\\_agentbench_phaseB_initial_subject_in_frame.wbt",
+    "rc": 0,
+    "wall_s": 45.021195199999056,
+    "timed_out": false,
+    "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-b2_no_claim\\initial_probe\\phaseB\\phaseB_engine.log",
+    "sidecar": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.8.1",
+        "mujoco_warp": "3.8.0.3",
+        "newton": "1.2.0",
+        "warp": "1.13.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "present": true
+    },
+    "recorder_complete": false,
+    "rows": 1,
+    "n_robots": 1,
+    "n_tracks": 1,
+    "n_link_tracks": 0,
+    "n_solid_tracks": 0,
+    "links_truncated": false,
+    "scene_scan": {
+      "supported": true,
+      "cap": 128,
+      "found": 1,
+      "bounded": 0,
+      "truncated": false
+    },
+    "run_contacts": {
+      "supported": true,
+      "every_n_steps": 8,
+      "steps_sampled": 1,
+      "total_observed": 0,
+      "distinct_named": 0,
+      "unpaired": 0,
+      "truncated": false,
+      "error": null
+    },
+    "run_contact_pairs": [],
+    "attempts_used": 1,
+    "launch_backend_env": {},
+    "tamper": [],
+    "error": null
+  }
+}

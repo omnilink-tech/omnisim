@@ -1,0 +1,2057 @@
+{
+  "adapter_status": {
+    "gazebo": false,
+    "genesis": false,
+    "isaac": false,
+    "omnisim": true,
+    "webots": true
+  },
+  "comparators": [
+    "omnisim",
+    "isaac",
+    "gazebo",
+    "webots",
+    "genesis"
+  ],
+  "rows": [
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "agent final answer text",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "omnisim",
+      "task": "B1_overlap_audit"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "agent final answer text",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "omnisim",
+      "task": "B3_measure_and_report"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "frame_the_cylinder.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "omnisim",
+      "task": "B2_subject_in_frame"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "parse_error.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "omnisim",
+      "task": "C1_parse_error_fix"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "fall_through.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "omnisim",
+      "task": "C2_fall_through_floor"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "lidar_nav.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "null FAIL recorded",
+          "evidence": [
+            "preregister/oracle_verdicts.json"
+          ],
+          "state": "GREEN"
+        },
+        "oracle_PASS": {
+          "detail": "oracle PASS recorded",
+          "evidence": [
+            "preregister/oracle_verdicts.json"
+          ],
+          "state": "GREEN"
+        }
+      },
+      "publication_state": "READY",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "omnisim",
+      "task": "R1_lidar_nav"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "husky_swarm_10.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "omnisim",
+      "task": "A1_husky_swarm_10"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "arm_reach.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "omnisim",
+      "task": "R2_arm_reach"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "pick_and_place.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "omnisim",
+      "task": "R3_pick_and_place"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "mobile_manipulation.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "omnisim",
+      "task": "R4_mobile_manipulation"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "isaac",
+      "task": "B1_overlap_audit"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "isaac",
+      "task": "B3_measure_and_report"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "isaac",
+      "task": "B2_subject_in_frame"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "isaac",
+      "task": "C1_parse_error_fix"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "isaac",
+      "task": "C2_fall_through_floor"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "isaac",
+      "task": "R1_lidar_nav"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "isaac",
+      "task": "A1_husky_swarm_10"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "isaac",
+      "task": "R2_arm_reach"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "isaac",
+      "task": "R3_pick_and_place"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "RunPod 4090 pod (local 3060/6 GB is under the floor) + isaacsim.ros2.sim_control bring-up",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "isaac",
+      "task": "R4_mobile_manipulation"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "gazebo",
+      "task": "B1_overlap_audit"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "gazebo",
+      "task": "B3_measure_and_report"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "gazebo",
+      "task": "B2_subject_in_frame"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "gazebo",
+      "task": "C1_parse_error_fix"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "gazebo",
+      "task": "C2_fall_through_floor"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "gazebo",
+      "task": "R1_lidar_nav"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "gazebo",
+      "task": "A1_husky_swarm_10"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "gazebo",
+      "task": "R2_arm_reach"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "gazebo",
+      "task": "R3_pick_and_place"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "ros_gz bring-up + a simulation_interfaces client",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "gazebo",
+      "task": "R4_mobile_manipulation"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "agent final answer text",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "webots",
+      "task": "B1_overlap_audit"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "agent final answer text",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "webots",
+      "task": "B3_measure_and_report"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "frame_the_cylinder.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "webots",
+      "task": "B2_subject_in_frame"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "parse_error.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "webots",
+      "task": "C1_parse_error_fix"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "fall_through.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "webots",
+      "task": "C2_fall_through_floor"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "lidar_nav.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "null FAIL recorded",
+          "evidence": [
+            "preregister/oracle_verdicts.json",
+            "preregister/v1/arm_gate_records/webots_r1_2026-08-13.json"
+          ],
+          "state": "GREEN"
+        },
+        "oracle_PASS": {
+          "detail": "oracle PASS recorded",
+          "evidence": [
+            "preregister/oracle_verdicts.json",
+            "preregister/v1/arm_gate_records/webots_r1_2026-08-13.json"
+          ],
+          "state": "GREEN"
+        }
+      },
+      "publication_state": "READY",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "webots",
+      "task": "R1_lidar_nav"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "husky_swarm_10.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "webots",
+      "task": "A1_husky_swarm_10"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "arm_reach.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "webots",
+      "task": "R2_arm_reach"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "pick_and_place.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "no null FAIL recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "no oracle PASS recorded for this task/simulator",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "webots",
+      "task": "R3_pick_and_place"
+    },
+    {
+      "adapter_implemented": true,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "mobile_manipulation.wbt",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "adapter declares task expressible",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "no task-scoped blocker",
+          "evidence": [],
+          "state": "GREEN"
+        },
+        "null_FAIL": {
+          "detail": "null FAIL recorded",
+          "evidence": [
+            "preregister/v1/arm_gate_records/webots_r4_2026-08-13.json"
+          ],
+          "state": "GREEN"
+        },
+        "oracle_PASS": {
+          "detail": "oracle PASS recorded",
+          "evidence": [
+            "preregister/v1/arm_gate_records/webots_r4_2026-08-13.json"
+          ],
+          "state": "GREEN"
+        }
+      },
+      "publication_state": "READY",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "webots",
+      "task": "R4_mobile_manipulation"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "genesis",
+      "task": "B1_overlap_audit"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "genesis",
+      "task": "B3_measure_and_report"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "genesis",
+      "task": "B2_subject_in_frame"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "genesis",
+      "task": "C1_parse_error_fix"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "genesis",
+      "task": "C2_fall_through_floor"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "genesis",
+      "task": "R1_lidar_nav"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "genesis",
+      "task": "A1_husky_swarm_10"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "genesis",
+      "task": "R2_arm_reach"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "genesis",
+      "task": "R3_pick_and_place"
+    },
+    {
+      "adapter_implemented": false,
+      "gates": {
+        "deliverable_convention": {
+          "detail": "adapter missing; no v1 deliverable can be exercised",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "expressible_or_explicitly_unsupported": {
+          "detail": "cannot classify task until adapter exists: install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "no_task_scoped_bringup_blocker": {
+          "detail": "install + adapter; CPU backend needed for the P0/P1 rows",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "null_FAIL": {
+          "detail": "adapter missing; null control has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        },
+        "oracle_PASS": {
+          "detail": "adapter missing; oracle has not run",
+          "evidence": [],
+          "state": "BLOCKED"
+        }
+      },
+      "publication_state": "BLOCKED",
+      "red_evidence": {
+        "detail": "all task assertions have real red evidence",
+        "evidence": [
+          "preregister/v1/coverage.json"
+        ],
+        "state": "GREEN"
+      },
+      "sim": "genesis",
+      "task": "R4_mobile_manipulation"
+    }
+  ],
+  "schema": "agenticsimbench/arm-gates/v1",
+  "suite": "agenticsimbench/v1",
+  "summary": {
+    "cells_blocked": 47,
+    "cells_explicitly_unsupported": 0,
+    "cells_ready": 3,
+    "cells_total": 50,
+    "full_claim_gate": "BLOCKED",
+    "primary_adapters_ready": 2,
+    "primary_adapters_total": 5,
+    "red_assertions_total": 61,
+    "red_assertions_validated": 61
+  },
+  "tasks": [
+    "B1_overlap_audit",
+    "B3_measure_and_report",
+    "B2_subject_in_frame",
+    "C1_parse_error_fix",
+    "C2_fall_through_floor",
+    "R1_lidar_nav",
+    "A1_husky_swarm_10",
+    "R2_arm_reach",
+    "R3_pick_and_place",
+    "R4_mobile_manipulation"
+  ]
+}

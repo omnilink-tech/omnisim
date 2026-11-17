@@ -1,0 +1,39 @@
+{
+  "name": "g1",
+  "urdf": "projects/robots/unitree/g1/urdf/g1_23dof_omnisim.urdf",
+  "spawn_z": 0.78,
+  "_note": "G1 stand driven by the SAMPLING-MPC brain (projects/policies/control/g1_mpc_stand.py) instead of the reactive lean/arm/trim overlays. Enable with HSTAND_MPC=1. NOMINAL = the trainer's reconciled deeper squat (hip -0.30/knee 0.52/ankle -0.23, gpu_mjwarp_g1_walk_trainer NOMINAL) + ank_bias -0.10 (the proven Newton CoM-back centering), which is the closest pose held by BOTH the kp400 MuJoCo planning sidecar (g1_full) AND the Newton deploy. The MPC reads the live Newton state each tick, rolls the sidecar forward, and returns leg+shoulder targets; the reactive overlays below are DISABLED so the MPC is the sole balancer. STATUS (honest): this got the in-Newton MPC from FALL@1.25s (gait pose) to a clean ~2.5s stand (rest FALL@2.67s, first-cube FALL@1.63s). It does NOT yet stand durably in Newton -- the residual CPU-MuJoCo(sidecar) vs mujoco_warp(Newton) DYNAMIC mismatch tips it; an integral/foot-shift can't fix a dynamic (not static) gap. Opt-in experimental knobs for closing it further: HSTAND_MPC_FOOTSHIFT (shift sidecar foot to match the importer), HSTAND_MPC_TRIM (offset-free setpoint integral), HSTAND_MPC_PLANT=deploy + HSTAND_MPC_KP/KD (use the deploy-derived MJCF as the sidecar). The definitive fix is planning in mujoco_warp in-process (same engine as deploy).",
+  "joint_order": [
+    "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+    "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+    "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+    "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+    "waist_yaw_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+  ],
+  "nominal": {
+    "left_hip_pitch_joint": -0.30, "left_knee_joint": 0.52, "left_ankle_pitch_joint": -0.23,
+    "right_hip_pitch_joint": -0.30, "right_knee_joint": 0.52, "right_ankle_pitch_joint": -0.23,
+    "left_shoulder_roll_joint": 0.20, "right_shoulder_roll_joint": -0.20
+  },
+  "ankle_pitch_joints": ["left_ankle_pitch_joint", "right_ankle_pitch_joint"],
+  "ankle_roll_joints": ["left_ankle_roll_joint", "right_ankle_roll_joint"],
+  "hip_pitch_joints": ["left_hip_pitch_joint", "right_hip_pitch_joint"],
+  "arm_hold": [
+    "waist_yaw_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+  ],
+  "deploy_ke": 400,
+  "deploy_kd": 60,
+  "ank_bias": -0.10,
+  "upright": {"bz_min": 0.55, "roll_max": 0.7, "pitch_max": 0.7},
+  "settle_s": 0.4,
+  "lean": {"enabled": false},
+  "arm_balance": {"enabled": false},
+  "auto_trim": {"enabled": false},
+  "capture_step": {"enabled": false}
+}

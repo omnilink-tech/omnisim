@@ -1,0 +1,82 @@
+PROVENANCE NOTE (added by OmniLink, 2026-08-22 — not part of the licence text)
+=============================================================================
+
+Package:  ur_description, version 4.3.1
+Upstream: https://github.com/UniversalRobots/Universal_Robots_ROS2_Description
+Licence:  BSD-3-Clause, as declared by upstream's own package.xml:
+              <license file="LICENSE">BSD-3-Clause</license>
+          (see projects/robots/universal_robots/ur_description/package.xml,
+          shipped beside this file)
+
+UNRESOLVED: THIS LICENCE HAS NO COPYRIGHT HOLDER OR YEAR.
+
+The BSD-3 body below begins at "Redistribution and use..." with no
+"Copyright (c) <year> <holder>" line above it. That is how upstream's own
+LICENSE file is written; the line was not lost in transit here. It matters,
+because BSD-3 clause 1 tells a redistributor to "retain the above copyright
+notice" and there is no above copyright notice to retain, and clause 3 speaks
+of "the name of the copyright holder" without the file ever naming one.
+
+NO HOLDER OR YEAR IS ASSERTED HERE, because none could be established from
+anything in this tree. What this tree does contain, and what it does not:
+
+  * package.xml names Universal Robots A/S (ros@universal-robots.com) as a
+    MAINTAINER, alongside maintainers Felix Exner and Rune Soe-Knudsen. A
+    maintainer is not necessarily a copyright holder.
+  * package.xml also lists sixteen AUTHOR entries -- Nadia Hammoudeh Garcia,
+    Kelsey Hawkins, G.A. vd. Hoorn, Lovro Ivanov, Mathias Ludtke, Wim
+    Meeussen, Felix Messmer, Miguel Prada Sarasola, Denis Stogl, Andy
+    Zelenak, Marvin Grosse Besselmann, Tristan Schnell and Vincenzo Di
+    Pentima among them -- i.e. the package has many contributors across
+    several organisations, which is consistent with no single holder having
+    been recorded.
+  * The URDFs (urdf/ur3e.urdf, ur5e.urdf, ur10e.urdf) are xacro-generated and
+    carry NO copyright header of any kind.
+  * The visual meshes (meshes/ur{3e,5e,10e}/visual/*.dae) record only
+    <author>Blender User</author> -- Blender's default author string, which
+    names nobody -- with <authoring_tool>Blender 2.78.0</authoring_tool> and
+    <created>2018-08-20</created>.
+  * No README, NOTICE, AUTHORS or per-file copyright header exists anywhere
+    in the package.
+
+Anyone needing certainty should take the holder and year from upstream
+directly rather than from this file, and should add the line here verbatim if
+upstream ever records one. Guessing a holder would be worse than the gap.
+
+SCOPE OF WHAT OMNISIM SHIPS: only the ur3e, ur5e and ur10e families, all of
+which are BSD-3. Upstream places the UR8LONG / UR15 / UR18 / UR20 / UR30
+meshes under Universal Robots A/S' separate "Terms and Conditions for Use of
+Graphical Documentation" (package.xml declares that second licence, pointing
+at meshes/ur20/LICENSE.txt). NONE of those families is redistributed here, and
+that file is correspondingly absent. Do not add a restricted family without
+re-checking those terms.
+
+-----------------------------------------------------------------------------
+BSD 3-Clause License (verbatim from upstream; no copyright line upstream)
+-----------------------------------------------------------------------------
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+   * Redistributions of source code must retain the above copyright
+     notice, this list of conditions and the following disclaimer.
+
+   * Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+
+   * Neither the name of the copyright holder nor the names of its
+     contributors may be used to endorse or promote products derived from
+     this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.

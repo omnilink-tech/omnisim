@@ -1,0 +1,180 @@
+{
+ "summary": {
+  "provenance": {
+   "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+   "binary_sha256_16": "1c81f13df0d311c1",
+   "binary_mtime": "2026-08-29 20:13:40",
+   "machine": "LAPTOP-H61DJILS",
+   "platform": "Windows-11-10.0.26200-SP0",
+   "mode": "concurrent2+stagger12s",
+   "gap_s": 0.0,
+   "stdio": "file",
+   "worlds": [
+    "projects\\metazoa\\worlds\\metazoa.omniworld",
+    "projects\\samples\\demos\\worlds\\physics\\newton_smoke_test.omniworld"
+   ]
+  },
+  "launches": 8,
+  "finalised": 8,
+  "raced": 0,
+  "raced_qt_teardown": 0,
+  "raced_silent_exit": 0,
+  "shared_port_rounds": 0,
+  "failed_other": 0,
+  "race_rate": 0.0
+ },
+ "rows": [
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 12.01,
+   "exited_at": null,
+   "secs": 33.68,
+   "pid": 13400,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 12014.2,
+   "round": 0,
+   "i": 0,
+   "world": "metazoa.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 170
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 18.19,
+   "exited_at": null,
+   "secs": 33.68,
+   "pid": 3556,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 12014.2,
+   "round": 0,
+   "i": 1,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 31
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 12.01,
+   "exited_at": null,
+   "secs": 33.08,
+   "pid": 20184,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 12008.0,
+   "round": 1,
+   "i": 2,
+   "world": "metazoa.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 171
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 17.63,
+   "exited_at": null,
+   "secs": 33.08,
+   "pid": 5948,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 12008.0,
+   "round": 1,
+   "i": 3,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 32
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 12.01,
+   "exited_at": null,
+   "secs": 32.92,
+   "pid": 28624,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 12008.3,
+   "round": 2,
+   "i": 4,
+   "world": "metazoa.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 171
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 17.49,
+   "exited_at": null,
+   "secs": 32.92,
+   "pid": 4372,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 12008.3,
+   "round": 2,
+   "i": 5,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 32
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 12.01,
+   "exited_at": null,
+   "secs": 33.63,
+   "pid": 10132,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 12007.0,
+   "round": 3,
+   "i": 6,
+   "world": "metazoa.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 171
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 18.1,
+   "exited_at": null,
+   "secs": 33.63,
+   "pid": 19552,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 12007.0,
+   "round": 3,
+   "i": 7,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 31
+  }
+ ]
+}

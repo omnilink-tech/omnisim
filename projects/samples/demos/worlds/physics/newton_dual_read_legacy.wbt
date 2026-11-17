@@ -1,0 +1,82 @@
+#OMNISIM R2025a utf8
+
+# DUAL-READ REGRESSION WORLD -- this file is deliberately named `.wbt`.
+#
+# OmniSim's world extension is `.omniworld`. This world is NOT a leftover: it
+# is the live proof that the LEGACY `.wbt` extension still loads, and it must
+# never be renamed. The tree migrated 661 of its own worlds to `.omniworld`;
+# this one, and `tests/cache/worlds/backwards_compatibility.wbt`, are the two
+# held back on purpose.
+#
+# The policy it pins down is DUAL-READ, SINGLE-WRITE:
+#   * every reader -- engine, harness, test suite, tooling -- accepts BOTH
+#     `.omniworld` and `.wbt`, indefinitely, because there are external users
+#     and forks whose worlds must keep working;
+#   * every writer/generator emits `.omniworld`.
+#
+# If this world ever stops loading, the compatibility half of that promise is
+# broken and the extension migration has regressed. Verify with:
+#
+#   python -m omnisim run-headless \
+#     projects/samples/demos/worlds/physics/newton_dual_read_legacy.wbt \
+#     --until-finalized --fail-on-warning
+#
+# Deliberately trivial: one static floor, one dynamic box that falls onto it.
+# The point is the FILENAME, not the physics -- keep it cheap so it can run in
+# any smoke lane.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "Dual-read regression: a legacy .wbt world still loads"
+  newtonGroundMu 0.8
+}
+Viewpoint {
+  orientation -0.5774 0.5774 0.5774 2.0944
+  position 0 -4 2
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.57 0.6
+        roughness 1
+        metalness 0
+      }
+      geometry DEF FLOOR_BOX Box {
+        size 4 4 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject USE FLOOR_BOX
+}
+DEF FALLER Solid {
+  translation 0 0 1
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.9 0.62 0.15
+        roughness 0.6
+        metalness 0
+      }
+      geometry DEF FALLER_BOX Box {
+        size 0.2 0.2 0.2
+      }
+    }
+  ]
+  name "faller"
+  boundingObject USE FALLER_BOX
+  physics Physics {
+    density -1
+    mass 1
+  }
+}

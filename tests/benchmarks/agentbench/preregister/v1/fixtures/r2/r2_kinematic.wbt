@@ -1,0 +1,93 @@
+#OMNISIM R2025a utf8
+
+# A deliberately transparent R2 measurement rig. Six sibling joints make the
+# neutral joint-count contract true while DEF TIP gives the fixture controller
+# one observable link to move. This is negative-control infrastructure, never
+# an oracle or a scored model artifact.
+
+WorldInfo {
+  basicTimeStep 16
+  newtonSolver "mujoco"
+  newtonSubsteps 4
+}
+Viewpoint {
+  orientation -0.57735 0.57735 0.57735 2.0944
+  position 1.6 -1.6 1.4
+}
+Background { skyColor [ 0.15 0.17 0.2 ] }
+DirectionalLight {
+  ambientIntensity 1
+  direction 0.3 -0.4 -1
+  intensity 2
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    DEF FLOOR_GEO Shape {
+      appearance PBRAppearance { baseColor 0.35 0.36 0.38 roughness 1 }
+      geometry Box { size 4 4 0.1 }
+    }
+  ]
+  name "floor"
+  boundingObject USE FLOOR_GEO
+}
+DEF ARM Robot {
+  children [
+    HingeJoint {
+      endPoint Solid {
+        translation 0.10 0 0.10
+        children [ Shape { geometry Sphere { radius 0.025 } } ]
+        name "link1"
+      }
+    }
+    HingeJoint {
+      endPoint Solid {
+        translation 0.12 0 0.15
+        children [ Shape { geometry Sphere { radius 0.025 } } ]
+        name "link2"
+      }
+    }
+    HingeJoint {
+      endPoint Solid {
+        translation 0.14 0 0.20
+        children [ Shape { geometry Sphere { radius 0.025 } } ]
+        name "link3"
+      }
+    }
+    HingeJoint {
+      endPoint Solid {
+        translation 0.16 0 0.25
+        children [ Shape { geometry Sphere { radius 0.025 } } ]
+        name "link4"
+      }
+    }
+    HingeJoint {
+      endPoint Solid {
+        translation 0.18 0 0.30
+        children [ Shape { geometry Sphere { radius 0.025 } } ]
+        name "link5"
+      }
+    }
+    HingeJoint {
+      endPoint DEF TIP Solid {
+        translation 0.20 0 0.35
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.9 0.2 0.1 roughness 0.8 }
+            geometry Sphere { radius 0.035 }
+          }
+        ]
+        name "tip"
+      }
+    }
+    Shape {
+      appearance PBRAppearance { baseColor 0.15 0.35 0.55 roughness 0.7 }
+      geometry DEF BASE_GEO Box { size 0.2 0.2 0.1 }
+    }
+  ]
+  name "arm"
+  supervisor TRUE
+  boundingObject USE BASE_GEO
+  controller "r2_fixture"
+  controllerArgs [ "__R2_MODE__" ]
+}

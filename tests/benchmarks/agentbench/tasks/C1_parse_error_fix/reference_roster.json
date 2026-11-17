@@ -1,0 +1,16 @@
+{
+  "comment": [
+    "The intended scene inventory for C1_parse_error_fix. The task is to",
+    "REPAIR the world, not amputate it: after the agent's fix, the grader",
+    "(graders/c1.py -> c1_core.grade) asserts that every name below is",
+    "present in the frozen t=0 inventory of the loaded scene. Deleting the",
+    "broken subtree, or replacing the world wholesale with a trivial valid",
+    "file, therefore scores FAIL via C1.2 even though the result loads",
+    "cleanly. This file lives OUTSIDE initial/ on purpose -- only initial/",
+    "is copied into the agent's scratch dir, so the agent never sees it.",
+    "graders/test_c1_core.py asserts this file agrees byte-for-value with",
+    "c1_core.EXPECTED_BODIES / c1_core.ROBOT_NAME."
+  ],
+  "robot": "probe_bot",
+  "intended_bodies": ["floor", "pallet_a", "pallet_b", "probe_bot"]
+}

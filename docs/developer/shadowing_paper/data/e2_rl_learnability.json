@@ -1,0 +1,98 @@
+[
+  {
+    "vx": 0.3,
+    "cert_pass": true,
+    "score": 0.6857471869907255,
+    "base": 0.0137,
+    "tau": 0.3143,
+    "first_fall": 11.74,
+    "dist": 2.0,
+    "falls_env": 3.1,
+    "speed": 0.172,
+    "speed_track": 0.5733333333333334
+  },
+  {
+    "vx": 0.5,
+    "cert_pass": true,
+    "score": 0.6712355565587247,
+    "base": 0.0196,
+    "tau": 0.3288,
+    "first_fall": 11.17,
+    "dist": 4.04,
+    "falls_env": 3.2,
+    "speed": 0.363,
+    "speed_track": 0.726
+  },
+  {
+    "vx": 0.7,
+    "cert_pass": true,
+    "score": 0.5444311525370653,
+    "base": 0.026,
+    "tau": 0.4556,
+    "first_fall": 8.52,
+    "dist": 4.65,
+    "falls_env": 4.3,
+    "speed": 0.544,
+    "speed_track": 0.7771428571428572
+  },
+  {
+    "vx": 0.9,
+    "cert_pass": true,
+    "score": 0.4760841719769635,
+    "base": 0.0322,
+    "tau": 0.5239,
+    "first_fall": 6.72,
+    "dist": 5.05,
+    "falls_env": 5.6,
+    "speed": 0.712,
+    "speed_track": 0.7911111111111111
+  },
+  {
+    "vx": 1.2,
+    "cert_pass": true,
+    "score": 0.0,
+    "base": 0.0417,
+    "tau": 1.0,
+    "first_fall": 1.14,
+    "dist": 0.86,
+    "falls_env": 34.6,
+    "speed": 0.657,
+    "speed_track": 0.5475000000000001
+  },
+  {
+    "vx": 1.6,
+    "cert_pass": true,
+    "score": 0.0,
+    "base": 0.0543,
+    "tau": 1.0,
+    "first_fall": 1.51,
+    "dist": 0.83,
+    "falls_env": 25.9,
+    "speed": 0.41,
+    "speed_track": 0.25625
+  },
+  {
+    "vx": 2.0,
+    "cert_pass": true,
+    "score": 0.0,
+    "base": 0.071,
+    "tau": 1.0,
+    "first_fall": 1.12,
+    "dist": 0.28,
+    "falls_env": 35.6,
+    "speed": 0.156,
+    "speed_track": 0.078
+  },
+  {
+    "vx": 2.5,
+    "cert_pass": false,
+    "score": 0.0,
+    "base": 0.2681,
+    "tau": 1.0,
+    "first_fall": 1.15,
+    "dist": 0.06,
+    "falls_env": 34.7,
+    "speed": -0.021,
+    "speed_track": -0.008400000000000001
+  }
+]

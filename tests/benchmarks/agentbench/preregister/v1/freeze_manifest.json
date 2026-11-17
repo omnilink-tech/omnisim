@@ -1,0 +1,11 @@
+{
+  "schema": "agenticsimbench/preregister-freeze/v1",
+  "suite": "agenticsimbench/v1",
+  "frozen_utc": "2026-08-13",
+  "hash_rule": "sha256 over LF-normalised bytes",
+  "files": {
+    "contract.json": "bd3884a938d6a452a630b4aa14d03db655163eb4e177959d13e8bc557097e833",
+    "CLAIM.md": "6fd3045aef285d451aef68a5cb9dbed7f4e72ee55da37699208c231064590c31",
+    "test_contract.py": "3f35e6c5d18c029e6029df1ce84392e75a53f2dd1dece62c7a54e1da27073941"
+  }
+}

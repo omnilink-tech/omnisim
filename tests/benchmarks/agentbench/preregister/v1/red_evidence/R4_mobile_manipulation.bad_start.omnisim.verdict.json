@@ -1,0 +1,480 @@
+{
+  "schema": "agenticsimbench/red-evidence/v1",
+  "suite": "agenticsimbench/v1",
+  "task": "R4_mobile_manipulation",
+  "sim": "omnisim",
+  "fixture": "bad_start",
+  "fixture_kind": "real_supervisor_mobile_manipulation_fixture",
+  "expected_failures": [
+    "R4.4",
+    "R4.5",
+    "R4.6",
+    "R4.7",
+    "R4.8",
+    "R4.9"
+  ],
+  "observed_failures": [
+    "R4.4",
+    "R4.5",
+    "R4.6",
+    "R4.7",
+    "R4.8",
+    "R4.9"
+  ],
+  "outcome": "FAIL",
+  "qualifies_as_non_null_red_evidence": true,
+  "generated_utc": "2026-08-13T17:40:04.225492+00:00",
+  "engine_binary": {
+    "path": "msys64\\mingw64\\bin\\omnisim-bin.exe",
+    "sha256": "cbd80861c9f0d314f9760a39abc0f686ce161cac74337f80c41f5e2b5e0b836d"
+  },
+  "sources": [
+    {
+      "path": "tests\\benchmarks\\agentbench\\adapters\\webots\\webots_lane\\worlds\\r4_mobile_manipulation.wbt",
+      "sha256": "4cb9e979159d76e0b4c28c5b12622e66d2d8667ea12694fb4e2f31cb73aa5b65"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\fixtures\\r4\\robot_stanza.wbtfrag",
+      "sha256": "c0a2b52452a6c88e37b21bacb4b723fded3ef1bba365eda3943f82130dc7305e"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\run_r4_red_fixture.py",
+      "sha256": "2d9b70a645229f42a5ed34e3b8eb7ab15d6fff67502f32103e5113b35296ca84"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\graders\\r4_core.py",
+      "sha256": "8fea7fe31d136006a3d9a01745bbe4d4feb0055578d25922616d7fcf6d56e04a"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\fixtures\\r4\\controllers\\r4_fixture\\r4_fixture.py",
+      "sha256": "ecc0b906fe50e611505841f0a79c8b14b356178f94e3d35e4cf3a26f544465c7"
+    }
+  ],
+  "staged_world_sha256": "c0a73c361ae1210b90979f2c5aa514e0e05fe9ccdbc208e3a514734eea078fbd",
+  "verdict": {
+    "task": "R4_mobile_manipulation",
+    "outcome": "FAIL",
+    "progress": 3,
+    "progress_name": "artifact_runs",
+    "assertions": {
+      "R4.1": {
+        "ok": true,
+        "what": "the run is clean",
+        "measured": {
+          "exit code": 0,
+          "ERROR: lines": 0,
+          "driver reached a clean quit": true,
+          "timed out": false
+        },
+        "threshold": {
+          "exit code": 0,
+          "ERROR: lines": 0
+        },
+        "detail": "",
+        "basis": "mixed",
+        "attested": [
+          "error stream + exit code: the per-run engine log at $OMNISIM_LOG_PATH plus the process exit code from the headless launch"
+        ],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "clean run",
+            "how_to_fail": "a non-zero exit code, an error-class line, a timeout, or a driver that never reached its target simulated time",
+            "witness": "the adapter captured the exit code AND the simulator's own error stream",
+            "witness_present": true,
+            "detail": ""
+          }
+        ]
+      },
+      "R4.2": {
+        "ok": true,
+        "what": "the specified scene is present and intact",
+        "measured": {
+          "obstacles matched by geometry": 5,
+          "specified obstacles not found": [],
+          "measured table top z (m)": 0.6,
+          "table AABB error (m)": 0.0,
+          "measured pad top z (m)": 0.1,
+          "pad AABB error (m)": 0.0,
+          "bodies matching table / pad": [
+            1,
+            1
+          ],
+          "metres of the straight start->table line inside an obstacle": 1.0142
+        },
+        "threshold": {
+          "obstacles matched": 5,
+          "table AABB error (m)": "<= 0.030",
+          "pad AABB error (m)": "<= 0.030"
+        },
+        "detail": "obstacles, table and pad are all located by GEOMETRY and never by name -- an agent may call them anything. The 1.01 m of the straight start->table line that lies inside an obstacle is the SENSING argument, re-derived here from the measured scene rather than trusted from the asset: a robot that does not perceive cannot cross it without striking something, which R4.5 then fails it for",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "obstacles measured",
+            "how_to_fail": "an obstacle deleted, resized or moved",
+            "witness": "a world-space AABB for every candidate body at a frozen t=0",
+            "witness_present": true,
+            "detail": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)"
+          },
+          {
+            "clause": "the route is genuinely blocked",
+            "how_to_fail": "a layout whose straight start->table line is clear, which a blind driver could cross",
+            "witness": "at least 0.30 m of that line inside a MEASURED obstacle",
+            "witness_present": true,
+            "detail": ""
+          }
+        ]
+      },
+      "R4.3": {
+        "ok": true,
+        "what": "there is one articulated mobile manipulator",
+        "measured": {
+          "robot-class bodies": 1,
+          "joints on that robot": 6,
+          "link bodies that TRANSLATE in the base frame": 3,
+          "their base-frame travel (m)": [
+            [
+              "fixture link 2",
+              0.0612
+            ],
+            [
+              "fixture gripper witness",
+              0.0546
+            ],
+            [
+              "fixture link 1",
+              0.0516
+            ],
+            [
+              "fixture link 4",
+              0.0249
+            ],
+            [
+              "fixture link 5",
+              0.0237
+            ],
+            [
+              "fixture link 6",
+              0.0212
+            ]
+          ],
+          "the base's pose row resolved by": "body_id"
+        },
+        "threshold": {
+          "robot-class bodies": 1,
+          "joints": ">= 6",
+          "links that translate": ">= 3"
+        },
+        "detail": "the joint count is over the WHOLE robot and cannot separate an arm joint from a wheel joint on any arm (the neutral evidence carries a count and nothing finer), which is why the prompt's 'a base plus an arm with >= 4 joints' is asserted as '>= 6 joints total' PLUS a behavioural clause a wheeled chassis cannot satisfy: a wheel spins, so its link origin does not move relative to the base, while an arm link's does by >= 0.05 m",
+        "basis": "mixed",
+        "attested": [
+          "robot identity: type=Robot num_joints=6 (recorder roster)"
+        ],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "articulation observed",
+            "how_to_fail": "a mobile base with no arm on it -- wheels only",
+            "witness": "per-link pose tracks for the robot (the recorder's --links channel) plus a resolved base row to measure them against",
+            "witness_present": true,
+            "detail": ""
+          }
+        ]
+      },
+      "R4.4": {
+        "ok": false,
+        "what": "the payload started at rest on the table",
+        "measured": {
+          "payload matched at t=0 by": "none",
+          "bodies matching the payload spec": 0,
+          "it still has a mass model": null,
+          "it is not a part of the robot": false,
+          "xy error vs the table centre (m)": null,
+          "first sample z (m)": null,
+          "z error vs MEASURED table top + half the cube (m)": null,
+          "pose row resolved by": "no payload"
+        },
+        "threshold": {
+          "candidates": 1,
+          "mass model": true,
+          "xy error (m)": "<= 0.040",
+          "z error (m)": "<= 0.020"
+        },
+        "detail": "the payload is found by its t=0 geometry -- a 0.050 m cube within 0.04 m of the specified start -- and never by name or DEF; expected rest z is 0.6250 m = the MEASURED table top plus half the cube. 'dynamic' and 'independent' are the anti-cheat clauses a body nailed in place, or nested into the robot, fails here rather than at R4.9",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": true,
+        "falsifiability": [
+          {
+            "clause": "payload size verified",
+            "how_to_fail": "a body at the right place that is not the specified cube",
+            "witness": "a world-space AABB for the candidate body at t=0",
+            "witness_present": false,
+            "detail": ""
+          },
+          {
+            "clause": "dynamics attached",
+            "how_to_fail": "the agent 'held' the payload by removing its mass model",
+            "witness": "the adapter answers 'is this body dynamic' either way rather than returning None",
+            "witness_present": false,
+            "detail": ""
+          }
+        ]
+      },
+      "R4.5": {
+        "ok": false,
+        "what": "the base drove the route without striking anything",
+        "measured": null,
+        "threshold": null,
+        "detail": "no body matching the specified payload was found at t=0, so nothing about the manipulation can be measured",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R4.6": {
+        "ok": false,
+        "what": "the payload was lifted clear and carried",
+        "measured": null,
+        "threshold": null,
+        "detail": "no body matching the specified payload was found at t=0, so nothing about the manipulation can be measured",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R4.7": {
+        "ok": false,
+        "what": "the payload was held continuously, never re-acquired",
+        "measured": null,
+        "threshold": null,
+        "detail": "no body matching the specified payload was found at t=0, so nothing about the manipulation can be measured",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R4.8": {
+        "ok": false,
+        "what": "the payload was delivered onto the pad and stayed",
+        "measured": null,
+        "threshold": null,
+        "detail": "no body matching the specified payload was found at t=0, so nothing about the manipulation can be measured",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R4.9": {
+        "ok": false,
+        "what": "nothing was teleported and nothing was attached",
+        "measured": null,
+        "threshold": null,
+        "detail": "no body matching the specified payload was found at t=0, so nothing about the manipulation can be measured",
+        "basis": "mixed",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      }
+    },
+    "n_pass": 3,
+    "n_total": 9,
+    "failed_assertion": "R4.4",
+    "failed_assertions": [
+      "R4.4",
+      "R4.5",
+      "R4.6",
+      "R4.7",
+      "R4.8",
+      "R4.9"
+    ],
+    "self_verified": false,
+    "attribution": {
+      "backend": "newton",
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "degraded": false,
+      "finalised": true,
+      "source": "<log>.newton.json sidecar"
+    },
+    "measurements": {
+      "graded_layout": {
+        "placed": false,
+        "source": "published (NO grade-time placement: this row is not evidence of perception -- a memorised path would avoid these boxes too)",
+        "obstacles": [
+          {
+            "name": "OBSTACLE_1",
+            "position": [
+              0.3694,
+              1.2508,
+              0.25
+            ]
+          },
+          {
+            "name": "OBSTACLE_2",
+            "position": [
+              -0.152,
+              -1.8888,
+              0.25
+            ]
+          },
+          {
+            "name": "OBSTACLE_3",
+            "position": [
+              -0.7663,
+              3.8953,
+              0.25
+            ]
+          },
+          {
+            "name": "OBSTACLE_4",
+            "position": [
+              2.2527,
+              -4.455,
+              0.25
+            ]
+          },
+          {
+            "name": "OBSTACLE_5",
+            "position": [
+              4.1758,
+              -0.8524,
+              0.25
+            ]
+          }
+        ]
+      },
+      "phase_b": {
+        "world": "O:\\omnisim\\.agentbench-v1-red-work\\r4-final-bad_start\\project\\worlds\\mobile_manipulation.wbt",
+        "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\r4-final-bad_start\\project\\worlds\\_agentbench_phaseB_mobile_manipulation.wbt",
+        "rc": 0,
+        "wall_s": 35.67983319999985,
+        "timed_out": false,
+        "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\r4-final-bad_start\\phaseB\\phaseB_engine.log",
+        "sidecar": {
+          "backend": "newton",
+          "degraded": false,
+          "finalised": true,
+          "runtime": {
+            "device": "cpu",
+            "mujoco": "3.8.1",
+            "mujoco_warp": "3.8.0.3",
+            "newton": "1.2.0",
+            "warp": "1.13.0"
+          },
+          "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+          "present": true
+        },
+        "recorder_complete": true,
+        "rows": 2813,
+        "n_robots": 1,
+        "n_tracks": 8,
+        "n_link_tracks": 6,
+        "n_solid_tracks": 1,
+        "links_truncated": false,
+        "scene_scan": {
+          "supported": true,
+          "cap": 128,
+          "found": 10,
+          "bounded": 10,
+          "truncated": false
+        },
+        "run_contacts": {
+          "supported": true,
+          "every_n_steps": 8,
+          "steps_sampled": 352,
+          "total_observed": 844,
+          "distinct_named": 844,
+          "unpaired": 0,
+          "truncated": false,
+          "error": null
+        },
+        "run_contact_pairs": [],
+        "attempts_used": 1,
+        "launch_backend_env": {},
+        "tamper": [],
+        "error": null
+      }
+    },
+    "artifacts": {
+      "world": "O:\\omnisim\\.agentbench-v1-red-work\\r4-final-bad_start\\project\\worlds\\mobile_manipulation.wbt"
+    },
+    "notes": [
+      "R4 was scored against the PUBLISHED obstacle layout: no grade-time placement sidecar (r4_graded_layout.json) was found and no seed was given. R4.5's collision-freedom therefore does not by itself evidence perception. R4.6-R4.8 are unaffected -- a grasp that does not hold is not a planning failure."
+    ],
+    "basis": {
+      "core-physical": [
+        "R4.2",
+        "R4.4",
+        "R4.5",
+        "R4.6",
+        "R4.7",
+        "R4.8"
+      ],
+      "mixed": [
+        "R4.1",
+        "R4.3",
+        "R4.9"
+      ]
+    },
+    "vacuous_assertions": {
+      "R4.4": [
+        "payload size verified",
+        "dynamics attached"
+      ]
+    }
+  },
+  "run": {
+    "world": "O:\\omnisim\\.agentbench-v1-red-work\\r4-final-bad_start\\project\\worlds\\mobile_manipulation.wbt",
+    "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\r4-final-bad_start\\project\\worlds\\_agentbench_phaseB_mobile_manipulation.wbt",
+    "rc": 0,
+    "wall_s": 35.67983319999985,
+    "timed_out": false,
+    "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\r4-final-bad_start\\phaseB\\phaseB_engine.log",
+    "sidecar": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.8.1",
+        "mujoco_warp": "3.8.0.3",
+        "newton": "1.2.0",
+        "warp": "1.13.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "present": true
+    },
+    "recorder_complete": true,
+    "rows": 2813,
+    "n_robots": 1,
+    "n_tracks": 8,
+    "n_link_tracks": 6,
+    "n_solid_tracks": 1,
+    "links_truncated": false,
+    "scene_scan": {
+      "supported": true,
+      "cap": 128,
+      "found": 10,
+      "bounded": 10,
+      "truncated": false
+    },
+    "run_contacts": {
+      "supported": true,
+      "every_n_steps": 8,
+      "steps_sampled": 352,
+      "total_observed": 844,
+      "distinct_named": 844,
+      "unpaired": 0,
+      "truncated": false,
+      "error": null
+    },
+    "run_contact_pairs": [],
+    "attempts_used": 1,
+    "launch_backend_env": {},
+    "tamper": [],
+    "error": null
+  }
+}

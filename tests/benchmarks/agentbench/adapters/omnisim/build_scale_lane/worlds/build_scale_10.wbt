@@ -1,0 +1,46 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "../protos/ScaleBot.proto"
+
+WorldInfo {
+  title "AgenticSimBench BuildScale 10 oracle"
+  basicTimeStep 8
+  newtonSolver "mujoco"
+  newtonSubsteps 4
+  newtonRobotColliders TRUE
+  newtonNjmax 8192
+  newtonNconmax 4096
+}
+Viewpoint { position 0 0 55 }
+
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  name "floor"
+  children [ DEF FLOOR_GEOMETRY Shape { geometry Box { size 60 30 0.1 } } ]
+  boundingObject USE FLOOR_GEOMETRY
+}
+DEF CONTACT_WITNESS_SUPPORT Solid {
+  translation 20 12 0.05
+  name "contact witness support"
+  children [ DEF CONTACT_WITNESS_SUPPORT_SHAPE Shape { geometry Box { size 2 2 0.1 } } ]
+  boundingObject USE CONTACT_WITNESS_SUPPORT_SHAPE
+  physics Physics { density -1 mass 1 }
+}
+DEF CONTACT_WITNESS Solid {
+  translation 20 12 0.19
+  name "contact witness"
+  children [ DEF CONTACT_WITNESS_SHAPE Shape { geometry Box { size 0.2 0.2 0.2 } } ]
+  boundingObject USE CONTACT_WITNESS_SHAPE
+  physics Physics { density -1 mass 0.1 }
+}
+
+ScaleBot { translation -10 -9 0 name "scale_000" }
+ScaleBot { translation -10 -7 0 name "scale_001" }
+ScaleBot { translation -10 -5 0 name "scale_002" }
+ScaleBot { translation -10 -3 0 name "scale_003" }
+ScaleBot { translation -10 -1 0 name "scale_004" }
+ScaleBot { translation -10 1 0 name "scale_005" }
+ScaleBot { translation -10 3 0 name "scale_006" }
+ScaleBot { translation -10 5 0 name "scale_007" }
+ScaleBot { translation -10 7 0 name "scale_008" }
+ScaleBot { translation -10 9 0 name "scale_009" }

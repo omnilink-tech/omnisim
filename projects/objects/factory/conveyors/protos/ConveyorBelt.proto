@@ -1,0 +1,211 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/factory/conveyors/protos/ConveyorBelt.proto
+# keywords: industrial/conveyor
+# A parametric belt conveyor: a welded steel table carrying a rubber band that runs at a constant speed.
+# The band is a Track whose LinearMotor device is named "belt_motor"; the bundled `conveyor_belt`
+# controller drives it at `speed` m/s and stops it after `timer` seconds (0 = run forever).
+# template language: javascript
+
+EXTERNPROTO "omnisim://projects/appearances/protos/CorrugatedMetal.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Rubber.proto"
+
+PROTO ConveyorBelt [
+  field SFVec3f    translation      0 0 0
+  field SFRotation rotation         0 0 1 0
+  field SFString   name             "conveyor belt"
+  field SFString   window           "<none>"
+  field SFVec3f    size             1.5 0.5 0.6
+  field SFNode     appearance       CorrugatedMetal { textureTransform TextureTransform { scale 2 2 } }  # Defines the appearance of the conveyor belt.
+  field SFFloat    borderThickness  0.03                                                                 # Defines the thickness of the metal part around the conveyor belt.
+  field SFFloat    borderHeight     0.01                                                                 # Defines the height of the border around the conveyor.
+  field SFFloat    speed            0.5                                                                  # Defines the rubber band speed in meters per second.
+  field SFFloat    acceleration     -1                                                                   # Defines the acceleration of the conveyor belt.
+  field SFFloat    timer            0.0                                                                  # Defines for how long the conveyor belt should move (it will move forever if set to 0).
+]
+{
+  %<
+    // ---- sanitise the interface ------------------------------------------------
+    let size = fields.size.value;
+    if (size.x <= 0.0 || size.y <= 0.0 || size.z <= 0.0) {
+      size = fields.size.defaultValue;
+      console.error('\'size\' must contain strictly positive values. Value reset to (' +
+                    size.x + ', ' + size.y + ', ' + size.z + ').');
+    }
+
+    let border = fields.borderThickness.value;
+    if (border <= 0.0 || 2.0 * border >= size.y) {
+      border = Math.min(fields.borderThickness.defaultValue, 0.2 * size.y);
+      console.error('\'borderThickness\' must be positive and thinner than half the conveyor width. ' +
+                    'Value reset to ' + border + '.');
+    }
+
+    const borderHeight = Math.max(0.0, fields.borderHeight.value);
+    const speed = fields.speed.value;
+    const timer = Math.max(0.0, fields.timer.value);
+
+    // ---- derived geometry ------------------------------------------------------
+    const bandThickness = Math.min(0.02, 0.2 * size.z);   // rubber band slab
+    const bandWidth = size.y - 2.0 * border;              // clear width between the skirts
+    const bandTop = size.z;                               // carrying surface height
+    const bandCenter = bandTop - 0.5 * bandThickness;
+
+    const tableTop = bandTop - bandThickness;             // steel table under the band
+    const apronHeight = Math.min(0.1, 0.4 * tableTop);    // side apron below the band
+    const legHeight = tableTop - apronHeight;
+    const legSection = Math.min(0.06, 0.25 * size.y);
+    const legX = 0.5 * size.x - Math.min(0.2, 0.25 * size.x);
+    const legY = 0.5 * size.y - 0.5 * legSection;
+
+    const skirtHeight = bandThickness + apronHeight + borderHeight;
+    const skirtCenter = bandTop + borderHeight - 0.5 * skirtHeight;
+    const skirtY = 0.5 * (size.y - border);
+
+    const rollerRadius = 0.5 * bandThickness;
+
+    // one texture tile every ~25 cm of band; animate it at the band speed
+    const tiles = Math.max(1, Math.round(size.x / 0.25));
+    const textureSpeed = speed * tiles / size.x;
+  >%
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "conveyor belt"
+    window IS window
+    controller "conveyor_belt"
+    controllerArgs [
+      "%<= speed >%"
+      "%<= timer >%"
+    ]
+    children [
+      # ---- steel table: two side skirts, a cross deck and four legs ----
+      Pose {
+        translation 0 %<= skirtY >% %<= skirtCenter >%
+        children [
+          DEF CB_SKIRT Shape {
+            appearance IS appearance
+            geometry Box {
+              size %<= size.x >% %<= border >% %<= skirtHeight >%
+            }
+          }
+        ]
+      }
+      Pose {
+        translation 0 %<= -skirtY >% %<= skirtCenter >%
+        children [
+          USE CB_SKIRT
+        ]
+      }
+      Pose {
+        translation 0 0 %<= tableTop - 0.5 * apronHeight >%
+        children [
+          Shape {
+            appearance CorrugatedMetal {
+              colorOverride 0.75 0.76 0.78
+              textureTransform TextureTransform {
+                scale %<= tiles >% 1
+              }
+            }
+            geometry Box {
+              size %<= size.x >% %<= bandWidth >% %<= apronHeight >%
+            }
+          }
+        ]
+      }
+      %< for (let i = 0; i < 4; ++i) {
+           const lx = (i < 2 ? legX : -legX);
+           const ly = (i % 2 === 0 ? legY : -legY);
+      >%
+      Pose {
+        translation %<= lx >% %<= ly >% %<= 0.5 * legHeight >%
+        children [
+          %< if (i === 0) { >%
+          DEF CB_LEG Shape {
+            appearance PBRAppearance {
+              baseColor 0.32 0.34 0.36
+              roughness 0.65
+              metalness 0.85
+            }
+            geometry Box {
+              size %<= legSection >% %<= legSection >% %<= legHeight >%
+            }
+          }
+          %< } else { >%
+          USE CB_LEG
+          %< } >%
+        ]
+      }
+      %< } >%
+
+      # ---- head and tail rollers, purely decorative ----
+      %< for (let i = 0; i < 2; ++i) {
+           const rx = (i === 0 ? 1.0 : -1.0) * (0.5 * size.x - rollerRadius);
+      >%
+      Pose {
+        translation %<= rx >% 0 %<= bandCenter >%
+        rotation 1 0 0 1.5708
+        children [
+          %< if (i === 0) { >%
+          DEF CB_ROLLER Shape {
+            appearance PBRAppearance {
+              baseColor 0.45 0.46 0.48
+              roughness 0.4
+              metalness 1
+            }
+            geometry Cylinder {
+              radius %<= rollerRadius >%
+              height %<= bandWidth >%
+              subdivision 16
+            }
+          }
+          %< } else { >%
+          USE CB_ROLLER
+          %< } >%
+        ]
+      }
+      %< } >%
+
+      # ---- the moving rubber band: a Track driven by the "belt_motor" LinearMotor ----
+      Track {
+        translation 0 0 %<= bandCenter >%
+        name "belt"
+        children [
+          DEF CB_BAND Shape {
+            appearance Rubber {
+              type "dotted"
+              textureTransform TextureTransform {
+                scale %<= tiles >% 1
+              }
+            }
+            geometry Box {
+              size %<= size.x >% %<= bandWidth >% %<= bandThickness >%
+            }
+          }
+        ]
+        boundingObject USE CB_BAND
+        physics Physics {
+          density -1
+          mass 10
+        }
+        device [
+          LinearMotor {
+            name "belt_motor"
+            acceleration IS acceleration
+            maxVelocity %<= Math.max(10.0, 2.0 * Math.abs(speed)) >%
+          }
+        ]
+        textureAnimation %<= textureSpeed >% 0
+      }
+    ]
+    boundingObject Pose {
+      translation 0 0 %<= 0.5 * tableTop >%
+      children [
+        Box {
+          size %<= size.x >% %<= size.y >% %<= tableTop >%
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,5 @@
+[{"tag":"k8_bump_a","n":8,"z":0.130,"gen_extra":{"bump":0.06,"statics":1},"duration_ms":12000,"timeout":300},
+ {"tag":"k8_bump_b","n":8,"z":0.130,"gen_extra":{"bump":0.06,"statics":1},"duration_ms":12000,"timeout":300},
+ {"tag":"k8_bump_big","n":8,"z":0.130,"njmax":2048,"nconmax":2048,"gen_extra":{"bump":0.06,"statics":1},"duration_ms":12000,"timeout":300,"stats":1},
+ {"tag":"k10_bump_a","n":10,"z":0.130,"gen_extra":{"bump":0.06,"statics":1},"duration_ms":12000,"timeout":300,"stats":1},
+ {"tag":"k10_bump_big","n":10,"z":0.130,"njmax":2048,"nconmax":2048,"gen_extra":{"bump":0.06,"statics":1},"duration_ms":12000,"timeout":300,"stats":1}]

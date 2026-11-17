@@ -1,0 +1,254 @@
+Licence and provenance notice for assimpjs.js and assimpjs.wasm
+==============================================================
+
+This notice accompanies two files in this directory:
+
+    assimpjs.js     136,519 bytes  Emscripten JavaScript loader/wrapper
+    assimpjs.wasm 2,442,173 bytes  WebAssembly build of the Open Asset Import
+                                   Library plus the assimpjs C++ wrapper
+
+Neither file carries an embedded licence header or copyright notice of its
+own: assimpjs.js contains no "Copyright", no @license annotation and no /*!
+banner, and the .wasm is symbol-stripped. THREE separately-licensed bodies of
+work are combined in them, and this file supplies the notice each one
+requires.
+
+The files themselves are byte-unmodified. Nothing here changes them; this is a
+notice added beside them.
+
+
+-------------------------------------------------------------------------
+Which upstream these files are, exactly
+-------------------------------------------------------------------------
+
+They are cyberbotics/assimpjs -- a FORK of kovacsv/assimpjs -- not upstream
+assimpjs. That is established by byte identity, not inferred:
+
+    assimpjs.js    sha256 d63a8621f33f7f93fc46d34fec030bdca8d0965c5b8be160af0d5aea46ff2962
+    assimpjs.wasm  sha256 f8cd7de021e5965d62759aaaee7d6ec0a11ecb471d896d0a7195d94990c1fa73
+
+Both match https://github.com/cyberbotics/assimpjs at `main`, path `dist/`,
+exactly, and match the same two paths in cyberbotics/webots at `master`,
+`develop`, `R2023b` and `R2025a`.
+
+NO kovacsv/assimpjs RELEASE MATCHES EITHER SIZE. All ten upstream releases
+ship a .wasm between 3.88 MB and 4.18 MB against our 2.44 MB, because the fork
+disables most importers -- "Disable a lot of format to keep only the four that
+we support in Webots: obj, dae, stl, fbx", per the fork's own README.
+
+The fork was created 2022-05-06 and reached Webots through
+cyberbotics/webots#4519 ("Enhancement assimp webotsjs", merged 2022-05-25),
+whose description reads: "Compile Assimp with Emscripten and build some
+wrappers to be able to use it in JS (made thanks to
+https://github.com/cyberbotics/assimpjs)."
+
+Corroborating evidence inside our own bytes:
+
+  * The .wasm carries the assimpjs project's own C++ class names --
+    FileList, FileListIOSystemReadAdapter, FileListIOSystemWriteAdapter,
+    FileLoaderEmscripten, ConvertFileEmscripten.
+
+  * ../MeshLoader.js drives exactly the assimpjs API: new ajs.FileList(),
+    AddFile(), ConvertFileList(), IsSuccess(), FileCount(), GetFile(0),
+    GetContent(), GetErrorCode().
+
+  * THE TELL THAT IT IS THE FORK AND NOT UPSTREAM: ../MeshLoader.js:67 calls
+    ConvertFileList(fileList, 'assjson', true) with a THIRD argument.
+    Upstream's signature has only ever taken two --
+    ConvertFileList(const FileList&, const std::string&). The third parameter,
+    `const bool isMesh`, was added in the fork by commit 6e9725f56e ("change
+    flags", 2022-05-06, Benjamin Deleze / Cyberbotics) to select which assimp
+    components are stripped for a Mesh node versus a CadShape node.
+
+THE FORK'S LICENSE.md IS UPSTREAM'S, UNCHANGED: MIT, Copyright (c) 2021 Viktor
+Kovacs. Cyberbotics added no copyright line of their own, so the wrapper
+notice below is the one that has to travel.
+
+
+-------------------------------------------------------------------------
+Layer 1 -- the assimpjs wrapper: MIT, Viktor Kovacs
+-------------------------------------------------------------------------
+
+MIT License
+
+Copyright (c) 2021 Viktor Kovacs
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Upstream projects: https://github.com/kovacsv/assimpjs      (origin, MIT)
+                   https://github.com/cyberbotics/assimpjs  (the fork we ship)
+
+
+-------------------------------------------------------------------------
+Layer 2 -- Open Asset Import Library (assimp) -- BSD 3-Clause
+-------------------------------------------------------------------------
+
+Copyright (c) 2006-2022, assimp team
+
+All rights reserved.
+
+Redistribution and use of this software in source and binary forms,
+with or without modification, are permitted provided that the following
+conditions are met:
+
+* Redistributions of source code must retain the above
+  copyright notice, this list of conditions and the
+  following disclaimer.
+
+* Redistributions in binary form must reproduce the above
+  copyright notice, this list of conditions and the
+  following disclaimer in the documentation and/or other
+  materials provided with the distribution.
+
+* Neither the name of the assimp team, nor the names of its
+  contributors may be used to endorse or promote products
+  derived from this software without specific prior
+  written permission of the assimp team.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-------------------------------------------------------------------------
+
+Upstream project: https://github.com/assimp/assimp
+
+THE ASSIMP VERSION IS v5.2.3, and that is now established rather than
+inferred: the fork pins its `assimp` submodule at commit
+19f2a624a9d69aa8d1680685766b76bd8983ffe8, which is the exact object the
+`v5.2.3` tag in assimp/assimp resolves to. That also matches
+dependencies/assimp-5.2.3.zip, the separately vendored C++ copy in this
+repository, from which the "Copyright (c) 2006-2022, assimp team" line above
+is reproduced verbatim. (The previous revision of this file recorded the
+version as unknown; it no longer is.)
+
+The importers actually compiled into this build, read out of the binary's own
+description strings, are: Autodesk FBX, Collada, Stereolithography (STL),
+Wavefront Object, Blender 3D, glTF, glTF2, Assbin and Unreal Mesh.
+
+
+-------------------------------------------------------------------------
+Layer 3 -- the Emscripten runtime glue: MIT / University of Illinois NCSA
+-------------------------------------------------------------------------
+
+assimpjs.js is not hand-written. It is Emscripten's generated module loader,
+and a substantial part of its bytes are Emscripten's OWN RUNTIME LIBRARY
+compiled into the output -- neither Viktor Kovacs' code nor assimp's, and
+covered by neither notice above. Some of the same code is linked into the
+.wasm.
+
+The evidence is the runtime's own internal names, present verbatim in the
+file: ENVIRONMENT_IS_WEB, wasmBinaryFile, instantiateAsync, getBinaryPromise,
+createWasm, keepRuntimeAlive, logExceptionOnExit, requireNodeFS,
+readyPromiseResolve, UTF8ArrayToString, writeAsciiToMemory, the embind layer
+(__embind_register*, fromWireType / toWireType, BindingError, InternalError),
+and the imports emscripten_date_now, emscripten_get_heap_max,
+emscripten_memcpy_big, emscripten_realloc_buffer, emscripten_resize_heap,
+emscripten_get_now_is_monotonic.
+
+Emscripten's own LICENSE
+(https://github.com/emscripten-core/emscripten/blob/main/LICENSE) opens:
+
+    Emscripten is available under 2 licenses, the MIT license and the
+    University of Illinois/NCSA Open Source License.
+
+    Both are permissive open source licenses, with little if any
+    practical difference between them.
+
+    The reason for offering both is that (1) the MIT license is
+    well-known, while (2) the University of Illinois/NCSA Open Source
+    License allows Emscripten's code to be integrated upstream into
+    LLVM, which uses that license, should the opportunity arise.
+
+    The full text of both licenses follows.
+
+Both blocks carry the same copyright line, verbatim:
+
+    Copyright (c) 2010-2014 Emscripten authors, see AUTHORS file.
+
+OmniSim relies on the MIT option. Its notice requirement is discharged by the
+reproduction below.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to permit
+    persons to whom the Software is furnished to do so, subject to the
+    following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+    NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+    OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+    USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Emscripten's LICENSE also records that it bundles musl libc (MIT) and portions
+of Node.js source in src/library_path.js (MIT, "Copyright Joyent, Inc. and
+other Node contributors"). Whether either is linked into this particular build
+cannot be read off a stripped binary.
+
+The identical layer exists in ../wrenjs.js; see ../LICENSE-wrenjs.txt.
+
+
+-------------------------------------------------------------------------
+Unresolved
+-------------------------------------------------------------------------
+
+  * THE EMSCRIPTEN VERSION IS NOT RECORDED IN THE FILES. No version string is
+    embedded. The feature fingerprint -- requireNodeFS and logExceptionOnExit
+    both present, arrow functions in use -- places it in the Emscripten 3.1.x
+    generation of 2022, and ../wrenjs.js is output of the same generation
+    (both carry requireNodeFS, logExceptionOnExit, keepRuntimeAlive,
+    instantiateAsync, getBinaryPromise and writeAsciiToMemory). That is an
+    inference from which runtime helpers are present, not a version read out
+    of the file. The dual MIT/NCSA licence and the copyright line above are
+    stable across Emscripten releases.
+
+  * EMSCRIPTEN HAS NO PUBLISHED POSITION ON THE LICENCE OF ITS GENERATED
+    OUTPUT. The LICENSE file and the documentation are both silent on it. The
+    nearest thing is emscripten-core/emscripten#6824, where the project's
+    creator wrote that "The LICENSE file should contain those copyright
+    notices, so quoting/linking it should be enough" -- expressly maintainer
+    opinion, contested in the same thread by another contributor, and the
+    issue was closed by stalebot without any documentation change. This file
+    therefore takes the conservative route and reproduces the notice rather
+    than relying on that view.
+
+  * THE FORK IS NOT TAGGED OR RELEASED. cyberbotics/assimpjs has no releases
+    and no version marker; the artifacts are identified here by sha256 against
+    its `main` branch (last pushed 2022-05-19). A future rebuild would be
+    distinguishable only by those hashes.
+
+TWO ITEMS THE PREVIOUS REVISION OF THIS FILE LEFT OPEN ARE NOW CLOSED: the
+Assimp version (v5.2.3, by submodule-SHA match) and the wrapper's own licence
+(MIT, Viktor Kovacs, by sha256 identification of the fork the files came from).

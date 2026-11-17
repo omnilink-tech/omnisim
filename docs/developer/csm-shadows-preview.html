@@ -1,0 +1,628 @@
+<!--
+  OmniSim Cascaded Shadow Maps (CSM) + PCF — standalone WebGL2 preview.
+
+  This file exists so you can see what the in-OmniSim T1.2 shadow rework
+  will look like before the GLSL gets integrated into WREN. Per the
+  rendering roadmap (engine-migration-plan.md §14.4 T1.2), CSM + PCF
+  replaces the hard-edged shadow volumes that are the single biggest
+  "it looks old" tell on every WREN scene today. Target budget is
+  ≤ 1.2 ms mid-tier for 4 cascades + 3×3 PCF.
+
+  What this preview demonstrates:
+    * Three orthographic shadow cascades fit to view-frustum slices
+      (logarithmic split between 1 m and 200 m).
+    * Per-pixel cascade selection based on view-space depth.
+    * 3×3 PCF on a 1024² shadow atlas per cascade.
+    * Toggleable hard-shadow / soft-shadow / no-shadow comparison.
+
+  Limitations vs full T1.2 integration:
+    * No "contact shadows" (screen-space ray march in near field).
+      In WREN that lands as a separate post-pass; here we draw a
+      smaller PCF kernel for the near cascade as a hint.
+    * Sun angle is a fixed slider; in OmniSim it comes from the
+      first DirectionalLight in the scene.
+    * Single rectangular shadow caster set (boxes on a plane); no
+      proper bounding-sphere fitting per cascade.
+
+  Sources:
+    * Engel 2007, "Cascaded Shadow Maps." GPU Pro 1.
+    * Dimitrov 2007, "Cascaded Shadow Maps." NVIDIA whitepaper.
+    * Persson 2012, "Practical Particle Lighting" (PCF variants).
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OmniSim CSM + PCF preview</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #111; color: #ddd; font-family: system-ui, sans-serif; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  #ui {
+    position: fixed; top: 12px; left: 12px; padding: 12px 14px; background: rgba(0,0,0,0.65);
+    border-radius: 6px; font-size: 13px; line-height: 1.5; min-width: 240px;
+  }
+  #ui label { display: block; margin: 6px 0 2px; }
+  #ui input[type=range] { width: 100%; }
+  #ui select { width: 100%; padding: 2px; background: #222; color: #ddd; border: 1px solid #444; }
+  #stats { margin-top: 10px; font-family: monospace; font-size: 12px; opacity: 0.8; }
+  #legend { margin-top: 8px; padding-top: 8px; border-top: 1px solid #333; font-size: 11px; opacity: 0.7; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="ui">
+  <div style="font-weight: bold; margin-bottom: 6px;">CSM + PCF preview</div>
+  <label>Shadow mode</label>
+  <select id="mode">
+    <option value="none">No shadows</option>
+    <option value="hard">Hard (1 sample)</option>
+    <option value="soft" selected>Soft (3×3 PCF)</option>
+    <option value="cascades">Visualise cascades (debug colours)</option>
+  </select>
+  <label>Sun elevation: <span id="sunElevVal">35°</span></label>
+  <input id="sunElev" type="range" min="5" max="89" value="35">
+  <label>Sun azimuth: <span id="sunAzVal">-45°</span></label>
+  <input id="sunAz" type="range" min="-180" max="180" value="-45">
+  <label>Cascade split log: <span id="splitVal">0.85</span> (0=linear, 1=logarithmic)</label>
+  <input id="split" type="range" min="0" max="1" step="0.01" value="0.85">
+  <label>Shadow strength: <span id="strengthVal">0.85</span></label>
+  <input id="strength" type="range" min="0" max="1" step="0.01" value="0.85">
+  <div id="stats">— ms/frame: ?<br>— cascade ranges: ?</div>
+  <div id="legend">
+    drag to orbit · scroll to zoom<br>
+    debug colours: near = red, mid = green, far = blue
+  </div>
+</div>
+<script>
+'use strict';
+(() => {
+const canvas = document.getElementById('gl');
+const gl = canvas.getContext('webgl2', { antialias: true });
+if (!gl) { document.body.innerHTML = 'WebGL2 not supported'; return; }
+
+// ------------------------------------------------------------------
+//   Camera (orbit + scroll-zoom)
+// ------------------------------------------------------------------
+const camera = { theta: Math.PI / 4, phi: Math.PI / 4, r: 30,
+                 target: [0, 0.5, 0], near: 0.1, far: 200.0, fovYDeg: 50 };
+let dragging = false, lastX = 0, lastY = 0;
+canvas.addEventListener('mousedown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+window.addEventListener('mouseup', () => { dragging = false; });
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  camera.theta -= (e.clientX - lastX) * 0.005;
+  camera.phi -= (e.clientY - lastY) * 0.005;
+  camera.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, camera.phi));
+  lastX = e.clientX; lastY = e.clientY;
+});
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  camera.r = Math.max(3, Math.min(120, camera.r * (1 + e.deltaY * 0.001)));
+}, { passive: false });
+
+function cameraEye() {
+  const r = camera.r;
+  const cphi = Math.cos(camera.phi), sphi = Math.sin(camera.phi);
+  const ct = Math.cos(camera.theta), st = Math.sin(camera.theta);
+  return [
+    camera.target[0] + r * cphi * ct,
+    camera.target[1] + r * sphi,
+    camera.target[2] + r * cphi * st,
+  ];
+}
+
+// ------------------------------------------------------------------
+//   Matrix helpers (column-major)
+// ------------------------------------------------------------------
+function mat4Identity() { return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]); }
+function mat4Multiply(a, b) {
+  const out = new Float32Array(16);
+  for (let i = 0; i < 4; ++i)
+    for (let j = 0; j < 4; ++j) {
+      let s = 0;
+      for (let k = 0; k < 4; ++k) s += a[i + k * 4] * b[k + j * 4];
+      out[i + j * 4] = s;
+    }
+  return out;
+}
+function mat4Perspective(fovy, aspect, near, far) {
+  const f = 1 / Math.tan(fovy / 2);
+  const nf = 1 / (near - far);
+  return new Float32Array([
+    f / aspect, 0, 0, 0,
+    0, f, 0, 0,
+    0, 0, (far + near) * nf, -1,
+    0, 0, 2 * far * near * nf, 0,
+  ]);
+}
+function mat4Ortho(l, r, b, t, n, f) {
+  return new Float32Array([
+    2/(r-l), 0, 0, 0,
+    0, 2/(t-b), 0, 0,
+    0, 0, -2/(f-n), 0,
+    -(r+l)/(r-l), -(t+b)/(t-b), -(f+n)/(f-n), 1,
+  ]);
+}
+function mat4LookAt(eye, center, up) {
+  const fx = center[0]-eye[0], fy = center[1]-eye[1], fz = center[2]-eye[2];
+  const fl = Math.hypot(fx, fy, fz);
+  const f = [fx/fl, fy/fl, fz/fl];
+  const sx = f[1]*up[2] - f[2]*up[1];
+  const sy = f[2]*up[0] - f[0]*up[2];
+  const sz = f[0]*up[1] - f[1]*up[0];
+  const sl = Math.hypot(sx, sy, sz);
+  const s = [sx/sl, sy/sl, sz/sl];
+  const u = [s[1]*f[2] - s[2]*f[1], s[2]*f[0] - s[0]*f[2], s[0]*f[1] - s[1]*f[0]];
+  return new Float32Array([
+    s[0], u[0], -f[0], 0,
+    s[1], u[1], -f[1], 0,
+    s[2], u[2], -f[2], 0,
+    -(s[0]*eye[0] + s[1]*eye[1] + s[2]*eye[2]),
+    -(u[0]*eye[0] + u[1]*eye[1] + u[2]*eye[2]),
+     (f[0]*eye[0] + f[1]*eye[1] + f[2]*eye[2]),
+    1,
+  ]);
+}
+function mat4Translate(x, y, z) {
+  const m = mat4Identity(); m[12] = x; m[13] = y; m[14] = z; return m;
+}
+
+// ------------------------------------------------------------------
+//   Shaders
+// ------------------------------------------------------------------
+const VS_DEPTH = `#version 300 es
+in vec3 aPos;
+uniform mat4 uMV;
+uniform mat4 uMVP;
+void main() {
+  gl_Position = uMVP * vec4(aPos, 1.0);
+}`;
+
+const FS_DEPTH = `#version 300 es
+precision highp float;
+void main() {}  // depth-only pass writes gl_FragDepth via the GL pipeline`;
+
+const VS_MAIN = `#version 300 es
+in vec3 aPos;
+in vec3 aNormal;
+uniform mat4 uModel;
+uniform mat4 uViewProj;
+out vec3 vWorldPos;
+out vec3 vNormal;
+out float vViewDepth;
+uniform mat4 uView;
+void main() {
+  vec4 wp = uModel * vec4(aPos, 1.0);
+  vWorldPos = wp.xyz;
+  vNormal = mat3(uModel) * aNormal;
+  vec4 vp = uView * wp;
+  vViewDepth = -vp.z;  // positive distance from camera along forward
+  gl_Position = uViewProj * wp;
+}`;
+
+const FS_MAIN = `#version 300 es
+precision highp float;
+in vec3 vWorldPos;
+in vec3 vNormal;
+in float vViewDepth;
+out vec4 oColor;
+
+uniform vec3 uBaseColor;
+uniform vec3 uSunDir;        // world-space, points TOWARD sun
+uniform vec3 uAmbient;
+uniform float uShadowStrength;
+
+uniform sampler2DShadow uShadow0;
+uniform sampler2DShadow uShadow1;
+uniform sampler2DShadow uShadow2;
+uniform mat4 uShadowVP0;
+uniform mat4 uShadowVP1;
+uniform mat4 uShadowVP2;
+uniform vec3 uCascadeRanges;  // [end-of-cascade-0, end-of-cascade-1, end-of-cascade-2]
+uniform int uMode;            // 0 = no shadow, 1 = hard, 2 = pcf, 3 = debug cascades
+uniform float uTexelSize;     // 1.0 / shadow map resolution
+
+float sampleShadowPCF(sampler2DShadow shadowMap, vec3 projCoords) {
+  // 3x3 PCF kernel with linear-comparison hardware sampling.
+  // texelSize matches the cascade's atlas resolution.
+  float sum = 0.0;
+  for (int dx = -1; dx <= 1; ++dx) {
+    for (int dy = -1; dy <= 1; ++dy) {
+      vec3 c = vec3(projCoords.xy + vec2(float(dx), float(dy)) * uTexelSize,
+                    projCoords.z);
+      sum += texture(shadowMap, c);
+    }
+  }
+  return sum * (1.0 / 9.0);
+}
+
+float sampleShadowHard(sampler2DShadow shadowMap, vec3 projCoords) {
+  return texture(shadowMap, projCoords);
+}
+
+float cascadeFactor(int cascade, vec3 projCoords) {
+  // projCoords in [0,1]^3 if inside the cascade.
+  if (any(lessThan(projCoords, vec3(0.0))) || any(greaterThan(projCoords, vec3(1.0))))
+    return -1.0;  // outside, caller falls through to next cascade
+  if (uMode == 1) {
+    if (cascade == 0) return sampleShadowHard(uShadow0, projCoords);
+    if (cascade == 1) return sampleShadowHard(uShadow1, projCoords);
+    return sampleShadowHard(uShadow2, projCoords);
+  } else {
+    if (cascade == 0) return sampleShadowPCF(uShadow0, projCoords);
+    if (cascade == 1) return sampleShadowPCF(uShadow1, projCoords);
+    return sampleShadowPCF(uShadow2, projCoords);
+  }
+}
+
+vec3 cascadeDebugTint(int c) {
+  if (c == 0) return vec3(1.0, 0.4, 0.4);
+  if (c == 1) return vec3(0.4, 1.0, 0.4);
+  return vec3(0.4, 0.4, 1.0);
+}
+
+void main() {
+  vec3 N = normalize(vNormal);
+  vec3 L = normalize(uSunDir);
+  float NdotL = max(dot(N, L), 0.0);
+
+  int cascade = (vViewDepth < uCascadeRanges.x) ? 0
+              : (vViewDepth < uCascadeRanges.y) ? 1
+              : 2;
+  if (vViewDepth >= uCascadeRanges.z) {
+    // beyond the far cascade -- fully lit, no shadows.
+    vec3 lit = uBaseColor * (uAmbient + NdotL);
+    oColor = vec4(lit, 1.0); return;
+  }
+
+  // Project world position into the selected cascade's clip space.
+  vec4 lsp;
+  if (cascade == 0) lsp = uShadowVP0 * vec4(vWorldPos, 1.0);
+  else if (cascade == 1) lsp = uShadowVP1 * vec4(vWorldPos, 1.0);
+  else lsp = uShadowVP2 * vec4(vWorldPos, 1.0);
+
+  vec3 proj = lsp.xyz / lsp.w;
+  proj = proj * 0.5 + 0.5;  // [0,1] for shadow lookup
+
+  // Constant-depth bias along normal to dodge surface acne.
+  proj.z -= 0.001;
+
+  float shadow = 1.0;  // 1 = fully lit
+  if (uMode == 0) {
+    shadow = 1.0;
+  } else {
+    shadow = cascadeFactor(cascade, proj);
+    if (shadow < 0.0) shadow = 1.0;  // outside the cascade -> fully lit
+  }
+  // Mix in shadow strength (0 = no shadowing, 1 = full).
+  float lightFactor = mix(1.0, shadow, uShadowStrength);
+  vec3 lit = uBaseColor * (uAmbient + NdotL * lightFactor);
+
+  if (uMode == 3) {
+    // Debug mode: tint by cascade.
+    lit *= cascadeDebugTint(cascade);
+  }
+  oColor = vec4(lit, 1.0);
+}`;
+
+function compile(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+    throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function link(vsSrc, fsSrc) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vsSrc));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fsSrc));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS))
+    throw new Error(gl.getProgramInfoLog(p));
+  return p;
+}
+
+const progDepth = link(VS_DEPTH, FS_DEPTH);
+const progMain = link(VS_MAIN, FS_MAIN);
+
+// ------------------------------------------------------------------
+//   Geometry: ground plane + a few boxes
+// ------------------------------------------------------------------
+function makeBox(sx, sy, sz) {
+  const x = sx / 2, y = sy / 2, z = sz / 2;
+  // 24 verts (4 per face × 6) so each face has its own normal.
+  const v = [];
+  function face(ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz, nx, ny, nz) {
+    v.push(ax, ay, az, nx, ny, nz);
+    v.push(bx, by, bz, nx, ny, nz);
+    v.push(cx, cy, cz, nx, ny, nz);
+    v.push(dx, dy, dz, nx, ny, nz);
+  }
+  face(-x,-y, z,  x,-y, z,  x, y, z, -x, y, z,   0, 0, 1);   // +z
+  face( x,-y,-z, -x,-y,-z, -x, y,-z,  x, y,-z,   0, 0,-1);   // -z
+  face(-x,-y,-z, -x,-y, z, -x, y, z, -x, y,-z,  -1, 0, 0);   // -x
+  face( x,-y, z,  x,-y,-z,  x, y,-z,  x, y, z,   1, 0, 0);   // +x
+  face(-x, y, z,  x, y, z,  x, y,-z, -x, y,-z,   0, 1, 0);   // +y
+  face(-x,-y,-z,  x,-y,-z,  x,-y, z, -x,-y, z,   0,-1, 0);   // -y
+  const idx = [];
+  for (let f = 0; f < 6; ++f) {
+    const o = f * 4; idx.push(o, o+1, o+2, o, o+2, o+3);
+  }
+  return { verts: new Float32Array(v), idx: new Uint16Array(idx) };
+}
+function makePlane(s) {
+  const v = new Float32Array([
+    -s, 0, -s, 0, 1, 0,
+     s, 0, -s, 0, 1, 0,
+     s, 0,  s, 0, 1, 0,
+    -s, 0,  s, 0, 1, 0,
+  ]);
+  const i = new Uint16Array([0, 1, 2, 0, 2, 3]);
+  return { verts: v, idx: i };
+}
+function bindMesh(mesh) {
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  const vbo = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, mesh.verts, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 24, 0);
+  gl.enableVertexAttribArray(1);
+  gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 24, 12);
+  const ibo = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.idx, gl.STATIC_DRAW);
+  return { vao, count: mesh.idx.length };
+}
+
+const plane = bindMesh(makePlane(80));
+const box1 = bindMesh(makeBox(2, 4, 2));
+const box2 = bindMesh(makeBox(3, 1.5, 1.5));
+const box3 = bindMesh(makeBox(1, 5, 1));
+const box4 = bindMesh(makeBox(0.5, 0.5, 0.5));
+
+// Instances: (mesh, model matrix, base color, casts shadow)
+function scene() {
+  const items = [];
+  items.push({ mesh: plane, model: mat4Identity(),
+               color: [0.55, 0.57, 0.60], casts: false });
+  items.push({ mesh: box1, model: mat4Translate(0, 2, 0),
+               color: [0.85, 0.35, 0.30], casts: true });
+  items.push({ mesh: box2, model: mat4Translate(4, 0.75, -2),
+               color: [0.30, 0.65, 0.85], casts: true });
+  items.push({ mesh: box3, model: mat4Translate(-3, 2.5, 3),
+               color: [0.40, 0.80, 0.45], casts: true });
+  // A small distant test box to exercise the far cascade.
+  items.push({ mesh: box4, model: mat4Translate(20, 0.25, 8),
+               color: [0.95, 0.85, 0.40], casts: true });
+  return items;
+}
+const items = scene();
+
+// ------------------------------------------------------------------
+//   Shadow cascades — 3 cascades, 1024² each
+// ------------------------------------------------------------------
+const SHADOW_RES = 1024;
+const N_CASCADES = 3;
+
+function makeShadowTarget() {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, gl.DEPTH_COMPONENT24, SHADOW_RES, SHADOW_RES);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.LEQUAL);
+  const fbo = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tex, 0);
+  if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
+    throw new Error('shadow FBO incomplete');
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  return { tex, fbo };
+}
+const cascades = [];
+for (let c = 0; c < N_CASCADES; ++c) cascades.push(makeShadowTarget());
+
+// Practical Split Scheme (PSSM): blend between uniform and logarithmic.
+function cascadeRanges(near, far, lambda) {
+  const ranges = [];
+  for (let i = 1; i <= N_CASCADES; ++i) {
+    const fi = i / N_CASCADES;
+    const uni = near + (far - near) * fi;
+    const log = near * Math.pow(far / near, fi);
+    ranges.push(lambda * log + (1 - lambda) * uni);
+  }
+  return ranges;  // length N_CASCADES, increasing
+}
+
+// Compute orthographic shadow VP for a slice [zNear, zFar] of the view frustum.
+function shadowVP(camEye, camTarget, fovY, aspect, sliceNear, sliceFar, sunDir) {
+  // 8 frustum corners in world space.
+  const fwd = [
+    camTarget[0]-camEye[0], camTarget[1]-camEye[1], camTarget[2]-camEye[2],
+  ];
+  const fwdLen = Math.hypot(...fwd);
+  for (let k = 0; k < 3; ++k) fwd[k] /= fwdLen;
+  const upRef = [0, 1, 0];
+  const right = [
+    fwd[1]*upRef[2]-fwd[2]*upRef[1],
+    fwd[2]*upRef[0]-fwd[0]*upRef[2],
+    fwd[0]*upRef[1]-fwd[1]*upRef[0],
+  ];
+  const rl = Math.hypot(...right); for (let k=0; k<3; ++k) right[k] /= rl;
+  const up = [
+    right[1]*fwd[2]-right[2]*fwd[1],
+    right[2]*fwd[0]-right[0]*fwd[2],
+    right[0]*fwd[1]-right[1]*fwd[0],
+  ];
+  const hNear = Math.tan(fovY / 2) * sliceNear;
+  const wNear = hNear * aspect;
+  const hFar = Math.tan(fovY / 2) * sliceFar;
+  const wFar = hFar * aspect;
+
+  function corner(dist, side, vert) {
+    return [
+      camEye[0] + fwd[0]*dist + right[0]*side + up[0]*vert,
+      camEye[1] + fwd[1]*dist + right[1]*side + up[1]*vert,
+      camEye[2] + fwd[2]*dist + right[2]*side + up[2]*vert,
+    ];
+  }
+  const corners = [
+    corner(sliceNear, -wNear, -hNear), corner(sliceNear, +wNear, -hNear),
+    corner(sliceNear, -wNear, +hNear), corner(sliceNear, +wNear, +hNear),
+    corner(sliceFar,  -wFar,  -hFar ), corner(sliceFar,  +wFar,  -hFar ),
+    corner(sliceFar,  -wFar,  +hFar ), corner(sliceFar,  +wFar,  +hFar ),
+  ];
+
+  // Centre of the slice in world space.
+  const centre = [0,0,0];
+  for (const c of corners) { centre[0]+=c[0]; centre[1]+=c[1]; centre[2]+=c[2]; }
+  for (let k=0; k<3; ++k) centre[k] /= 8;
+
+  // Light view: looking from sun toward centre.
+  const sunFar = 80;  // light position offset along sun direction
+  const eye = [
+    centre[0] + sunDir[0]*sunFar,
+    centre[1] + sunDir[1]*sunFar,
+    centre[2] + sunDir[2]*sunFar,
+  ];
+  const view = mat4LookAt(eye, centre, [0,1,0]);
+
+  // Project corners into light view; find min/max for AABB.
+  let xmin = +Infinity, xmax = -Infinity;
+  let ymin = +Infinity, ymax = -Infinity;
+  let zmin = +Infinity, zmax = -Infinity;
+  for (const c of corners) {
+    const x = view[0]*c[0] + view[4]*c[1] + view[8 ]*c[2] + view[12];
+    const y = view[1]*c[0] + view[5]*c[1] + view[9 ]*c[2] + view[13];
+    const z = view[2]*c[0] + view[6]*c[1] + view[10]*c[2] + view[14];
+    if (x < xmin) xmin = x; if (x > xmax) xmax = x;
+    if (y < ymin) ymin = y; if (y > ymax) ymax = y;
+    if (z < zmin) zmin = z; if (z > zmax) zmax = z;
+  }
+  // Pull near plane back enough to include casters behind the slice
+  // (boxes outside the frustum can still cast into it).
+  const proj = mat4Ortho(xmin, xmax, ymin, ymax, -zmax - 30, -zmin);
+  return mat4Multiply(proj, view);
+}
+
+// ------------------------------------------------------------------
+//   Main draw + shadow pass
+// ------------------------------------------------------------------
+const ui = {
+  mode: document.getElementById('mode'),
+  sunElev: document.getElementById('sunElev'),
+  sunAz: document.getElementById('sunAz'),
+  split: document.getElementById('split'),
+  strength: document.getElementById('strength'),
+  sunElevVal: document.getElementById('sunElevVal'),
+  sunAzVal: document.getElementById('sunAzVal'),
+  splitVal: document.getElementById('splitVal'),
+  strengthVal: document.getElementById('strengthVal'),
+  stats: document.getElementById('stats'),
+};
+
+let lastT = performance.now();
+let avgMs = 0;
+
+function frame() {
+  const t = performance.now();
+  const dt = t - lastT; lastT = t;
+  avgMs = avgMs * 0.95 + dt * 0.05;
+
+  // Resize canvas
+  const dpr = Math.min(window.devicePixelRatio, 2);
+  const w = Math.floor(window.innerWidth * dpr), h = Math.floor(window.innerHeight * dpr);
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+
+  // Sun direction (toward sun) from elevation + azimuth
+  const elev = ui.sunElev.value * Math.PI / 180;
+  const az = ui.sunAz.value * Math.PI / 180;
+  const sunDir = [Math.cos(elev) * Math.cos(az), Math.sin(elev), Math.cos(elev) * Math.sin(az)];
+  ui.sunElevVal.textContent = `${ui.sunElev.value}°`;
+  ui.sunAzVal.textContent = `${ui.sunAz.value}°`;
+  ui.splitVal.textContent = (+ui.split.value).toFixed(2);
+  ui.strengthVal.textContent = (+ui.strength.value).toFixed(2);
+
+  const aspect = w / h;
+  const fovY = camera.fovYDeg * Math.PI / 180;
+  const eye = cameraEye();
+  const viewMain = mat4LookAt(eye, camera.target, [0, 1, 0]);
+  const projMain = mat4Perspective(fovY, aspect, camera.near, camera.far);
+
+  // Cascade ranges
+  const ranges = cascadeRanges(camera.near, camera.far, +ui.split.value);
+
+  // Build per-cascade light VP
+  const shadowVPs = [];
+  let lastNear = camera.near;
+  for (let c = 0; c < N_CASCADES; ++c) {
+    const vp = shadowVP(eye, camera.target, fovY, aspect, lastNear, ranges[c], sunDir);
+    shadowVPs.push(vp);
+    lastNear = ranges[c];
+  }
+
+  // ----- shadow passes (one per cascade) -----
+  gl.useProgram(progDepth);
+  gl.enable(gl.DEPTH_TEST);
+  gl.disable(gl.CULL_FACE);
+  gl.depthMask(true);
+  gl.colorMask(false, false, false, false);
+  for (let c = 0; c < N_CASCADES; ++c) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, cascades[c].fbo);
+    gl.viewport(0, 0, SHADOW_RES, SHADOW_RES);
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+    const uMVP = gl.getUniformLocation(progDepth, 'uMVP');
+    for (const item of items) {
+      if (!item.casts) continue;
+      const mvp = mat4Multiply(shadowVPs[c], item.model);
+      gl.uniformMatrix4fv(uMVP, false, mvp);
+      gl.bindVertexArray(item.mesh.vao);
+      gl.drawElements(gl.TRIANGLES, item.mesh.count, gl.UNSIGNED_SHORT, 0);
+    }
+  }
+  gl.colorMask(true, true, true, true);
+
+  // ----- main pass -----
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, w, h);
+  gl.clearColor(0.55, 0.65, 0.75, 1.0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.useProgram(progMain);
+  for (let c = 0; c < N_CASCADES; ++c) {
+    gl.activeTexture(gl.TEXTURE0 + c);
+    gl.bindTexture(gl.TEXTURE_2D, cascades[c].tex);
+    gl.uniform1i(gl.getUniformLocation(progMain, `uShadow${c}`), c);
+    gl.uniformMatrix4fv(gl.getUniformLocation(progMain, `uShadowVP${c}`), false, shadowVPs[c]);
+  }
+  gl.uniform3fv(gl.getUniformLocation(progMain, 'uCascadeRanges'), new Float32Array(ranges));
+  gl.uniform3fv(gl.getUniformLocation(progMain, 'uSunDir'), new Float32Array(sunDir));
+  gl.uniform3fv(gl.getUniformLocation(progMain, 'uAmbient'), new Float32Array([0.25, 0.27, 0.30]));
+  gl.uniform1f(gl.getUniformLocation(progMain, 'uShadowStrength'), +ui.strength.value);
+  gl.uniform1f(gl.getUniformLocation(progMain, 'uTexelSize'), 1.0 / SHADOW_RES);
+  const modeMap = { none: 0, hard: 1, soft: 2, cascades: 3 };
+  gl.uniform1i(gl.getUniformLocation(progMain, 'uMode'), modeMap[ui.mode.value] | 0);
+
+  const vpMain = mat4Multiply(projMain, viewMain);
+  for (const item of items) {
+    gl.uniformMatrix4fv(gl.getUniformLocation(progMain, 'uModel'), false, item.model);
+    gl.uniformMatrix4fv(gl.getUniformLocation(progMain, 'uViewProj'), false, vpMain);
+    gl.uniformMatrix4fv(gl.getUniformLocation(progMain, 'uView'), false, viewMain);
+    gl.uniform3fv(gl.getUniformLocation(progMain, 'uBaseColor'), new Float32Array(item.color));
+    gl.bindVertexArray(item.mesh.vao);
+    gl.drawElements(gl.TRIANGLES, item.mesh.count, gl.UNSIGNED_SHORT, 0);
+  }
+
+  ui.stats.innerHTML = `— ms/frame: ${avgMs.toFixed(2)}<br>— cascade ranges: ${ranges.map(r => r.toFixed(1)).join(' / ')} m`;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+[
+ {
+  "world": "projects/samples/demos/worlds/rendering/beauty_bench.omniworld",
+  "view": {
+   "name": "exterior",
+   "position": [
+    -10.5,
+    -9.5,
+    4.4
+   ],
+   "orientation": [
+    0,
+    0.32879194053163663,
+    0.9444023823781051,
+    0.735
+   ]
+  },
+  "arm_a": {
+   "dumped": true,
+   "errors": 0,
+   "warnings": 1,
+   "render_ms": 5,
+   "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+   "binary_sha256": "2b44bbbdf9587eb04009680cb9d54fc7477628a17175830d565cc549f1edf3b5",
+   "world_sha256": "dd62a2c5a54a0dd519279d16614feacab3419bf25d93005baf51f0e3c9627d4d",
+   "environment": {
+    "OMNISIM_BINARY": "O:/omnisim/msys64/mingw64/bin/omnisim-bin.exe"
+   }
+  },
+  "arm_b": {
+   "dumped": true,
+   "errors": 0,
+   "warnings": 1,
+   "render_ms": 6,
+   "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-beauty.exe",
+   "binary_sha256": "13e49bded41af3155d37d65e6a465410518280b425e09bd524cf413f34ac741f",
+   "world_sha256": "dd62a2c5a54a0dd519279d16614feacab3419bf25d93005baf51f0e3c9627d4d",
+   "environment": {
+    "OMNISIM_BINARY": "O:/omnisim/msys64/mingw64/bin/omnisim-bin-beauty.exe"
+   }
+  },
+  "diff": {
+   "same_size": true,
+   "mean_abs": 9.6112,
+   "max_abs": 351,
+   "pixels_over_threshold": 121444,
+   "threshold": 30,
+   "total_pixels": 2110248
+  },
+  "verdict": "DIFFERS"
+ },
+ {
+  "world": "projects/samples/demos/worlds/rendering/beauty_bench.omniworld",
+  "view": {
+   "name": "interior",
+   "position": [
+    -2.3,
+    1.5,
+    1.55
+   ],
+   "orientation": [
+    0.005179849690226163,
+    0.009745850162458129,
+    -0.999939091926002,
+    0.9770971460581808
+   ]
+  },
+  "arm_a": {
+   "dumped": true,
+   "errors": 0,
+   "warnings": 1,
+   "render_ms": 5,
+   "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+   "binary_sha256": "2b44bbbdf9587eb04009680cb9d54fc7477628a17175830d565cc549f1edf3b5",
+   "world_sha256": "266cd7a68459bdf3b301d7d130effb1df47422610132f07bc3d71dbbc6ad7f04",
+   "environment": {
+    "OMNISIM_BINARY": "O:/omnisim/msys64/mingw64/bin/omnisim-bin.exe"
+   }
+  },
+  "arm_b": {
+   "dumped": true,
+   "errors": 0,
+   "warnings": 1,
+   "render_ms": 3,
+   "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-beauty.exe",
+   "binary_sha256": "13e49bded41af3155d37d65e6a465410518280b425e09bd524cf413f34ac741f",
+   "world_sha256": "266cd7a68459bdf3b301d7d130effb1df47422610132f07bc3d71dbbc6ad7f04",
+   "environment": {
+    "OMNISIM_BINARY": "O:/omnisim/msys64/mingw64/bin/omnisim-bin-beauty.exe"
+   }
+  },
+  "diff": {
+   "same_size": true,
+   "mean_abs": 43.5737,
+   "max_abs": 297,
+   "pixels_over_threshold": 1174187,
+   "threshold": 30,
+   "total_pixels": 2110248
+  },
+  "verdict": "DIFFERS"
+ },
+ {
+  "world": "projects/samples/demos/worlds/rendering/beauty_bench.omniworld",
+  "view": {
+   "name": "materials",
+   "position": [
+    7.032711,
+    -8.374983,
+    4.63294
+   ],
+   "orientation": [
+    -0.278945293,
+    0.120681249,
+    0.952693844,
+    2.359689255
+   ]
+  },
+  "arm_a": {
+   "dumped": true,
+   "errors": 0,
+   "warnings": 1,
+   "render_ms": 4,
+   "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+   "binary_sha256": "2b44bbbdf9587eb04009680cb9d54fc7477628a17175830d565cc549f1edf3b5",
+   "world_sha256": "91e80c402b702121ce4cdbddd34f95686c3711f4443d0ac52e64a238415358e2",
+   "environment": {
+    "OMNISIM_BINARY": "O:/omnisim/msys64/mingw64/bin/omnisim-bin.exe"
+   }
+  },
+  "arm_b": {
+   "dumped": true,
+   "errors": 0,
+   "warnings": 1,
+   "render_ms": 2,
+   "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-beauty.exe",
+   "binary_sha256": "13e49bded41af3155d37d65e6a465410518280b425e09bd524cf413f34ac741f",
+   "world_sha256": "91e80c402b702121ce4cdbddd34f95686c3711f4443d0ac52e64a238415358e2",
+   "environment": {
+    "OMNISIM_BINARY": "O:/omnisim/msys64/mingw64/bin/omnisim-bin-beauty.exe"
+   }
+  },
+  "diff": {
+   "same_size": true,
+   "mean_abs": 8.2913,
+   "max_abs": 220,
+   "pixels_over_threshold": 117410,
+   "threshold": 30,
+   "total_pixels": 2110248
+  },
+  "verdict": "DIFFERS"
+ }
+]

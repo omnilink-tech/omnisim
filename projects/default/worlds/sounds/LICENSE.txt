@@ -1,0 +1,66 @@
+OmniSim default contact / motor sound effects.
+
+Contents
+--------
+* bump.wav
+  Artist:   Olivier Michel          (RIFF LIST/INFO `IART`)
+  Product:  Cyberbotics             (RIFF LIST/INFO `IPRD`)
+  Year:     2013                    (RIFF LIST/INFO `ICRD`)
+  The same three values are duplicated in the file's embedded ID3v2 tag
+  (`TPE1` / `TALB` / `TDRC`).
+
+* linear_motor.wav, roll.wav, rotational_motor.wav, slide.wav
+  Artist:   Cyberbotics             (RIFF LIST/INFO `IART`, and ID3v2 `TPE1`)
+  No individual author or year is recorded in the files.
+  (linear_motor.wav and rotational_motor.wav are byte-identical to each other.)
+
+License
+-------
+Apache License, Version 2.0 — Copyright 1996-2024 Cyberbotics Ltd.
+https://www.apache.org/licenses/LICENSE-2.0
+
+Evidence for that election
+--------------------------
+1. Authorship is stated by the files themselves: every one of the five carries an
+   embedded RIFF LIST/INFO chunk naming Cyberbotics (and, for bump.wav, Olivier
+   Michel, Cyberbotics' founder) as the artist. None names any third party, and
+   none carries a sampling-library, marketplace or stock-audio credit.
+2. All five entered this repository in the initial Webots import, commit
+   0db6a18a74ba16fa2c10f744423405d153b87c7a ("Initial commit: OmniSim robotics
+   simulator", 2026-04-11), and have not been modified since.
+3. Upstream is https://github.com/cyberbotics/webots, released under the Apache
+   License, Version 2.0. Cyberbotics-authored content in that repository is
+   covered by that grant; see the "Derivation" section of the repository-root
+   NOTICE file.
+4. These are not `.proto` assets, so the separate, product-scoped Webots Assets
+   license that upstream attached to PROTO files via a `# license:` header does
+   not apply to them: no such header exists for a `.wav`, and no separate notice
+   was attached to this directory upstream.
+
+Limits of that evidence
+-----------------------
+The election above rests on in-file authorship metadata plus the upstream
+repository's blanket Apache-2.0 grant. It is NOT backed by a per-file copyright
+notice from Cyberbotics, because no such notice exists — a `.wav` has nowhere to
+put a licence header. This repository's history is a squashed import, so git
+cannot corroborate anything earlier than the import commit. What would settle it
+beyond doubt: a written confirmation from Cyberbotics Ltd. that these audio
+files are covered by the Webots Apache-2.0 grant.
+
+Usage — DO NOT DELETE
+---------------------
+All five are live: they are the schema DEFAULT values of node fields, so every
+world that does not override them resolves to these paths.
+
+    bump.wav             ContactProperties.bumpSound   (resources/nodes/ContactProperties.wrl:14)
+    roll.wav             ContactProperties.rollSound   (resources/nodes/ContactProperties.wrl:15)
+    slide.wav            ContactProperties.slideSound  (resources/nodes/ContactProperties.wrl:16)
+    linear_motor.wav     LinearMotor.sound             (resources/nodes/LinearMotor.wrl:13)
+    rotational_motor.wav RotationalMotor.sound         (resources/nodes/RotationalMotor.wrl:13)
+
+The same five defaults are mirrored for the web viewer in
+resources/web/wwi/protoVisualizer/FieldModel.js and documented in
+docs/reference/{contactproperties,linearmotor,rotationalmotor}.md.
+
+(Aside, unrelated to licensing: contact *sound* produces no audio on the Newton
+physics backend. The field defaults still resolve, so the files are still read.)

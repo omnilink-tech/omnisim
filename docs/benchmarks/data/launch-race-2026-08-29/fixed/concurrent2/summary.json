@@ -1,0 +1,217 @@
+{
+ "summary": {
+  "provenance": {
+   "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+   "binary_sha256_16": "1c81f13df0d311c1",
+   "binary_mtime": "2026-08-29 20:13:40",
+   "machine": "LAPTOP-H61DJILS",
+   "platform": "Windows-11-10.0.26200-SP0",
+   "mode": "concurrent2",
+   "gap_s": 0.0,
+   "stdio": "devnull",
+   "worlds": [
+    "projects\\samples\\demos\\worlds\\physics\\newton_smoke_test.omniworld"
+   ]
+  },
+  "launches": 10,
+  "finalised": 10,
+  "raced": 0,
+  "raced_qt_teardown": 0,
+  "raced_silent_exit": 0,
+  "shared_port_rounds": 0,
+  "failed_other": 0,
+  "race_rate": 0.0
+ },
+ "rows": [
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 7.15,
+   "exited_at": null,
+   "secs": 15.77,
+   "pid": 29372,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 9.3,
+   "round": 0,
+   "i": 0,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 30
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 7.15,
+   "exited_at": null,
+   "secs": 15.77,
+   "pid": 14356,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 9.3,
+   "round": 0,
+   "i": 1,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 29
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 8.44,
+   "exited_at": null,
+   "secs": 16.97,
+   "pid": 4372,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 12.5,
+   "round": 1,
+   "i": 2,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 28
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 8.54,
+   "exited_at": null,
+   "secs": 16.97,
+   "pid": 13864,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 12.5,
+   "round": 1,
+   "i": 3,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 29
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 6.1,
+   "exited_at": null,
+   "secs": 14.5,
+   "pid": 18008,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 6.1,
+   "round": 2,
+   "i": 4,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 30
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 6.0,
+   "exited_at": null,
+   "secs": 14.5,
+   "pid": 9980,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 6.1,
+   "round": 2,
+   "i": 5,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 31
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 7.13,
+   "exited_at": null,
+   "secs": 15.53,
+   "pid": 19104,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 29.3,
+   "round": 3,
+   "i": 6,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 29
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 7.13,
+   "exited_at": null,
+   "secs": 15.53,
+   "pid": 16016,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 29.3,
+   "round": 3,
+   "i": 7,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 30
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 6.48,
+   "exited_at": null,
+   "secs": 14.86,
+   "pid": 28096,
+   "ports": [
+    1234
+   ],
+   "spawn_spread_ms": 10.5,
+   "round": 4,
+   "i": 8,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 29
+  },
+  {
+   "rc": null,
+   "finalised": true,
+   "finalised_at": 6.48,
+   "exited_at": null,
+   "secs": 14.86,
+   "pid": 13480,
+   "ports": [
+    1235
+   ],
+   "spawn_spread_ms": 10.5,
+   "round": 4,
+   "i": 9,
+   "world": "newton_smoke_test.omniworld",
+   "raced": false,
+   "signature": null,
+   "error_lines": 0,
+   "log_lines": 31
+  }
+ ]
+}

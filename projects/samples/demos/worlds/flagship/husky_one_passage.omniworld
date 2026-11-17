@@ -1,0 +1,171 @@
+#OMNISIM R2025a utf8
+# One narrow passage: four real Husky bodies and a coordination-only A/B.
+# Warm neutral warehouse lighting and restrained mimosa markings for the film.
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Roughcast.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+WorldInfo { basicTimeStep 16 title "Four robots. One passage."
+ newtonSolver "mujoco" newtonStatics TRUE newtonRobotColliders TRUE
+ newtonCompoundColliders TRUE newtonSubsteps 4 newtonGroundMu 0.42 }
+Viewpoint { position 12 -17 16 orientation -0.31752426153379243 0.164527102131278 0.9338678578908816 2.240240396040772
+ fieldOfView .85 exposure .80 near .1 far 100 ambientOcclusionRadius 1.5 bloomThreshold 10 }
+OmniSimSky { luminosity 1.1 }
+DEF SUN OmniSimSun { color 1 .95 .84 intensity 2.6 ambientIntensity .09 castShadows TRUE }
+DEF SUN_MARKER OmniSimSunMarker { translation -18 -25 32 }
+Floor { size 21 13 tileSize 21 13 appearance PBRAppearance { baseColor .85 .83 .78 roughness .92 metalness 0
+ baseColorMap ImageTexture { url ["omnisim://projects/samples/demos/worlds/textures/one_passage/concrete.png"] }
+ normalMap ImageTexture { url ["omnisim://projects/appearances/protos/textures/rough_concrete/rough_concrete_normal.jpg"] }
+ normalMapFactor .06 textureTransform TextureTransform { scale 1 1 } IBLStrength 1.1 } }
+DEF DIVIDER_N1 Solid {
+ name "DIVIDER_N1" translation 0 -3.43 0.45
+ children [ Shape { appearance Roughcast { colorOverride .43 .42 .37 IBLStrength 1.05 textureTransform TextureTransform { scale 2 2 } } geometry DEF DIVIDER_N1_G Box { size 0.32 5.66 0.9 } } ]
+ boundingObject USE DIVIDER_N1_G
+}
+DEF PASSAGE_N1 Solid {
+ name "PASSAGE_N1" translation 0 -0.66 0.35
+ children [ Shape { appearance Roughcast { colorOverride .62 .60 .52 IBLStrength 1.05 textureTransform TextureTransform { scale 2 2 } } geometry DEF PASSAGE_N1_G Box { size 3.0 0.22 0.7 } } ]
+ boundingObject USE PASSAGE_N1_G
+}
+DEF EDGE_N1 Solid {
+ name "EDGE_N1" translation 0 -0.53 0.02
+ children [ Shape { appearance PBRAppearance { baseColor .77 .74 .43 roughness 0.65 metalness 0.05 } geometry DEF EDGE_N1_G Box { size 3.2 0.045 0.025 } } ]
+ 
+}
+DEF DIVIDER_1 Solid {
+ name "DIVIDER_1" translation 0 3.43 0.45
+ children [ Shape { appearance Roughcast { colorOverride .43 .42 .37 IBLStrength 1.05 textureTransform TextureTransform { scale 2 2 } } geometry DEF DIVIDER_1_G Box { size 0.32 5.66 0.9 } } ]
+ boundingObject USE DIVIDER_1_G
+}
+DEF PASSAGE_1 Solid {
+ name "PASSAGE_1" translation 0 0.66 0.35
+ children [ Shape { appearance Roughcast { colorOverride .62 .60 .52 IBLStrength 1.05 textureTransform TextureTransform { scale 2 2 } } geometry DEF PASSAGE_1_G Box { size 3.0 0.22 0.7 } } ]
+ boundingObject USE PASSAGE_1_G
+}
+DEF EDGE_1 Solid {
+ name "EDGE_1" translation 0 0.53 0.02
+ children [ Shape { appearance PBRAppearance { baseColor .77 .74 .43 roughness 0.65 metalness 0.05 } geometry DEF EDGE_1_G Box { size 3.2 0.045 0.025 } } ]
+ 
+}
+DEF SERVICE_APRON Solid {
+ name "SERVICE_APRON" translation 0 0 0.011
+ children [ Shape { appearance PBRAppearance { baseColor .075 .072 .059 roughness 0.65 metalness 0.05 } geometry DEF SERVICE_APRON_G Box { size 16 1.8 0.012 } } ]
+ 
+}
+DEF APRON_LINE_N1 Solid {
+ name "APRON_LINE_N1" translation 0 -0.94 0.018
+ children [ Shape { appearance PBRAppearance { baseColor .62 .60 .38 roughness 0.65 metalness 0.05 } geometry DEF APRON_LINE_N1_G Box { size 16 0.035 0.012 } } ]
+ 
+}
+DEF APRON_LINE_1 Solid {
+ name "APRON_LINE_1" translation 0 0.94 0.018
+ children [ Shape { appearance PBRAppearance { baseColor .62 .60 .38 roughness 0.65 metalness 0.05 } geometry DEF APRON_LINE_1_G Box { size 16 0.035 0.012 } } ]
+ 
+}
+DEF SLAB_X_0 Solid {
+ name "SLAB_X_0" translation -7 0 0.007
+ children [ Shape { appearance PBRAppearance { baseColor .20 .20 .18 roughness 0.65 metalness 0.05 } geometry DEF SLAB_X_0_G Box { size 0.012 13 0.008 } } ]
+ 
+}
+DEF SLAB_X_1 Solid {
+ name "SLAB_X_1" translation -3.5 0 0.007
+ children [ Shape { appearance PBRAppearance { baseColor .20 .20 .18 roughness 0.65 metalness 0.05 } geometry DEF SLAB_X_1_G Box { size 0.012 13 0.008 } } ]
+ 
+}
+DEF SLAB_X_2 Solid {
+ name "SLAB_X_2" translation 3.5 0 0.007
+ children [ Shape { appearance PBRAppearance { baseColor .20 .20 .18 roughness 0.65 metalness 0.05 } geometry DEF SLAB_X_2_G Box { size 0.012 13 0.008 } } ]
+ 
+}
+DEF SLAB_X_3 Solid {
+ name "SLAB_X_3" translation 7 0 0.007
+ children [ Shape { appearance PBRAppearance { baseColor .20 .20 .18 roughness 0.65 metalness 0.05 } geometry DEF SLAB_X_3_G Box { size 0.012 13 0.008 } } ]
+ 
+}
+DEF SLAB_Y_0 Solid {
+ name "SLAB_Y_0" translation 0 -4 0.007
+ children [ Shape { appearance PBRAppearance { baseColor .20 .20 .18 roughness 0.65 metalness 0.05 } geometry DEF SLAB_Y_0_G Box { size 21 0.012 0.008 } } ]
+ 
+}
+DEF SLAB_Y_1 Solid {
+ name "SLAB_Y_1" translation 0 0 0.007
+ children [ Shape { appearance PBRAppearance { baseColor .20 .20 .18 roughness 0.65 metalness 0.05 } geometry DEF SLAB_Y_1_G Box { size 21 0.012 0.008 } } ]
+ 
+}
+DEF SLAB_Y_2 Solid {
+ name "SLAB_Y_2" translation 0 4 0.007
+ children [ Shape { appearance PBRAppearance { baseColor .20 .20 .18 roughness 0.65 metalness 0.05 } geometry DEF SLAB_Y_2_G Box { size 21 0.012 0.008 } } ]
+ 
+}
+DEF BAY_A Solid {
+ name "BAY_A" translation -6 -2.3 0.012
+ children [ Shape { appearance PBRAppearance { baseColor .19 .19 .15 roughness 0.65 metalness 0.05 } geometry DEF BAY_A_G Box { size 1.5 1.05 0.018 } } ]
+ 
+}
+DEF BAY_EDGE_A Solid {
+ name "BAY_EDGE_A" translation -6 -2.8899999999999997 0.019
+ children [ Shape { appearance PBRAppearance { baseColor .68 .66 .42 roughness 0.65 metalness 0.05 } geometry DEF BAY_EDGE_A_G Box { size 1.5 0.045 0.021 } } ]
+ 
+}
+DEF DOCK_A Solid {
+ name "DOCK_A" translation 6 -2.3 0.012
+ children [ Shape { appearance PBRAppearance { baseColor .24 .24 .19 roughness 0.65 metalness 0.05 } geometry DEF DOCK_A_G Box { size 1.55 1.0 0.017 } } ]
+ 
+}
+DEF ROBOT_A URDFRobot { url "../../../../robots/clearpath/husky_description/urdf/husky_passage_A.urdf" translation -6 -2.3 .22
+ rotation 0 0 1 0 name "A" supervisor TRUE controller "passage_robot" }
+DEF BAY_B Solid {
+ name "BAY_B" translation 6 2.3 0.012
+ children [ Shape { appearance PBRAppearance { baseColor .19 .19 .15 roughness 0.65 metalness 0.05 } geometry DEF BAY_B_G Box { size 1.5 1.05 0.018 } } ]
+ 
+}
+DEF BAY_EDGE_B Solid {
+ name "BAY_EDGE_B" translation 6 1.71 0.019
+ children [ Shape { appearance PBRAppearance { baseColor .68 .66 .42 roughness 0.65 metalness 0.05 } geometry DEF BAY_EDGE_B_G Box { size 1.5 0.045 0.021 } } ]
+ 
+}
+DEF DOCK_B Solid {
+ name "DOCK_B" translation -6 2.3 0.012
+ children [ Shape { appearance PBRAppearance { baseColor .24 .24 .19 roughness 0.65 metalness 0.05 } geometry DEF DOCK_B_G Box { size 1.55 1.0 0.017 } } ]
+ 
+}
+DEF ROBOT_B URDFRobot { url "../../../../robots/clearpath/husky_description/urdf/husky_passage_B.urdf" translation 6 2.3 .22
+ rotation 0 0 1 3.141592653589793 name "B" supervisor TRUE controller "passage_robot" }
+DEF BAY_C Solid {
+ name "BAY_C" translation -6 -4.1 0.012
+ children [ Shape { appearance PBRAppearance { baseColor .19 .19 .15 roughness 0.65 metalness 0.05 } geometry DEF BAY_C_G Box { size 1.5 1.05 0.018 } } ]
+ 
+}
+DEF BAY_EDGE_C Solid {
+ name "BAY_EDGE_C" translation -6 -4.6899999999999995 0.019
+ children [ Shape { appearance PBRAppearance { baseColor .68 .66 .42 roughness 0.65 metalness 0.05 } geometry DEF BAY_EDGE_C_G Box { size 1.5 0.045 0.021 } } ]
+ 
+}
+DEF DOCK_C Solid {
+ name "DOCK_C" translation 6 -4.1 0.012
+ children [ Shape { appearance PBRAppearance { baseColor .24 .24 .19 roughness 0.65 metalness 0.05 } geometry DEF DOCK_C_G Box { size 1.55 1.0 0.017 } } ]
+ 
+}
+DEF ROBOT_C URDFRobot { url "../../../../robots/clearpath/husky_description/urdf/husky_passage_C.urdf" translation -6 -4.1 .22
+ rotation 0 0 1 0 name "C" supervisor TRUE controller "passage_robot" }
+DEF BAY_D Solid {
+ name "BAY_D" translation 6 4.1 0.012
+ children [ Shape { appearance PBRAppearance { baseColor .19 .19 .15 roughness 0.65 metalness 0.05 } geometry DEF BAY_D_G Box { size 1.5 1.05 0.018 } } ]
+ 
+}
+DEF BAY_EDGE_D Solid {
+ name "BAY_EDGE_D" translation 6 3.51 0.019
+ children [ Shape { appearance PBRAppearance { baseColor .68 .66 .42 roughness 0.65 metalness 0.05 } geometry DEF BAY_EDGE_D_G Box { size 1.5 0.045 0.021 } } ]
+ 
+}
+DEF DOCK_D Solid {
+ name "DOCK_D" translation -6 4.1 0.012
+ children [ Shape { appearance PBRAppearance { baseColor .24 .24 .19 roughness 0.65 metalness 0.05 } geometry DEF DOCK_D_G Box { size 1.55 1.0 0.017 } } ]
+ 
+}
+DEF ROBOT_D URDFRobot { url "../../../../robots/clearpath/husky_description/urdf/husky_passage_D.urdf" translation 6 4.1 .22
+ rotation 0 0 1 3.141592653589793 name "D" supervisor TRUE controller "passage_robot" }
+DEF DIRECTOR Robot { name "passage_director" supervisor TRUE controller "passage_director"
+ customData "{\"mode\": \"clear\", \"count\": 4, \"run_dir\": \"O:\\\\omnisim\\\\social\\\\education\\\\agent_build_one_passage\\\\runs\\\\demo\", \"camera\": \"wide\", \"capture\": false, \"capture_start\": 2, \"capture_end\": 180, \"capture_speed\": 1, \"time_limit\": 190.0, \"start_delay\": 6}" }

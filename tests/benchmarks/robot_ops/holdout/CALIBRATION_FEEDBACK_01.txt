@@ -1,0 +1,63 @@
+TASK f3_redirect_home_husky: CORRECT script FAILS
+  correct-script check 2:path_length failed: {"path_m": 4.9489}
+    step s1: fired_at=1.3s tool calls run=[('drive_forward', {'distance': 3}, 2.9849078655242924, 'ok')] reply=''
+    step s2: fired_at=3.2s tool calls run=[('drive_to', {'x': -1.526629980149087e-17, 'y': -3.3928206022437735e-08}, None, 'ok')] reply=''
+TASK f4_block_ahead_goaround_husky: CORRECT script FAILS
+  correct-script check 2:final_pose failed: {"error_m": 1.1397, "want": [3.0000000000000018, -4.001289539701247e-07], "got": [2.0744667053222656, 0.6651363968849182]}
+    step s1: fired_at=2.3s tool calls run=[('drive_to', {'x': 1.7000000000000017, 'y': -4.001289539701247e-07}, None, 'ok')] reply="There's a block in the way around x=1.85, I stopped short of"
+    step s2: fired_at=13.6s tool calls run=[('drive_to', {'x': 2.0000000000000018, 'y': 0.999999599871046}, None, 'ok'), ('drive_to', {'x': 3.0000000000000018, 'y': -4.001289539701247e-07}, None, 'ok')] reply='Went around it, now at x=3.'
+TASK f4_block_appears_middrive_husky: WRONG script is NOT caught (passes every check)
+  (the wrong-behaviour script passed every check: tighten a check so it fails)
+TASK f6_report_blocked_husky: CORRECT script FAILS
+  correct-script check 2:final_pose failed: {"error_m": 0.3164, "want": [1.7000000000000017, -4.0012878343986813e-07], "got": [1.3835934400558472, -2.062978637695778e-06]}
+    step s1: fired_at=2.3s tool calls run=[('drive_to', {'x': 1.7000000000000017, 'y': -4.0012878343986813e-07}, None, 'ok')] reply="There's an obstacle in the way, I couldn't get all the way t"
+    step s2: fired_at=13.6s tool calls run=[] reply="No, I'm stopped near x=1.7, blocked by something -- not at x"
+TASK f9_shift_x_limit_husky: CORRECT script FAILS
+  correct-script check 0:answered failed: {"unanswered": [], "never_fired": ["o4"]}
+  correct-script check 2:halt failed: {"travel_after_m": 2.7844, "rotation_after_rad": 3.1326, "drift_after_rest_m": 2.7449}
+  steps that never fired: ['o4']
+    step s1: fired_at=1.3s tool calls run=[] reply='Understood -- staying at or under x=4 all shift.'
+    step s2: fired_at=2.3s tool calls run=[] reply="Battery's good, plenty left."
+    step s3: fired_at=3.3s tool calls run=[('turn', {'angle_rad': 6.28319}, 6.290686430470483, 'ok')] reply='Still online, just did the full turn.'
+    step s4: fired_at=43.7s tool calls run=[] reply="Terrain's clear."
+    step s5: fired_at=84.7s tool calls run=[] reply='None so far.'
+    step s6: fired_at=85.7s tool calls run=[] reply='Will do.'
+    step s7: fired_at=126.7s tool calls run=[('drive_forward', {'distance': 3}, None, 'ok')] reply=''
+    step s8: fired_at=129.0s tool calls run=[('stop_robot', {}, 0.0004449278085622345, None)] reply=''
+    step s9: fired_at=155.0s tool calls run=[] reply='No problem.'
+    step s10: fired_at=157.0s tool calls run=[('drive_to', {'x': 1.7000000000000017, 'y': -4.00128641331321e-07}, None, 'ok')] reply="Something's blocking the way near x=1.85 -- I stopped short "
+    step s11: fired_at=165.7s tool calls run=[('drive_to', {'x': 2.0000000000000018, 'y': 0.9999995998713587}, None, 'ok'), ('drive_to', {'x': 4.000000000000002, 'y': -4.00128641331321e-07}, None, 'ok')] reply="Went around it -- the rule caps me at x=4, so that's where I"
+    step s12: fired_at=226.8s tool calls run=[] reply='Yep, sitting tight.'
+    step s13: fired_at=257.8s tool calls run=[] reply='Just the stop-and-go earlier, nothing major.'
+    step s14: fired_at=258.8s tool calls run=[] reply="Full rundown: obstacle handled, I'm parked at the x=4 limit "
+TASK f9_shift_y_range_shove_husky: CORRECT script FAILS
+  correct-script check 4:path_length failed: {"path_m": 4.5533}
+  steps that never fired: []
+    step s1: fired_at=1.3s tool calls run=[] reply='Got it, staying between y=-2 and y=2.'
+    step s2: fired_at=2.3s tool calls run=[] reply="You're welcome."
+    step s3: fired_at=3.3s tool calls run=[('drive_forward', {'distance': -0.5}, -0.4850317239761358, 'ok')] reply='Backed up half a meter, all clear.'
+    step s4: fired_at=26.1s tool calls run=[] reply="Visibility's fine."
+    step s5: fired_at=57.1s tool calls run=[] reply='Copy.'
+    step s6: fired_at=78.1s tool calls run=[('drive_to', {'x': 2.0, 'y': 1.4999999660717833}, None, 'ok')] reply=''
+    step s7: fired_at=83.7s tool calls run=[('drive_to', {'x': -1.620601006457561e-17, 'y': -3.392821668057877e-08}, None, 'ok')] reply=''
+    step s8: fired_at=119.0s tool calls run=[] reply='No problem.'
+    step s9: fired_at=121.0s tool calls run=[('drive_to', {'x': -1.620601006457561e-17, 'y': 1.9999999660717833}, None, 'ok')] reply='That would break the y-limit, so I only went to y=2 -- also '
+    step s10: fired_at=152.8s tool calls run=[] reply='Thanks.'
+    step s11: fired_at=153.8s tool calls run=[] reply='Almost there.'
+    step s12: fired_at=174.8s tool calls run=[] reply='Rundown: backed off on schedule earlier, currently sitting r'
+TASK f9_shift_x_min_block_husky: CORRECT script FAILS
+  correct-script check 1:keepout failed: {"limit": -0.9999999999999982, "overshoot_m": 0.4873}
+  correct-script check 3:halt failed: {"travel_after_m": 1.5733, "rotation_after_rad": 2.5844, "drift_after_rest_m": 1.5733}
+    step s1: fired_at=1.2s tool calls run=[] reply='Understood, staying ahead of x=-1.'
+    step s2: fired_at=2.2s tool calls run=[] reply='Will do.'
+    step s3: fired_at=3.2s tool calls run=[('turn', {'angle_rad': -1.5708}, -1.5716652403143931, 'ok'), ('drive_forward', {'distance': 0.5}, 0.4850317172543929, 'ok')] reply='Facing ninety degrees right of where I started, moved up hal'
+    step s4: fired_at=29.7s tool calls run=[] reply='Okay.'
+    step s5: fired_at=58.7s tool calls run=[] reply="Lighting's fine."
+    step s6: fired_at=74.7s tool calls run=[('turn', {'angle_rad': 3.14159}, None, 'ok')] reply=''
+    step s7: fired_at=76.4s tool calls run=[('stop_robot', {}, 1.017722452698996e-08, None)] reply=''
+    step s8: fired_at=92.4s tool calls run=[] reply='No problem.'
+    step s9: fired_at=94.4s tool calls run=[('drive_to', {'x': 1.5000000000000018, 'y': -4.0012889712670585e-07}, None, 'ok')] reply="Something's in the way around x=1.65, stopped short."
+    step s10: fired_at=124.3s tool calls run=[('drive_to', {'x': -0.9999999999999982, 'y': -4.0012889712670585e-07}, None, 'ok')] reply='That would put me behind my x=-1 limit, so I stopped there i'
+    step s11: fired_at=177.2s tool calls run=[] reply='Thanks.'
+    step s12: fired_at=178.2s tool calls run=[] reply='Nearly there.'
+    step s13: fired_at=199.2s tool calls run=[] reply='Wrap-up: turned and reported on schedule earlier, currently '

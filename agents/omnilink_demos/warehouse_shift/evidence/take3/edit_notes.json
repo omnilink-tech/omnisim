@@ -1,0 +1,116 @@
+{
+ "take": "social\\youtube_videos\\captures\\warehouse_shift\\take3",
+ "sim0": 0.41600000000000004,
+ "beats": [
+  {
+   "step": "weld_rule",
+   "sim_window_s": [
+    53.87,
+    57.37
+   ],
+   "speed": 1.0,
+   "freeze_s": 0.0,
+   "reply_full": "Understood, Priya: I just checked my shift memory and the weld cell (x −2.60 to −1.20, y 1.20 to 3.20) is set as a permanent keep-out for the whole shift, so nobody can lift it, you and Dana included, and my routes will go around it.",
+   "via": "relay"
+  },
+  {
+   "step": "timed",
+   "sim_window_s": [
+    134.89,
+    153.77
+   ],
+   "speed": 8.0,
+   "freeze_s": 3.16,
+   "reply_full": "Scheduled, Dana: in 14 minutes (840 s) I'll take the scrap bin down to the QA bay, not before, and I'll tell you when it goes.",
+   "via": "relay"
+  },
+  {
+   "step": "r4",
+   "sim_window_s": [
+    479.85,
+    525.23
+   ],
+   "speed": 7.0,
+   "freeze_s": 3.16,
+   "reply_full": "I stopped what I was doing first. Arrived at tool crib: I'm at (1.00, 4.00), 0.00 m from the target. I was pushed off course by about 0.47 m on the way and corrected for it; I routed around a keep-out area.",
+   "via": "parser"
+  },
+  {
+   "step": "stop",
+   "sim_window_s": [
+    766.02,
+    772.52
+   ],
+   "speed": 1.5,
+   "freeze_s": 0.0,
+   "reply_full": "Stopped - measured 0.001 m/s over 0.18 s, so it is standing still.",
+   "via": "parser"
+  },
+  {
+   "step": "resume",
+   "sim_window_s": [
+    814.86,
+    826.67
+   ],
+   "speed": 3.5,
+   "freeze_s": 3.11,
+   "reply_full": "Carrying on. Arrived at paint shop: I'm at (3.20, -3.69), 0.09 m from the target.",
+   "via": "parser"
+  },
+  {
+   "step": "at [984.0, 1032.0]",
+   "sim_window_s": [
+    984.0,
+    1032.0
+   ],
+   "speed": 10.0,
+   "freeze_s": 3.2,
+   "reply_full": "Got it, Dana: the forklift lane (x -3.00 to 2.00, y -2.20 to -1.20) is already closed to me again under your order, and your later job has now run, so the scrap bin went down to the QA bay on schedule.",
+   "via": "relay"
+  },
+  {
+   "step": "never",
+   "sim_window_s": [
+    1159.92,
+    1227.82
+   ],
+   "speed": 10.0,
+   "freeze_s": 3.17,
+   "reply_full": "I didn't cut through the weld cell, Dana, because it's locked off for the whole shift and nobody can open it, not even you; I went around instead, but the drive stopped as blocked at (-4.04, 2.62), 0.16 m short of the press line.",
+   "via": "relay"
+  },
+  {
+   "step": "hold",
+   "sim_window_s": [
+    1229.93,
+    1232.93
+   ],
+   "speed": 1.5,
+   "freeze_s": 0.6,
+   "reply_full": "I'm holding here by the press line, Priya, and I won't move until you tell me to carry on, though the hold has a 30-minute ceiling.",
+   "via": "relay"
+  },
+  {
+   "step": "go_amb",
+   "sim_window_s": [
+    1250.1,
+    1250.7
+   ],
+   "speed": 1.0,
+   "freeze_s": 2.9,
+   "reply_full": "I could not go to place: refused: holding for Priya until they say so",
+   "via": "parser"
+  },
+  {
+   "step": "q_path",
+   "sim_window_s": [
+    1730.1,
+    1730.7
+   ],
+   "speed": 1.0,
+   "freeze_s": 2.9,
+   "reply_full": "I've driven 121.8 metres this shift, measured from my own position track.",
+   "via": "parser"
+  }
+ ]
+}

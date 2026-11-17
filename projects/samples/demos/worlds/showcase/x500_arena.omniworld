@@ -1,0 +1,87 @@
+#OMNISIM R2025a utf8
+
+# PX4 x500 in the pad arena: HOME at the origin, BLUE 2 m ahead, ORANGE 2 m
+# past it (visual-only pads). Flown by mavic_omnilink_bridge -- POST /tool,
+# POST /prompt (OmniLink), or the robot window's chat -- on port 6190.
+#
+# ⚠️ Load with OMNISIM_URDF_USE_SENSORS=1 in the ENGINE's environment: the
+# bridge needs the URDF's camera / IMU / GPS devices and exits without them.
+#
+# The flight model is declared below in customData (see the package's
+# PROVENANCE.md for every value's basis). The WIND is MODELLED -- seeded
+# Ornstein-Uhlenbeck gusts, not measured air -- and /capabilities.airframe says
+# so; say so wherever this world's footage is shown.
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  title "PX4 x500 — pad arena"
+  # Copied from omnilink_mavic.omniworld: the base_link needs its own
+  # collider (public issue #10) and mu 1.5 parks the airframe (issue #14).
+  newtonRobotColliders TRUE
+  newtonGroundMu 1.5
+  # The x500 collider is five boxes (plate + two legs + two skids); with the
+  # FALSE default Newton keeps only the first and the skids sink into the floor.
+  newtonCompoundColliders TRUE
+  # Generic air damping cut from 0.5: the x500 declares quadratic drag
+  # (drag_coeff, relative to seeded wind) in its airframe instead.
+  defaultDamping Damping {
+    linear 0.05
+    angular 0.5
+  }
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 3.964 -4.219 4.158
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 12 12
+  wallHeight 0.1
+}
+
+DEF PAD_HOME Pose {
+  translation 0 0 0.0015
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.55 0.57 0.60 roughness 0.9 metalness 0 }
+      geometry Box { size 1.0 1.0 0.002 }
+    }
+  ]
+}
+DEF PAD_BLUE Pose {
+  translation 2 0 0.0015
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.01 0.12 0.62 roughness 0.9 metalness 0 }
+      geometry Box { size 1.0 1.0 0.002 }
+    }
+  ]
+}
+DEF PAD_ORANGE Pose {
+  translation 4 0 0.0015
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.80 0.22 0.01 roughness 0.9 metalness 0 }
+      geometry Box { size 1.0 1.0 0.002 }
+    }
+  ]
+}
+
+DEF X500 URDFRobot {
+  url "../../../../robots/px4/x500/urdf/x500.urdf"
+  # Skids reach 0.227 m below base_link; spawn just above them.
+  translation 0 0 0.25
+  name "x500"
+  controller "mavic_omnilink_bridge"
+  controllerArgs [ "--port" "6190" "--name" "x500" ]
+  customData "{\"rotor_dynamics\":{\"k_thrust\":0.0011073,\"k_torque\":1.0663e-05,\"props\":{\"fl\":[0.17663,0.17415,0.06],\"fr\":[0.17663,-0.17385,0.06],\"rl\":[-0.17137,0.17415,0.06],\"rr\":[-0.17137,-0.17385,0.06]},\"motor_tau_s\":0.04,\"ground_effect_rotor_radius_m\":0.165,\"drag_coeff\":0.03,\"wind\":{\"mean\":[0.3,0.1,0.0],\"gust_sigma\":0.4,\"tau_s\":2.0,\"seed\":7,\"torque_sigma\":0.004},\"control\":{\"HEADING_HOLD\":1,\"XY_I_RADIUS_M\":0.5,\"MAX_YAW_DISTURBANCE\":10},\"rotor_disc_material\":\"x500_prop_disc\"}}"
+  window "omnilink_chat"
+  supervisor TRUE
+}

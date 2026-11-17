@@ -1,0 +1,198 @@
+[
+  {
+    "name": "open_field_match",
+    "source": "O:\\omnisim\\projects\\robot_combat\\orc\\worlds\\orc_open_field.omniworld",
+    "exit_code": 0,
+    "hit_log_lines": 1,
+    "detach_log_lines": 0,
+    "runtime_rebuilds": 0,
+    "outcome": [
+      "[headless] RUNAWAY CHECK: sampling every top-level dynamic body every 8 basic steps via .omnisim_runaway_.audit_20260913_open_field_match.omniworld",
+      "[headless] Results: 0 errors, 21 warnings",
+      "[headless] PASS"
+    ],
+    "scorecard": {
+      "match_t_s": 15.0,
+      "winner": "draw",
+      "win_reason": "timeout_tie",
+      "fighters": [
+        {
+          "name": "blue_alpha",
+          "immobile": false,
+          "disqualify_reason": null,
+          "broken_parts": [],
+          "wheels_remaining": 4,
+          "weapon_intact": true,
+          "part_hp": {
+            "chassis": 120.0,
+            "fl_wheel": 10.0,
+            "fr_wheel": 10.0,
+            "rl_wheel": 10.0,
+            "rr_wheel": 10.0,
+            "weapon": 25.0
+          }
+        },
+        {
+          "name": "blue_bravo",
+          "immobile": false,
+          "disqualify_reason": null,
+          "broken_parts": [],
+          "wheels_remaining": 4,
+          "weapon_intact": true,
+          "part_hp": {
+            "chassis": 120.0,
+            "fl_wheel": 10.0,
+            "fr_wheel": 10.0,
+            "rl_wheel": 9.8,
+            "rr_wheel": 10.0,
+            "weapon": 25.0
+          }
+        },
+        {
+          "name": "red_alpha",
+          "immobile": false,
+          "disqualify_reason": null,
+          "broken_parts": [],
+          "wheels_remaining": 4,
+          "weapon_intact": true,
+          "part_hp": {
+            "chassis": 117.9,
+            "fl_wheel": 9.8,
+            "fr_wheel": 9.8,
+            "rl_wheel": 10.0,
+            "rr_wheel": 10.0,
+            "weapon": 25.0
+          }
+        },
+        {
+          "name": "red_bravo",
+          "immobile": false,
+          "disqualify_reason": null,
+          "broken_parts": [],
+          "wheels_remaining": 4,
+          "weapon_intact": true,
+          "part_hp": {
+            "chassis": 120.0,
+            "fl_wheel": 10.0,
+            "fr_wheel": 10.0,
+            "rl_wheel": 10.0,
+            "rr_wheel": 10.0,
+            "weapon": 25.0
+          }
+        }
+      ]
+    },
+    "physics": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.11.0",
+        "mujoco_warp": "3.11.0",
+        "newton": "1.5.0",
+        "warp": "1.16.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)"
+    }
+  },
+  {
+    "name": "forced_detach_observed",
+    "source": "O:\\omnisim\\projects\\robot_combat\\orc\\worlds\\orc_open_field.omniworld",
+    "exit_code": 0,
+    "hit_log_lines": 0,
+    "detach_log_lines": 1,
+    "runtime_rebuilds": 0,
+    "outcome": [
+      "[headless] RUNAWAY CHECK: sampling every top-level dynamic body every 8 basic steps via .omnisim_runaway_.audit_20260913_forced_detach_observed.omniworld",
+      "[headless] Results: 0 errors, 23 warnings",
+      "[headless] PASS"
+    ],
+    "scorecard": {
+      "match_t_s": 4.0,
+      "winner": "draw",
+      "win_reason": "timeout_tie",
+      "fighters": [
+        {
+          "name": "blue_alpha",
+          "immobile": false,
+          "disqualify_reason": null,
+          "broken_parts": [],
+          "wheels_remaining": 4,
+          "weapon_intact": true,
+          "part_hp": {
+            "chassis": 120.0,
+            "fl_wheel": 10.0,
+            "fr_wheel": 10.0,
+            "rl_wheel": 10.0,
+            "rr_wheel": 10.0,
+            "weapon": 25.0
+          }
+        },
+        {
+          "name": "blue_bravo",
+          "immobile": false,
+          "disqualify_reason": null,
+          "broken_parts": [
+            "weapon"
+          ],
+          "wheels_remaining": 4,
+          "weapon_intact": false,
+          "part_hp": {
+            "chassis": 120.0,
+            "fl_wheel": 10.0,
+            "fr_wheel": 10.0,
+            "rl_wheel": 10.0,
+            "rr_wheel": 10.0,
+            "weapon": 25.0
+          }
+        },
+        {
+          "name": "red_alpha",
+          "immobile": false,
+          "disqualify_reason": null,
+          "broken_parts": [],
+          "wheels_remaining": 4,
+          "weapon_intact": true,
+          "part_hp": {
+            "chassis": 120.0,
+            "fl_wheel": 10.0,
+            "fr_wheel": 10.0,
+            "rl_wheel": 10.0,
+            "rr_wheel": 10.0,
+            "weapon": 25.0
+          }
+        },
+        {
+          "name": "red_bravo",
+          "immobile": false,
+          "disqualify_reason": null,
+          "broken_parts": [],
+          "wheels_remaining": 4,
+          "weapon_intact": true,
+          "part_hp": {
+            "chassis": 120.0,
+            "fl_wheel": 10.0,
+            "fr_wheel": 10.0,
+            "rl_wheel": 10.0,
+            "rr_wheel": 10.0,
+            "weapon": 25.0
+          }
+        }
+      ]
+    },
+    "physics": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.11.0",
+        "mujoco_warp": "3.11.0",
+        "newton": "1.5.0",
+        "warp": "1.16.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)"
+    }
+  }
+]

@@ -1,0 +1,380 @@
+{
+  "schema": "agenticsimbench/red-evidence/v1",
+  "suite": "agenticsimbench/v1",
+  "task": "R2_arm_reach",
+  "sim": "omnisim",
+  "fixture": "static",
+  "fixture_kind": "real_urdfrobot_engine",
+  "fixture_transforms": [],
+  "expected_failures": [
+    "R2.3",
+    "R2.4",
+    "R2.6"
+  ],
+  "observed_failures": [
+    "R2.3",
+    "R2.4",
+    "R2.6"
+  ],
+  "outcome": "FAIL",
+  "qualifies_as_non_null_red_evidence": true,
+  "purpose": {
+    "R2.3": "a stationary arm reaches none of the ordered targets",
+    "R2.4": "a stationary tip does not meet the actuation travel floor",
+    "R2.6": "a stationary sequence never completes"
+  },
+  "generated_utc": "2026-08-13T16:57:41.901826+00:00",
+  "engine_binary": {
+    "path": "msys64\\mingw64\\bin\\omnisim-bin.exe",
+    "sha256": "cbd80861c9f0d314f9760a39abc0f686ce161cac74337f80c41f5e2b5e0b836d"
+  },
+  "sources": [
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\fixtures\\r2\\r2_static.wbt",
+      "sha256": "2fac2b2cf833c2f9cbb21f4b850501b085e3fe9504955302f76494f9233c81b9"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\run_r2_red_fixture.py",
+      "sha256": "f968fee25f9845ce2fbe21b294e284d49664880fe2ca4ce4b0c115a10b2fa27b"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\r2_core_v1.py",
+      "sha256": "f27f53eaf04fd7d3951339a9389fb33eb4f7d2862f6c732b1f38dc6014123c08"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\graders\\r2_core.py",
+      "sha256": "2eb147cae92685b5716221a1a8b84a703e3783d8af8cba30d9b711fab9e70858"
+    },
+    {
+      "path": "projects\\robots\\omnisim\\omniarm6\\omniarm6.urdf",
+      "sha256": "e507fb711499b50012ac91dd05e70764952a22401d04e08961523a3ae36609b3"
+    }
+  ],
+  "staged_world_sha256": "ce902dddd695c9fb8f71c94926d79180d39e14a47e0992b2046bf540bacbe933",
+  "verdict": {
+    "task": "R2_arm_reach",
+    "outcome": "FAIL",
+    "progress": 3,
+    "progress_name": "artifact_runs",
+    "assertions": {
+      "R2.1": {
+        "ok": true,
+        "what": "the run is clean",
+        "measured": {
+          "exit code": 0,
+          "ERROR: lines": 0,
+          "driver reached a clean quit": true
+        },
+        "threshold": {
+          "exit code": 0,
+          "ERROR: lines": 0
+        },
+        "detail": "",
+        "basis": "mixed",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R2.2": {
+        "ok": true,
+        "what": "there is one arm with at least six joints",
+        "measured": {
+          "robot-class bodies": 1,
+          "joints per robot body": [
+            6
+          ],
+          "of those, with >= 6 joints": 1,
+          "names": [
+            "arm"
+          ]
+        },
+        "threshold": {
+          "bodies with >= 6 joints": 1
+        },
+        "detail": "the neutral evidence carries a JOINT COUNT and nothing finer -- both recorders count hinge/slider/ball joints in the subtree without distinguishing motorised from passive or revolute from prismatic, so 'six actuated revolute joints' is asserted as 'six joints' and the gap is stated rather than overclaimed",
+        "basis": "mixed",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R2.3": {
+        "ok": false,
+        "what": "the three targets are reached, in order, and held",
+        "measured": {
+          "targets held, in order": 0,
+          "hold per target (s)": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "closest approach per target (m)": [
+            0.4743,
+            null,
+            null
+          ],
+          "hold satisfied at (s)": [
+            null,
+            null,
+            null
+          ]
+        },
+        "threshold": {
+          "targets held, in order": 3,
+          "position error (m)": "<= 0.050",
+          "hold (s)": ">= 0.50"
+        },
+        "detail": "measured as end-effector MINUS base, sample by sample; the neutral evidence carries no orientation, so 'base frame' is world axes translated to the base origin",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R2.4": {
+        "ok": false,
+        "what": "it was actuated, not teleported",
+        "measured": {
+          "largest single-sample step (m)": 0.0,
+          "largest sample-to-sample speed (m/s)": 1e-06,
+          "sample period (s)": 0.016,
+          "distance the tip travelled (m)": 0.0,
+          "base drift from t=0 (m)": 0.0
+        },
+        "threshold": {
+          "largest single-sample step (m)": "<= 0.125",
+          "largest sample-to-sample speed (m/s)": "<= 2.50",
+          "sample period (s)": "<= 0.050",
+          "distance the tip travelled (m)": ">= 0.20",
+          "base drift from t=0 (m)": "<= 0.020"
+        },
+        "detail": "the closest two targets are 0.2739 m apart and 0.1739 m apart at the near edges of their tolerance balls, so a jump between them exceeds the step bound at every sample period the grader accepts; a recording coarser than 0.050 s cannot witness that and is refused rather than assumed clean",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R2.5": {
+        "ok": true,
+        "what": "nothing went into the ground",
+        "measured": {
+          "lowest tip height (m)": 0.6,
+          "ground datum (m)": 0.0,
+          "lowest tip clearance over datum (m)": 0.6
+        },
+        "threshold": {
+          "lowest tip clearance over datum (m)": ">= -0.020"
+        },
+        "detail": "datum: the fixed arm base origin at t=0. GEOMETRIC, not a contact read. AgenticSimBench v1 deliberately does not use the articulated Robot AABB: on OmniSim it includes moving descendants, so an underground tip moves that supposed floor underground with itself.",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R2.6": {
+        "ok": false,
+        "what": "the sequence finished inside the deadline",
+        "measured": {
+          "third hold satisfied at (s)": null,
+          "simulated seconds recorded": 35.008
+        },
+        "threshold": {
+          "third hold satisfied at (s)": "<= 30.0"
+        },
+        "detail": "the recording runs to 35.0 s so a run finishing just after the deadline is measured rather than truncated into ambiguity",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      }
+    },
+    "n_pass": 3,
+    "n_total": 6,
+    "failed_assertion": "R2.3",
+    "failed_assertions": [
+      "R2.3",
+      "R2.4",
+      "R2.6"
+    ],
+    "self_verified": false,
+    "attribution": {
+      "backend": "newton",
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "degraded": false,
+      "finalised": true,
+      "source": "<log>.newton.json sidecar"
+    },
+    "measurements": {
+      "phase_b": {
+        "world": "O:\\omnisim\\.agentbench-v1-red-work\\r2-static\\project\\worlds\\arm_reach.wbt",
+        "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\r2-static\\project\\worlds\\_agentbench_phaseB_arm_reach.wbt",
+        "rc": 0,
+        "wall_s": 31.36765809999997,
+        "timed_out": false,
+        "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\r2-static\\phaseB\\phaseB_engine.log",
+        "sidecar": {
+          "backend": "newton",
+          "degraded": false,
+          "finalised": true,
+          "runtime": {
+            "device": "cpu",
+            "mujoco": "3.8.1",
+            "mujoco_warp": "3.8.0.3",
+            "newton": "1.2.0",
+            "warp": "1.13.0"
+          },
+          "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+          "present": true
+        },
+        "recorder_complete": true,
+        "rows": 2189,
+        "n_robots": 1,
+        "n_tracks": 7,
+        "n_link_tracks": 6,
+        "n_solid_tracks": 0,
+        "links_truncated": false,
+        "scene_scan": {
+          "supported": true,
+          "cap": 128,
+          "found": 1,
+          "bounded": 1,
+          "truncated": false
+        },
+        "run_contacts": {
+          "supported": true,
+          "every_n_steps": 8,
+          "steps_sampled": 274,
+          "total_observed": 0,
+          "distinct_named": 0,
+          "unpaired": 0,
+          "truncated": false,
+          "error": null
+        },
+        "run_contact_pairs": [],
+        "attempts_used": 1,
+        "launch_backend_env": {},
+        "tamper": [],
+        "error": null
+      },
+      "end_effector_selection": {
+        "tracks": 7,
+        "candidates": 6,
+        "out_of_reach": 0,
+        "chosen": 3,
+        "chosen_path_m": 0.0,
+        "chosen_mean_offset_m": 0.6,
+        "max_reach_m": 1.5
+      },
+      "end_effector_candidates": 6,
+      "target_schedule": [
+        {
+          "index": 1,
+          "target": [
+            0.45,
+            0.0,
+            0.45
+          ],
+          "reached": false,
+          "enter_s": null,
+          "complete_s": null,
+          "hold_s": 0.0,
+          "closest_m": 0.4743416490252569
+        },
+        {
+          "index": 2,
+          "target": [
+            0.35,
+            0.25,
+            0.35
+          ],
+          "reached": false,
+          "enter_s": null,
+          "complete_s": null,
+          "hold_s": 0.0,
+          "closest_m": null
+        },
+        {
+          "index": 3,
+          "target": [
+            0.35,
+            -0.25,
+            0.5
+          ],
+          "reached": false,
+          "enter_s": null,
+          "complete_s": null,
+          "hold_s": 0.0,
+          "closest_m": null
+        }
+      ]
+    },
+    "artifacts": {
+      "world": "O:\\omnisim\\.agentbench-v1-red-work\\r2-static\\project\\worlds\\arm_reach.wbt"
+    },
+    "notes": [
+      "R2.5 graded by agenticsimbench/v1/r2_core: fixed-base mounting datum, not the frozen v0.3 articulated-subtree AABB."
+    ],
+    "basis": {
+      "core-physical": [
+        "R2.3",
+        "R2.4",
+        "R2.5",
+        "R2.6"
+      ],
+      "mixed": [
+        "R2.1",
+        "R2.2"
+      ]
+    },
+    "vacuous_assertions": {}
+  },
+  "run": {
+    "world": "O:\\omnisim\\.agentbench-v1-red-work\\r2-static\\project\\worlds\\arm_reach.wbt",
+    "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\r2-static\\project\\worlds\\_agentbench_phaseB_arm_reach.wbt",
+    "rc": 0,
+    "wall_s": 31.36765809999997,
+    "timed_out": false,
+    "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\r2-static\\phaseB\\phaseB_engine.log",
+    "sidecar": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.8.1",
+        "mujoco_warp": "3.8.0.3",
+        "newton": "1.2.0",
+        "warp": "1.13.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "present": true
+    },
+    "recorder_complete": true,
+    "rows": 2189,
+    "n_robots": 1,
+    "n_tracks": 7,
+    "n_link_tracks": 6,
+    "n_solid_tracks": 0,
+    "links_truncated": false,
+    "scene_scan": {
+      "supported": true,
+      "cap": 128,
+      "found": 1,
+      "bounded": 1,
+      "truncated": false
+    },
+    "run_contacts": {
+      "supported": true,
+      "every_n_steps": 8,
+      "steps_sampled": 274,
+      "total_observed": 0,
+      "distinct_named": 0,
+      "unpaired": 0,
+      "truncated": false,
+      "error": null
+    },
+    "run_contact_pairs": [],
+    "attempts_used": 1,
+    "launch_backend_env": {},
+    "tamper": [],
+    "error": null
+  }
+}

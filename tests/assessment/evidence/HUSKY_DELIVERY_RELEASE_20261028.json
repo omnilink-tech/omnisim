@@ -1,0 +1,81 @@
+{
+  "sku": "HUSKY-BRAKING-100",
+  "version": "1.0.0",
+  "price_usd": 100,
+  "platform": "Windows x64",
+  "supported_root_path_chars": 100,
+  "campaign": "tests/assessment/evidence/husky-delivery-1.0.0-20261028-r3",
+  "episodes": 64,
+  "outcomes": {
+    "PASS": 41,
+    "FAIL": 23
+  },
+  "all_evidence_valid": true,
+  "command_delay_s": 0,
+  "unit_tests": {
+    "passed": 57,
+    "command": "python -m pytest tests/assessment -q --confcutdir=tests/assessment"
+  },
+  "archive": "distribution\\husky-assessments\\1.0.0-20261028-r3\\husky-braking-1.0.0-windows.zip",
+  "archive_sha256": "e9451ecc996d81a2423a2907fa9f4215aa1e6dc4464661b8b01379a1ce8b8978",
+  "archive_bytes": 322107499,
+  "customer_acceptance": "tests/assessment/evidence/husky-delivery-acceptance-20261028-r3/delivery-qa.json",
+  "customer_acceptance_verified": true,
+  "fresh_confirmations": [
+    {
+      "case": "case-012",
+      "repeat": 1,
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "distance_difference_m": 0.0,
+      "accepted": true
+    },
+    {
+      "case": "case-012",
+      "repeat": 2,
+      "expected": "FAIL",
+      "observed": "FAIL",
+      "distance_difference_m": 0.0,
+      "accepted": true
+    },
+    {
+      "case": "case-015",
+      "repeat": 1,
+      "expected": "PASS",
+      "observed": "PASS",
+      "distance_difference_m": 0.0,
+      "accepted": true
+    },
+    {
+      "case": "case-015",
+      "repeat": 2,
+      "expected": "PASS",
+      "observed": "PASS",
+      "distance_difference_m": 0.0,
+      "accepted": true
+    }
+  ],
+  "machine": {
+    "id": "9722d23d12a3",
+    "host": "hc385771a14",
+    "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "cpu": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD",
+    "cores": 16
+  },
+  "independent_machine_tested": false,
+  "rejected_candidates": [
+    {
+      "evidence": "husky-delivery-acceptance-20261028",
+      "reason": "Missing activation-context, CUDA loader and embedded-Python path files"
+    },
+    {
+      "evidence": "husky-delivery-acceptance-20261028-r2",
+      "reason": "Redirected runtime path comparison and unsupported deep install path"
+    }
+  ],
+  "limitations": [
+    "Reference wheel controller, not Clearpath production firmware",
+    "Simulation-only; hardware correlation and safety certification excluded",
+    "Clean extraction tested on the delivery machine; independent PC not tested"
+  ]
+}

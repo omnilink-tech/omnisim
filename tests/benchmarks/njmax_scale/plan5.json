@@ -1,0 +1,5 @@
+[{"tag":"bump12_rest","n":12,"z":0.130,"gen_extra":{"bump":0.06,"statics":1}},
+ {"tag":"bump12_rest_big","n":12,"z":0.130,"njmax":2048,"nconmax":2048,"gen_extra":{"bump":0.06,"statics":1}},
+ {"tag":"bump12_cpu","n":12,"solver":"mujoco","z":0.130,"gen_extra":{"bump":0.06,"statics":1}},
+ {"tag":"bump8_rest","n":8,"z":0.130,"gen_extra":{"bump":0.06,"statics":1}},
+ {"tag":"bump8_rest_big","n":8,"z":0.130,"njmax":2048,"nconmax":2048,"gen_extra":{"bump":0.06,"statics":1}}]

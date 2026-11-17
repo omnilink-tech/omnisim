@@ -1,0 +1,75 @@
+{
+  "position": [
+    -10.5,
+    -9.5,
+    4.4
+  ],
+  "orientation": [
+    0.0,
+    0.32879194053163663,
+    0.9444023823781051,
+    0.735
+  ],
+  "field_of_view": 0.785398,
+  "near": 0.05,
+  "far": 0.0,
+  "follow": "",
+  "follow_type": "Tracking Shot",
+  "follow_smoothness": 0.5,
+  "projection_mode": null,
+  "exposure": 1.0,
+  "forward": [
+    0.741831,
+    0.633304,
+    -0.220484
+  ],
+  "left": [
+    -0.633304,
+    0.76974,
+    0.080165
+  ],
+  "right": [
+    0.633304,
+    -0.76974,
+    -0.080165
+  ],
+  "up": [
+    0.220484,
+    0.080165,
+    0.972091
+  ],
+  "aspect": 1.703504,
+  "viewport": {
+    "width": 1896,
+    "height": 1113,
+    "source": "screenshot"
+  },
+  "fov_h_deg": 45.0,
+  "fov_v_deg": 27.333,
+  "half_fov_h_deg": 22.5,
+  "half_fov_v_deg": 13.666,
+  "fov_semantics": "Viewpoint.fieldOfView is the angle on the LARGER viewport dimension (VRML). fov_h_deg / fov_v_deg are the resolved per-axis angles for the aspect above.",
+  "raw": {
+    "position": [
+      -10.5,
+      -9.5,
+      4.4
+    ],
+    "orientation": [
+      0.0,
+      0.32879194053163663,
+      0.9444023823781051,
+      0.735
+    ],
+    "fieldOfView": 0.785398,
+    "near": 0.05,
+    "far": 0.0,
+    "follow": "",
+    "followType": "Tracking Shot",
+    "followSmoothness": 0.5,
+    "exposure": 1.0,
+    "ambientOcclusionRadius": 2.0,
+    "bloomThreshold": 21.0,
+    "rpc_ms": 20.49
+  }
+}

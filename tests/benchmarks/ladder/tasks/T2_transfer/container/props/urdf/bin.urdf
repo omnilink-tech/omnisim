@@ -1,0 +1,105 @@
+<?xml version="1.0" ?>
+<!-- The container: an open-topped box, 0.30 m square outside, 3.0 kg.      -->
+<!-- Floor 0.02 m thick; four walls 0.02 m thick rising to z = 0.16, which  -->
+<!-- is the RIM. Inner opening 0.26 x 0.26 m. Units: metres, kilograms.     -->
+<!-- Its own frame sits at the centre of the OUTSIDE of the floor, so the   -->
+<!-- whole container occupies z in [0, 0.16] when the frame is on a floor.  -->
+<robot name="bin">
+  <link name="bin">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.01"/>
+      <geometry><box size="0.30 0.30 0.02"/></geometry>
+      <material name="cream"><color rgba="0.93 0.91 0.85 1"/></material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.01"/>
+      <geometry><box size="0.30 0.30 0.02"/></geometry>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0.01"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.00754" ixy="0" ixz="0" iyy="0.00754" iyz="0"
+               izz="0.01500"/>
+    </inertial>
+  </link>
+
+  <link name="bin_wall_x_pos">
+    <visual>
+      <geometry><box size="0.02 0.30 0.14"/></geometry>
+      <material name="cream"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.02 0.30 0.14"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.004567" ixy="0" ixz="0" iyy="0.000833" iyz="0"
+               izz="0.003767"/>
+    </inertial>
+  </link>
+  <joint name="bin_to_wall_x_pos" type="fixed">
+    <origin rpy="0 0 0" xyz="0.14 0 0.09"/>
+    <parent link="bin"/>
+    <child link="bin_wall_x_pos"/>
+  </joint>
+
+  <link name="bin_wall_x_neg">
+    <visual>
+      <geometry><box size="0.02 0.30 0.14"/></geometry>
+      <material name="cream"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.02 0.30 0.14"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.004567" ixy="0" ixz="0" iyy="0.000833" iyz="0"
+               izz="0.003767"/>
+    </inertial>
+  </link>
+  <joint name="bin_to_wall_x_neg" type="fixed">
+    <origin rpy="0 0 0" xyz="-0.14 0 0.09"/>
+    <parent link="bin"/>
+    <child link="bin_wall_x_neg"/>
+  </joint>
+
+  <link name="bin_wall_y_pos">
+    <visual>
+      <geometry><box size="0.26 0.02 0.14"/></geometry>
+      <material name="cream"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.26 0.02 0.14"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.000833" ixy="0" ixz="0" iyy="0.003634" iyz="0"
+               izz="0.002834"/>
+    </inertial>
+  </link>
+  <joint name="bin_to_wall_y_pos" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0.14 0.09"/>
+    <parent link="bin"/>
+    <child link="bin_wall_y_pos"/>
+  </joint>
+
+  <link name="bin_wall_y_neg">
+    <visual>
+      <geometry><box size="0.26 0.02 0.14"/></geometry>
+      <material name="cream"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.26 0.02 0.14"/></geometry>
+    </collision>
+    <inertial>
+      <mass value="0.5"/>
+      <inertia ixx="0.000833" ixy="0" ixz="0" iyy="0.003634" iyz="0"
+               izz="0.002834"/>
+    </inertial>
+  </link>
+  <joint name="bin_to_wall_y_neg" type="fixed">
+    <origin rpy="0 0 0" xyz="0 -0.14 0.09"/>
+    <parent link="bin"/>
+    <child link="bin_wall_y_neg"/>
+  </joint>
+</robot>

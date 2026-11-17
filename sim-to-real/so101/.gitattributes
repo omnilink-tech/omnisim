@@ -1,0 +1,5 @@
+# Keep archived evidence byte-for-byte so its SHA-256 manifest survives checkout.
+* -text whitespace=cr-at-eol
+# These are verbatim source files and historical run reports.
+source/** -whitespace
+evidence/** -whitespace

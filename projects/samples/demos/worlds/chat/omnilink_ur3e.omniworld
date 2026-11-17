@@ -1,0 +1,41 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — UR3e
+# UR3e (small UR e-series arm) controlled by an OmniLink agent. Type
+# prompts in the side menu: "home", "wave hello", "joint 3 to 1",
+# "joints to [0,-1,1.4,-1.2,-1.57,0]", "stop".
+# IK targets are not exposed (no pre-baked chain) -- use joint commands.
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — UR3e"
+  info [
+    "UR3e driven by an OmniLink agent through a chat-style side menu."
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 1.959 -2.085 2.282
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 4 4
+}
+
+DEF UR3E URDFRobot {
+  url "../../../../robots/universal_robots/ur_description/urdf/ur3e.urdf"
+  translation 0 0 0
+  name "ur3e"
+  supervisor TRUE
+  staticBase TRUE
+  controller "omnilink_arm_bridge"
+  controllerArgs [ "--robot" "ur3e" "--port" "8765" ]
+  window "omnilink_chat"
+}

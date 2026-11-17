@@ -1,0 +1,72 @@
+#VRML_SIM R2025a utf8
+
+# AgentBench B3 measure_and_report -- initial state, UPSTREAM WEBOTS R2025a
+# arm. Two Pioneer 3-AT UGVs (upstream ships no Husky; the Pioneer 3-AT is
+# the sanctioned 4-wheel skid-steer analogue -- the robot model is not the
+# variable under test).
+#
+# NOTHING ABOUT THE TASK'S QUESTIONS IS DOCUMENTED HERE ON PURPOSE (the
+# C1/C2 rule, 4e5cbdc4): the world must not answer its own task in comments.
+# The questions live in prompt.txt only; the ground truth lives in the
+# grader, which re-measures the loaded scene itself.
+#
+# The robot `name` values are TASK DATA, not robot-model data: the
+# sim-neutral grader core looks the two bodies up by exactly these names on
+# every arm, so they are identical to the OmniSim arm's even though the
+# robot model differs.
+#
+# (This header mirrors the OmniSim arm's initial world's disclosure level.)
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/adept/pioneer3/protos/Pioneer3at.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "AgentBench B3 - two Pioneer 3-ATs, one on a plinth"
+}
+Viewpoint {
+  orientation 0.30 0.32 -0.90 1.75
+  position -8 -10 8
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 30 30
+  wallHeight 0.4
+}
+
+DEF PLINTH Solid {
+  translation 6.4 2.2 0.2
+  name "plinth"
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.35 0.40
+        roughness 0.9
+        metalness 0
+      }
+      geometry Box {
+        size 2 2 0.4
+      }
+    }
+  ]
+  boundingObject Box {
+    size 2 2 0.4
+  }
+}
+
+DEF HUSKY_GROUND Pioneer3at {
+  translation 0 0 0.11
+  name "husky_ground"
+  controller "<none>"
+}
+
+DEF HUSKY_PLINTH Pioneer3at {
+  translation 6.4 2.2 0.51
+  name "husky_plinth"
+  controller "<none>"
+}

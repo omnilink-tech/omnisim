@@ -1,0 +1,60 @@
+#OMNISIM R2025a utf8
+
+# R5h smoke world: a 7-LAYER, WIDE-FOV (2.0 rad = 2 frustums) Lidar facing the
+# UPWARD-OFFSET cyan box (centre z=0.15). This exercises BOTH the multi-frustum
+# azimuth stitch (R5g) AND the per-layer vertical resample + orientation (R5f)
+# at once -- the box straddles the theta=0 frustum seam, and its elevation
+# profile is asymmetric so a vertical layer-flip is detectable.
+#
+# Checks (OMNISIM_LIDAR_WGPU=1): the centre layer (j=3, phi=0) matches
+# range=0.70/cos(theta) across the seam, and more layers ABOVE centre see the
+# box than BELOW (orientation), at the centre column.
+#
+# Companion to docs/developer/engine-migration-plan.md R5 WbLidar.
+
+WorldInfo {
+  info [
+    "R5h smoke -- wgpu multi-layer + wide-FOV Lidar"
+  ]
+  title "R5h wgpu multi-layer wide-FOV Lidar smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Lidar {
+      name "lidar_wgpu"
+      horizontalResolution 96
+      fieldOfView 2.0
+      verticalFieldOfView 0.8
+      numberOfLayers 7
+      near 0.05
+      minRange 0.05
+      maxRange 10.0
+      type "fixed"
+    }
+    DEF CYAN_BOX Solid {
+      translation 1.0 0 0.15
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 1 1
+            roughness 1
+            metalness 0
+          }
+          geometry Box {
+            size 0.6 0.6 0.6
+          }
+        }
+      ]
+      name "cyan box"
+    }
+  ]
+  controller "lidar_wgpu_ml_widefov_smoke"
+  controllerArgs []
+  supervisor FALSE
+}

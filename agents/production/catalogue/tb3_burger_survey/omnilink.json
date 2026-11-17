@@ -1,0 +1,15 @@
+{
+  "name": "tb3_burger_survey",
+  "display_name": "Tb3 Burger Survey",
+  "world": "projects/samples/demos/worlds/chat/omnilink_tb3_burger.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/catalogue/tb3_burger_survey/run.py",
+  "description": "tb3_burger \u2014 turn on the spot to sweep the room. Catalogue brief, 4 checked steps.",
+  "tags": [
+    "mobile",
+    "survey",
+    "tb3_burger",
+    "catalogue",
+    "generated"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "omniquad",
+  "_note": "Parity-probe spec for the OmniQuad quadruped. Pose = omniquad_trot_gait.standing_pose(body_height=0.55) planted stance (hip_x +/-0.304, hip_y 0.343, knee -0.689); gains/substeps/mu = run_omniquad_walk_deploy.ps1. All 12 joints are legs -> sweep all (no arm_hold). Foot = sphere r=0.035 on each lower-leg.",
+  "urdf": "projects/robots/omnisim/omniquad/urdf/omniquad.urdf",
+  "spawn_z": 0.58,
+  "deploy_ke": 500,
+  "deploy_kd": 60,
+  "ground_mu": 2.0,
+  "probe_substeps": 8,
+  "joint_order": [
+    "front_left_hip_x", "front_left_hip_y", "front_left_knee",
+    "front_right_hip_x", "front_right_hip_y", "front_right_knee",
+    "rear_left_hip_x", "rear_left_hip_y", "rear_left_knee",
+    "rear_right_hip_x", "rear_right_hip_y", "rear_right_knee"
+  ],
+  "nominal": {
+    "front_left_hip_x": 0.3043, "front_left_hip_y": 0.3430, "front_left_knee": -0.6886,
+    "front_right_hip_x": -0.3043, "front_right_hip_y": 0.3430, "front_right_knee": -0.6886,
+    "rear_left_hip_x": 0.3043, "rear_left_hip_y": 0.3436, "rear_left_knee": -0.6887,
+    "rear_right_hip_x": -0.3043, "rear_right_hip_y": 0.3436, "rear_right_knee": -0.6887
+  },
+  "ankle_pitch_joints": [],
+  "arm_hold": []
+}

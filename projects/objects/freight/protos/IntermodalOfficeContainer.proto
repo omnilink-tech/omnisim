@@ -1,0 +1,252 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/freight/protos/IntermodalOfficeContainer.proto
+# keywords: industrial/container
+# A 20-foot intermodal container converted into a site office: a painted shell with corner posts,
+# three glazed windows per side, an end door and an entry step. 6.06 x 2.44 x 2.59 m, origin at the base.
+
+EXTERNPROTO "omnisim://projects/appearances/protos/GlossyPaint.proto"
+
+PROTO IntermodalOfficeContainer [
+  field SFVec3f    translation    0 0 0        # Is `Pose.translation`.
+  field SFRotation rotation       0 0 1 0      # Is `Pose.rotation`.
+  field SFString   name           "office"     # Is `Solid.name`.
+  field SFColor    primaryColor   0.9 0.1 0.1  # Defines the primary color.
+  field SFColor    secondaryColor 0.6 0.6 0.6  # Defines the secondary color.
+]
+{
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "intermodal office container"
+    children [
+      # ---- painted shell ----
+      Pose {
+        translation 0 0 1.295
+        children [
+          Shape {
+            appearance GlossyPaint {
+              baseColor IS primaryColor
+              textureTransform TextureTransform {
+                scale 6 3
+              }
+            }
+            geometry Box {
+              size 6.06 2.44 2.49
+            }
+          }
+        ]
+      }
+      # ---- roof cap and base rail, in the secondary colour ----
+      Pose {
+        translation 0 0 2.545
+        children [
+          Shape {
+            appearance DEF IOC_TRIM GlossyPaint {
+              baseColor IS secondaryColor
+            }
+            geometry Box {
+              size 6.1 2.48 0.09
+            }
+          }
+        ]
+      }
+      Pose {
+        translation 0 0 0.06
+        children [
+          Shape {
+            appearance USE IOC_TRIM
+            geometry Box {
+              size 6.1 2.48 0.12
+            }
+          }
+        ]
+      }
+      # ---- four corner posts ----
+      Pose {
+        translation 2.97 1.19 1.295
+        children [
+          DEF IOC_POST Shape {
+            appearance USE IOC_TRIM
+            geometry Box {
+              size 0.13 0.13 2.59
+            }
+          }
+        ]
+      }
+      Pose {
+        translation 2.97 -1.19 1.295
+        children [
+          USE IOC_POST
+        ]
+      }
+      Pose {
+        translation -2.97 1.19 1.295
+        children [
+          USE IOC_POST
+        ]
+      }
+      Pose {
+        translation -2.97 -1.19 1.295
+        children [
+          USE IOC_POST
+        ]
+      }
+      # ---- three windows on each long side: a frame plus a glazed panel ----
+      Pose {
+        translation -1.8 1.225 1.55
+        children [
+          DEF IOC_FRAME Shape {
+            appearance USE IOC_TRIM
+            geometry Box {
+              size 1.3 0.04 1.1
+            }
+          }
+        ]
+      }
+      Pose {
+        translation -1.8 1.24 1.55
+        children [
+          DEF IOC_GLASS Shape {
+            appearance PBRAppearance {
+              baseColor 0.1 0.14 0.18
+              roughness 0.12
+              metalness 0.1
+            }
+            geometry Box {
+              size 1.16 0.02 0.96
+            }
+          }
+        ]
+      }
+      Pose {
+        translation 0 1.225 1.55
+        children [
+          USE IOC_FRAME
+        ]
+      }
+      Pose {
+        translation 0 1.24 1.55
+        children [
+          USE IOC_GLASS
+        ]
+      }
+      Pose {
+        translation 1.8 1.225 1.55
+        children [
+          USE IOC_FRAME
+        ]
+      }
+      Pose {
+        translation 1.8 1.24 1.55
+        children [
+          USE IOC_GLASS
+        ]
+      }
+      Pose {
+        translation -1.8 -1.225 1.55
+        children [
+          USE IOC_FRAME
+        ]
+      }
+      Pose {
+        translation -1.8 -1.24 1.55
+        children [
+          USE IOC_GLASS
+        ]
+      }
+      Pose {
+        translation 0 -1.225 1.55
+        children [
+          USE IOC_FRAME
+        ]
+      }
+      Pose {
+        translation 0 -1.24 1.55
+        children [
+          USE IOC_GLASS
+        ]
+      }
+      Pose {
+        translation 1.8 -1.225 1.55
+        children [
+          USE IOC_FRAME
+        ]
+      }
+      Pose {
+        translation 1.8 -1.24 1.55
+        children [
+          USE IOC_GLASS
+        ]
+      }
+      # ---- entrance door on the +x end, with a handle ----
+      Pose {
+        translation 3.045 -0.5 1.05
+        children [
+          Shape {
+            appearance USE IOC_TRIM
+            geometry Box {
+              size 0.06 0.9 2.1
+            }
+          }
+        ]
+      }
+      Pose {
+        translation 3.09 -0.13 1.05
+        rotation 0 1 0 1.5708
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.75 0.76 0.78
+              roughness 0.35
+              metalness 1
+            }
+            geometry Cylinder {
+              radius 0.02
+              height 0.1
+              subdivision 12
+            }
+          }
+        ]
+      }
+      # ---- entry step ----
+      Pose {
+        translation 3.35 -0.5 0.09
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.35 0.36 0.38
+              roughness 0.85
+              metalness 0.2
+            }
+            geometry Box {
+              size 0.6 1.0 0.18
+            }
+          }
+        ]
+      }
+    ]
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0 0 1.295
+          children [
+            Box {
+              size 6.06 2.44 2.59
+            }
+          ]
+        }
+        Pose {
+          translation 3.35 -0.5 0.09
+          children [
+            Box {
+              size 0.6 1.0 0.18
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

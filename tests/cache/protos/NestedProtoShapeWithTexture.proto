@@ -1,0 +1,13 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/cache/protos/ProtoShapeWithTexture.proto"
+
+PROTO NestedProtoShapeWithTexture
+[
+  field MFString url []
+]
+{
+  ProtoShapeWithTexture {
+    url IS url
+  }
+}

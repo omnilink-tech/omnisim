@@ -1,0 +1,50 @@
+{
+  "schema": "agentbench/script/v1",
+  "name": "oracle_b1_webots",
+  "description": "B1 overlap_audit oracle (webots): MEASURE, then answer. Read the scene for the six authored poses, read the robot model's own geometry source for the footprint, compute the pairwise clearances, and answer with the one overlapping pair. The grader re-measures the loaded scene itself and compares the answer to measured pairwise AABB clearances.",
+  "minimality": [
+    "The world no longer discloses the answer (its header comments were stripped 2026-08-01 so the task prices measurement, not file-reading). The poses live in the world file; the footprint lives in the robot model's own geometry source (the Husky URDF on the OmniSim arm; the cached Pioneer3at PROTO's boundingObject boxes on the Webots arm). Overlap = separation vs summed half-extents needs BOTH, so two reads + the computed answer is the minimal competent path on every surface; one read cannot honestly decide overlap for a model whose size the world does not state.",
+    "Bridge/tools alternatives enumerated (all strictly costlier): OmniSim shell+tools: start harness (run_shell) + load_world + get_scene_tree?bounds=1 = 3+ calls. Webots bridge: start simulator (run_shell) + 6x wb_supervisor_node_get_from_def + 6x wb_supervisor_node_get_position (+ quit) = 14 calls, and positions alone do not give AABBs. Neither surface can answer in fewer than two calls, so no condition can beat this path.",
+    "No verification call: the answer IS the deliverable and the grader measures the scene independently; a self-check run would be padding."
+  ],
+  "turns": [
+    {
+      "text": "The scene is a static file in my working directory. Reading it for the robot poses.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 300
+      },
+      "tool_calls": [
+        {
+          "name": "read_file",
+          "arguments": {
+            "path": "six_pioneers.wbt"
+          }
+        }
+      ]
+    },
+    {
+      "text": "The world instantiates six Pioneer3at PROTOs from upstream's pre-seeded asset cache; the poses alone do not decide overlap, so I need the model's own collision geometry. Locating the cached PROTO by content and extracting its boundingObject box sizes.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 300
+      },
+      "tool_calls": [
+        {
+          "name": "run_shell",
+          "arguments": {
+            "command": "wsl -d Ubuntu-22.04 -- bash -c 'P=\\$(grep -rlE PROTO.Pioneer3at /root/.cache/Cyberbotics/Webots/assets); grep -nE -e boundingObject -e size.0 \\$P | head -40'",
+            "timeout_s": 120
+          }
+        }
+      ]
+    },
+    {
+      "text": "Yes - robot_one and robot_two are overlapping. Measured from the scene and the PROTO's own collision geometry: the Pioneer 3-AT body's boundingObject boxes are 0.197 x 0.2 x 0.402 and 0.264 x 0.2 x 0.332 (a body about 0.5 m long and 0.4 m wide), and the six authored translations give a centre separation of 0.168 m for (robot_one, robot_two) - dx 0.16, dy 0.05 - against 3.84 m for the next-closest pair. The body half-extents exceed the separation on every axis, so their bounding boxes interpenetrate deeply; every one of the other 14 pairs is metres clear.",
+      "usage": {
+        "tokens_in": 4000,
+        "tokens_out": 260
+      }
+    }
+  ]
+}

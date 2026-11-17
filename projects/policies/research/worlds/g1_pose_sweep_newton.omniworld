@@ -1,0 +1,40 @@
+#OMNISIM R2025a utf8
+
+# Quick G1 nominal-pose sweep world. Newton physics, g1_pose_sweep
+# controller reads G1_TEST_HIP_PITCH / G1_TEST_KNEE / G1_TEST_ANKLE_PITCH
+# env vars and commands that fixed pose. Reports body pose every 200ms.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "G1 pose sweep"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 3
+}
+OmniSimSky { }
+RectangleArena {
+  floorSize 10 6
+}
+
+URDFRobot {
+  url "../../../robots/unitree/g1/urdf/g1_23dof_omnisim.urdf"
+  translation 0 0 0.76
+  name "g1"
+  supervisor TRUE
+  controller "g1_pose_sweep"
+  physicsBackend "newton"
+}

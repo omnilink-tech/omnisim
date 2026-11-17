@@ -1,0 +1,129 @@
+#OMNISIM R2025a utf8
+
+# Universal Robots UR3e / UR5e / UR10e baseline showcase, all three loaded
+# from URDF via URDFRobot. Mirrors the role the old ure.wbt PROTO showcase
+# played, minus the toolSlot-mounted Robotiq3fGripper + factory props
+# (those depended on PROTO-only attachment mechanisms that have no URDF
+# analogue yet — see the devices/ migration step).
+#
+# Each arm is anchored to its plinth with `staticBase TRUE`. (It used to rely
+# on the URDF's own fixed "world" link, but that link is gone: the ur_description
+# URDFs now root directly at base_link so the root registers a Newton body --
+# see the comment at the top of ur_description/urdf/ur3e.urdf.)
+#
+# Controller is <none> BY DESIGN: this is the robot package's render/kinematics
+# showcase, not a driven demo. It cannot run omnilink_arm_bridge -- a world only
+# sees the controllers/ dir of its OWN project, and the shared bridge lives under
+# projects/samples/demos/controllers/. For arms you can actually DRIVE, use the
+# chat demos, which sit in that project:
+#     projects/samples/demos/worlds/chat/omnilink_{ur3e,ur5e,ur10e,multi_arm}.wbt
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  title "UR Arms (URDF)"
+  info [
+    "UR3e, UR5e, UR10e imported from URDF (ros-industrial xacro, rendered)."
+    "Plinth-mounted (staticBase). Render showcase; no controllers attached."
+  ]
+}
+
+Viewpoint {
+  orientation -0.18 0.31 0.93 1.45
+  position 2.5 -2.8 2.0
+  exposure 1.4
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+RectangleArena {
+  floorSize 8 4
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.23
+    roughness 0.95
+    metalness 0
+  }
+}
+
+# Mounting plinths (visual + collision, fixed). Mounting base_link on top of a
+# plinth gives a realistic working height.
+Solid {
+  translation -1.5 0 0.4
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.45 0.48
+        roughness 0.7
+        metalness 0.3
+      }
+      geometry Box { size 0.4 0.4 0.8 }
+    }
+  ]
+  boundingObject Box { size 0.4 0.4 0.8 }
+  name "plinth_ur3e"
+}
+
+Solid {
+  translation 0 0 0.4
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.45 0.48
+        roughness 0.7
+        metalness 0.3
+      }
+      geometry Box { size 0.4 0.4 0.8 }
+    }
+  ]
+  boundingObject Box { size 0.4 0.4 0.8 }
+  name "plinth_ur5e"
+}
+
+Solid {
+  translation 1.5 0 0.4
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.45 0.45 0.48
+        roughness 0.7
+        metalness 0.3
+      }
+      geometry Box { size 0.5 0.5 0.8 }
+    }
+  ]
+  boundingObject Box { size 0.5 0.5 0.8 }
+  name "plinth_ur10e"
+}
+
+URDFRobot {
+  url "../ur_description/urdf/ur3e.urdf"
+  translation -1.5 0 0.8
+  name "ur3e"
+  supervisor TRUE
+  staticBase TRUE
+  controller "<none>"
+}
+
+URDFRobot {
+  url "../ur_description/urdf/ur5e.urdf"
+  translation 0 0 0.8
+  name "ur5e"
+  supervisor TRUE
+  staticBase TRUE
+  controller "<none>"
+}
+
+URDFRobot {
+  url "../ur_description/urdf/ur10e.urdf"
+  translation 1.5 0 0.8
+  name "ur10e"
+  supervisor TRUE
+  staticBase TRUE
+  controller "<none>"
+}

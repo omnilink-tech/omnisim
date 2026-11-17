@@ -1,0 +1,14 @@
+#OMNISIM R2025a utf8
+# I1 handshake fail-fast probe world (tests/ipc/test_handshake_failfast.py).
+# One robot with an <extern> controller: the test connects to its IPC pipe
+# pretending to be a pre-handshake libController and asserts the engine
+# fails fast, loudly, and attributed.
+WorldInfo {
+}
+Viewpoint {
+  position -3 0 1
+}
+Robot {
+  name "probe"
+  controller "<extern>"
+}

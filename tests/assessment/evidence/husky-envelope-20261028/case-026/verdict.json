@@ -1,0 +1,19 @@
+{
+  "status": "FAIL",
+  "reasons": [
+    "initial_hold_failed",
+    "approach_speed_not_reached"
+  ],
+  "metrics": {
+    "braking_qualified": false,
+    "max_achieved_speed_m_s": 3.846451583802171,
+    "max_ground_tilt_rad": 0.0013499759473046974,
+    "sample_count": 325,
+    "sample_period_s": 0.016,
+    "max_forward_excursion_m": null,
+    "initial_speed_m_s": null,
+    "stop_time_s": null,
+    "observed_command_delay_s": null
+  },
+  "scope": "husky physical-wheel model/controller; simulation only"
+}

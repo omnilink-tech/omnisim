@@ -1,0 +1,13 @@
+{
+  "name": "mission_captain",
+  "display_name": "Mission Captain",
+  "omnilink_agent_name": "Mission Captain",
+  "world": null,
+  "bridge_port": null,
+  "agent_script": "agents/production/mission_captain/mission_captain_agent.py",
+  "agent_port": 51518,
+  "agent_port_env": "CAPTAIN_PORT",
+  "bridge_url_env": null,
+  "description": "Orchestrator-only. Run a specialist first, then start the captain.",
+  "tags": ["orchestrator", "multi-agent"]
+}

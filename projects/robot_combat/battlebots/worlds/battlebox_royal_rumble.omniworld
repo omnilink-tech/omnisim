@@ -1,0 +1,131 @@
+#OMNISIM R2025a utf8
+
+# BattleBox Royal Rumble — Phase 2 showcase world. All five BattleBot
+# weapon archetypes facing each other in a free-for-all. The match
+# director runs in "last bot standing" mode; the broadcast director
+# rotates cameras between active fights.
+#
+# Used as the b-roll registry world for marketing videos — the four
+# weapon styles produce visually distinct combat outcomes that make
+# good highlight reels.
+
+EXTERNPROTO "omnisim://projects/robot_combat/battlebots/protos/BattleBox.proto"
+EXTERNPROTO "omnisim://projects/robot_combat/battlebots/protos/BattleBot.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "BattleBox Royal Rumble"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 0.9 ]
+      bounce 0.05
+      bounceVelocity 0.5
+    }
+  ]
+  # Newton combat config. MuJoCo solver REQUIRED -- the default XPBD solver structurally
+  # cannot drive a multi-wheel rover (lateral left/right wheel pairs lock; proven in pure
+  # Python via scripts/dev/wheel_model_diff.py). MuJoCo + ODE drive them; MuJoCo also gives
+  # the robust frictional contact combat ramming needs.
+  newtonSolver "mujoco"
+  # Register arena walls as collision surfaces, else bots drive through them:
+  newtonStatics TRUE
+  # Give each bot's chassis Box a real collider so ramming registers chassis contacts
+  # (without it a Robot wrapper gets a 1 mm placeholder and bots phase through each other):
+  newtonRobotColliders TRUE
+  # 4 sub-steps keep high closing-speed ram impacts from diverging XPBD to NaN:
+  newtonSubsteps 4
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 12
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+BattleBox {
+  enableKillsaw TRUE
+  enablePushers TRUE
+  enableScrews TRUE
+}
+
+# Five bots arranged in a pentagon. Each picks the nearest enemy.
+DEF RED BattleBot {
+  translation 0 3.0 0.25
+  rotation 0 0 1 -1.5708
+  name "red"
+  weaponType "vertical_spinner"
+  chassisColor 0.85 0.15 0.15
+  controllerArgs [ "--strategy" "aggressor" ]
+}
+DEF BLUE BattleBot {
+  translation 2.85 0.93 0.25
+  rotation 0 0 1 3.14159
+  name "blue"
+  weaponType "horizontal_spinner"
+  chassisColor 0.15 0.3 0.85
+  controllerArgs [ "--strategy" "aggressor" ]
+}
+DEF GREEN BattleBot {
+  translation 1.76 -2.43 0.25
+  rotation 0 0 1 2.18
+  name "green"
+  weaponType "hammer"
+  chassisColor 0.2 0.7 0.25
+  controllerArgs [ "--strategy" "opportunist" ]
+}
+DEF YELLOW BattleBot {
+  translation -1.76 -2.43 0.25
+  rotation 0 0 1 0.96
+  name "yellow"
+  weaponType "flipper"
+  chassisColor 0.9 0.8 0.15
+  controllerArgs [ "--strategy" "opportunist" ]
+}
+DEF WHITE BattleBot {
+  translation -2.85 0.93 0.25
+  rotation 0 0 1 0
+  name "white"
+  weaponType "wedge"
+  chassisColor 0.9 0.9 0.9
+  controllerArgs [ "--strategy" "control" ]
+}
+
+# Match director — last bot standing. Wider timer for free-for-all.
+DEF DIRECTOR Robot {
+  name "match_director"
+  translation 0 0 10
+  controller "match_director"
+  customData "{\"timer_s\": 240, \"mode\": \"rumble\", \"fighters\": [\"red\",\"blue\",\"green\",\"yellow\",\"white\"], \"arena_size\": 8.0, \"ko_immobile_s\": 8.0, \"output\": \"battlebox_rumble.json\"}"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}
+
+# Broadcast director — rotate cameras to wherever combat is hottest.
+DEF BROADCAST Robot {
+  name "broadcast_director"
+  translation 0 0 11
+  controller "broadcast_director"
+  controllerArgs [ "--mode" "auto" ]
+  customData "{\"fighters\": [\"red\",\"blue\",\"green\",\"yellow\",\"white\"], \"arena_size\": 8.0}"
+  supervisor TRUE
+  children [
+    Group {
+    }
+  ]
+}

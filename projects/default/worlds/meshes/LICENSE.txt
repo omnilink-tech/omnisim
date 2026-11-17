@@ -1,0 +1,95 @@
+projects/default/worlds/meshes — provenance record.
+
+Status: RESOLVED. Everything in this directory is OmniLink's own work.
+================================================================================
+
+CONTENTS
+--------
+torus_knot.obj
+    Copyright 2026 OmniLink. Apache License, Version 2.0 — the same terms as
+    the rest of this repository. https://www.apache.org/licenses/LICENSE-2.0
+
+    NOT a redistributed asset. The coordinates are generated, and the generator
+    is committed alongside them:
+
+        python scripts/dev/gen_mesh_fixtures.py           # write
+        python scripts/dev/gen_mesh_fixtures.py --check   # verify byte-match
+
+    It emits a (2,3) torus knot swept with a circular tube: 1536 vertices,
+    1536 quads, analytic normals, a seamless UV chart. The output is
+    byte-deterministic (fixed-count arithmetic, fixed rounding), so the asset
+    is reproducible from source and provably ours.
+
+    Loaded by:
+        projects/samples/geometries/worlds/geometric_primitives.omniworld
+        tests/api/worlds/distance_sensor_infra-red_vs_mesh.omniworld  (x2)
+        tests/api/worlds/pen_mesh.omniworld
+
+================================================================================
+HISTORY — why this directory changed, and what to not re-introduce
+================================================================================
+
+Until 2026-08-22 this directory held `suzanne.obj`, a VERBATIM export of
+Blender's built-in "Suzanne" monkey primitive: header `# Blender v2.76 (sub 0)
+OBJ File`, object `o Suzanne`, and exactly 507 vertices / 500 faces, which is
+the canonical unmodified primitive.
+
+Blender builds that primitive by mirroring a coordinate table stored in its own
+source, `source/blender/bmesh/operators/bmo_primitive.cc`, as
+`static signed char monkeyv[271][3]` / `static signed char monkeyf[250][4]`
+(271 mirrored to 507 unique vertices, 250 mirrored to 500 faces — the counts
+match exactly). That source file is licensed:
+
+        SPDX-FileCopyrightText: 2023 Blender Authors
+        SPDX-License-Identifier: GPL-2.0-or-later
+
+verified 2026-08-22 at
+https://projects.blender.org/blender/blender/raw/branch/main/source/blender/bmesh/operators/bmo_primitive.cc
+
+OmniSim ships under Apache-2.0, which cannot sublicense GPL-2.0 material.
+
+WHAT THE RESEARCH FOUND
+-----------------------
+* The Blender manual states the general position, verbatim:
+
+      "The GPL only applies to the Blender application and **not** the
+       artwork you create with it."
+
+  (https://projects.blender.org/blender/blender-manual/raw/branch/main/manual/
+   getting_started/about/license.rst, fetched 2026-08-22)
+
+  That covers artwork a user *creates*. It says nothing about a coordinate
+  table that ships *inside* the GPL-licensed source and is emitted verbatim.
+
+* No separate grant for Suzanne was found. The Blender Foundation has never
+  published CC0, public-domain or other terms for the built-in Suzanne mesh
+  data specifically. A 2004 bf-committers thread titled "copyright and
+  suzanne" records that the developers declined to make an explicit exception
+  for Suzanne (nor for the Magic texture, nor the Slurph option) — i.e. the
+  question was raised upstream and deliberately left unanswered.
+
+* Community discussion treats it as safe ("You could consider Suzanne as
+  'program output'"), but that is opinion, not a grant
+  (https://blenderartists.org/t/what-can-we-legally-do-with-suzanne/598116).
+
+THE DECISION
+------------
+The question is genuinely contested and cannot be settled from inside this
+tree; nothing here is legal advice. But it did not need to be settled, because
+the mesh was decorative — a shape for a `Mesh` node to load, a surface for a
+ray to hit and a pen to draw on. So it was replaced with geometry authored
+here, and the uncertainty was removed rather than documented.
+
+DO NOT re-introduce Suzanne, or any other Blender built-in primitive exported
+verbatim, into this tree. Generating geometry (as above) costs nothing and
+leaves nothing to argue about.
+
+Two consumers of this directory were sensitive to the actual SHAPE, contrary to
+what the previous record in this file assumed; both were re-derived against the
+new mesh and pass:
+  * tests/api/controllers/distance_sensor_infra-red_vs_mesh — a 20-sensor
+    infra-red rake asserting a per-sensor hit/miss pattern;
+  * tests/api/controllers/pen_mesh_scaled — pixel-level assertions on the
+    painted area in a 64x64 camera frame.
+
+See docs/developer/asset-provenance.md for the tree-wide media ledger.

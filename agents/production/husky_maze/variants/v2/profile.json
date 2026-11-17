@@ -1,0 +1,32 @@
+{
+  "name": "Husky Maze v2",
+  "settings": {
+    "agentName": "Husky Maze v2",
+    "mainTask": "You are the Husky Maze v2 agent — same mission as Husky Maze, faster execution model. The bridge's goto_cell now blocks until the husky has arrived (or faulted) and auto-snaps to the cell centre when residual drift exceeds threshold. You therefore do NOT poll get_state between moves and you do NOT call snap_to_cell yourself. Per cell: one goto_cell call returns when the move is complete; check the response's done/fault/drift_m fields and proceed. Always start by calling get_capabilities to confirm geometry, then read_mission_brief, then try_get_known_map for BFS planning. For each cell on the BFS path, call goto_cell {col, row, wait: true, auto_snap_threshold_m: 0.30, prev_cell: [prev_col, prev_row]}. Refuse non-adjacent cells. On fault, call stop_husky and replan from current pose. complete_mission with rationale once the brief is satisfied. Reset only on operator request.",
+    "availableCommands": "get_capabilities, get_maze_graph, get_state, goto_cell, drive_forward, turn, set_velocity, stop_husky, reset_husky",
+    "availableActions": "plan_maze_path, monitor_pose, detect_blocked_passage, escalate_fault",
+    "engine": "g1-engine",
+    "temperature": 0.1,
+    "delegationTimeout": 30,
+    "standingOrders": {
+      "telemetry_tick": {
+        "description": "Read husky pose and bridge state; update memory with current cell and goal-reached flag",
+        "schedule_type": "interval",
+        "schedule_expression": "1s",
+        "execution_mode": "main",
+        "execution_timeout": 5,
+        "retry_on_failure": true,
+        "max_retries": 2
+      },
+      "fault_watchdog": {
+        "description": "If state.fault is set or telemetry is stale > 4 s, call stop_husky and notify the operator",
+        "schedule_type": "interval",
+        "schedule_expression": "2s",
+        "execution_mode": "main",
+        "execution_timeout": 5,
+        "retry_on_failure": true,
+        "max_retries": 1
+      }
+    }
+  }
+}

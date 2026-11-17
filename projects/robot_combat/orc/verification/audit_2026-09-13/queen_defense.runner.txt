@@ -1,0 +1,10 @@
+[headless] RUNAWAY CHECK: sampling every top-level dynamic body every 8 basic steps via .omnisim_runaway_.audit_20260913_queen_defense.omniworld
+[headless] NO-WINDOW: zero GUI construction (no main view; camera devices still render offscreen through wgpu; ~20% less RSS).
+[headless] Starting: .audit_20260913_queen_defense.omniworld
+[headless] Duration: 22s after first physics step (startup timeout 60s)
+[headless] Binary: O:\omnisim\msys64\mingw64\bin\omnisim-bin.exe
+[headless] First physics step observed; starting duration clock.
+[headless] Duration reached, stopping simulator...
+[headless] Results: 0 errors, 29 warnings
+[headless] Runaway check: 200 samples to t=6.40s; top-level dynamic bodies tracked: 6 (BLUE_QUEEN, RED_QUEEN, BLUE_ALPHA, BLUE_BRAVO, RED_ALPHA, RED_BRAVO); lowest DETECTED static collider z=none (a supervisor cannot see inside a PROTO)
+[headless] PASS

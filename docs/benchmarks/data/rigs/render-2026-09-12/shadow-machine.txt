@@ -1,0 +1,17 @@
+[envfp] ===== OmniSim environment fingerprint =====
+[envfp] physics : newton/MuJoCo (cpu/mj_step, default) (CPU)   solver='MuJoCo (cpu/mj_step, default)'
+[envfp] machine : id=9722d23d12a3  host=hc385771a14  cpu=AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD  cores=16
+[envfp] load    : UNKNOWN   warmup_token=False
+[envfp] gpu     : NVIDIA GeForce RTX 3060 Laptop GPU (driver 596.36)
+[envfp] build   : 4b78f849d  os=Windows-11  py=3.12.9  numpy=2.4.4  ort=1.26.0
+[envfp] binary  : msys64/mingw64/bin/omnisim-bin.exe  sha256=fd273ebbf7719c0b  mtime=1789167938  nonce=yes
+[envfp] libctrl : lib/controller/Controller.dll  sha256=0bd8db2b5018d7fe  mtime=1788455211  nonce=yes
+[envfp] stack   : (bundle+pth) newton=1.5.0  warp_lang=1.16.0  mujoco=3.11.0  mujoco_warp=3.11.0  torch=?  onnxruntime=1.26.0
+[envfp] knobs   : (defaults)
+[envfp] intent  : (none)
+[envfp] home    : O:\omnisim  (source=OMNISIM_HOME)
+[envfp] log     : O:\omnisim\omnisim_log.txt
+[envfp] WARN    : libController (lib/controller/Controller.dll) is >24h OLDER than the engine binary -- possible ABI/IPC drift. If controllers hang in Robot(), rebuild the controller lib; run 'python -m omnisim doctor'.
+[envfp] verdict : OK
+[envfp] ===========================================
+oneline: OmniSim  physics=newton/MuJoCo  gpu=RTX 3060  load=UNKNOWN  build=4b78f849d  machine=9722d23d12a3

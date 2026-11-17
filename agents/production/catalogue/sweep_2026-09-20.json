@@ -1,0 +1,602 @@
+[
+  {
+    "brief": "omniarm6_talk_calibrate",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_talk_greet",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_talk_handling",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_talk_standby",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_talk_tend",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "husky_delivery",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "husky_patrol",
+    "ok": true,
+    "steps": 6,
+    "failures": []
+  },
+  {
+    "brief": "husky_shuttle",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "husky_standby",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "husky_survey",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "jackal_delivery",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "jackal_patrol",
+    "ok": true,
+    "steps": 6,
+    "failures": []
+  },
+  {
+    "brief": "jackal_shuttle",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "jackal_standby",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "jackal_survey",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "lite3_greet",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "lite3_limber",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "lite3_patrol",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "lite3_scout",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "lite3_sentry",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "m20_greet",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "m20_limber",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "m20_patrol",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "m20_scout",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "m20_sentry",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "m20_piper_greet",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "m20_piper_limber",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "m20_piper_patrol",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "m20_piper_scout",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "m20_piper_sentry",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "m20s_greet",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "m20s_limber",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "m20s_patrol",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "m20s_scout",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "m20s_sentry",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "multi_arm_calibrate",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "multi_arm_greet",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "multi_arm_handling",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "multi_arm_standby",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "multi_arm_tend",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_calibrate",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_greet",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_handling",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_standby",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_tend",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_2f140_calibrate",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_2f140_greet",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_2f140_handling",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_2f140_standby",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "omniarm6_2f140_tend",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "omniquad_greet",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "omniquad_limber",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "omniquad_patrol",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "omniquad_scout",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "omniquad_sentry",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "rosbot_delivery",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "rosbot_patrol",
+    "ok": true,
+    "steps": 6,
+    "failures": []
+  },
+  {
+    "brief": "rosbot_shuttle",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "rosbot_standby",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "rosbot_survey",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "rosbot_xl_delivery",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "rosbot_xl_patrol",
+    "ok": true,
+    "steps": 6,
+    "failures": []
+  },
+  {
+    "brief": "rosbot_xl_shuttle",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "rosbot_xl_standby",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "rosbot_xl_survey",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "tb3_burger_delivery",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "tb3_burger_patrol",
+    "ok": true,
+    "steps": 6,
+    "failures": []
+  },
+  {
+    "brief": "tb3_burger_shuttle",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "tb3_burger_standby",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "tb3_burger_survey",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "tb3_waffle_delivery",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "tb3_waffle_patrol",
+    "ok": true,
+    "steps": 6,
+    "failures": []
+  },
+  {
+    "brief": "tb3_waffle_shuttle",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "tb3_waffle_standby",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "tb3_waffle_survey",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "tb3_waffle_pi_delivery",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "tb3_waffle_pi_patrol",
+    "ok": true,
+    "steps": 6,
+    "failures": []
+  },
+  {
+    "brief": "tb3_waffle_pi_shuttle",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "tb3_waffle_pi_standby",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "tb3_waffle_pi_survey",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "ur10e_calibrate",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "ur10e_greet",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "ur10e_handling",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "ur10e_standby",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "ur10e_tend",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "ur3e_calibrate",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "ur3e_greet",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "ur3e_handling",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "ur3e_standby",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "ur3e_tend",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "ur5e_calibrate",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "ur5e_greet",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "ur5e_handling",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "ur5e_standby",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  },
+  {
+    "brief": "ur5e_tend",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "x30_greet",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "x30_limber",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "x30_patrol",
+    "ok": true,
+    "steps": 4,
+    "failures": []
+  },
+  {
+    "brief": "x30_scout",
+    "ok": true,
+    "steps": 5,
+    "failures": []
+  },
+  {
+    "brief": "x30_sentry",
+    "ok": true,
+    "steps": 3,
+    "failures": []
+  }
+]

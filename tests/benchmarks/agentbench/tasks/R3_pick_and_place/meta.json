@@ -1,0 +1,68 @@
+{
+  "id": "R3_pick_and_place",
+  "tier": "robotics",
+  "flagship": false,
+  "prompt_file": "prompt.txt",
+  "grader": "agentbench.graders.r3",
+  "par_s": 600,
+  "timeout_s": 1800,
+  "repeats_default": 1,
+  "stresses": "sustained contact under load: a grasp that must HOLD a part against gravity through a transfer, then release it and leave it at rest inside a container. Friction, normal force and solver stability are exercised for seconds, not for an instant.",
+  "initial_state": "the SCENE only -- floor, table, cube and bin authored at the coordinates benchmark_assets/scene.json declares -- plus benchmark_assets/arm.json, which pins the robot base frame to the world origin and states the reach the task needs. The agent supplies the manipulator, the grasping mechanism and the controller.",
+  "initial_files": [
+    "pick_and_place.wbt",
+    "benchmark_assets/scene.json",
+    "benchmark_assets/arm.json"
+  ],
+  "deliverable": "the completed world (graded standalone, cold)",
+  "phases": {
+    "harness": {
+      "enabled": false
+    },
+    "standalone": {
+      "settle_s": 1.0,
+      "duration_s": 45.0,
+      "contact_steps": 5,
+      "solids": [
+        "table",
+        "bin"
+      ],
+      "note": "settle 1.0 s so the cube -- authored 0.025 m above the table exactly as the prompt states -- has landed before the graded samples begin, and R3.4 reads a body at rest rather than a transient. The whole manipulation is inside the recorded window; the last HOLD_S of it IS the 2-second retention test, so the agent must finish with that much room to spare. table and bin are requested as named non-robot solids because the bin volume and the table surface are MEASURED, never assumed."
+    }
+  },
+  "constants": {
+    "SCENE_TOL_M": 0.01,
+    "CUBE_SIZE_TOL_M": 0.005,
+    "START_TOL_M": 0.02,
+    "TABLE_REST_TOL_M": 0.015,
+    "AIRBORNE_CLEARANCE_M": 0.02,
+    "AIRBORNE_MIN_S": 0.5,
+    "CARRY_MIN_XY_M": 0.15,
+    "RELEASE_DESCENT_M": 0.08,
+    "HOLD_S": 2.0,
+    "HOLD_MIN_SAMPLES": 20,
+    "REST_BAND_M": 0.02,
+    "MAX_SPEED_MPS": 5.0,
+    "MAX_STEP_DISPLACEMENT_M": 0.1,
+    "MIN_ARM_JOINTS": 3
+  },
+  "constants_are_authoritative": "graders/r3_core.py READS this block at import and has no second copy of any threshold. The scene GEOMETRY is not here -- it lives in benchmark_assets/scene.json, which the grader also reads, so no number in this task is written down twice.",
+  "budget": {
+    "rule": "timeout_s = min(3 x par_s, TASK_HARD_CEILING_S)",
+    "hard_ceiling_s": 2700,
+    "truncated_by_ceiling": false,
+    "ratio_to_par": 3.0,
+    "runs_per_cell": 1,
+    "variance_measured": false,
+    "note": "the full 3x-par rule applies under the 2700 s (45 min) ceiling. ONE run per (task, arm): a single observation is an OUTCOME, never a rate -- pass@1 and a confidence interval are undefined at n = 1 (SPEC 3.5)."
+  },
+  "grasp_proof": "R3.5 + R3.6 + R3.7 together ARE the grasp evidence, and they are behavioural rather than a device count. The cube rises clear of both the table surface and the bin rim, travels horizontally toward the bin while clear of everything, then descends under gravity and stays inside the bin volume at rest for HOLD_S. Nothing but a held part can do that. A gripper/device/contact-count check would have been spelled differently in every simulator, would have been satisfiable by a gripper that closes on nothing, and would have made the core non-neutral -- the cube's own trajectory is none of those things.",
+  "why_this_is_the_important_one": "A grasp that must HOLD is where a contact model is actually put under load: friction, normal force and solver stability over seconds, not one instant. It is standard robotics work every simulator claims to do, and it is the task where a weak contact model shows up as a DROPPED CUBE rather than as a number in a table. On this engine it is also the task with the widest gap between the defaults and what the job needs -- OmniSim devotes a whole guide to why a default gripper closes on a part and watches it slide out (docs/guide/friction-grasp.md).",
+  "not_pre_tuned": "The shipped world carries the engine's ORDINARY defaults on BOTH arms: no friction, contact-stiffness, cone, iteration or timestep setting is pre-set for grasping anywhere in the fixture. Discovering what a holding grip costs is the task. Pre-baking one arm's recipe (newtonGroundMu on OmniSim, ContactProperties on upstream) and not the other's would have tilted the comparison in the fixture itself.",
+  "not_measured": [
+    "'retract the end effector' -- the pose recorder samples each Robot NODE's world position, which for a fixed-base arm is its stationary base, so an end-effector pose is not in the evidence bundle on either arm. R3 does not assert retraction and does not pretend to. The prompt still asks for it; a run that skips it can still pass.",
+    "'release' as distinct from 'lowered and still gripped' -- a cube at rest on the bin floor reads identically either way from pose alone. What IS asserted is that it descended under gravity into the bin and stayed at rest there for HOLD_S."
+  ],
+  "known_hole": "R3.8 bounds the cube's SPEED and its per-sample displacement, which catches a discrete teleport (the start->bin jump is 0.38 m, ~24 m/s at a 16 ms step). It cannot distinguish a physically carried cube from one animated continuously by a supervisor along a plausible arc that also respects the bound and then leaves the body at rest in the bin. That hole is stated rather than papered over: the prompt forbids it explicitly, and closing it would need a per-step contact stream over the whole run, which neither arm's recorder produces today (both watch contacts for the first contact_steps steps only).",
+  "instrument_note": "The table and the bin are located by the NAME the fixture ships ('table', 'bin'), not by geometry, because both arms' non-robot bounds scans are name-keyed. An agent that deletes or renames them fails R3.2. This is an instrument limitation, not a physics result, and is reported as such. The cube, by contrast, is found by GEOMETRY (its t=0 size and position) and never by name or DEF."
+}

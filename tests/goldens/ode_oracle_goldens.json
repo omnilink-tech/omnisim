@@ -1,0 +1,688 @@
+{
+  "schema_version": 1,
+  "_README": "FROZEN ODE-ORACLE GOLDENS. Every `ode_value` here was MEASURED by running the live ODE arm (OMNISIM_FORCE_ODE=1) of the Newton parity suite on the machine named in `provenance`, on the date recorded on each measurement. src/ode is being deleted; the ODE arm will no longer exist, so these numbers are the parity evidence the migration was built on and the only remaining reference the tests can compare against. NEVER hand-edit a value here, and never add one that was not measured. If a Newton change makes a test fail against a golden, that is the signal the golden exists to produce -- investigate the change, do not retune the number. `newton_value_at_freeze` records what the Newton arm read in the SAME session, so a later drift can be attributed. `asserted_against_golden: false` marks a measurement kept as historical record only, because the two backends legitimately disagree there (documented per entry).",
+  "provenance": {
+    "date": "2026-08-08",
+    "machine_id": "9722d23d12a3",
+    "host": "hc385771a14",
+    "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU (driver 596.36)",
+    "cpu": "AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD (16 cores)",
+    "os": "Windows-11",
+    "python": "3.12.9",
+    "build_commit": "e50d45fd",
+    "engine_binary": "msys64/mingw64/bin/omnisim-bin.exe",
+    "engine_binary_sha256_prefix": "440f383d89c9cd78",
+    "libcontroller_sha256_prefix": "417dd4d28bfd6a91",
+    "newton_stack": "newton=1.2.0 warp_lang=1.13.0 mujoco=3.8.1 mujoco_warp=3.8.0.3",
+    "newton_solver": "MuJoCo (cpu/mj_step, default)",
+    "ode_arm": "OMNISIM_FORCE_ODE=1 (process-level force; the oracle)",
+    "how_to_reproduce": "While src/ode still exists: re-run the pre-freeze test revisions, or set OMNISIM_FORCE_ODE=1 on the probe worlds each test generates. After deletion these numbers cannot be re-derived -- that is why they are committed.",
+    "fingerprint_command": "python projects/policies/common/env_fingerprint.py"
+  },
+  "families": {
+    "raycast": {
+      "test": "tests/test_newton_raycast_parity.py",
+      "world": "generated at test time by _world_text(); newtonStatics TRUE, gravity 0",
+      "newton_gate": "OMNISIM_NEWTON_RAYCAST=1",
+      "oracle_mechanism": "ODE ray geoms in the collision space (dCollide)",
+      "newton_mechanism": "mj_ray over the live mjModel via OmNewtonBackend::raycastBatch",
+      "measurements": {
+        "ds_laser": {
+          "ode_value": 1.0,
+          "tolerance": 0.0001,
+          "tolerance_kind": "abs",
+          "scenario": "laser, 1 ray, target near face at 1.000 m",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "absolute_truth": 1.0,
+          "newton_value_at_freeze": 1.0000000447034836,
+          "asserted_against_golden": true
+        },
+        "ds_generic": {
+          "ode_value": 1.5,
+          "tolerance": 0.0001,
+          "tolerance_kind": "abs",
+          "scenario": "generic, 1 ray, target near face at 1.500 m",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "absolute_truth": 1.5,
+          "newton_value_at_freeze": 1.5000000447034836,
+          "asserted_against_golden": true
+        },
+        "ds_sonar": {
+          "ode_value": 2.0,
+          "tolerance": 0.0001,
+          "tolerance_kind": "abs",
+          "scenario": "sonar, 1 ray, target near face at 2.000 m (normal incidence)",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "absolute_truth": 2.0,
+          "newton_value_at_freeze": 2.0000000447034836,
+          "asserted_against_golden": true
+        },
+        "ds_lasertr": {
+          "ode_value": 2.0,
+          "tolerance": 0.0001,
+          "tolerance_kind": "abs",
+          "scenario": "laser fired through a transparency-1 boundingObject wall at 1.0 m at an opaque wall at 2.0 m",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": 2.0000000447034836,
+          "asserted_against_golden": true,
+          "note": "The measured ODE verdict is 2.0 -- i.e. the LASER path SKIPS the transparent wall and reports the opaque one behind it. This freezes which of the two admissible verdicts the build actually produces; before the freeze the test only asserted 'one of the two walls, identical across backends'. The ABSOLUTE assertion (the reading is 1.0 or 2.0) is kept alongside the golden."
+        }
+      }
+    },
+    "native_inertia": {
+      "test": "tests/test_newton_native_inertia_parity.py",
+      "world": "generated at test time by _world_text() (8-Solid corpus)",
+      "dump_gate": "OMNISIM_DUMP_INERTIA=1 ([inertia-parity] log lines)",
+      "oracle_mechanism": "ODE dMass pipeline (OmSolidUtilities::addMass over ODE mass.cpp)",
+      "newton_mechanism": "OmInertia via OmSolidUtilities::addInertia (OMNISIM_NEWTON_NATIVE_INERTIA, default ON)",
+      "backend_independence_note": "MEASURED 2026-08-08: the [inertia-parity] dump is a LOAD-TIME computation and is byte-identical whether the world is stepped by ODE (OMNISIM_FORCE_ODE=1) or by the default Newton backend -- all 8 Solids, all 10 numbers each. The old OMNISIM_FORCE_ODE=1 in this test bought load stability, NOT the oracle. The oracle is the dMass half of the dump, which is what is frozen here.",
+      "tensor_component_order": [
+        "Ixx",
+        "Iyy",
+        "Izz",
+        "Ixy",
+        "Ixz",
+        "Iyz"
+      ],
+      "measurements": {
+        "box_plain": {
+          "ode_mass": 24.0,
+          "ode_center_of_mass": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "ode_inertia": [
+            0.5,
+            0.4000000000000001,
+            0.26,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "tolerance": 1e-12,
+          "tolerance_kind": "rel_per_component (mass vs mass; c and I vs the largest |component| of the oracle vector/tensor)",
+          "scenario": "Box 0.2x0.3x0.4, default density",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": {
+            "mass": 24.0,
+            "c": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "I": [
+              0.5,
+              0.4000000000000001,
+              0.26,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "asserted_against_golden": true
+        },
+        "capsule_plain": {
+          "ode_mass": 8.176518479743036,
+          "ode_center_of_mass": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "ode_inertia": [
+            0.1279370463635334,
+            0.1279370463635334,
+            0.024792276360873312,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "tolerance": 1e-12,
+          "tolerance_kind": "rel_per_component (mass vs mass; c and I vs the largest |component| of the oracle vector/tensor)",
+          "scenario": "Capsule r=0.08 h=0.3, default density",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": {
+            "mass": 8.176518479743036,
+            "c": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "I": [
+              0.1279370463635334,
+              0.1279370463635334,
+              0.024792276360873312,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "asserted_against_golden": true
+        },
+        "com_declared": {
+          "ode_mass": 1.7,
+          "ode_center_of_mass": [
+            0.05,
+            0.0,
+            0.1
+          ],
+          "ode_inertia": [
+            0.034708333333333334,
+            0.03895833333333334,
+            0.021958333333333333,
+            0.0,
+            -0.0085,
+            0.0
+          ],
+          "tolerance": 1e-12,
+          "tolerance_kind": "rel_per_component (mass vs mass; c and I vs the largest |component| of the oracle vector/tensor)",
+          "scenario": "Box 0.25^3, mass 1.7, centerOfMass [0.05 0 0.1]",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": {
+            "mass": 1.7,
+            "c": [
+              0.05,
+              0.0,
+              0.1
+            ],
+            "I": [
+              0.034708333333333334,
+              0.03895833333333334,
+              0.021958333333333333,
+              0.0,
+              -0.0085,
+              0.0
+            ]
+          },
+          "asserted_against_golden": true
+        },
+        "cyl_density": {
+          "ode_mass": 7.853981633974484,
+          "ode_center_of_mass": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "ode_inertia": [
+            0.1832595714594046,
+            0.1832595714594046,
+            0.03926990816987243,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "tolerance": 1e-12,
+          "tolerance_kind": "rel_per_component (mass vs mass; c and I vs the largest |component| of the oracle vector/tensor)",
+          "scenario": "Cylinder r=0.1 h=0.5, Physics density 500",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": {
+            "mass": 7.853981633974484,
+            "c": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "I": [
+              0.1832595714594046,
+              0.1832595714594046,
+              0.03926990816987243,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "asserted_against_golden": true
+        },
+        "group_compound": {
+          "ode_mass": 8.881061447520093,
+          "ode_center_of_mass": [
+            0.0029146281577193695,
+            0.0,
+            0.03183666057192222
+          ],
+          "ode_inertia": [
+            0.0804389944075153,
+            0.2115562456427086,
+            0.15110038624610606,
+            8.673617379884035e-19,
+            0.042411500823462206,
+            0.0
+          ],
+          "tolerance": 1e-09,
+          "tolerance_kind": "rel_per_component (mass vs mass; c and I vs the largest |component| of the oracle vector/tensor)",
+          "scenario": "Group: offset Box + rotated Cylinder + Sphere",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": {
+            "mass": 8.881061447520093,
+            "c": [
+              0.0029146281577193695,
+              0.0,
+              0.03183666057192222
+            ],
+            "I": [
+              0.0804389944075153,
+              0.2115562456427086,
+              0.15110038624610606,
+              8.673617379884035e-19,
+              0.042411500823462206,
+              0.0
+            ]
+          },
+          "asserted_against_golden": true
+        },
+        "mesh_ifs": {
+          "ode_mass": 24.000001668930093,
+          "ode_center_of_mass": [
+            0.15000000596046448,
+            0.1000000014901161,
+            0.2000000029802322
+          ],
+          "ode_inertia": [
+            2.8000002781550197,
+            3.5000004102786577,
+            1.8200002433856461,
+            -0.7200000894069716,
+            -1.440000178813943,
+            -0.9600000953674352
+          ],
+          "tolerance": 1e-07,
+          "tolerance_kind": "rel_per_component (mass vs mass; c and I vs the largest |component| of the oracle vector/tensor)",
+          "scenario": "IndexedFaceSet closed box [0,0.3]x[0,0.2]x[0,0.4] (Mirtich polyhedral path)",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": {
+            "mass": 24.000001668930093,
+            "c": [
+              0.15,
+              0.09999999999999998,
+              0.19999999999999996
+            ],
+            "I": [
+              2.80000019470851,
+              3.500000243385638,
+              1.820000126560532,
+              -0.7200000500679028,
+              -1.4400001001358056,
+              -0.9600000667572035
+            ]
+          },
+          "asserted_against_golden": true
+        },
+        "pose_box": {
+          "ode_mass": 24.0,
+          "ode_center_of_mass": [
+            0.1,
+            0.05,
+            0.2
+          ],
+          "ode_inertia": [
+            1.468815548651986,
+            1.5723313299235373,
+            0.6388531214244771,
+            -0.08057343928776145,
+            -0.5689742624866672,
+            -0.19657880703394154
+          ],
+          "tolerance": 1e-09,
+          "tolerance_kind": "rel_per_component (mass vs mass; c and I vs the largest |component| of the oracle vector/tensor)",
+          "scenario": "Box 0.2x0.3x0.4 inside a rotated+translated Pose",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": {
+            "mass": 24.0,
+            "c": [
+              0.1,
+              0.05,
+              0.2
+            ],
+            "I": [
+              1.4688155486519863,
+              1.5723313299235373,
+              0.6388531214244773,
+              -0.08057343928776146,
+              -0.5689742624866672,
+              -0.1965788070339415
+            ]
+          },
+          "asserted_against_golden": true
+        },
+        "sphere_mass": {
+          "ode_mass": 2.5,
+          "ode_center_of_mass": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "ode_inertia": [
+            0.022500000000000003,
+            0.022500000000000003,
+            0.022500000000000003,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "tolerance": 1e-12,
+          "tolerance_kind": "rel_per_component (mass vs mass; c and I vs the largest |component| of the oracle vector/tensor)",
+          "scenario": "Sphere r=0.15, Physics mass 2.5 density -1",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": {
+            "mass": 2.5,
+            "c": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "I": [
+              0.022500000000000003,
+              0.022500000000000003,
+              0.022500000000000003,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "asserted_against_golden": true
+        }
+      }
+    },
+    "weld": {
+      "test": "tests/test_newton_weld_parity.py",
+      "world": "generated at test time by _world_text(tensile); bodiless ANCHOR + 1 kg PAYLOAD",
+      "newton_gate": "OMNISIM_NEWTON_WELDS=1",
+      "oracle_mechanism": "ODE dJointCreateFixed weld + dJointFeedback rupture check",
+      "newton_mechanism": "pre-allocated MuJoCo equality-weld slot read back through solved efc rows",
+      "oracle_status_note": "IMPORTANT -- the ODE arm here was NEVER a numerical oracle. Both arms were judged independently against the SAME absolute semantic thresholds (hold_drift < 1e-3; payload airborne z >= 1.0; released payload z <= 0.6; rupture sag >= 0.05 or on the floor); no assertion ever compared an ODE number to a Newton number. So the thresholds are what the rewritten Newton-only test keeps, and the ODE numbers below are frozen as HISTORICAL RECORD (asserted_against_golden: false). The rupture path in particular diverges BY DESIGN and the divergence is measured here: ODE RATCHETS (autoLock re-captures the payload each tick, so it creeps 1.2868 -> 1.2079, sag 0.0789 m) while Newton's softer engage transient lets the payload escape recapture and reach the floor (sag 1.1775 m). Both are 'the rupture fired'; freezing ODE's 0.0789 as an equality target would be wrong.",
+      "measurements": {
+        "hold__hold_drift": {
+          "ode_value": 9.684251178754266e-10,
+          "tolerance": 0.001,
+          "tolerance_kind": "abs_max",
+          "scenario": "tensileStrength -1, locked, 2 s window",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": 0.0,
+          "asserted_against_golden": false,
+          "note": "Threshold assertion (< 1e-3) is kept on the Newton arm."
+        },
+        "hold__payload_z_while_locked": {
+          "ode_value": 1.2962290360000004,
+          "tolerance": 1.0,
+          "tolerance_kind": "abs_min",
+          "scenario": "tensileStrength -1, end of the 2 s hold window",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": 1.295865774154663,
+          "asserted_against_golden": false
+        },
+        "hold__payload_z_after_unlock": {
+          "ode_value": 0.105995813460556,
+          "tolerance": 0.6,
+          "tolerance_kind": "abs_max",
+          "scenario": "tensileStrength -1, after unlock()",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": 0.0999455451965332,
+          "asserted_against_golden": false
+        },
+        "rupture__sag": {
+          "ode_value": 0.07887239999998519,
+          "tolerance": 0.05,
+          "tolerance_kind": "abs_min",
+          "scenario": "tensileStrength 2.5 per connector (pair sums to 5 N) under a 9.81 N load",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": 1.1774631962180138,
+          "asserted_against_golden": false,
+          "note": "ODE ratchets; Newton falls clear. Divergent by design -- record only."
+        },
+        "rupture__payload_z_after_unlock": {
+          "ode_value": 0.10042913221230242,
+          "tolerance": 0.6,
+          "tolerance_kind": "abs_max",
+          "scenario": "tensileStrength 2.5, after unlock()",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": 0.0999455451965332,
+          "asserted_against_golden": false
+        }
+      }
+    },
+    "touch_force": {
+      "test": "tests/test_newton_touch_force_parity.py",
+      "world": "generated at test time (WORLD_TEXT): 100 kg body above a 100 kg 'force' TouchSensor on the floor",
+      "newton_gate": "OMNISIM_NEWTON_TOUCH_FORCE=1",
+      "oracle_mechanism": "mount-joint dJointFeedback f1",
+      "newton_mechanism": "NEGATED mjData.cfrc_int of the un-folded sensor body after mj_rnePostConstraint",
+      "measurements": {
+        "value_rest": {
+          "ode_value": 980.9978993591751,
+          "tolerance": 0.05,
+          "tolerance_kind": "rel",
+          "scenario": "resting: the robot's weight through the mount",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "absolute_truth": 981.0,
+          "newton_value_at_freeze": 980.9978993497214,
+          "asserted_against_golden": true,
+          "note": "The discriminating number: 981 N == mount force (right), ~1962 N == whole-stack contact sum (wrong), 0 == un-negated cfrc_int (wrong). The absolute 981 N +/- 3% assertion is kept alongside the golden."
+        },
+        "value_flight": {
+          "ode_value": 0.0,
+          "tolerance": 5.0,
+          "tolerance_kind": "abs",
+          "scenario": "free fall (the stack spawns 5 cm up)",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "absolute_truth": 0.0,
+          "newton_value_at_freeze": 0.0,
+          "asserted_against_golden": true
+        }
+      }
+    },
+    "receiver_occlusion": {
+      "test": "tests/test_newton_receiver_occlusion_parity.py",
+      "world": "generated at test time; two IR emitter/receiver pairs, wall at x=1 on channel 2",
+      "newton_gate": "OMNISIM_NEWTON_RAYCAST=1",
+      "oracle_mechanism": "one ODE ray geom per pending packet (OmReceiver Transmission)",
+      "newton_mechanism": "OmNewtonBackend::raycastBatch excluding both endpoint robots' bodies",
+      "measurements": {
+        "rx_clear": {
+          "ode_value": true,
+          "tolerance": 0,
+          "tolerance_kind": "exact_bool",
+          "scenario": "emitter (0,0,0.5) -> receiver (2,0,0.5), clear path",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "absolute_truth": true,
+          "newton_value_at_freeze": true,
+          "asserted_against_golden": true
+        },
+        "rx_blocked": {
+          "ode_value": false,
+          "tolerance": 0,
+          "tolerance_kind": "exact_bool",
+          "scenario": "emitter (0,2,0.5) -> receiver (2,2,0.5), wall at x=1",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "absolute_truth": false,
+          "newton_value_at_freeze": false,
+          "asserted_against_golden": true
+        }
+      }
+    },
+    "lightsensor_occlusion": {
+      "test": "tests/test_newton_lightsensor_occlusion_parity.py",
+      "world": "generated at test time; one PointLight, two occlusion-TRUE LightSensors, wall at x=3",
+      "newton_gate": "OMNISIM_NEWTON_RAYCAST=1",
+      "oracle_mechanism": "one ODE ray geom per light (OmLightSensor LightRay)",
+      "newton_mechanism": "one batched raycastBatch call excluding the sensor's own robot bodies",
+      "measurements": {
+        "ls_clear": {
+          "ode_value": 1.0,
+          "tolerance": 1e-06,
+          "tolerance_kind": "abs",
+          "scenario": "sensor (0,0,0.5) aimed +x at the light (2,0,0.5)",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "absolute_truth": 1.0,
+          "newton_value_at_freeze": 1.0,
+          "asserted_against_golden": true
+        },
+        "ls_blocked": {
+          "ode_value": 0.0,
+          "tolerance": 1e-06,
+          "tolerance_kind": "abs",
+          "scenario": "sensor (4,0,0.5) aimed -x at the light, wall at x=3",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "absolute_truth": 0.0,
+          "newton_value_at_freeze": 0.0,
+          "asserted_against_golden": true
+        }
+      }
+    },
+    "radar_occlusion": {
+      "test": "tests/test_newton_radar_occlusion_parity.py",
+      "world": "generated at test time; one occlusion-TRUE Radar, two radarCrossSection-1 targets, blocking wall",
+      "newton_gate": "OMNISIM_NEWTON_RAYCAST=1",
+      "oracle_mechanism": "one ODE ray geom per target (OmObjectDetection rayCollisionCallback)",
+      "newton_mechanism": "OmObjectDetection::refreshCollisionDepthsFromNewton -> raycastBatch",
+      "note": "Camera recognition occlusion rides this same OmObjectDetection path.",
+      "measurements": {
+        "surviving_target_count": {
+          "ode_value": 1,
+          "tolerance": 0,
+          "tolerance_kind": "exact_int",
+          "scenario": "rt_clear at (2,0,0.5) kept; rt_blocked at (2,1.5,0.5) dropped by the wall",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "absolute_truth": 1,
+          "newton_value_at_freeze": 1,
+          "asserted_against_golden": true
+        },
+        "surviving_target_distance": {
+          "ode_value": 2.0,
+          "tolerance": 0.001,
+          "tolerance_kind": "abs",
+          "scenario": "distance to rt_clear (frustum-AABB midpoint)",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "absolute_truth": 2.0,
+          "newton_value_at_freeze": 2.0,
+          "asserted_against_golden": true
+        }
+      }
+    },
+    "kinematic_native": {
+      "test": "tests/test_newton_kinematic_native.py",
+      "world": "generated at test time (PUSH_WORLD / REST_WORLD)",
+      "newton_gate": "OMNISIM_NEWTON_KINEMATIC=1",
+      "oracle_mechanism": "ODE NULL-body geoms making one-sided contact joints",
+      "newton_mechanism": "fixed-root Newton bodies exported as MuJoCo MOCAP bodies, posed via mocap_pos/mocap_quat",
+      "oracle_status_note": "The push MAGNITUDE was never an equality target: the pre-freeze test asserted the displacement bar HARD on the Newton arm and only WARNED on an ODE shortfall, because ODE resolves the per-tick 0.02 m penetration through ERP and MuJoCo through its contact solver. Measured divergence: ODE pushed the ball 1.1295 m, Newton 1.8982 m -- both far above the 0.15 m bar. Frozen as record only. The REST height, by contrast, is a genuine parity number (ODE 0.6496076 vs Newton 0.6496328, 2.5e-5 apart) and IS asserted against the golden.",
+      "measurements": {
+        "push__ball_displacement_x": {
+          "ode_value": 1.129497825017232,
+          "tolerance": 0.15,
+          "tolerance_kind": "abs_min",
+          "scenario": "a physics-less SLAB swept 1.2 m in 0.02 m/tick plows a 1 kg BALL",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": 1.8981898725032806,
+          "asserted_against_golden": false,
+          "note": "Solver-dependent magnitude. Threshold (>= 0.15 m) kept on the Newton arm."
+        },
+        "push__min_ball_z": {
+          "ode_value": 0.09889928728513714,
+          "tolerance": 0.05,
+          "tolerance_kind": "abs_min",
+          "scenario": "non-tunnelling: ball rests at z=0.1 on a floor whose top is z=0",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": 0.09877283871173859,
+          "asserted_against_golden": false,
+          "note": "Geometric invariant, kept as a hard threshold on the Newton arm."
+        },
+        "rest__ball_rest_z": {
+          "ode_value": 0.6496075999999998,
+          "tolerance": 0.03,
+          "tolerance_kind": "abs",
+          "scenario": "ball dropped onto a STATIONARY physics-less slab that is a HingeJoint endPoint",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "absolute_truth": 0.65,
+          "newton_value_at_freeze": 0.6496328115463257,
+          "asserted_against_golden": true,
+          "note": "Absolute truth is slab top 0.55 + ball radius 0.1 = 0.65; both backends settle at 0.6496 (soft-contact penetration). Golden and absolute assertions are both kept."
+        },
+        "rest__min_ball_z": {
+          "ode_value": 0.6461772799999999,
+          "tolerance": 0.5,
+          "tolerance_kind": "abs_min",
+          "scenario": "non-tunnelling: the ball must never pass INTO the slab",
+          "date": "2026-08-08",
+          "machine_id": "9722d23d12a3",
+          "newton_value_at_freeze": 0.6439615488052368,
+          "asserted_against_golden": false,
+          "note": "Geometric invariant, kept as a hard threshold on the Newton arm."
+        }
+      }
+    }
+  },
+  "smoke_lane": {
+    "runner": "tests/smoke/run_smoke.py",
+    "manifest": "tests/smoke/smoke_worlds.json",
+    "date": "2026-08-08",
+    "machine_id": "9722d23d12a3",
+    "what_it_pinned_before": "A single blanket env['OMNISIM_FORCE_ODE'] = '1' applied to EVERY smoke world (run_smoke.py, formerly ~line 329). Rationale in the code comment: the smoke worlds are legacy deterministic-regression tests with ODE-tuned golden values, and contact_points is built on ODE-specific ContactProperties (softCFM/softERP).",
+    "what_changed": "The blanket pin is GONE. The lane now runs test_suite.py once per backend group: everything not flagged runs on the engine default (Newton/MuJoCo, sidecar-confirmed), and a short per-world `requires_ode` list -- each carrying its own measured `ode_reason` -- runs under the process-level force. Verdict outcomes are unchanged (all four active worlds still PASS); what changed is that the three real ODE dependencies are now individually named and attributed instead of hidden behind one env var.",
+    "measured_per_world": {
+      "empty-world-startup": {
+        "world": "resources/projects/worlds/empty.wbt",
+        "default_backend_verdict": "PASS (startup only; not under tests/<group>/worlds/, so it owes no OK: verdict)",
+        "requires_ode": false,
+        "moved_to_default_backend": true
+      },
+      "api-accelerometer": {
+        "world": "tests/api/worlds/accelerometer.wbt",
+        "ode_verdict": "PASS",
+        "default_backend_verdict": "FAIL -- 'The Accelerometer doesn't return the right acceleration.'",
+        "requires_ode": true,
+        "root_cause": "NUE world. OmNewtonBackend hardcodes newton.ModelBuilder(up_axis=newton.Axis.Z) and never reads WorldInfo.coordinateSystem, so set_gravity() projects WorldInfo.gravity onto the WRONG up axis. The test asserts gravity reads +9.8 on Y.",
+        "corroborating_measurement": "Minimal probe, same session: a 1 kg ball in an ENU world falls from z=3 and rests at z=0.099 (correct). The same ball in an NUE world spawned at y=3 NEVER falls in y (y=3.000 at step 15360) and instead drifts to z=+384 m off the implicit z=0 plane. Newton sidecar confirms Newton drove both.",
+        "world_level_pin_insufficient": "WorldInfo.defaultPhysicsBackend \"ode\" does NOT restore this verdict (measured). It only redirects Solids still on \"auto\"; OMNISIM_FORCE_ODE additionally makes odeForced() true, which stops the engine building a Newton world at all (OmSimulationWorld.cpp:226). The two levers are not equivalent -- an open gap."
+      },
+      "physics-contact-points": {
+        "world": "tests/physics/worlds/contact_points.wbt",
+        "ode_verdict": "PASS",
+        "default_backend_verdict": "FAIL -- 'Cone is not rotated as much as expected.' (the -rotation[3] > 2.44 assertion)",
+        "requires_ode": true,
+        "root_cause": "Genuinely ODE-contact-semantics dependent: the world declares ODE-path WorldInfo.contactProperties (softCFM 1e-05, softERP 0.0138, bounce, coulombFriction) which the Newton backend ignores, so the mesh cone settles on the ramp differently.",
+        "world_level_pin_sufficient": "YES -- verified PASS with WorldInfo.defaultPhysicsBackend \"ode\"."
+      },
+      "protos-template-deterministic": {
+        "world": "tests/protos/worlds/template_deterministic.wbt",
+        "ode_verdict": "PASS",
+        "default_backend_verdict": "FAIL -- 'Non-deterministic procedural PROTO nodes should have different sizes (0.000000 = 0.000000)'",
+        "requires_ode": true,
+        "root_cause": "NUE world, same hardcoded-Z-up root cause as api-accelerometer, different symptom: Newton's implicit ground plane is added at z=0 in the RAW authored frame, which in an NUE world is a VERTICAL wall through the origin -- exactly where this world's four DistanceSensors sit and exactly along the axis they fire. All four read 0.000000. The test is about procedural PROTO seeding, not physics; it is collateral damage.",
+        "world_level_pin_sufficient": "YES -- verified PASS with WorldInfo.defaultPhysicsBackend \"ode\"."
+      },
+      "rendering-normals": {
+        "world": "tests/rendering/worlds/normals.wbt",
+        "status": "skipped in the manifest for a pre-existing WREN offscreen-camera reason, unrelated to physics"
+      }
+    },
+    "blocking_finding": "ODE DELETION BLOCKER, not a test problem: the Newton backend does not honour WorldInfo.coordinateSystem at all -- newton.ModelBuilder(up_axis=newton.Axis.Z) is hardcoded in OmNewtonBackend.cpp, gravity is projected onto that axis by set_gravity(), and the implicit ground plane is placed at raw z=0. Any non-ENU world (NUE, and by inspection any other coordinateSystem) therefore gets zero effective gravity along its real up axis plus a stray plane cutting through the scene. Two of the four active smoke worlds are NUE. This will silently break every non-ENU world in the tree the moment ODE stops being the fallback."
+  }
+}

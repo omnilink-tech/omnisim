@@ -1,0 +1,56 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://projects/objects/geometries/protos/TexturedBox.proto"
+EXTERNPROTO "omnisim://projects/objects/shapes/protos/TexturedBoxShape.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  fieldOfView 0.6
+  orientation 0.1849958991742627 -0.12481444039373973 -0.9747809357788567 4.297271961803734
+  position 1.1603042826871277 -2.541953967890795 1.1340735209295423
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DEF TEXTURED_BOX Solid {
+  translation -0.25 0 0
+  children [
+    Shape {
+      appearance DEF APP PBRAppearance {
+        baseColor 0.8 0.8 0.8
+        baseColorMap ImageTexture {
+          url [
+            "omnisim://projects/default/worlds/textures/tagged_wall.jpg"
+          ]
+        }
+        roughness 0.5
+        metalness 0
+      }
+      geometry TexturedBox {
+        size 0.4 0.1 0.2
+        mapping "metric"
+      }
+    }
+  ]
+  name "solid(1)"
+}
+DEF TEXTURED_BOX_SHAPE Solid {
+  translation 0.25 0 0
+  children [
+    TexturedBoxShape {
+      size 0.4 0.1 0.2
+      textureUrl [
+        "omnisim://projects/default/worlds/textures/tagged_wall.jpg"
+      ]
+      textureMapping "metric"
+      faceColor 0.219608 0.588235 0.141176
+      backFace FALSE
+      topFace FALSE
+      bottomFace FALSE
+    }
+  ]
+}

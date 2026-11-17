@@ -1,0 +1,23 @@
+{
+  "schema": "agentbench/script/v1",
+  "name": "limit_max_turns",
+  "description": "Trips the max-turns limit: a cheap tool call, repeated past any sane turn cap. The stop reason must be recorded as max_turns.",
+  "turns": [
+    {
+      "text": "looking around ({{SCRATCH}})",
+      "tool_calls": [
+        {
+          "name": "list_dir",
+          "arguments": {
+            "path": "."
+          }
+        }
+      ],
+      "usage": {
+        "tokens_in": 1000,
+        "tokens_out": 20
+      },
+      "repeat": 40
+    }
+  ]
+}

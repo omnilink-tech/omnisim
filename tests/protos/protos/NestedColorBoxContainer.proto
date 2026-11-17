@@ -1,0 +1,12 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/NestedColorBoxShape.proto"
+
+PROTO NestedColorBoxContainer [
+  field MFNode slot [ DEF TEST_PROTO NestedColorBoxShape {} ]
+]
+{
+  Group {
+    children IS slot
+  }
+}

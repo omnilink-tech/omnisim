@@ -1,0 +1,41 @@
+{
+  "match_t_s": 13.22,
+  "winner": "hydra",
+  "win_reason": "chassis_dead",
+  "fighters": [
+    {
+      "name": "hydra",
+      "immobile": false,
+      "disqualify_reason": null,
+      "broken_parts": [],
+      "wheels_remaining": 4,
+      "weapon_intact": true,
+      "part_hp": {
+        "chassis": 28.4,
+        "fl_wheel": 14.0,
+        "fr_wheel": 11.8,
+        "rl_wheel": 4.9,
+        "rr_wheel": 14.0,
+        "weapon": 21.6
+      }
+    },
+    {
+      "name": "gravedigger",
+      "immobile": true,
+      "disqualify_reason": "chassis_dead",
+      "broken_parts": [
+        "chassis"
+      ],
+      "wheels_remaining": 4,
+      "weapon_intact": true,
+      "part_hp": {
+        "chassis": -97.3,
+        "fl_wheel": 4.4,
+        "fr_wheel": 11.8,
+        "rl_wheel": 14.0,
+        "rr_wheel": 14.0,
+        "weapon": 35.0
+      }
+    }
+  ]
+}

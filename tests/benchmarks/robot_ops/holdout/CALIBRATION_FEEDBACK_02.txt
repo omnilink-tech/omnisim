@@ -1,0 +1,14 @@
+TASK f6_report_blocked_husky: correct=PASS wrong=PASS
+  the WRONG script passed every check. Measured values of each check for the wrong script:
+    0:answered: {"unanswered": [], "never_fired": []}
+    1:prop_still: {"moved_m": 0.005425214767575975}
+    2:final_pose: {"error_m": 0.0538, "want": [1.3000000000000018, -4.0012878343986813e-07], "got": [1.3538249731063843, -1.1792052418968524e-06]}
+    3:reply: {"text": "No, I'm stopped near x=1.3, blocked by something -- not at x=4."}
+TASK f9_shift_x_min_block_husky: correct=FAIL wrong=FAIL
+  correct-script check 5:final_pose failed: {"error_m": 1.1726, "want": [-0.7999999999999983, -4.00128641331321e-07], "got": [-0.48992401361465454, -1.1308847665786743]}
+    step s3: tool calls run=[('turn', {'angle_rad': -1.5708}, -1.5716652403143931), ('drive_forward', {'distance': 0.5}, 0.4850317172653057)]
+    step s6: tool calls run=[('drive_forward', {'distance': 1}, None)]
+    step s7: tool calls run=[('stop_robot', {}, 0.0006731495878486477)]
+    step s9: tool calls run=[('drive_to', {'x': 1.1000000000000019, 'y': -4.00128641331321e-07}, None)]
+    step s10: tool calls run=[('turn', {'angle_rad': 3.14159}, 3.1381201182250598), ('drive_forward', {'distance': 1.9}, 1.9045680043332553)]
+  final measured pose: x=-0.490 y=-1.131

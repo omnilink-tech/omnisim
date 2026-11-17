@@ -1,0 +1,64 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# keywords: primitive/light
+# Rectangular emitter facing local -Z. Photo mode samples the actual surface;
+# the live view uses four shadowed samples. Uses four of eight local-light slots.
+PROTO OmniSimAreaLight [
+  field SFVec3f translation 0 0 2.5
+  field SFRotation rotation 0 0 1 0
+  field SFVec2f size 1 1
+  field SFColor color 1 0.9 0.75
+  field SFFloat intensity 5 # emitted linear radiance
+  field SFFloat radius 100
+  field SFBool on TRUE
+  field SFBool castShadows TRUE
+]
+{
+  %<
+    const w=Math.max(0.001,fields.size.value.x);
+    const h=Math.max(0.001,fields.size.value.y);
+    const energy=fields.on.value?Math.max(0,fields.intensity.value):0;
+  >%
+  Solid {
+    name "area light"
+    translation IS translation
+    rotation IS rotation
+    children [
+      Shape {
+        appearance PBRAppearance {
+          baseColor 0 0 0
+          metalness 0
+          roughness 1
+          emissiveColor IS color
+          emissiveIntensity %<= energy >%
+          emissiveTwoSided FALSE
+        }
+        geometry IndexedFaceSet {
+          coord Coordinate { point [
+            %<= -w/2 >% %<= -h/2 >% 0
+            %<= -w/2 >% %<= h/2 >% 0
+            %<= w/2 >% %<= h/2 >% 0
+            %<= w/2 >% %<= -h/2 >% 0
+          ] }
+          coordIndex [ 0 1 2 3 -1 ]
+        }
+      }
+      %< for (const x of [-1,1]) { for (const y of [-1,1]) { >%
+      SpotLight {
+        location %<= x*w/4 >% %<= y*h/4 >% -0.002
+        direction 0 0 -1
+        color IS color
+        intensity %<= energy*w*h/4 >%
+        attenuation 0 0 1
+        beamWidth 0
+        cutOffAngle 1.57079632679
+        radius IS radius
+        on IS on
+        castShadows IS castShadows
+        rayTracing FALSE
+      }
+      %< } } >%
+    ]
+  }
+}

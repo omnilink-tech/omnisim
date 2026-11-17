@@ -1,0 +1,14 @@
+{
+  "world": "O:\\omnisim\\projects\\robots\\therobotstudio\\worlds\\.harness_so101_860fffad8f0342269ce08c637e17533c.omniworld",
+  "world_sha256": "34ab15a863d973e984f70406342e713536bcc8d66bc3f31ec5e0a8ac515b596c",
+  "urdf_sha256": "6c6d185fdef14875e30a3a59f1a132c819506be864917cd878ab774074a2604e",
+  "trajectory_sha256": "edfdc1642e4744330100ddae07ce8c8d765fe18d8e23084bd3887d9c96ea85d2",
+  "mode": "authored-simulation",
+  "calibration": null,
+  "source": {
+    "path": "pickplace_motion.json",
+    "sha256": "70484d7aff0c917f607c162b36ecb80c73bc03e596a97cc4aa23f15bc92a6aee"
+  },
+  "actuation": "Motor.setPosition",
+  "timed_episode_pose_writes": 0
+}

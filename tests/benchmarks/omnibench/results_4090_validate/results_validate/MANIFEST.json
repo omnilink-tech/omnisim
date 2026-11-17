@@ -1,0 +1,221 @@
+{
+  "suite": "omnibench/v0",
+  "machine": {
+    "machine": {
+      "id": "65dd6587d5c9",
+      "host": "80715bbfc6a0",
+      "gpu": "NVIDIA GeForce RTX 4090",
+      "cpu": "x86_64",
+      "cores": 32
+    },
+    "gpu": "NVIDIA GeForce RTX 4090 (driver 580.126.20)",
+    "build": "95f5a2c",
+    "os": "Linux-6.8.0-107-generic-x86_64-with-glibc2.35",
+    "python": "3.11.10",
+    "numpy": "2.4.6",
+    "libcontroller": {
+      "path": "lib/controller/libController.so",
+      "sha256": "94875d0ecb7f659e",
+      "size": 571320,
+      "mtime": 1785013036,
+      "ipc_nonce": true
+    },
+    "binary": {
+      "path": "bin/omnisim-bin",
+      "sha256": "36732b708231390e",
+      "mtime": 1785012935
+    },
+    "stack_versions": {
+      "newton": "1.2.0",
+      "warp_lang": "1.13.0",
+      "mujoco": "3.8.1",
+      "mujoco_warp": "3.8.0.3",
+      "torch": "2.4.1+cu124",
+      "onnxruntime": "1.28.0"
+    }
+  },
+  "utc_start": "2026-07-25T21:15:15Z",
+  "utc_end": "2026-07-25T21:19:57Z",
+  "args": {
+    "lanes": "1",
+    "engines": "omnisim",
+    "backends": "ode",
+    "dt_ms": "4",
+    "out": "/workspace/omnisim/tests/benchmarks/omnibench/results_validate",
+    "lane1_run_timeout": 300.0,
+    "parallel": 6,
+    "overlap_lanes": false,
+    "lane2_tiers": "raw,A,B,C",
+    "lane2_batches": [
+      256,
+      1024,
+      4096
+    ],
+    "summary_only": false,
+    "retry_gaps": false
+  },
+  "runs": [
+    {
+      "name": "lane1-omnisim-ode-T4-dt4",
+      "cmd": [
+        "/usr/bin/python3",
+        "/workspace/omnisim/tests/benchmarks/omnibench/lane1/run_omnisim.py",
+        "--test",
+        "T4",
+        "--dt-ms",
+        "4",
+        "--backend",
+        "ode",
+        "--out",
+        "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/lane1/recordings",
+        "--timeout",
+        "300.0"
+      ],
+      "status": "completed",
+      "rc": 0,
+      "wall_s": 69.9,
+      "log": "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/logs/lane1_omnisim_ode_T4_dt4.log",
+      "note": null,
+      "utc": "2026-07-25T21:16:26Z"
+    },
+    {
+      "name": "lane1-omnisim-ode-T5-dt4",
+      "cmd": [
+        "/usr/bin/python3",
+        "/workspace/omnisim/tests/benchmarks/omnibench/lane1/run_omnisim.py",
+        "--test",
+        "T5",
+        "--dt-ms",
+        "4",
+        "--backend",
+        "ode",
+        "--out",
+        "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/lane1/recordings",
+        "--timeout",
+        "300.0"
+      ],
+      "status": "completed",
+      "rc": 0,
+      "wall_s": 76.1,
+      "log": "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/logs/lane1_omnisim_ode_T5_dt4.log",
+      "note": null,
+      "utc": "2026-07-25T21:16:32Z"
+    },
+    {
+      "name": "lane1-omnisim-ode-T1-dt4",
+      "cmd": [
+        "/usr/bin/python3",
+        "/workspace/omnisim/tests/benchmarks/omnibench/lane1/run_omnisim.py",
+        "--test",
+        "T1",
+        "--dt-ms",
+        "4",
+        "--backend",
+        "ode",
+        "--out",
+        "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/lane1/recordings",
+        "--timeout",
+        "300.0"
+      ],
+      "status": "completed",
+      "rc": 0,
+      "wall_s": 76.7,
+      "log": "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/logs/lane1_omnisim_ode_T1_dt4.log",
+      "note": null,
+      "utc": "2026-07-25T21:16:33Z"
+    },
+    {
+      "name": "lane1-omnisim-ode-T3-dt4",
+      "cmd": [
+        "/usr/bin/python3",
+        "/workspace/omnisim/tests/benchmarks/omnibench/lane1/run_omnisim.py",
+        "--test",
+        "T3",
+        "--dt-ms",
+        "4",
+        "--backend",
+        "ode",
+        "--out",
+        "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/lane1/recordings",
+        "--timeout",
+        "300.0"
+      ],
+      "status": "completed",
+      "rc": 0,
+      "wall_s": 82.9,
+      "log": "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/logs/lane1_omnisim_ode_T3_dt4.log",
+      "note": null,
+      "utc": "2026-07-25T21:16:39Z"
+    },
+    {
+      "name": "lane1-omnisim-ode-T6-dt4",
+      "cmd": [
+        "/usr/bin/python3",
+        "/workspace/omnisim/tests/benchmarks/omnibench/lane1/run_omnisim.py",
+        "--test",
+        "T6",
+        "--dt-ms",
+        "4",
+        "--backend",
+        "ode",
+        "--out",
+        "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/lane1/recordings",
+        "--timeout",
+        "300.0"
+      ],
+      "status": "completed",
+      "rc": 0,
+      "wall_s": 88.1,
+      "log": "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/logs/lane1_omnisim_ode_T6_dt4.log",
+      "note": null,
+      "utc": "2026-07-25T21:16:44Z"
+    },
+    {
+      "name": "lane1-omnisim-ode-T7-dt4",
+      "cmd": [
+        "/usr/bin/python3",
+        "/workspace/omnisim/tests/benchmarks/omnibench/lane1/run_omnisim.py",
+        "--test",
+        "T7",
+        "--dt-ms",
+        "4",
+        "--backend",
+        "ode",
+        "--out",
+        "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/lane1/recordings",
+        "--timeout",
+        "300.0"
+      ],
+      "status": "completed",
+      "rc": 0,
+      "wall_s": 39.9,
+      "log": "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/logs/lane1_omnisim_ode_T7_dt4.log",
+      "note": null,
+      "utc": "2026-07-25T21:17:07Z"
+    },
+    {
+      "name": "lane1-omnisim-ode-T2-dt4",
+      "cmd": [
+        "/usr/bin/python3",
+        "/workspace/omnisim/tests/benchmarks/omnibench/lane1/run_omnisim.py",
+        "--test",
+        "T2",
+        "--dt-ms",
+        "4",
+        "--backend",
+        "ode",
+        "--out",
+        "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/lane1/recordings",
+        "--timeout",
+        "300.0"
+      ],
+      "status": "completed",
+      "rc": 0,
+      "wall_s": 276.5,
+      "log": "/workspace/omnisim/tests/benchmarks/omnibench/results_validate/logs/lane1_omnisim_ode_T2_dt4.log",
+      "note": null,
+      "utc": "2026-07-25T21:19:53Z"
+    }
+  ],
+  "gaps": []
+}

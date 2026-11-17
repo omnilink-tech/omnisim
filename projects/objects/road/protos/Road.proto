@@ -1,0 +1,807 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/road/protos/Road.proto
+# keywords: traffic/road
+# A road swept along a way-point path: the lanes, the painted markings, the raised sidewalks and the crash barriers are all extruded from one banked cross-section that rides the path.
+# The path can be followed literally or smoothed with a cubic B-spline, and each part of the road can be given a bounding object independently of the others.
+# template language: javascript
+
+EXTERNPROTO "RoadLine.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Pavement.proto"
+EXTERNPROTO "CrashBarrier.proto"
+
+PROTO Road [
+  field        SFVec3f              translation               0 0 0
+  field        SFRotation           rotation                  0 0 1 0
+  field        SFString             name                      "road"                  # Optionally defines the street name.
+  field        SFString             id                        ""                      # Optionally defines a unique ID. A unique ID is required to use the SUMO exporter.
+  field        SFString             startJunction             ""                      # Optionally defines a reference to the Crossroad connected at the first Road waypoint. Setting correctly this field is required to use the SUMO exporter.
+  field        SFString             endJunction               ""                      # Optionally defines a reference to the Crossroad connected at the last Road waypoint. Setting correctly this field is required to use the SUMO exporter.
+  field        SFFloat              width                     7                       # Defines the total width of the road (excluding sidewalk).
+  field        SFInt32              numberOfLanes             2                       # Defines the number of lanes (used for the texture mapping).
+  field        SFInt32              numberOfForwardLanes      1                       # Defines the number of forward lanes. (this is an information with no impact on the graphical shape).
+  field        SFFloat              speedLimit                -1.0                    # Optionally defines the speed limit. The recommended unit is meter per seconds.
+  field        MFNode{RoadLine {}}  lines                     [ RoadLine { } ]        # Defines the property of each line separating two lanes.
+  field        SFFloat              roadBorderHeight          0.15                    # Defines the height of the sidewalk.
+  field        MFFloat              roadBorderWidth           [ 0.8 ]                 # Defines the width of the sidewalk associated to each way-point (if there are less values than way-points, the last value is used for the last remaining way-points).
+  field        SFBool               road                      TRUE                    # Defines whether the road surface itself should be created.
+  field        SFBool               rightBorder               TRUE                    # Defines whether the road should have a right sidewalk.
+  field        SFBool               leftBorder                TRUE                    # Defines whether the road should have a left sidewalk.
+  field        SFBool               rightBarrier              FALSE                   # Defines whether the road should have a right barrier.
+  field        SFBool               leftBarrier               FALSE                   # Defines whether the road should have a left barrier.
+  field        SFBool               bottom                    FALSE                   # Defines whether the road bottom should be displayed (useful in case of bridge).
+  field        MFVec3f              wayPoints                 [ 0 0 0, 1 0 0 ]        # Defines the path of the road.
+  field        MFFloat              roadTilt                  [ 0, 0]                 # Defines the tilting angle corresponding to each way-point (if there are less values than way-points, 0 is used for the last remaining way-points).
+  field        MFFloat              startingAngle             []                      # Optionally defines the angle of the road at the first way-point.
+  field        MFFloat              endingAngle               []                      # Optionally defines the angle of the road at the lasst way-point.
+  field        MFString             startLine                 []                      # Optionally defines the texture used for the road line at the first way-point for each lane. If the string is empty, no road line will be added for the corresponding lane. The two textures `textures/road_line_dashed.png` and `textures/road_line_triangle.png` may be used in this field.
+  field        MFString             endLine                   []                      # Optionally defines the texture used for the road line at the last way-point for each lane. If the string is empty, no road line will be added for the corresponding lane.
+  field        SFInt32              splineSubdivision         4                       # Defines the degree of interpolation using B-Splines (if the value is lower than 0, the interpolation is disabled).
+  field        SFNode               appearance                Asphalt { }             # Defines the appearance of the road.
+  field        SFNode               pavementAppearance        Pavement { }            # Defines the appearance of the sidewalk.
+  field        MFString             bottomTexture             []                      # Defines the texture to be used for the bottom of the road.
+  field        SFString             turnLanesForward          ""                      # Defines painted arrows before the end of the lanes using the same format as the OSM "turn:lanes:forward" key (e.g. "through|left;through|none"). Please refer to the corresponding OSM tag: http://wiki.openstreetmap.org/wiki/Key:turn.
+  field        SFString             turnLanesBackward         ""                      # Same as `turnLanesForward` but for the OSM "turn:lanes:backward" key.
+  field        SFBool               locked                    TRUE                    # Is `Solid.locked`.
+  field        SFBool               roadBoundingObject        FALSE                   # Defines whether the road should have a bounding object.
+  field        SFBool               rightBorderBoundingObject FALSE                   # Defines whether the right sidewalk should have a bounding object.
+  field        SFBool               leftBorderBoundingObject  FALSE                   # Defines whether the left sidewalk should have a bounding object.
+  field        SFBool               rightBarrierBoundingObject TRUE                   # Defines whether the right crash barrier (if any) should have a bounding object.
+  field        SFBool               leftBarrierBoundingObject TRUE                    # Defines whether the left crash barrier (if any) should have a bounding object.
+  field        SFBool               castShadows               FALSE                   # Defines whether the road should cast shadows.
+  field        SFString             contactMaterial           "default"               # Is `Solid.contactMaterial`.
+]
+{
+  %<
+    import * as wbgeometry from 'wbgeometry.js';
+
+    // =====================================================================
+    // 1. PARAMETERS
+    // =====================================================================
+    let width = fields.width.value;
+    if (width <= 0) {
+      width = fields.width.defaultValue;
+      console.error('\'width\' must be strictly positive. Value reset to ' + width + '.');
+    }
+
+    let lanes = fields.numberOfLanes.value;
+    if (lanes < 1) {
+      lanes = fields.numberOfLanes.defaultValue;
+      console.error('\'numberOfLanes\' must be at least 1. Value reset to ' + lanes + '.');
+    }
+    const laneWidth = width / lanes;
+
+    let forwardLanes = fields.numberOfForwardLanes.value;
+    forwardLanes = Math.min(lanes, Math.max(0, forwardLanes));
+
+    let borderHeight = fields.roadBorderHeight.value;
+    if (borderHeight < 0) {
+      borderHeight = fields.roadBorderHeight.defaultValue;
+      console.error('\'roadBorderHeight\' must be positive. Value reset to ' + borderHeight + '.');
+    }
+
+    const rawWayPoints = fields.wayPoints.value;
+    if (rawWayPoints.length < 2)
+      console.error('\'wayPoints\' needs at least two points to define a road.');
+
+    const rawTilt = fields.roadTilt.value;
+    const rawBorderWidth = fields.roadBorderWidth.value;
+    for (let i = 0; i < rawBorderWidth.length; ++i) {
+      if (rawBorderWidth[i] < 0) {
+        console.error('\'roadBorderWidth\' elements must be positive. Value reset to 0.');
+        rawBorderWidth[i] = 0;
+      }
+    }
+
+    // Only RoadLine nodes carry marking properties; anything else is ignored and
+    // the boundary falls back to the default marking.
+    const lineNodes = fields.lines.value;
+    for (let i = 0; i < lineNodes.length; ++i) {
+      if (lineNodes[i].node_name !== 'RoadLine') {
+        lineNodes[i] = undefined;
+        console.error('Only \'RoadLine\' nodes should be added in the \'lines\' field.');
+      }
+    }
+
+    const drawRoad = fields.road.value;
+    const drawBottom = fields.bottom.value;
+    const bottomTexture = fields.bottomTexture.value;
+
+    const LIFT = 0.01;       // paint sits this far above the tarmac, to beat z-fighting
+    const DASH_ON = 2.5;     // metres of paint ...
+    const DASH_OFF = 2.5;    // ... then metres of nothing
+    const DASH_PERIOD = DASH_ON + DASH_OFF;
+    const DEFAULT_LINE = {color: {r: 1, g: 1, b: 1}, type: 'dashed', width: 0.15};
+
+    // =====================================================================
+    // 2. THE PATH
+    //
+    // The way-points are optionally smoothed into a cubic B-spline. Whichever
+    // we end up with, path[m] is a point of the road's centreline, and
+    // sourceIndex(m) says which way-point it came from (fractionally) so the
+    // per-way-point quantities -- tilt, sidewalk width -- can be resampled onto
+    // it.
+    // =====================================================================
+    const copyPoints = function(pts) {
+      const out = [];
+      for (let i = 0; i < pts.length; ++i)
+        out.push({x: pts[i].x, y: pts[i].y, z: pts[i].z});
+      return out;
+    };
+
+    const splineSubdivision = fields.splineSubdivision.value;
+    const nWayPoints = rawWayPoints.length;
+    const smoothed = splineSubdivision > 0 && nWayPoints > 2;
+
+    let path;
+    let sourceIndex;
+    if (smoothed) {
+      // bSpline3 mutates the array it is handed, so it gets a copy of its own.
+      path = wbgeometry.bSpline3(copyPoints(rawWayPoints), splineSubdivision);
+      sourceIndex = function(m) { return m / splineSubdivision; };
+    } else {
+      path = copyPoints(rawWayPoints);
+      sourceIndex = function(m) { return m; };
+    }
+    const n = path.length;
+
+    // Resample a per-way-point list onto the (possibly splined) path. `tail`
+    // says what to do past the end of the list: 'hold' repeats the last value,
+    // 'zero' pads with zeroes.
+    const perWayPoint = function(values, tail, fallback) {
+      const pick = function(i) {
+        if (values.length === 0)
+          return fallback;
+        if (i >= values.length)
+          return tail === 'hold' ? values[values.length - 1] : 0;
+        return values[i];
+      };
+      return function(m) {
+        const u = sourceIndex(m);
+        const lo = Math.max(0, Math.min(nWayPoints - 1, Math.floor(u)));
+        const hi = Math.max(0, Math.min(nWayPoints - 1, lo + 1));
+        const t = u - Math.floor(u);
+        return pick(lo) * (1 - t) + pick(hi) * t;
+      };
+    };
+    const tiltAt = perWayPoint(rawTilt, 'zero', 0);
+    const borderWidthAt = perWayPoint(rawBorderWidth, 'hold', 0);
+
+    // =====================================================================
+    // 3. THE MOVING CROSS-SECTION
+    //
+    // At every point of the path we need a frame: where we are, which way we
+    // are heading, and which way is "across the road" once the road has been
+    // banked by its tilt. Everything below -- tarmac, paint, kerbs, barriers --
+    // is then just a lateral offset and a height in that frame.
+    // =====================================================================
+    const norm2 = function(v) {
+      const l = Math.sqrt(v.x * v.x + v.y * v.y);
+      return l > 1e-9 ? {x: v.x / l, y: v.y / l} : {x: 1, y: 0};
+    };
+
+    const naturalHeading = function(m) {
+      if (m === 0)
+        return norm2({x: path[1].x - path[0].x, y: path[1].y - path[0].y});
+      if (m === n - 1)
+        return norm2({x: path[n - 1].x - path[n - 2].x, y: path[n - 1].y - path[n - 2].y});
+      return norm2({x: path[m + 1].x - path[m - 1].x, y: path[m + 1].y - path[m - 1].y});
+    };
+
+    // The end headings can be pinned by the caller -- that is how the curved and
+    // straight road segments make their ends meet flush. A pinned heading is
+    // blended back into the natural one over the smoothing window so that the
+    // road does not kink at the way-point.
+    const startingAngle = fields.startingAngle.value;
+    const endingAngle = fields.endingAngle.value;
+    const blendSpan = smoothed ? splineSubdivision : 1;
+
+    const heading = function(m) {
+      const natural = naturalHeading(m);
+      let pinned = null;
+      let t = 1;
+      if (startingAngle.length > 0 && m <= blendSpan) {
+        pinned = {x: Math.cos(startingAngle[0]), y: Math.sin(startingAngle[0])};
+        t = m / blendSpan;
+      } else if (endingAngle.length > 0 && m >= n - 1 - blendSpan) {
+        pinned = {x: Math.cos(endingAngle[0]), y: Math.sin(endingAngle[0])};
+        t = (n - 1 - m) / blendSpan;
+      }
+      if (pinned === null)
+        return natural;
+      return norm2({x: pinned.x * (1 - t) + natural.x * t, y: pinned.y * (1 - t) + natural.y * t});
+    };
+
+    const frames = [];
+    let arc = 0;
+    for (let m = 0; m < n; ++m) {
+      if (m > 0) {
+        const dx = path[m].x - path[m - 1].x;
+        const dy = path[m].y - path[m - 1].y;
+        const dz = path[m].z - path[m - 1].z;
+        arc += Math.sqrt(dx * dx + dy * dy + dz * dz);
+      }
+      const d = heading(m);
+      const tilt = tiltAt(m);
+      const c = Math.cos(tilt);
+      const s = Math.sin(tilt);
+      // `right` points at the right-hand kerb and `up` is the road's own normal,
+      // both banked by the tilt. Both stay unit length.
+      frames.push({
+        p: path[m],
+        d: d,
+        right: {x: d.y * c, y: -d.x * c, z: s},
+        up: {x: -d.y * s, y: d.x * s, z: c},
+        border: borderWidthAt(m),
+        s: arc
+      });
+    }
+    const totalLength = frames[n - 1].s;
+
+    // A point of the road surface: `lateral` metres right of the centreline,
+    // `lift` metres above it.
+    const surfacePoint = function(f, lateral, lift) {
+      return {
+        x: f.p.x + f.right.x * lateral + f.up.x * lift,
+        y: f.p.y + f.right.y * lateral + f.up.y * lift,
+        z: f.p.z + f.right.z * lateral + f.up.z * lift
+      };
+    };
+
+    // Markings and arrows have to be diced far more finely than the way-points
+    // themselves: a 50 m straight has exactly two of them, and you cannot dash a
+    // line you have only sampled twice. Subdividing between frames is exact on a
+    // straight and a good approximation on a spline, which is dense already.
+    const densify = function(step) {
+      const mix = function(a, b, t) {
+        const l = function(u, v) { return u * (1 - t) + v * t; };
+        return {
+          p: {x: l(a.p.x, b.p.x), y: l(a.p.y, b.p.y), z: l(a.p.z, b.p.z)},
+          d: norm2({x: l(a.d.x, b.d.x), y: l(a.d.y, b.d.y)}),
+          right: {x: l(a.right.x, b.right.x), y: l(a.right.y, b.right.y), z: l(a.right.z, b.right.z)},
+          up: {x: l(a.up.x, b.up.x), y: l(a.up.y, b.up.y), z: l(a.up.z, b.up.z)},
+          border: l(a.border, b.border),
+          s: l(a.s, b.s)
+        };
+      };
+      const out = [];
+      for (let m = 0; m < n - 1; ++m) {
+        const segment = frames[m + 1].s - frames[m].s;
+        const cuts = Math.max(1, Math.ceil(segment / step));
+        for (let k = 0; k < cuts; ++k)
+          out.push(mix(frames[m], frames[m + 1], k / cuts));
+      }
+      out.push(frames[n - 1]);
+      return out;
+    };
+    const fine = densify(Math.min(1.0, 0.5 * DASH_ON));
+
+    // =====================================================================
+    // 4. A TINY MESH BUILDER
+    //
+    // Everything the road draws is a quad strip, so collect quads into a mesh
+    // and print the mesh once. Vertices are not shared between quads: the road
+    // is flat enough that faceting is invisible and the indexing stays trivial.
+    // =====================================================================
+    const newMesh = function() { return {pts: [], uvs: []}; };
+    const uv = function(u, v) { return {u: u, v: v}; };
+    const quad = function(mesh, p0, p1, p2, p3, uv0, uv1, uv2, uv3) {
+      mesh.pts.push(p0, p1, p2, p3);
+      mesh.uvs.push(uv0, uv1, uv2, uv3);
+    };
+    const printPoints = function(mesh) {
+      let out = '';
+      for (let i = 0; i < mesh.pts.length; ++i)
+        out += mesh.pts[i].x + ' ' + mesh.pts[i].y + ' ' + mesh.pts[i].z + ', ';
+      return out;
+    };
+    const printUvs = function(mesh) {
+      let out = '';
+      for (let i = 0; i < mesh.uvs.length; ++i)
+        out += mesh.uvs[i].u + ' ' + mesh.uvs[i].v + ', ';
+      return out;
+    };
+    const printIndices = function(mesh) {
+      let out = '';
+      for (let i = 0; i < mesh.pts.length; i += 4)
+        out += i + ' ' + (i + 1) + ' ' + (i + 2) + ' ' + (i + 3) + ' -1, ';
+      return out;
+    };
+
+    // =====================================================================
+    // 5. THE TARMAC
+    //
+    // An n x (lanes + 1) grid of vertices. The texture repeats once per lane
+    // across the road and every lane-width along it, so it tiles square whatever
+    // the road's width.
+    // =====================================================================
+    const tarmac = newMesh();
+    const underside = newMesh();
+    for (let m = 0; m < n - 1; ++m) {
+      for (let k = 0; k < lanes; ++k) {
+        const l0 = -0.5 * width + k * laneWidth;
+        const l1 = l0 + laneWidth;
+        const a = surfacePoint(frames[m], l0, 0);
+        const b = surfacePoint(frames[m], l1, 0);
+        const c = surfacePoint(frames[m + 1], l1, 0);
+        const d = surfacePoint(frames[m + 1], l0, 0);
+        const va = frames[m].s / laneWidth;
+        const vb = frames[m + 1].s / laneWidth;
+        if (drawRoad)
+          quad(tarmac, a, b, c, d, uv(k, va), uv(k + 1, va), uv(k + 1, vb), uv(k, vb));
+        if (drawBottom)   // the same surface, wound the other way so it faces down
+          quad(underside, a, d, c, b, uv(k, va), uv(k, vb), uv(k + 1, vb), uv(k + 1, va));
+      }
+    }
+
+    // =====================================================================
+    // 6. THE PAINT
+    //
+    // One marking per boundary between two lanes, described by the matching
+    // RoadLine node. A dashed line is the same strip, chopped by arc length.
+    // =====================================================================
+    const paint = [];
+    for (let j = 1; j < lanes; ++j) {
+      const spec = lineNodes[j - 1];
+      const line = (typeof spec === 'undefined') ? DEFAULT_LINE : {
+        color: spec.fields.color.value,
+        type: spec.fields.type.value,
+        width: spec.fields.width.value
+      };
+      if (line.type === 'none' || line.width <= 0)
+        continue;
+
+      const lateral = -0.5 * width + j * laneWidth;
+      // A double line is two strips flanking the boundary; anything else is one
+      // strip sitting on it.
+      const strips = line.type === 'double' ? [lateral - line.width, lateral + line.width] : [lateral];
+      const dashed = line.type === 'dashed';
+      const half = 0.5 * line.width;
+
+      const mesh = newMesh();
+      for (let i = 0; i < strips.length; ++i) {
+        for (let k = 0; k < fine.length - 1; ++k) {
+          if (dashed) {
+            const middle = 0.5 * (fine[k].s + fine[k + 1].s);
+            if (middle % DASH_PERIOD >= DASH_ON)
+              continue;
+          }
+          quad(mesh,
+               surfacePoint(fine[k], strips[i] - half, LIFT),
+               surfacePoint(fine[k], strips[i] + half, LIFT),
+               surfacePoint(fine[k + 1], strips[i] + half, LIFT),
+               surfacePoint(fine[k + 1], strips[i] - half, LIFT),
+               uv(0, 0), uv(1, 0), uv(1, 1), uv(0, 1));
+        }
+      }
+      if (mesh.pts.length > 0)
+        paint.push({mesh: mesh, color: line.color});
+    }
+
+    // =====================================================================
+    // 7. THE KERBS
+    //
+    // A sidewalk is a profile extruded along the path: up the inner face, across
+    // the top, back down the outer face. Its width can change from way-point to
+    // way-point, so the profile is rebuilt at every station.
+    //
+    // Walking the profile in this order and winding every quad the same way puts
+    // the normals outwards on the right-hand side; the left side is the mirror
+    // image, so its quads have to wind the other way.
+    // =====================================================================
+    const buildBorder = function(side) {   // side: +1 right, -1 left
+      const mesh = newMesh();
+      const edge = 0.5 * width;
+      const profile = [
+        {out: 0, up: 0},              // road edge, at road level
+        {out: 0, up: borderHeight},   // top of the kerb face
+        {out: 1, up: borderHeight},   // outer top corner ('out' is scaled by the local width)
+        {out: 1, up: 0}               // outer foot
+      ];
+      // Texture: across by the profile's own arc length, along by the road's.
+      const rung = [0, borderHeight, borderHeight, 2 * borderHeight];
+
+      for (let m = 0; m < n - 1; ++m) {
+        const w0 = frames[m].border;
+        const w1 = frames[m + 1].border;
+        if (w0 <= 0 && w1 <= 0)
+          continue;
+        const at = function(f, w, k) {
+          return surfacePoint(f, side * (edge + profile[k].out * w), profile[k].up);
+        };
+        for (let j = 0; j < profile.length - 1; ++j) {
+          const a = at(frames[m], w0, j);
+          const b = at(frames[m], w0, j + 1);
+          const c = at(frames[m + 1], w1, j + 1);
+          const d = at(frames[m + 1], w1, j);
+          const ua = rung[j] + (j >= 2 ? w0 : 0);
+          const ub = rung[j + 1] + (j + 1 >= 2 ? w0 : 0);
+          const v0 = frames[m].s;
+          const v1 = frames[m + 1].s;
+          if (side > 0)
+            quad(mesh, a, b, c, d, uv(ua, v0), uv(ub, v0), uv(ub, v1), uv(ua, v1));
+          else
+            quad(mesh, b, a, d, c, uv(ub, v0), uv(ua, v0), uv(ua, v1), uv(ub, v1));
+        }
+      }
+      return mesh;
+    };
+    const rightBorder = fields.rightBorder.value ? buildBorder(1) : newMesh();
+    const leftBorder = fields.leftBorder.value ? buildBorder(-1) : newMesh();
+
+    // =====================================================================
+    // 8. THE BARRIERS
+    //
+    // A crash barrier is run just clear of the road edge, on top of the kerb.
+    //
+    // Two things about this spine are load-bearing, and both bite:
+    //
+    //  * It is offset in the GROUND PLANE and then lifted by the bank -- not
+    //    offset along the banked cross-section. Those differ only by a cosine,
+    //    but going the second way makes the spine wander in two axes at once,
+    //    and a CrashBarrier extrudes its rail along whatever spine it is given:
+    //    an ill-conditioned one flips the section frame at the apex of a banked
+    //    stretch and the rail tessellates inside out ("the contour of a face
+    //    must not self-intersect").
+    //
+    //  * `barrierOnRightSide` is relative to the barrier's own spine, not to
+    //    the road, and both spines run the way the road does -- so the barrier
+    //    on the road's RIGHT has to be told it is on the LEFT of its spine.
+    // =====================================================================
+    const barrierOffset = 0.06 + 0.05 * width;   // clearance from the road edge
+    const barrierReach = 0.5 * width + barrierOffset;
+    const barrierPath = function(side) {
+      let out = '';
+      for (let m = 0; m < n; ++m) {
+        const f = frames[m];
+        const x = f.p.x + f.d.y * side * barrierReach;
+        const y = f.p.y - f.d.x * side * barrierReach;
+        const z = f.p.z + Math.sin(tiltAt(m)) * side * barrierReach;
+        out += x + ' ' + y + ' ' + z + (m < n - 1 ? ', ' : '');
+      }
+      return out;
+    };
+
+    // =====================================================================
+    // 9. THE PAINTED TURN ARROWS
+    //
+    // OSM "turn:lanes" syntax: lanes separated by '|', and the turns allowed in
+    // one lane separated by ';' -- e.g. "through|left;through|none".
+    //
+    // An arrow is drawn by stroking a spine -- a run up the lane, then a kink
+    // towards the turn -- and capping it with a head. Pure geometry, no decal.
+    // =====================================================================
+    const ARROW_LENGTH = 3.0;
+    const ARROW_STROKE = 0.30;
+    const ARROW_SETBACK = 4.0;   // how far back from the end of the road the tip sits
+    const ARROW_HEAD = 0.75;
+
+    const strokeArrow = function(mesh, lane, turns, forward) {
+      const lateral = -0.5 * width + (lane + 0.5) * laneWidth;
+      const sign = forward ? 1 : -1;
+      const tip = forward ? totalLength - ARROW_SETBACK : ARROW_SETBACK;
+      const tail = tip - sign * ARROW_LENGTH;
+      if (tip < 0 || tip > totalLength || tail < 0 || tail > totalLength)
+        return;   // the road is too short to carry the arrow
+
+      // Place a point given in the arrow's own 2D frame: `a` runs along the
+      // road (from the tail), `b` across it (positive to the arrow's left).
+      const place = function(a, b) {
+        const target = tail + sign * a;
+        let m = 0;
+        while (m < fine.length - 2 && fine[m + 1].s < target)
+          ++m;
+        const span = fine[m + 1].s - fine[m].s;
+        const t = span > 1e-9 ? (target - fine[m].s) / span : 0;
+        const f = {
+          p: {
+            x: fine[m].p.x + (fine[m + 1].p.x - fine[m].p.x) * t,
+            y: fine[m].p.y + (fine[m + 1].p.y - fine[m].p.y) * t,
+            z: fine[m].p.z + (fine[m + 1].p.z - fine[m].p.z) * t
+          },
+          right: fine[m].right,
+          up: fine[m].up
+        };
+        return surfacePoint(f, lateral + sign * b, LIFT);
+      };
+
+      const wantsLeft = turns.indexOf('left') !== -1;
+      const wantsRight = turns.indexOf('right') !== -1;
+      const wantsThrough = turns.indexOf('through') !== -1 || (!wantsLeft && !wantsRight);
+      const spines = [];
+      if (wantsThrough)
+        spines.push([{a: 0, b: 0}, {a: ARROW_LENGTH, b: 0}]);
+      if (wantsLeft)
+        spines.push([{a: 0, b: 0}, {a: 0.55 * ARROW_LENGTH, b: 0}, {a: 0.85 * ARROW_LENGTH, b: 0.55}]);
+      if (wantsRight)
+        spines.push([{a: 0, b: 0}, {a: 0.55 * ARROW_LENGTH, b: 0}, {a: 0.85 * ARROW_LENGTH, b: -0.55}]);
+
+      const half = 0.5 * ARROW_STROKE;
+      for (let i = 0; i < spines.length; ++i) {
+        const spine = spines[i];
+        for (let k = 0; k < spine.length - 1; ++k) {
+          const da = spine[k + 1].a - spine[k].a;
+          const db = spine[k + 1].b - spine[k].b;
+          const len = Math.sqrt(da * da + db * db) || 1;
+          const na = -db / len * half;   // perpendicular to the segment
+          const nb = da / len * half;
+          quad(mesh,
+               place(spine[k].a + na, spine[k].b + nb),
+               place(spine[k].a - na, spine[k].b - nb),
+               place(spine[k + 1].a - na, spine[k + 1].b - nb),
+               place(spine[k + 1].a + na, spine[k + 1].b + nb),
+               uv(0, 0), uv(1, 0), uv(1, 1), uv(0, 1));
+        }
+        // The head: a triangle sitting on the last segment's heading, emitted as
+        // a quad with its last two corners collapsed onto the tip.
+        const last = spine[spine.length - 1];
+        const prev = spine[spine.length - 2];
+        const da = last.a - prev.a;
+        const db = last.b - prev.b;
+        const len = Math.sqrt(da * da + db * db) || 1;
+        const ha = da / len;
+        const hb = db / len;
+        const baseA = last.a - ha * ARROW_HEAD;
+        const baseB = last.b - hb * ARROW_HEAD;
+        const wingA = -hb * ARROW_HEAD * 0.5;
+        const wingB = ha * ARROW_HEAD * 0.5;
+        quad(mesh,
+             place(baseA + wingA, baseB + wingB),
+             place(baseA - wingA, baseB - wingB),
+             place(last.a, last.b),
+             place(last.a, last.b),
+             uv(0, 0), uv(1, 0), uv(1, 1), uv(0, 1));
+      }
+    };
+
+    const arrows = newMesh();
+    // Forward lanes occupy the right-hand half of the road and backward lanes
+    // the left. In the OSM key, lane 0 is the one nearest the centre line.
+    const paintTurnLanes = function(spec, forward) {
+      if (spec === '' || n < 3)
+        return;
+      const perLane = spec.split('|');
+      const count = forward ? forwardLanes : lanes - forwardLanes;
+      for (let i = 0; i < perLane.length && i < count; ++i) {
+        const lane = forward ? (lanes - forwardLanes + i) : (lanes - forwardLanes - 1 - i);
+        if (lane < 0 || lane >= lanes)
+          continue;
+        strokeArrow(arrows, lane, perLane[i].split(';'), forward);
+      }
+    };
+    paintTurnLanes(fields.turnLanesForward.value, true);
+    paintTurnLanes(fields.turnLanesBackward.value, false);
+
+    // =====================================================================
+    // 10. THE START / END LINES
+    //
+    // An optional textured patch per lane, laid across the lane at the very
+    // first (or very last) way-point.
+    // =====================================================================
+    const endPatches = [];
+    const addPatches = function(urls, atStart) {
+      const f = atStart ? frames[0] : frames[n - 1];
+      const along = (atStart ? 1 : -1) * laneWidth;
+      for (let lane = 0; lane < lanes && lane < urls.length; ++lane) {
+        if (urls[lane] === '')
+          continue;
+        const l0 = -0.5 * width + lane * laneWidth;
+        const l1 = l0 + laneWidth;
+        const shift = function(p) {
+          return {x: p.x + f.d.x * along, y: p.y + f.d.y * along, z: p.z};
+        };
+        const a = surfacePoint(f, l0, LIFT);
+        const b = surfacePoint(f, l1, LIFT);
+        const mesh = newMesh();
+        quad(mesh, a, b, shift(b), shift(a), uv(0, 0), uv(1, 0), uv(1, 1), uv(0, 1));
+        endPatches.push({mesh: mesh, url: urls[lane]});
+      }
+    };
+    addPatches(fields.startLine.value, true);
+    addPatches(fields.endLine.value, false);
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "road"
+    children [
+      Group { # the RoadLine nodes themselves are inert; they only carry properties
+        children IS lines
+      }
+      %< if (drawRoad && tarmac.pts.length > 0) { >%
+      DEF ROAD Solid {
+        children [
+          Shape {
+            appearance IS appearance
+            geometry DEF ROAD_GEOMETRY IndexedFaceSet {
+              coord Coordinate {
+                point [ %<= printPoints(tarmac) >% ]
+              }
+              texCoord TextureCoordinate {
+                point [ %<= printUvs(tarmac) >% ]
+              }
+              coordIndex [ %<= printIndices(tarmac) >% ]
+              texCoordIndex [ %<= printIndices(tarmac) >% ]
+              creaseAngle 1.5
+            }
+            castShadows IS castShadows
+          }
+        ]
+        name "road"
+        model "road"
+        contactMaterial IS contactMaterial
+        %< if (fields.roadBoundingObject.value) { >%
+        boundingObject USE ROAD_GEOMETRY
+        %< } >%
+      }
+      %< } >%
+      %< if (drawBottom && underside.pts.length > 0) { >%
+      Shape { # the underside, for a road carried on a bridge
+        appearance PBRAppearance {
+          %< if (bottomTexture.length > 0 && bottomTexture[0] !== '') { >%
+          baseColorMap ImageTexture {
+            url IS bottomTexture
+          }
+          %< } else { >%
+          baseColor 0.35 0.35 0.35
+          %< } >%
+          metalness 0
+          roughness 1
+        }
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [ %<= printPoints(underside) >% ]
+          }
+          texCoord TextureCoordinate {
+            point [ %<= printUvs(underside) >% ]
+          }
+          coordIndex [ %<= printIndices(underside) >% ]
+          texCoordIndex [ %<= printIndices(underside) >% ]
+          creaseAngle 1.5
+        }
+        castShadows IS castShadows
+      }
+      %< } >%
+      %< for (let i = 0; i < paint.length; ++i) { >%
+      Shape { # lane marking
+        appearance PBRAppearance {
+          baseColor %<= paint[i].color.r >% %<= paint[i].color.g >% %<= paint[i].color.b >%
+          metalness 0
+          roughness 0.8
+        }
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [ %<= printPoints(paint[i].mesh) >% ]
+          }
+          texCoord TextureCoordinate {
+            point [ %<= printUvs(paint[i].mesh) >% ]
+          }
+          coordIndex [ %<= printIndices(paint[i].mesh) >% ]
+          texCoordIndex [ %<= printIndices(paint[i].mesh) >% ]
+        }
+        castShadows FALSE
+      }
+      %< } >%
+      %< if (arrows.pts.length > 0) { >%
+      Shape { # painted turn arrows
+        appearance PBRAppearance {
+          baseColor 1 1 1
+          metalness 0
+          roughness 0.8
+        }
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [ %<= printPoints(arrows) >% ]
+          }
+          texCoord TextureCoordinate {
+            point [ %<= printUvs(arrows) >% ]
+          }
+          coordIndex [ %<= printIndices(arrows) >% ]
+          texCoordIndex [ %<= printIndices(arrows) >% ]
+        }
+        castShadows FALSE
+      }
+      %< } >%
+      %< for (let i = 0; i < endPatches.length; ++i) { >%
+      Shape { # start / end line
+        appearance PBRAppearance {
+          baseColorMap ImageTexture {
+            url %<= '[ "' + endPatches[i].url + '" ]' >%
+          }
+          metalness 0
+          roughness 0.8
+        }
+        geometry IndexedFaceSet {
+          coord Coordinate {
+            point [ %<= printPoints(endPatches[i].mesh) >% ]
+          }
+          texCoord TextureCoordinate {
+            point [ %<= printUvs(endPatches[i].mesh) >% ]
+          }
+          coordIndex [ %<= printIndices(endPatches[i].mesh) >% ]
+          texCoordIndex [ %<= printIndices(endPatches[i].mesh) >% ]
+        }
+        castShadows FALSE
+      }
+      %< } >%
+      %< if (rightBorder.pts.length > 0) { >%
+      DEF RIGHT_BORDER Solid { # right sidewalk
+        children [
+          Shape {
+            appearance IS pavementAppearance
+            geometry DEF RIGHT_BORDER_GEOMETRY IndexedFaceSet {
+              coord Coordinate {
+                point [ %<= printPoints(rightBorder) >% ]
+              }
+              texCoord TextureCoordinate {
+                point [ %<= printUvs(rightBorder) >% ]
+              }
+              coordIndex [ %<= printIndices(rightBorder) >% ]
+              texCoordIndex [ %<= printIndices(rightBorder) >% ]
+              creaseAngle 0.5
+            }
+            castShadows IS castShadows
+          }
+        ]
+        name "right border"
+        model "road border"
+        contactMaterial IS contactMaterial
+        %< if (fields.rightBorderBoundingObject.value) { >%
+        boundingObject USE RIGHT_BORDER_GEOMETRY
+        %< } >%
+      }
+      %< } >%
+      %< if (leftBorder.pts.length > 0) { >%
+      DEF LEFT_BORDER Solid { # left sidewalk
+        children [
+          Shape {
+            appearance IS pavementAppearance
+            geometry DEF LEFT_BORDER_GEOMETRY IndexedFaceSet {
+              coord Coordinate {
+                point [ %<= printPoints(leftBorder) >% ]
+              }
+              texCoord TextureCoordinate {
+                point [ %<= printUvs(leftBorder) >% ]
+              }
+              coordIndex [ %<= printIndices(leftBorder) >% ]
+              texCoordIndex [ %<= printIndices(leftBorder) >% ]
+              creaseAngle 0.5
+            }
+            castShadows IS castShadows
+          }
+        ]
+        name "left border"
+        model "road border"
+        contactMaterial IS contactMaterial
+        %< if (fields.leftBorderBoundingObject.value) { >%
+        boundingObject USE LEFT_BORDER_GEOMETRY
+        %< } >%
+      }
+      %< } >%
+      %< if (fields.rightBarrier.value) { >%
+      CrashBarrier {
+        translation 0 0 0
+        name "right crash barrier"
+        path [ %<= barrierPath(1) >% ]
+        barrierOnRightSide FALSE
+        subdivision -1
+        enableBoundingObject IS rightBarrierBoundingObject
+      }
+      %< } >%
+      %< if (fields.leftBarrier.value) { >%
+      CrashBarrier {
+        translation 0 0 0
+        name "left crash barrier"
+        path [ %<= barrierPath(-1) >% ]
+        barrierOnRightSide TRUE
+        subdivision -1
+        enableBoundingObject IS leftBarrierBoundingObject
+      }
+      %< } >%
+    ]
+    locked IS locked
+  }
+}

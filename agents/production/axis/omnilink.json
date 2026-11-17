@@ -1,0 +1,13 @@
+{
+  "name": "axis",
+  "display_name": "Axis",
+  "omnilink_agent_name": "Axis",
+  "world": "projects/samples/demos/worlds/chat/omnilink_omniarm6.omniworld",
+  "bridge_port": 8765,
+  "agent_script": "agents/production/axis/axis_agent.py",
+  "agent_port": 51516,
+  "agent_port_env": "AXIS_PORT",
+  "bridge_url_env": "AXIS_BRIDGE_URL",
+  "description": "OmniArm 6 robot-control agent. Translates operator intent into safe, bounded joint-space or task-space commands; enforces IK_MAX_DQ per tick; stops on stale telemetry.",
+  "tags": ["arm", "manipulation", "omniarm6", "first-party"]
+}

@@ -1,0 +1,130 @@
+name: Request a Sim
+description: Describe a robot or scenario and we will try to build it in OmniSim, for free, in public.
+title: "[Request a Sim] "
+labels: ["request-a-sim", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Tell us what you want simulated and we will try to build it — free, and in the open.**
+
+        Whatever we build lands in this repository as a world anyone can run, and the thread stays
+        public so you can see what worked, what did not, and what we measured. If we get something
+        wrong you will be able to point at it.
+
+        Two things worth knowing before you spend time on this form.
+
+        **We are honest about what the engine cannot do yet.** The checklist below screens for cases
+        that OmniSim genuinely cannot simulate today. They are not a matter of effort — a closed
+        kinematic loop, for example, currently stops physics for the *entire world*, not just the
+        robot. We would rather tell you that in a day than in a fortnight.
+
+        **A picture is not proof.** Nothing gets closed as done on a screenshot. A world that loads,
+        steps and logs nothing bad can still contain a robot that is falling through the floor
+        forever. Whatever we hand back comes with a measurement.
+
+  - type: input
+    id: what
+    attributes:
+      label: What do you want to see simulated?
+      description: One or two sentences. The robot, and what it should be doing.
+      placeholder: A Fetch mobile manipulator navigating a warehouse aisle and picking a box off a shelf.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: model_source
+    attributes:
+      label: What model can you give us?
+      description: This is the single biggest factor in how long it takes.
+      options:
+        - URDF — plain, already expanded, with meshes
+        - URDF — xacro (we will ask you to expand it first)
+        - STEP / STP CAD file, no URDF
+        - Nothing yet — the robot does not exist as a file
+        - Something else (describe below)
+    validations:
+      required: true
+
+  - type: input
+    id: model_link
+    attributes:
+      label: Link to the model
+      description: A public repository, a release asset, or a file share. Leave blank if you have nothing yet.
+      placeholder: https://github.com/...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: robot_shape
+    attributes:
+      label: What shape is the robot?
+      options:
+        - Wheeled or differential-drive base
+        - Serial-chain arm (each joint drives one child link)
+        - Wheeled base with an arm on top
+        - Legged (quadruped)
+        - Legged (humanoid)
+        - Drone / aerial
+        - Something else (describe below)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: not_supported
+    attributes:
+      label: Please confirm your robot does not depend on any of these
+      description: >
+        Each of these is a measured limitation of the current engine, not a guess. If one of them
+        applies, please still open the issue — say so in the notes and we will tell you honestly
+        whether there is a way around it. We would just rather not promise something we cannot build.
+      options:
+        - label: "**No closed kinematic loops.** Four-bar linkages, linkage-driven grippers (including the real Robotiq mechanism), delta or Stewart platforms, differentials. A loop-closing joint currently gives the whole world no physics at all."
+          required: false
+        - label: "**Not a tracked vehicle.** Track propulsion does not work under the current physics backend — the belts animate and the chassis does not move."
+          required: false
+        - label: "**No conveyors or powered material-handling surfaces.** The shipped conveyor is built on the same track node, so it animates and moves nothing."
+          required: false
+        - label: "**No driven ball joints.** A motorised ball joint reports movement through its sensor while the body does not actually move. Use a hinge chain instead."
+          required: false
+        - label: "**Nothing that depends on a concave collider.** Every triangle mesh is silently reduced to its convex hull, so a bin, cup, tube or C-channel behaves as a solid lump. That rules out bin-picking into a real bin, peg-in-hole, and cup or tube handling."
+          required: false
+        - label: "**No fluids or buoyancy.** Not simulated at all."
+          required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else we should know
+      description: >
+        Sensors you need, a specific behaviour you care about, a deadline, or which of the boxes above
+        you could not tick and why.
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ### What happens next, and roughly how long
+
+        These are measured from what similar imports have actually taken, not estimates:
+
+        | What you are bringing | Realistic turnaround |
+        |---|---|
+        | Plain URDF, wheeled base or serial arm, complete joint limits | **half a day to a day** |
+        | A real vendor URDF doing an actual task | **two to five days** |
+        | A STEP file with no URDF | **one to three weeks**, and sometimes the honest answer is no |
+
+        A STEP file converts to a single static prop with no joints, no colliders and no inertial
+        properties — every one of those is then authored by hand. If that is what you have, we may
+        deliver a visual prop first and say plainly that it is not yet a simulated robot.
+
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Before you submit
+      options:
+        - label: I understand this is best-effort, unpaid, and may be declined — most often because of one of the limitations above.
+          required: true
+        - label: I am able to share the model publicly, or I will say in the notes if I cannot.
+          required: true

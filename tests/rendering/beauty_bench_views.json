@@ -1,0 +1,20 @@
+{
+  "description": "Fixed Beauty Bench views. Preserve world lighting/exposure; compare identical assets before changing content.",
+  "views": [
+    {
+      "name": "exterior",
+      "position": [-10.5, -9.5, 4.4],
+      "orientation": [0, 0.32879194053163663, 0.9444023823781051, 0.735]
+    },
+    {
+      "name": "interior",
+      "position": [-2.3, 1.5, 1.55],
+      "orientation": [0.005179849690226163, 0.009745850162458129, -0.999939091926002, 0.9770971460581808]
+    },
+    {
+      "name": "materials",
+      "position": [7.032711, -8.374983, 4.63294],
+      "orientation": [-0.278945293, 0.120681249, 0.952693844, 2.359689255]
+    }
+  ]
+}

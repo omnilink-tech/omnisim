@@ -1,0 +1,93 @@
+{
+  "name": "g1",
+  "urdf": "projects/robots/unitree/g1/urdf/g1_23dof_omnisim.urdf",
+  "spawn_z": 0.78,
+  "_note": "G1 deterministic SQUAT: hold the proven arms-down stand, then on top of it blend the legs DEEPER into a knee-bend (a quasi-static squat), hold at the bottom, and rise back -- repeated `reps` times. Same controller/stiffness as the stand; the squat is a feedforward time-varying leg target (see the `squat` block) and the existing reactive lean + arm_balance + hip auto_trim keep the CoM centred through the transient. Base pose/balance copied verbatim from g1_armsdown.json (the robust cube-defense stand).",
+  "joint_order": [
+    "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+    "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+    "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+    "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+    "waist_yaw_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+  ],
+  "nominal": {
+    "left_hip_pitch_joint": -0.30, "left_knee_joint": 0.52, "left_ankle_pitch_joint": -0.23,
+    "right_hip_pitch_joint": -0.30, "right_knee_joint": 0.52, "right_ankle_pitch_joint": -0.23,
+    "left_shoulder_pitch_joint": 1.5708, "left_shoulder_roll_joint": 0.0,
+    "left_shoulder_yaw_joint": 0.0, "left_elbow_joint": 0.5, "left_wrist_roll_joint": 0.0,
+    "right_shoulder_pitch_joint": 1.5708, "right_shoulder_roll_joint": 0.0,
+    "right_shoulder_yaw_joint": 0.0, "right_elbow_joint": 0.5, "right_wrist_roll_joint": 0.0
+  },
+  "ankle_pitch_joints": ["left_ankle_pitch_joint", "right_ankle_pitch_joint"],
+  "ankle_roll_joints": ["left_ankle_roll_joint", "right_ankle_roll_joint"],
+  "hip_pitch_joints": ["left_hip_pitch_joint", "right_hip_pitch_joint"],
+  "arm_hold": [
+    "waist_yaw_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+  ],
+  "deploy_ke": 400,
+  "deploy_kd": 60,
+  "ank_bias": -0.10,
+  "upright": {"bz_min": 0.55, "roll_max": 0.7, "pitch_max": 0.7},
+  "settle_s": 0.2,
+  "squat": {
+    "_note": "Quasi-static squat overlay on the legs. Phases: WAIT(start_s) -> DESCEND(descend_s, smoothstep) -> HOLD(hold_s) -> RISE(rise_s) -> BETWEEN(between_s), repeated `reps` times, then DONE (hold the stand). `delta` are per-joint OFFSETS from the standing nominal at the bottom of the squat; ankle delta = -(hip+knee) keeps the foot FLAT. ff_ank/ff_hip add an OPEN-LOOP depth-proportional lean-back (like the manip CoM-back) -- start at 0 and only raise if it tips forward. bz_drop is how far the pelvis is EXPECTED to sink at the bottom (m): the fall check lowers bz_min by frac*bz_drop so a deliberate crouch is not mis-flagged as a fall.",
+    "enabled": true,
+    "start_s": 2.0,
+    "descend_s": 3.5,
+    "hold_s": 1.0,
+    "rise_s": 5.5,
+    "between_s": 1.2,
+    "reps": 2,
+    "delta": {
+      "left_hip_pitch_joint": -0.41, "left_knee_joint": 0.68, "left_ankle_pitch_joint": -0.27,
+      "right_hip_pitch_joint": -0.41, "right_knee_joint": 0.68, "right_ankle_pitch_joint": -0.27
+    },
+    "ff_ank": 0.08,
+    "ff_hip": 0.0,
+    "bz_drop": 0.25
+  },
+  "lean": {
+    "_note": "Reactive fore/aft ankle lean -- holds the marginal G1 CoM through the squat transient.",
+    "enabled": true
+  },
+  "arm_balance": {
+    "_note": "Arms are the fast dynamic balancer through the squat (shoulder_pitch swings back on forward lean). kd=0.",
+    "enabled": true,
+    "kp_pitch": 6.0,
+    "ki_pitch": 0.5,
+    "kd_pitch": 0.0,
+    "kp_roll": 1.2,
+    "ki_roll": 0.4,
+    "clamp": 1.5,
+    "iclamp": 1.2
+  },
+  "auto_trim": {
+    "_note": "HIP-ONLY slow return-to-home integral; mops up residual CoM creep across the squat reps.",
+    "enabled": true,
+    "kp": 0.5,
+    "ki": 0.30,
+    "clamp": 0.16,
+    "hip": 1.0
+  },
+  "capture_step": {
+    "enabled": false,
+    "trigger_tilt": 0.16,
+    "trigger_vel": 0.25,
+    "reach": 0.55,
+    "lift": 0.55,
+    "dur": 0.34,
+    "settle": 0.8,
+    "legs": {
+      "left":  {"hip_pitch": "left_hip_pitch_joint",  "hip_roll": "left_hip_roll_joint",  "knee": "left_knee_joint",  "ankle_pitch": "left_ankle_pitch_joint",  "ankle_roll": "left_ankle_roll_joint"},
+      "right": {"hip_pitch": "right_hip_pitch_joint", "hip_roll": "right_hip_roll_joint", "knee": "right_knee_joint", "ankle_pitch": "right_ankle_pitch_joint", "ankle_roll": "right_ankle_roll_joint"}
+    }
+  }
+}

@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<!--
+Sharp GP2D120 — analog IR proximity sensor, 4-30 cm. Modelled as a
+1-sample lidar pointing forward; the importer materialises it as a
+Webots Lidar with horizontalResolution=1 (effectively a DistanceSensor).
+-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="gp2d120" params="parent_link prefix:=gp2d120 *origin">
+    <link name="${prefix}_link">
+      <visual>
+        <origin xyz="0 0 0.005" rpy="0 0 0"/>
+        <geometry><box size="0.030 0.014 0.010"/></geometry>
+        <material name="${prefix}_dark"><color rgba="0.20 0.20 0.20 1.0"/></material>
+      </visual>
+      <inertial>
+        <origin xyz="0 0 0.005" rpy="0 0 0"/>
+        <mass value="0.004"/>
+        <inertia ixx="1e-7" ixy="0" ixz="0" iyy="1e-7" iyz="0" izz="1e-7"/>
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}_link"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+    <gazebo reference="${prefix}_link">
+      <sensor name="${prefix}" type="lidar">
+        <update_rate>20</update_rate>
+        <ray>
+          <scan><horizontal><samples>1</samples><min_angle>0</min_angle><max_angle>0.001</max_angle></horizontal></scan>
+          <range><min>0.04</min><max>0.30</max></range>
+        </ray>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>

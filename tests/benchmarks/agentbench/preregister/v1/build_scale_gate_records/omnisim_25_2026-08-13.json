@@ -1,0 +1,71 @@
+{
+  "schema": "agenticsimbench/build-scale-live-gate/v1",
+  "suite": "agenticsimbench/v1",
+  "sim": "omnisim",
+  "level": 25,
+  "measured_utc": "2026-08-13",
+  "outcomes": {
+    "oracle": "PASS",
+    "null": "FAIL"
+  },
+  "oracle": {
+    "assertions_passed": 9,
+    "assertions_total": 9,
+    "robot_count": 25,
+    "controller_instances": 25,
+    "minimum_clearance_m": 1.74,
+    "moving_robots": 25,
+    "minimum_net_displacement_m": 6.393784284591675,
+    "minimum_path_length_m": 6.393784284591675,
+    "unique_robot_collision_pairs": 0,
+    "maximum_speed_m_s": 0.3197193145752305,
+    "clean_replay_passes": 1,
+    "primary_wall_s": 42.99230019999959,
+    "clean_replay_wall_s": 42.72400270000071
+  },
+  "null": {
+    "failed_assertions": [
+      "BS.5",
+      "BS.9"
+    ],
+    "moving_robots": 0,
+    "primary_wall_s": 42.46804340000381,
+    "clean_replay_wall_s": 42.26722219999647
+  },
+  "environment": {
+    "machine": "LAPTOP-H61DJILS",
+    "host_os": "Windows-11-10.0.26200-SP0",
+    "engine": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin.exe",
+    "engine_sha256": "5569119831d3601896e8c763a8c727f9b3a310589b0538cf289ee4a844b70b17",
+    "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+    "runtime": {
+      "device": "cpu",
+      "mujoco": "3.8.1",
+      "mujoco_warp": "3.8.0.3",
+      "newton": "1.2.0",
+      "warp": "1.13.0"
+    }
+  },
+  "source_commit": "16200aaae19a82215c137d531c92853b9e966efb",
+  "source_sha256": {
+    "preregister/v1/build_scale_spec.json": "4249e823bbf9fee5ca72b19a6489758f14588dc540939902fc5d8a8e45627a55",
+    "preregister/v1/build_scale_core.py": "e83a7897fe1f058d46d3842e1b9c6ebb50162069a164cdc25cd0031bbd7abd67",
+    "adapters/omnisim/build_scale.py": "04afba652ad0e52a0fba99958914ea00165809ef7a84bb13d7f6f9e4904a7605",
+    "adapters/omnisim/evidence.py": "5abe7e24dfa1961b7632db565b3acf7c0dac85159c1d631238bada74b8eb3eaa",
+    "adapters/omnisim/headless.py": "22f235e05fa167e93ab0c230c107af14e5a89249dd6c4243603d4c4e0fa85cef",
+    "../../../projects/default/controllers/harness_supervisor/observe.py": "4665ff54b70ec75cf9a9fbfbb3cff8461c3c54f948d835964df9e350cd060f31",
+    "controllers/agentbench_recorder/agentbench_recorder.py": "2701eef035fa08b35965bddd31c233a9fd40add2ca54351b11ba8e7f2e6d1574",
+    "adapters/omnisim/build_scale_lane/protos/ScaleBot.proto": "b4a49e737abf179d1271672dd9b257be310af8914dc8f0b9ec6be25a464dab7e",
+    "adapters/omnisim/build_scale_lane/controllers/build_scale_drive/build_scale_drive.py": "7db75ad893096bf2dca0785eceedb8c6788eacab4c709451fa93a94be54c11c5",
+    "adapters/omnisim/build_scale_lane/controllers/build_scale_idle/build_scale_idle.py": "568d38340fc8f03ca25f98760f6b6fb0521167f5628a5a8b0ffe90b6b6fa1024",
+    "adapters/omnisim/build_scale_lane/worlds/build_scale_25.wbt": "1ec226c3728a1ab202f4be4d907fac6aaf829af763bc9ca2b7d7ea956d8ac25c",
+    "adapters/omnisim/build_scale_lane/worlds/build_scale_25_null.wbt": "c8ddb04f53402a39d01a90f512cb4772174f467d61a4fdb2c7665a88acb7a388"
+  },
+  "run_evidence_sha256": {
+    "preregister/v1/build_scale_gate_records/evidence/omnisim_25_2026-08-13.oracle.verdict.json": "a3525d9fea059b2d7e2e518ea4dde9803559a63657b5110f252bea7f4cc3d5c8",
+    "preregister/v1/build_scale_gate_records/evidence/omnisim_25_2026-08-13.oracle.facts.json": "7b526d0ac36d421387d025d4b678bf9130ccf79ce14cf8f7d4d5c949bb8dde6f",
+    "preregister/v1/build_scale_gate_records/evidence/omnisim_25_2026-08-13.null.verdict.json": "c92c67133ef2a8a1c441d6c67bd390a047452e4a3afaa12d22556390de4661e8",
+    "preregister/v1/build_scale_gate_records/evidence/omnisim_25_2026-08-13.null.facts.json": "bbc3345bbb6785965e657ba622cbe922e549ecc0f56e0f25953077539a262bd7"
+  },
+  "claim_scope": "Live BuildScale discriminator gate only; this is not a scored coding-agent result or comparative win."
+}

@@ -1,0 +1,148 @@
+CHECK: -m pytest -m not engine -q tests/harness tests/python tests/packaging tests/dev
+........................................................................ [  5%]
+........................................................................ [ 11%]
+........................................................................ [ 16%]
+........................................................................ [ 22%]
+........................................................................ [ 27%]
+........................................................................ [ 33%]
+........................................................................ [ 38%]
+........................................................................ [ 44%]
+........................................................................ [ 49%]
+........................................................................ [ 55%]
+........................................................................ [ 60%]
+........................................................................ [ 66%]
+........................................................................ [ 72%]
+........................................................................ [ 77%]
+........................................................................ [ 83%]
+..........................s...s......................................... [ 88%]
+......................sssssssss......................................... [ 94%]
+..................F................................ [ 98%]
+.........................                                                [100%]
+================================== FAILURES ===================================
+___________________________ test_qt_include_ratchet ___________________________
+
+    def test_qt_include_ratchet():
+        counts = measure()
+        regressions = []
+        for directory, count in sorted(counts.items()):
+            allowed = BASELINE.get(directory, 0)
+            if count > allowed:
+                regressions.append(
+                    f"src/omnisim/{directory}: {count} files include Qt directly "
+                    f"(ratchet allows {allowed})"
+                )
+        total = sum(counts.values())
+        if total > TOTAL:
+            regressions.append(
+                f"src/omnisim (every directory): {total} files include Qt directly "
+                f"(ratchet allows {TOTAL})"
+            )
+>       assert not regressions, (
+            "Qt-include ratchet violated -- new Qt dependencies added to the engine core:\n  "
+            + "\n  ".join(regressions)
+            + "\nUse std:: types instead, or keep the Qt dependency in a directory that owns it "
+            "(gui/, widgets/, editor/). The ratchet only goes down: see "
+            "docs/developer/core-evolution-plan.md Axis 2 / Phase Q2."
+        )
+E       AssertionError: Qt-include ratchet violated -- new Qt dependencies added to the engine core:
+E           src/omnisim/nodes: 96 files include Qt directly (ratchet allows 95)
+E           src/omnisim (every directory): 379 files include Qt directly (ratchet allows 378)
+E         Use std:: types instead, or keep the Qt dependency in a directory that owns it (gui/, widgets/, editor/). The ratchet only goes down: see docs/developer/core-evolution-plan.md Axis 2 / Phase Q2.
+E       assert not ['src/omnisim/nodes: 96 files include Qt directly (ratchet allows 95)', 'src/omnisim (every directory): 379 files include Qt directly (ratchet allows 378)']
+
+tests\test_qt_include_ratchet.py:145: AssertionError
+============================== warnings summary ===============================
+tests/test_headless_never_stepped.py::test_sim_never_stepped
+  C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_headless_never_stepped.py::test_sim_never_stepped returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_headless_never_stepped.py::test_sim_never_stepped_legacy_wb_tag
+  C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_headless_never_stepped.py::test_sim_never_stepped_legacy_wb_tag returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_headless_never_stepped.py::test_sidecar_finalised
+  C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_headless_never_stepped.py::test_sidecar_finalised returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_headless_never_stepped.py::test_controller_start_failures
+  C:\Users\<user>\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but tests/test_headless_never_stepped.py::test_controller_start_failures returned <class 'bool'>.
+  Did you mean to use `assert` instead of `return`?
+  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.
+    warnings.warn(
+
+tests/test_newton_cloth_attach.py::ClothAttachTest::test_attach_protocol_end_to_end
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:6422: DeprecationWarning: The legacy DOF-shaped joint_target_q layout is deprecated for models whose joint coordinate and DOF counts differ (free/ball/distance joints). In a future release joint_target_q will always use the coordinate layout (matching joint_q) and newton.use_coord_layout_targets will be removed. Set newton.use_coord_layout_targets = True before building models and index targets via Model.joint_target_q_start.
+    self.model = self.builder.finalize()
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_slot_ids_are_not_coordinate_offsets
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:548: DeprecationWarning: Scalar ModelBuilder.gravity is deprecated in Newton 1.4; pass a gravity vector instead. Scalar gravity will be removed in a future release.
+    self.builder.gravity = (float(gx) * up[0] + float(gy) * up[1]
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_slot_ids_are_not_coordinate_offsets
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:553: DeprecationWarning: Scalar ModelBuilder.gravity is deprecated in Newton 1.4; pass a gravity vector instead. Scalar gravity will be removed in a future release.
+    _res = ((float(gx) - self.builder.gravity * up[0]) ** 2
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_slot_ids_are_not_coordinate_offsets
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:554: DeprecationWarning: Scalar ModelBuilder.gravity is deprecated in Newton 1.4; pass a gravity vector instead. Scalar gravity will be removed in a future release.
+    + (float(gy) - self.builder.gravity * up[1]) ** 2
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_slot_ids_are_not_coordinate_offsets
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:555: DeprecationWarning: Scalar ModelBuilder.gravity is deprecated in Newton 1.4; pass a gravity vector instead. Scalar gravity will be removed in a future release.
+    + (float(gz) - self.builder.gravity * up[2]) ** 2)
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_slot_ids_are_not_coordinate_offsets
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:6420: DeprecationWarning: The legacy DOF-shaped joint_target_q layout is deprecated for models whose joint coordinate and DOF counts differ (free/ball/distance joints). In a future release joint_target_q will always use the coordinate layout (matching joint_q) and newton.use_coord_layout_targets will be removed. Set newton.use_coord_layout_targets = True before building models and index targets via Model.joint_target_q_start.
+    self.model = self.builder.finalize(device="cpu")
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_slot_ids_are_not_coordinate_offsets
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:7040: DeprecationWarning: Scalar ModelBuilder.gravity is deprecated in Newton 1.4; pass a gravity vector instead. Scalar gravity will be removed in a future release.
+    tuple(self.builder.up_vector), self.builder.gravity))
+
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_answer_respects_authored_joint_limits
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_batching_returns_one_answer_per_target
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_reachable_target_is_actually_solved
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_solve_does_not_move_coordinates_it_was_not_given
+tests/test_newton_ik_slots.py::NewtonIkSlots::test_unreachable_target_reports_its_error_rather_than_hiding_it
+  O:\omnisim\src\omnisim\physics\omnisim_newton_runtime.py:9678: DeprecationWarning: Model.contacts() is deprecated; create a CollisionPipeline and call pipeline.contacts() instead.
+    self._contacts_cache = self.model.contacts() if hasattr(self.model, 'contacts') else None
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_qt_include_ratchet.py::test_qt_include_ratchet - AssertionE...
+1 failed, 1288 passed, 11 skipped, 40 deselected, 46 warnings, 21 subtests passed in 76.60s (0:01:16)

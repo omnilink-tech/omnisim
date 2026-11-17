@@ -1,0 +1,35 @@
+{
+  "extra": {
+    "boulder_count": 79,
+    "crater_count": 14,
+    "debris_count": 1078,
+    "prop_count": 1606,
+    "recipe": "mars",
+    "rock_count": 449,
+    "world_age": 0.45
+  },
+  "library_version": "0.1.0",
+  "params": {
+    "boulder_count": 80,
+    "clearing_radius": 20,
+    "crater_count": 14,
+    "crater_exclusion_radius_m": 24.0,
+    "crater_max_depth_m": 1.2,
+    "crater_max_radius_m": 14.0,
+    "crater_min_depth_m": 0.3,
+    "crater_min_radius_m": 5.0,
+    "debris_count": 1120,
+    "height_scale": 8.5,
+    "husky_count": 8,
+    "husky_formation": "circle",
+    "husky_spawn_radius": 14,
+    "mesa_mix": 0.55,
+    "rock_count": 480,
+    "size": 160
+  },
+  "recipe": "mars",
+  "schema_version": 1,
+  "seed": 42,
+  "world_filename": "mars_max.wbt",
+  "world_sha256": "7667a338553baf46befc824a1d5f2c3d5301b8505c919fc86bad53584d6a8352"
+}

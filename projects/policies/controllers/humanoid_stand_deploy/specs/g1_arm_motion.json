@@ -1,0 +1,143 @@
+{
+  "name": "g1",
+  "urdf": "projects/robots/unitree/g1/urdf/g1_23dof_omnisim.urdf",
+  "spawn_z": 0.78,
+  "_note": "G1 deterministic stand + ARM-MOTION skill. Derived from g1_armsdown.json: the lower-body stand (stiff squat + ank_bias lean + reactive lean + hip auto_trim) is UNCHANGED and load-bearing. The NEW 'arm_motion' block rides a looping routine of bilateral arm EXERCISES (front/lateral raises, arm circles, elbow curls, wave, overhead reach) ON TOP of the live arm_balance: the exercise is a smooth per-joint sinusoid superimposed on the balancer, NOT a takeover (unlike manip). A forward-kinematics CoM-back feedforward (hip+ankle, proportional to how far the hands extend ahead of their rest reach) pre-compensates the arms' CoM shift so the stand stays centred while both arms move in 3-D. Composes with -Throw (the cube-defense ring is in the world). Hands' positions are FK-computed each tick (awareness) and logged.",
+  "joint_order": [
+    "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+    "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+    "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+    "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+    "waist_yaw_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+  ],
+  "nominal": {
+    "left_hip_pitch_joint": -0.30, "left_knee_joint": 0.52, "left_ankle_pitch_joint": -0.23,
+    "right_hip_pitch_joint": -0.30, "right_knee_joint": 0.52, "right_ankle_pitch_joint": -0.23,
+    "left_shoulder_pitch_joint": 1.5708, "left_shoulder_roll_joint": 0.0,
+    "left_shoulder_yaw_joint": 0.0, "left_elbow_joint": 0.5, "left_wrist_roll_joint": 0.0,
+    "right_shoulder_pitch_joint": 1.5708, "right_shoulder_roll_joint": 0.0,
+    "right_shoulder_yaw_joint": 0.0, "right_elbow_joint": 0.5, "right_wrist_roll_joint": 0.0
+  },
+  "_rest_note": "REST = arms-down HOME (a straight line hanging beside the body: shoulder_pitch 1.5708, elbow 0.5 collinear). Every exercise deviation is measured from this rest pose and eases back to it between exercises. shoulder_pitch decreasing 1.5708->0 raises the arm FORWARD to horizontal, ->negative overhead. shoulder_roll +left/-right swings the arm OUT to the side. elbow increasing bends the forearm.",
+  "ankle_pitch_joints": ["left_ankle_pitch_joint", "right_ankle_pitch_joint"],
+  "ankle_roll_joints": ["left_ankle_roll_joint", "right_ankle_roll_joint"],
+  "hip_pitch_joints": ["left_hip_pitch_joint", "right_hip_pitch_joint"],
+  "arm_hold": [
+    "waist_yaw_joint",
+    "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+    "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint",
+    "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+    "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"
+  ],
+  "deploy_ke": 400,
+  "deploy_kd": 60,
+  "ank_bias": -0.10,
+  "_ank_bias_note": "-0.10 = the proven cube-defense value. arm_balance stays LIVE on the arms (the exercise is superimposed), so the stand keeps its proven fast balancer; the hip auto_trim gets a mild D assist (below) to help while the arms are raised, and the exercise amplitudes stay moderate so the arms keep their balancing authority.",
+  "upright": {"bz_min": 0.55, "roll_max": 0.7, "pitch_max": 0.7},
+  "settle_s": 0.2,
+  "lean": {
+    "_note": "Reactive fore/aft ankle lean, kept ON: catches the forward CoM creep of a raised arm before it develops (same role as in armsdown). The arm_motion feedforward does the bulk; this catches what the open-loop FF misses + any thrown cube.",
+    "enabled": true
+  },
+  "arm_balance": {
+    "_note": "STAYS LIVE during the exercises (the key difference from manip, which hands the reach arm OFF). The exercise sinusoid is superimposed on this correction, so the fast balancer keeps catching tilts through the whole routine. kp=6 fast P + small integral return-to-home.",
+    "enabled": true,
+    "kp_pitch": 6.0,
+    "ki_pitch": 0.5,
+    "kd_pitch": 0.0,
+    "kp_roll": 1.2,
+    "ki_roll": 0.4,
+    "clamp": 1.5,
+    "iclamp": 1.2
+  },
+  "auto_trim": {
+    "_note": "HIP return-to-home + a MILD D (rate) assist. Same P+I as the cube-defense stand (the proven slow return-to-0-rad), plus a small kd on pitch rate so the hip helps catch fore/aft tilts while the arms are raised (and have less balancing authority). Kept gentle -- a hot hip PID destabilised this stiff position-held stand -- the arms remain the primary fast balancer.",
+    "enabled": true,
+    "kp": 0.8,
+    "ki": 0.30,
+    "kd": 0.25,
+    "clamp": 0.24,
+    "iclamp": 0.16,
+    "hip": 1.0
+  },
+  "arm_motion": {
+    "_note": "The 'balance while the arms do 3-D exercises' skill. Looping list of exercises; each is a set of per-joint sinusoid terms dev = bias + amp*sin(2*pi*freq_hz*t + phase), eased in/out over ramp_s to the rest pose at each boundary. A 'raise' (0 -> 2*amp -> 0, one direction) is bias=amp, phase=-1.5708. 'ff' = forward CoM-back feedforward gains. 'fk' chains (torso-frame, from g1_23dof_omnisim.urdf, shared with the manip overlay) give the live hand positions for awareness + the feedforward reach measure.",
+    "enabled": true,
+    "start_s": 3.0,
+    "ramp_s": 1.2,
+    "rest_s": 2.5,
+    "loop": true,
+    "ff": {"c_hip": 0.28, "hip_clamp": 0.16, "c_ank": 0.45, "ank_clamp": 0.16, "ref_pad": 0.0},
+    "limits": {
+      "left_shoulder_pitch_joint": [-3.0892, 2.6704],
+      "left_shoulder_roll_joint": [-1.5882, 2.2515],
+      "left_shoulder_yaw_joint": [-2.618, 2.618],
+      "left_elbow_joint": [-1.0472, 2.0944],
+      "left_wrist_roll_joint": [-1.972222, 1.972222],
+      "right_shoulder_pitch_joint": [-3.0892, 2.6704],
+      "right_shoulder_roll_joint": [-2.2515, 1.5882],
+      "right_shoulder_yaw_joint": [-2.618, 2.618],
+      "right_elbow_joint": [-1.0472, 2.0944],
+      "right_wrist_roll_joint": [-1.972222, 1.972222]
+    },
+    "fk": {
+      "joints_left": ["left_shoulder_pitch_joint", "left_shoulder_roll_joint", "left_shoulder_yaw_joint", "left_elbow_joint", "left_wrist_roll_joint"],
+      "joints_right": ["right_shoulder_pitch_joint", "right_shoulder_roll_joint", "right_shoulder_yaw_joint", "right_elbow_joint", "right_wrist_roll_joint"],
+      "tcp_left": [0.108, 0.0016, 0.0020],
+      "tcp_right": [0.108, -0.0016, 0.0020],
+      "chain_left": [
+        [0.0039563, 0.10022, 0.23778, 0.27931, 5.4949e-05, -0.00019159, 0, 1, 0],
+        [0, 0.038, -0.013831, -0.27925, 0, 0, 1, 0, 0],
+        [0, 0.00624, -0.1032, 0, 0, 0, 0, 0, 1],
+        [0.015783, 0, -0.080518, 0, 0, 0, 0, 1, 0],
+        [0.100, 0.00188791, -0.010, 0, 0, 0, 1, 0, 0]
+      ],
+      "chain_right": [
+        [0.0039563, -0.10021, 0.23778, -0.27931, 5.4949e-05, 0.00019159, 0, 1, 0],
+        [0, -0.038, -0.013831, 0.27925, 0, 0, 1, 0, 0],
+        [0, -0.00624, -0.1032, 0, 0, 0, 0, 0, 1],
+        [0.015783, 0, -0.080518, 0, 0, 0, 0, 1, 0],
+        [0.100, -0.00188791, -0.010, 0, 0, 0, 1, 0, 0]
+      ]
+    },
+    "_amp_note": "Amplitudes are MODERATE on purpose: the arms must stay mostly in the lower hemisphere so arm_balance (which swings shoulder_pitch/roll to balance) keeps its authority while the exercise is superimposed. Full-amplitude raises (arms to horizontal/overhead) abduct the arms out of the balancer's effective range and topple this marginal stand -- verified. Distal motions (elbow, wrist, yaw) are low-CoM-impact so they can be larger.",
+    "exercises": [
+      {"name": "lateral_raise", "dur_s": 11.0, "_d": "arms out to ~50 deg and back, twice (symmetric -> ~zero fore/aft CoM, the most robust exercise)", "terms": [
+        {"joint": "left_shoulder_roll_joint",  "bias": 0.45,  "amp": 0.45,  "phase": -1.5708, "freq_hz": 0.18},
+        {"joint": "right_shoulder_roll_joint", "bias": -0.45, "amp": -0.45, "phase": -1.5708, "freq_hz": 0.18}
+      ]},
+      {"name": "arm_circles", "dur_s": 12.0, "_d": "hands trace circles in a mostly-LATERAL plane (roll-dominant, tiny pitch -> low fore/aft CoM)", "terms": [
+        {"joint": "left_shoulder_pitch_joint",  "bias": -0.12, "amp": 0.14,  "phase": 0.0,     "freq_hz": 0.20},
+        {"joint": "right_shoulder_pitch_joint", "bias": -0.12, "amp": 0.14,  "phase": 0.0,     "freq_hz": 0.20},
+        {"joint": "left_shoulder_roll_joint",   "bias": 0.32,  "amp": 0.32,  "phase": -1.5708, "freq_hz": 0.20},
+        {"joint": "right_shoulder_roll_joint",  "bias": -0.32, "amp": -0.32, "phase": -1.5708, "freq_hz": 0.20}
+      ]},
+      {"name": "elbow_curls", "dur_s": 9.0, "_d": "upper arms near rest, forearms curl in/out (distal, low CoM impact)", "terms": [
+        {"joint": "left_shoulder_pitch_joint",  "bias": -0.30, "amp": 0.0,  "phase": 0.0,     "freq_hz": 0.0},
+        {"joint": "right_shoulder_pitch_joint", "bias": -0.30, "amp": 0.0,  "phase": 0.0,     "freq_hz": 0.0},
+        {"joint": "left_elbow_joint",  "bias": 0.65, "amp": 0.65, "phase": -1.5708, "freq_hz": 0.40},
+        {"joint": "right_elbow_joint", "bias": 0.65, "amp": 0.65, "phase": -1.5708, "freq_hz": 0.40}
+      ]},
+      {"name": "arm_swing", "dur_s": 11.0, "_d": "arms swing ALTERNATELY fore/aft like a march (180 deg out of phase -> the net fore/aft CoM cancels, so it's balance-neutral where a BILATERAL forward raise topples this marginal stand)", "terms": [
+        {"joint": "left_shoulder_pitch_joint",  "bias": 0.0, "amp": -0.45, "phase": 0.0,    "freq_hz": 0.30},
+        {"joint": "right_shoulder_pitch_joint", "bias": 0.0, "amp": -0.45, "phase": 3.1416, "freq_hz": 0.30}
+      ]},
+      {"name": "wave", "dur_s": 6.0, "_d": "right arm up and OUT (lateral, low forward CoM), hand waves gently (slow yaw); left arm rests + balances. Kept short + gentle: a sustained one-arm hold slowly creeps this marginal stand forward.", "terms": [
+        {"joint": "right_shoulder_pitch_joint", "bias": -0.45, "amp": 0.0,  "phase": 0.0, "freq_hz": 0.0},
+        {"joint": "right_shoulder_roll_joint",  "bias": -1.05, "amp": 0.0,  "phase": 0.0, "freq_hz": 0.0},
+        {"joint": "right_elbow_joint",          "bias": 0.60,  "amp": 0.0,  "phase": 0.0, "freq_hz": 0.0},
+        {"joint": "right_shoulder_yaw_joint",   "bias": 0.0,   "amp": 0.40, "phase": 0.0, "freq_hz": 0.55}
+      ]},
+      {"name": "flex", "dur_s": 9.0, "_d": "double-biceps flex: arms out to the sides (lateral roll -> balance-neutral) while the forearms curl up (distal elbow -> low CoM impact), twice. Combines two separately-verified balance-safe primitives, so it has NO bilateral-forward component (the direction that topples this marginal stand).", "terms": [
+        {"joint": "left_shoulder_roll_joint",   "bias": 0.50,  "amp": 0.50,  "phase": -1.5708, "freq_hz": 0.16},
+        {"joint": "right_shoulder_roll_joint",  "bias": -0.50, "amp": -0.50, "phase": -1.5708, "freq_hz": 0.16},
+        {"joint": "left_elbow_joint",  "bias": 0.72, "amp": 0.72, "phase": -1.5708, "freq_hz": 0.16},
+        {"joint": "right_elbow_joint", "bias": 0.72, "amp": 0.72, "phase": -1.5708, "freq_hz": 0.16}
+      ]}
+    ]
+  }
+}

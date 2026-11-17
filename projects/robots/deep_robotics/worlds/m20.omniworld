@@ -1,0 +1,77 @@
+#OMNISIM R2025a utf8
+
+# Deep Robotics M20 -- library stand world.
+#
+# M20 wheeled-legged quadruped (34 kg, 12 leg DoF + 4 wheels) standing on its wheels in its URDF <rest> stance.
+# Robot package: projects/robots/deep_robotics/ (upstream
+# DeepRoboticsLab/deep_robotics_model, BSD-3-Clause; regenerate with
+# make_urdfs.py). The robot spawns IN its URDF <rest> stance (the engine starts
+# every joint at its authored position since 2026-09-08) with its feet a
+# centimetre above the floor; deep_robotics_stand holds the pose (and would
+# ramp into it from wherever the engine spawned the joints, e.g. with
+# OMNISIM_NEWTON_SPAWN_AT_POSITION=0).
+# newtonSubsteps 8 + newtonCompoundColliders TRUE + newtonGroundMu 2 is the
+# stance recipe: the engine's position servo (ke = 10 x effort) on light leg
+# links is explicit at 8 ms and pumps a hop that flips the robot within
+# 5 s; 1 ms sub-steps and full-collider inertia make it hold (measured
+# 2026-09-08, Lite3, PROVENANCE.md).
+# Load-check: python -m omnisim run-headless <this world> --until-finalized
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 8
+  title "Deep Robotics M20"
+  info [
+    "M20 wheeled-legged quadruped (34 kg, 12 leg DoF + 4 wheels) standing on its wheels in its URDF <rest> stance."
+    "Package: projects/robots/deep_robotics/ (BSD-3-Clause, DeepRoboticsLab)."
+  ]
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 2.0 ]
+      bounce 0.0
+    }
+  ]
+  newtonGroundMu 2
+  newtonSubsteps 8
+  newtonCompoundColliders TRUE
+}
+Viewpoint {
+  orientation -0.127278 0.052720 0.990465 2.362946
+  position 2.3 -2.3 1.2
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+DEF FLOOR Solid {
+  translation 0 0 -0.5
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.24 0.25 0.27
+        roughness 0.85
+        metalness 0
+      }
+      geometry Box {
+        size 12 12 1.0
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 12 12 1.0
+  }
+}
+
+DEF M20 URDFRobot {
+  url "../m20/urdf/m20.urdf"
+  translation 0 0 0.45
+  name "m20"
+  supervisor TRUE
+  controller "deep_robotics_stand"
+}

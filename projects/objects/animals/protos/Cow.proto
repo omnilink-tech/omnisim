@@ -1,0 +1,395 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# license url: https://www.apache.org/licenses/LICENSE-2.0
+# documentation url: https://github.com/omnilink-tech/omnisim/blob/main/projects/objects/animals/protos/Cow.proto
+# keywords: animal/farm
+# A static patched cow, assembled from primitive shapes: a chunky barrel on four hoofed legs, a horned head, an udder and a tufted tail (about 2.2 m long, 1.5 m at the horns).
+# The `color` field sets the hide colour, `patchColor` selects brown or black patches.
+# template language: javascript
+
+PROTO Cow [
+  field SFVec3f    translation  0 0 0
+  field SFRotation rotation     0 0 1 0
+  field SFFloat    scale        1       # Defines the global scaling factor.
+  field SFString   name         "cow"
+  field SFColor    color        1 1 1   # Defines the color of the cow.
+  field SFString{"braun", "black"}
+                   patchColor   "braun" # Define the cow type.
+]
+{
+  %<
+    let s = fields.scale.value;
+    if (s <= 0) {
+      s = fields.scale.defaultValue;
+      console.error("'scale' must be strictly positive, value reset to " + s + ".");
+    }
+    const co = fields.color.value;
+    // Every dimension below is expressed in metres and driven through the scale factor.
+    function d(v) { return (v * s).toFixed(5); }
+    function v3(x, y, z) { return d(x) + " " + d(y) + " " + d(z); }
+    // Secondary shades are modulated by the hide colour so `color` still tints the whole animal.
+    function mix(r, g, b) {
+      return (co.r * r).toFixed(4) + " " + (co.g * g).toFixed(4) + " " + (co.b * b).toFixed(4);
+    }
+    const patch = fields.patchColor.value === "black" ? mix(0.07, 0.07, 0.07) : mix(0.34, 0.19, 0.09);
+  >%
+  Solid {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "cow"
+    children [
+      DEF COW_BODY Group {
+        children [
+          Pose {
+            translation %<= v3(0, 0, 1.08) >%
+            children [
+              Shape {
+                appearance DEF COW_HIDE PBRAppearance {
+                  baseColor IS color
+                  roughness 0.9
+                  metalness 0
+                }
+                geometry Box {
+                  size %<= v3(1.40, 0.58, 0.62) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.68, 0, 1.08) >%
+            children [
+              DEF COW_END Shape {
+                appearance USE COW_HIDE
+                geometry Sphere {
+                  radius %<= d(0.29) >%
+                  subdivision 3
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.70, 0, 1.06) >%
+            children [
+              USE COW_END
+            ]
+          }
+        ]
+      }
+      DEF COW_PATCHES Group {
+        children [
+          Pose {
+            translation %<= v3(0.30, 0, 1.24) >%
+            children [
+              DEF COW_PATCH_A Shape {
+                appearance DEF COW_PATCH_MAT PBRAppearance {
+                  baseColor %<= patch >%
+                  roughness 0.9
+                  metalness 0
+                }
+                geometry Box {
+                  size %<= v3(0.34, 0.60, 0.26) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.36, 0, 1.02) >%
+            children [
+              Shape {
+                appearance USE COW_PATCH_MAT
+                geometry Box {
+                  size %<= v3(0.28, 0.60, 0.24) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.02, 0, 0.88) >%
+            children [
+              Shape {
+                appearance USE COW_PATCH_MAT
+                geometry Box {
+                  size %<= v3(0.22, 0.60, 0.18) >%
+                }
+              }
+            ]
+          }
+        ]
+      }
+      DEF COW_LEGS Group {
+        children [
+          Pose {
+            translation %<= v3(0.55, 0.21, 0.39) >%
+            children [
+              DEF COW_LEG Shape {
+                appearance USE COW_HIDE
+                geometry Cylinder {
+                  height %<= d(0.78) >%
+                  radius %<= d(0.058) >%
+                  subdivision 14
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.55, -0.21, 0.39) >%
+            children [
+              USE COW_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.55, 0.21, 0.39) >%
+            children [
+              USE COW_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.55, -0.21, 0.39) >%
+            children [
+              USE COW_LEG
+            ]
+          }
+          Pose {
+            translation %<= v3(0.55, 0.21, 0.045) >%
+            children [
+              DEF COW_HOOF Shape {
+                appearance DEF COW_DARK PBRAppearance {
+                  baseColor %<= mix(0.10, 0.09, 0.09) >%
+                  roughness 0.6
+                  metalness 0
+                }
+                geometry Cylinder {
+                  height %<= d(0.09) >%
+                  radius %<= d(0.070) >%
+                  subdivision 12
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.55, -0.21, 0.045) >%
+            children [
+              USE COW_HOOF
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.55, 0.21, 0.045) >%
+            children [
+              USE COW_HOOF
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.55, -0.21, 0.045) >%
+            children [
+              USE COW_HOOF
+            ]
+          }
+        ]
+      }
+      DEF COW_HEAD Group {
+        children [
+          Pose {
+            translation %<= v3(0.78, 0, 1.22) >%
+            rotation 0 1 0 0.9
+            children [
+              Pose {
+                children [
+                  Shape {
+                    appearance USE COW_HIDE
+                    geometry Cylinder {
+                      height %<= d(0.44) >%
+                      radius %<= d(0.17) >%
+                      subdivision 14
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(1.06, 0, 1.34) >%
+            rotation 0 1 0 0.35
+            children [
+              Shape {
+                appearance USE COW_PATCH_MAT
+                geometry Box {
+                  size %<= v3(0.36, 0.25, 0.28) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(1.24, 0, 1.25) >%
+            rotation 0 1 0 0.35
+            children [
+              Shape {
+                appearance DEF COW_MUZZLE_MAT PBRAppearance {
+                  baseColor %<= mix(0.88, 0.74, 0.72) >%
+                  roughness 0.8
+                  metalness 0
+                }
+                geometry Box {
+                  size %<= v3(0.14, 0.20, 0.16) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(1.16, 0.075, 1.42) >%
+            children [
+              DEF COW_EYE Shape {
+                appearance USE COW_DARK
+                geometry Sphere {
+                  radius %<= d(0.028) >%
+                  subdivision 2
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(1.16, -0.075, 1.42) >%
+            children [
+              USE COW_EYE
+            ]
+          }
+          Pose {
+            translation %<= v3(0.98, 0.13, 1.46) >%
+            rotation 1 0 0 -0.50
+            children [
+              DEF COW_HORN Shape {
+                appearance DEF COW_HORN_MAT PBRAppearance {
+                  baseColor %<= mix(0.84, 0.80, 0.70) >%
+                  roughness 0.5
+                  metalness 0
+                }
+                geometry Cone {
+                  bottomRadius %<= d(0.035) >%
+                  height %<= d(0.16) >%
+                  subdivision 10
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.98, -0.13, 1.46) >%
+            rotation 1 0 0 0.50
+            children [
+              USE COW_HORN
+            ]
+          }
+          Pose {
+            translation %<= v3(0.94, 0.22, 1.40) >%
+            children [
+              DEF COW_EAR Shape {
+                appearance USE COW_HIDE
+                geometry Box {
+                  size %<= v3(0.10, 0.16, 0.05) >%
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(0.94, -0.22, 1.40) >%
+            children [
+              USE COW_EAR
+            ]
+          }
+        ]
+      }
+      DEF COW_UDDER Group {
+        children [
+          Pose {
+            translation %<= v3(-0.40, 0, 0.82) >%
+            children [
+              Shape {
+                appearance DEF COW_UDDER_MAT PBRAppearance {
+                  baseColor %<= mix(0.86, 0.62, 0.60) >%
+                  roughness 0.8
+                  metalness 0
+                }
+                geometry Sphere {
+                  radius %<= d(0.15) >%
+                  subdivision 3
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.34, 0.07, 0.70) >%
+            children [
+              DEF COW_TEAT Shape {
+                appearance USE COW_UDDER_MAT
+                geometry Cylinder {
+                  height %<= d(0.08) >%
+                  radius %<= d(0.018) >%
+                  subdivision 8
+                }
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.34, -0.07, 0.70) >%
+            children [
+              USE COW_TEAT
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.46, 0.07, 0.70) >%
+            children [
+              USE COW_TEAT
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.46, -0.07, 0.70) >%
+            children [
+              USE COW_TEAT
+            ]
+          }
+        ]
+      }
+      DEF COW_TAIL Group {
+        children [
+          Pose {
+            translation %<= v3(-0.76, 0, 1.10) >%
+            rotation 0 1 0 -0.12
+            children [
+              Pose {
+                children [
+                  Shape {
+                    appearance USE COW_HIDE
+                    geometry Cylinder {
+                      height %<= d(0.60) >%
+                      radius %<= d(0.022) >%
+                      subdivision 8
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+          Pose {
+            translation %<= v3(-0.80, 0, 0.80) >%
+            children [
+              Shape {
+                appearance USE COW_PATCH_MAT
+                geometry Sphere {
+                  radius %<= d(0.05) >%
+                  subdivision 2
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    boundingObject Pose {
+      translation %<= v3(0, 0, 1.08) >%
+      children [
+        Box {
+          size %<= v3(1.60, 0.62, 0.66) >%
+        }
+      ]
+    }
+  }
+}

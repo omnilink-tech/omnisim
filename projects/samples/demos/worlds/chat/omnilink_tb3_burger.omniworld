@@ -1,0 +1,41 @@
+#OMNISIM R2025a utf8
+
+# OmniLink — TurtleBot3 Burger
+# Tiny 2-wheel diff-drive bot. Prompts: "forward 1 m",
+# "turn left 90 degrees", "back 50 cm", "spin", "stop", "reset".
+
+EXTERNPROTO "omnisim://projects/samples/demos/protos/OmniLinkStage.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniLink — TurtleBot3 Burger"
+  info [
+    "TurtleBot3 Burger driven by an OmniLink agent through a chat-style side menu."
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 2.312 -2.461 2.413
+  follow "tb3_burger"
+  followType "Tracking Shot"
+  followSmoothness 0.3
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+OmniLinkStage {
+  floorSize 6 6
+}
+
+DEF TB3_BURGER URDFRobot {
+  url "../../../../robots/robotis/turtlebot3_description/urdf/turtlebot3_burger.urdf"
+  translation 0 0 0
+  name "tb3_burger"
+  supervisor TRUE
+  controller "omnilink_mobile_bridge"
+  controllerArgs [ "--robot" "tb3_burger" "--port" "8765" ]
+  window "omnilink_chat"
+}

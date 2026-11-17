@@ -1,0 +1,102 @@
+#OMNISIM R2025a utf8
+
+# Test fixture for the R4 wgpu material-fidelity ladder that needs PBR MAP data the
+# robot worlds (panda) lack: metalnessMap + normalMap (+ baseColorMap + roughnessMap).
+# Four boxes, each with a stock PBRAppearance PROTO carrying the full map set, under a
+# strong directional light so metalness (specular tint toward albedo) and the normal map
+# (shading detail on flat faces) are visible. Static (no physics) so the GUI self-check
+# at load samples it directly. CorrodedMetal + GalvanizedMetal ship all four maps.
+
+EXTERNPROTO "omnisim://projects/appearances/protos/CorrodedMetal.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/GalvanizedMetal.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Copper.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  FPS 30
+}
+Viewpoint {
+  orientation -0.5 -0.4 0.77 1.95
+  position 0.95 -0.95 0.7
+}
+Background {
+  skyColor [ 0.15 0.20 0.30 ]
+  atmosphericSky "earth"
+}
+DEF SUN DirectionalLight {
+  color 1.0 0.97 0.92
+  direction -0.55 -0.5 -0.65
+  intensity 3.5
+  castShadows TRUE
+}
+DEF FLOOR Solid {
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.4 0.4 0.43
+        roughness 1.0
+        metalness 0.0
+      }
+      geometry Box {
+        size 2 2 0.05
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 2 2 0.05
+  }
+}
+DEF CORRODED Solid {
+  translation -0.45 0.25 0.225
+  children [
+    Shape {
+      appearance CorrodedMetal {
+      }
+      geometry Box {
+        size 0.35 0.35 0.35
+      }
+    }
+  ]
+  name "corroded_metal"
+}
+DEF GALVANIZED Solid {
+  translation 0.25 0.25 0.225
+  children [
+    Shape {
+      appearance GalvanizedMetal {
+      }
+      geometry Box {
+        size 0.35 0.35 0.35
+      }
+    }
+  ]
+  name "galvanized_metal"
+}
+DEF COPPER Solid {
+  translation -0.45 -0.45 0.225
+  children [
+    Shape {
+      appearance Copper {
+      }
+      geometry Box {
+        size 0.35 0.35 0.35
+      }
+    }
+  ]
+  name "copper"
+}
+DEF ALUMINIUM Solid {
+  translation 0.25 -0.45 0.225
+  children [
+    Shape {
+      appearance BrushedAluminium {
+      }
+      geometry Box {
+        size 0.35 0.35 0.35
+      }
+    }
+  ]
+  name "brushed_aluminium"
+}

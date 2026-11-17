@@ -1,0 +1,158 @@
+
+OMNISIM_HOME ?= ..
+# WEBOTS_DEPENDENCY_PATH is the pre-rebrand name, documented in
+# docs/developer/quickstart.md and suggested by scripts/install/bash_profile.windows.
+# Honour it when the canonical name is unset so an existing shared dependency
+# cache is not silently re-downloaded into the default location.
+OMNISIM_DEPENDENCY_PATH ?= $(if $(WEBOTS_DEPENDENCY_PATH),$(WEBOTS_DEPENDENCY_PATH),$(OMNISIM_HOME)/dependencies)
+OMNISIM_HOME_LIB = $(OMNISIM_HOME)/Contents/lib/webots
+
+# --- Build dependencies -------------------------------------------------------
+# OmniSim mirrors its own prebuilt build dependencies, so that building this project
+# does NOT depend on upstream (Cyberbotics) infrastructure. Every archive fetched here
+# is MD5-verified below, so a mirror serving identical bytes is safe by construction.
+#
+# Override OMNISIM_DEPS_URL to use an internal mirror or a local directory.
+OMNISIM_DEPS_TAG ?= deps-mac-v1
+OMNISIM_DEPS_URL ?= https://github.com/omnilink-tech/omnisim/releases/download/$(OMNISIM_DEPS_TAG)
+DEPENDENCIES_URL = $(OMNISIM_DEPS_URL)
+# TRANSITIONAL fallback, used only if the mirror above does not serve the file yet.
+# Populate the mirror with scripts/packaging/mirror_build_deps.sh, then delete this line.
+DEPENDENCIES_FALLBACK_URL = https://cyberbotics.com/files/repository/dependencies/mac/release
+WGET = LANG=en_US.UTF-8 wget -qq
+
+QT_PACKAGE = qt-6.5.3-release.tar.bz2
+ASSIMP_PACKAGE = assimp-5.2.3.tar.bz2
+FFMPEG_PACKAGE = ffmpeg.tar.bz2
+FREETYPE_PACKAGE = freetype2.tar.bz2
+OIS_PACKAGE = libOIS-1.3.tar.bz2
+
+PACKAGES = qt assimp ffmpeg freetype ois
+PACKAGES_CLEAN = $(addsuffix -clean, $(PACKAGES))
+
+.PHONY: release debug distrib profile clean cleanse $(PACKAGES) $(PACKAGES_CLEAN)
+
+release debug distrib profile: ../.clang-format $(PACKAGES) ../Contents/Resources ../Contents/include ../Contents/lib/controller/python ../Contents/projects
+clean:
+cleanse: $(PACKAGES_CLEAN)
+	@rm -f ../.clang-format
+	@rm -rf ../Contents/MacOS
+	@rm -rf ../Contents/Frameworks
+	@rm -f ../Contents/Resources
+	@rm -f ../Contents/include
+	@rm -rf ../Contents/lib
+	@rm -f ../Contents/projects
+
+../.clang-format:
+	@echo "# copying clang-format configuration file"
+	@cp .clang-format-9 $@
+
+../Contents/MacOS:
+	@mkdir -p $@
+
+../Contents/Resources:
+	@ln -s ../resources $@
+
+../Contents/include:
+	@ln -s ../include $@
+
+../Contents/lib/controller/python:
+	@mkdir -p ../Contents/lib/controller
+	@ln -s ../../../lib/controller/python $@
+
+../Contents/projects:
+	@ln -s ../projects $@
+
+qt-clean:
+	@rm -rf $(OMNISIM_DEPENDENCY_PATH)/$(QT_PACKAGE) $(OMNISIM_HOME)/Contents/Frameworks/Qt* $(OMNISIM_HOME_LIB)/qt $(OMNISIM_HOME)/include/qt $(OMNISIM_HOME)/bin/qt/lrelease $(OMNISIM_HOME)/bin/qt/lupdate $(OMNISIM_HOME)/bin/qt/moc
+
+qt: $(OMNISIM_HOME)/Contents/Frameworks/QtCore.framework/Versions/A/QtCore
+
+$(OMNISIM_HOME)/Contents/Frameworks/QtCore.framework/Versions/A/QtCore: $(OMNISIM_DEPENDENCY_PATH)/$(QT_PACKAGE)
+	@echo "# uncompressing $(QT_PACKAGE)"
+	@tar -xmf $(QT_PACKAGE) -C $(OMNISIM_HOME)
+	@touch $(OMNISIM_HOME)/Contents/Frameworks/QtCore.framework/Versions/A/QtCore
+	@mkdir -p $(OMNISIM_HOME_LIB)
+	@mv $(OMNISIM_HOME)/lib/webots/qt $(OMNISIM_HOME_LIB)
+	@echo "# signing libraries"
+	@python3 codesign.py
+
+$(OMNISIM_DEPENDENCY_PATH)/$(QT_PACKAGE):
+	@rm -f $(OMNISIM_DEPENDENCY_PATH)/$(QT_PACKAGE)
+	@echo "# Installing $(QT_PACKAGE)"
+	$(OMNISIM_HOME)/scripts/install/qt_mac_installer.sh
+	@touch $(OMNISIM_DEPENDENCY_PATH)/$(QT_PACKAGE)
+
+assimp-clean:
+	@rm -fr $(OMNISIM_DEPENDENCY_PATH)/assimp $(OMNISIM_HOME_LIB)/libassimp.dylib
+
+assimp: $(OMNISIM_HOME_LIB)/libassimp.dylib
+
+$(OMNISIM_HOME_LIB)/libassimp.dylib: $(OMNISIM_DEPENDENCY_PATH)/assimp
+	@mkdir -p $(OMNISIM_HOME_LIB)
+	@cp $(OMNISIM_DEPENDENCY_PATH)/assimp/build/bin/libassimp.dylib $(OMNISIM_HOME_LIB)
+	@install_name_tool -id @rpath/Contents/lib/webots/libassimp.dylib $@
+	@codesign --force -s - $@
+
+$(OMNISIM_DEPENDENCY_PATH)/assimp:
+	@echo "# downloading $(ASSIMP_PACKAGE)"
+	@rm -f $(OMNISIM_DEPENDENCY_PATH)/$(ASSIMP_PACKAGE)
+	@$(WGET) $(DEPENDENCIES_URL)/$(ASSIMP_PACKAGE) -P $(OMNISIM_DEPENDENCY_PATH) || $(WGET) $(DEPENDENCIES_FALLBACK_URL)/$(ASSIMP_PACKAGE) -P $(OMNISIM_DEPENDENCY_PATH)
+	@if [ "3d4a0297ef7636dc00a1ddc62ff062e3" != `md5 -q $(ASSIMP_PACKAGE)` ]; then echo "MD5 checksum failed for $(ASSIMP_PACKAGE)"; exit 1; fi
+	@echo "# uncompressing $(ASSIMP_PACKAGE)"
+	@tar -xmf $(ASSIMP_PACKAGE) -C $(OMNISIM_DEPENDENCY_PATH)
+	@rm -f $(OMNISIM_DEPENDENCY_PATH)/$(ASSIMP_PACKAGE)
+
+
+ffmpeg-clean:
+	@rm -rf $(OMNISIM_DEPENDENCY_PATH)/$(FFMPEG_PACKAGE) $(OMNISIM_HOME)/Contents/util
+
+ffmpeg: $(OMNISIM_HOME)/Contents/util/ffmpeg
+
+$(OMNISIM_HOME)/Contents/util/ffmpeg: $(OMNISIM_DEPENDENCY_PATH)/$(FFMPEG_PACKAGE)
+	@echo "# uncompressing $(FFMPEG_PACKAGE)"
+	@tar -xmf $(FFMPEG_PACKAGE) -C $(OMNISIM_HOME)/Contents
+	@codesign --force -s - $@
+
+$(OMNISIM_DEPENDENCY_PATH)/$(FFMPEG_PACKAGE):
+	@echo "# downloading $(FFMPEG_PACKAGE)"
+	@rm -f $(OMNISIM_DEPENDENCY_PATH)/$(FFMPEG_PACKAGE)
+	@$(WGET) $(DEPENDENCIES_URL)/$(FFMPEG_PACKAGE) -P $(OMNISIM_DEPENDENCY_PATH) || $(WGET) $(DEPENDENCIES_FALLBACK_URL)/$(FFMPEG_PACKAGE) -P $(OMNISIM_DEPENDENCY_PATH)
+	@if [ "258df72f03ef92526dab46ca0fede187" != `md5 -q $(FFMPEG_PACKAGE)` ]; then echo "MD5 checksum failed for $(FFMPEG_PACKAGE)"; exit 1; fi
+	@touch $(OMNISIM_DEPENDENCY_PATH)/$(FFMPEG_PACKAGE)
+
+freetype-clean:
+	@rm -fr freetype2
+
+freetype: freetype2
+
+freetype2:
+	@echo "# downloading $(FREETYPE_PACKAGE)"
+	@rm -f $(FREETYPE_PACKAGE)
+	@$(WGET) $(DEPENDENCIES_URL)/$(FREETYPE_PACKAGE) || $(WGET) $(DEPENDENCIES_FALLBACK_URL)/$(FREETYPE_PACKAGE)
+	@if [ "810286fe3f188f7ae7dca18aef0d75a1" != `md5 -q $(FREETYPE_PACKAGE)` ]; then echo "MD5 checksum failed for $(FREETYPE_PACKAGE)"; exit 1; fi
+	@echo "# uncompressing $(FREETYPE_PACKAGE)"
+	@tar -xmf $(FREETYPE_PACKAGE)
+	@rm -f $(FREETYPE_PACKAGE)
+
+ois-clean:
+	@rm -rf $(OMNISIM_DEPENDENCY_PATH)/$(OIS_PACKAGE) $(OMNISIM_HOME_LIB)/*OIS.dylib $(OMNISIM_HOME)/include/libOIS
+
+ois: $(OMNISIM_HOME_LIB)/libOIS.dylib
+
+$(OMNISIM_HOME_LIB)/libOIS.dylib: $(OMNISIM_DEPENDENCY_PATH)/$(OIS_PACKAGE)
+	@echo "# uncompressing $(OIS_PACKAGE)"
+	@tar -xmf $(OIS_PACKAGE) -C $(OMNISIM_HOME)
+	@mkdir -p $(OMNISIM_HOME_LIB)
+	@mv $(OMNISIM_HOME)/lib/webots/libOIS.dylib $@
+	@install_name_tool -id @rpath/Contents/lib/webots/libOIS.dylib $@
+	@codesign --force -s - $@
+
+$(OMNISIM_DEPENDENCY_PATH)/$(OIS_PACKAGE):
+	@echo "# downloading $(OIS_PACKAGE)"
+	@rm -f $(OMNISIM_DEPENDENCY_PATH)/$(OIS_PACKAGE)
+	@$(WGET) $(DEPENDENCIES_URL)/$(OIS_PACKAGE) -P $(OMNISIM_DEPENDENCY_PATH) || $(WGET) $(DEPENDENCIES_FALLBACK_URL)/$(OIS_PACKAGE) -P $(OMNISIM_DEPENDENCY_PATH)
+	@if [ "84c5b0c18031bcf13977165ade137782" != `md5 -q $(OIS_PACKAGE)` ]; then echo "MD5 checksum failed for $(OIS_PACKAGE)"; exit 1; fi
+	@touch $(OMNISIM_DEPENDENCY_PATH)/$(OIS_PACKAGE)
+
+

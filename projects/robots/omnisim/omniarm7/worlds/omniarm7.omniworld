@@ -1,0 +1,84 @@
+#OMNISIM R2025a utf8
+
+# OmniArm 7 cobot sample scene.
+# OmniSim's generic 7-axis collaborative arm on a low pedestal in the middle
+# of an empty floor, loaded from its URDF via the native URDFRobot importer.
+# All of the robot's geometry is authored in this repository -- see
+# ../PROVENANCE.md. The omniarm7_wave controller drives all seven joints
+# with slow sinusoidal targets so the arm has visible motion at startup.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/Asphalt.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  title "OmniArm 7"
+  # Same reasoning as the OmniArm 6 world: the base rests statically on the
+  # pedestal and ODE narrow-phase can report many contact points between the
+  # two static surfaces; a higher cap silences per-step warning spam without
+  # changing the outcome.
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      maxContactJoints 64
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.278945 0.120681 0.952694 2.359689
+  position 2.742 -2.919 3.465
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+# Key light from the SE so the arm picks up shoulder highlights; fill keeps
+# the back of the white shells readable.
+DirectionalLight {
+  direction -0.5 0.4 -0.6
+  color 0.85 0.88 1.0
+  intensity 1.4
+  ambientIntensity 0.0
+  castShadows FALSE
+}
+
+Floor {
+  size 8 8
+  tileSize 8 8
+  appearance Asphalt {
+    colorOverride 0.55 0.57 0.60
+  }
+}
+
+# Low brushed-aluminium pedestal so the cobot is at a believable working
+# height instead of sitting flat on the asphalt.
+DEF PEDESTAL Solid {
+  translation 0 0 0.075
+  children [
+    Shape {
+      appearance BrushedAluminium {
+      }
+      geometry Box {
+        size 0.5 0.5 0.15
+      }
+    }
+  ]
+  name "pedestal"
+  boundingObject Box {
+    size 0.5 0.5 0.15
+  }
+}
+
+URDFRobot {
+  url "../urdf/omniarm7.urdf"
+  # 5 mm gap above the pedestal top (OmniArm convention) so the base collision
+  # cylinder and the pedestal box never share a face at rest.
+  translation 0 0 0.155
+  name "omniarm7"
+  controller "omniarm7_wave"
+  staticBase TRUE
+}

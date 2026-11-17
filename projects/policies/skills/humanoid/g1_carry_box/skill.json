@@ -1,0 +1,76 @@
+{
+  "schema": 2,
+  "name": "g1_carry_box",
+  "title": "Carry a box (walk while holding a payload at chest height)",
+  "class": "humanoid",
+  "robots": [
+    "g1"
+  ],
+  "kind": "rl",
+  "method": "shadowing",
+  "status": "verified",
+  "motion_class": "cyclic",
+  "summary": "A cyclic BATON specialist: the G1 walks while holding its arms in a constant carry pose (hands chest-high 0.28 m apart, elbows bent) tracking a carry ghost, trained with a 1.5 kg payload folded into the plant. Same 120-dim cyclic obs family as walk, so BATON blends walk<->carry element-wise. Carries the real ODE box along its natural arc in the delivery demo.",
+  "ghost": {
+    "lut": "projects/policies/ghosts/g1/ghost_carry_v1_lut.json",
+    "provenance": "solved",
+    "validator": "WARN (T2.provenance: unknown/eyeballed provenance; T1: no baseline to diff against). It was claimed PASS here in prose while ghost_validator.py said WARN on this very lut -- the verdict is now STAMPED INTO the lut and cross-checked, so the claim cannot drift again.",
+    "owner_signoff": "2026-07-06",
+    "notes": "FK-designed BEFORE training: authentic v3 legs + sway, constant carry arms (hands x+0.195 z+0.134, box-width 0.280 m)."
+  },
+  "policy": {
+    "checkpoint": "projects/policies/training/runs/wr_carrier.pt",
+    "arch": "lstm",
+    "hidden": 256,
+    "obs": {
+      "family": "whole_body",
+      "ref_obs_k": 3,
+      "ref_obs_wb": false,
+      "dim": 120
+    },
+    "action": {
+      "dim": 23,
+      "space": "whole_body",
+      "decode": "ghost(phase) + residual*GHOST_RESIDUAL"
+    }
+  },
+  "baton": {
+    "blend": "cyclic",
+    "mode": "carry",
+    "nb": 64,
+    "vx": "0.45",
+    "attractor": "locomotion",
+    "handover_in": "cold",
+    "notes": "Enter COLD (BATON_COLD_HIDDEN): a warm handover after a stand locks the carrier's hidden into the stand attractor (it marches in place). Course keyword: carryto."
+  },
+  "train": {
+    "trainer": "projects.policies.training.g1_walk_recipe:g1_walk_recipe_step",
+    "launcher": "projects/policies/training/run_walk_rl.sh",
+    "recipe_env": {
+      "GHOST_LUT_JSON": "projects/policies/ghosts/g1/ghost_carry_v1_lut.json",
+      "CARRY_PAYLOAD_KG": "1.5",
+      "W_TRACK_LIN": "10"
+    },
+    "status": "reconstructed",
+    "notes": "carrier2 retrained with W_TRACK_LIN=10 (walks 12.9 m live solo) + 1.5 kg payload. Payload folded into plant by structural hand-link resolution (leaf of elbow chain). VERIFY frozen bundle before re-training; see memory project_baton_policy_switching Round 7."
+  },
+  "deploy": {
+    "specialist": {
+      "note": "Emitted as a BATON_SPECIALISTS entry (mode|checkpoint|ghost_lut|vx) by the sequencer; not a standalone primary."
+    },
+    "primary_env": {
+      "GHOST_RESIDUAL": "0.100"
+    }
+  },
+  "verification": {
+    "date": "2026-07-17",
+    "engine": "Newton/mujoco_warp",
+    "result": "Exact box-delivery run on machine 9722d23d12a3 (RTX 3060 Laptop, build f0e395c3): payload cruise improved from about 0.19 to 0.28 m/s, pickup occurred at 19.4 s, and the real 1.5 kg box settled at (9.00, -1.40, 0.960). Full BATON course completed 11/11 segments in 91.8 s with min pelvis z 0.658 and 0 falls, on the lambda=0.9 weight-bearing balance harness (not free-standing)."
+  },
+  "doc": "docs/developer/policy-switching.md",
+  "memory": "project_baton_policy_switching",
+  "related": [
+    "g1_walk",
+    "g1_stand_rl"
+  ]
+}

@@ -1,0 +1,257 @@
+<!--
+  OmniSim Temporal Anti-Aliasing (TAA) — standalone WebGL2 preview.
+
+  This file exists so you can see — and tune — what the wgpu T1.4 TAA pass
+  will do before any WGSL/pipeline code is written. Per the rendering
+  roadmap (engine-migration-plan.md §14.4 T1.1/T1.4), TAA is WREN-cancelled
+  and ships on wgpu post-R3.4; the plan explicitly calls for a WebGL2 preview
+  "built ahead of time to settle the jitter + clamp parameter choices." That
+  is exactly what this is — spec-by-example, engine-agnostic, no engine build.
+
+  What this preview demonstrates (the full standard TAA pipeline):
+    * Sub-pixel camera jitter from a Halton(2,3) low-discrepancy sequence,
+      applied as a clip-space offset on the projection each frame. The jitter
+      amplitude (in pixels) is a slider — the param the wgpu port needs.
+    * A ping-pong history color buffer (two FBOs swapped each frame).
+    * Per-frame resolve: reproject the previous frame via a screen-space
+      motion vector (here: the analytic motion of the rotating geometry),
+      then blend current⊕history with an exponential feedback factor (slider).
+    * Neighborhood clamping: the reprojected history is clamped to the
+      AABB of the current pixel's 3×3 color neighborhood (the standard
+      ghosting-suppressor; Karis 2014). Toggle it to SEE the ghosting it
+      removes on motion.
+    * Toggles: TAA on/off, clamp on/off, jitter on/off, plus a static
+      "stress grid" (thin bars + a fine checker floor) that aliases hard
+      without TAA so the improvement is unmistakable.
+
+  Recommended starting params for the wgpu port (what this preview converges
+  to as visually clean without ghosting on the rotating bars):
+    * jitter amplitude  : ±0.5 px  (Halton(2,3), 8-frame sequence)
+    * feedback          : 0.90     (history weight; 0.85–0.92 is the sane band)
+    * neighborhood clamp : ON, 3×3 AABB in YCoCg would be even tighter but
+      RGB AABB is enough at this fidelity; revisit in Tier 3.
+
+  Limitations vs the full wgpu T1.4 pass:
+    * Motion vectors here are analytic (we know the geometry's transform).
+      In wgpu they come from a velocity G-buffer (prev/cur clip pos per
+      fragment) — the preview's reprojection is a stand-in to exercise the
+      clamp, not a velocity-buffer implementation.
+    * No separate sharpening pass (TAA softens; production adds a mild
+      post-sharpen). Left out so the clamp/feedback trade-off is isolated.
+    * Single full-res target; no variance clipping or YCoCg (Tier-3 tighten).
+
+  Sources:
+    * Karis 2014, "High-Quality Temporal Supersampling." SIGGRAPH Advances.
+    * Pedersen 2016, "Temporal Reprojection AA in INSIDE." GDC.
+    * Halton 1964 (low-discrepancy sequence).
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OmniSim TAA preview</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #111; color: #ddd; font-family: system-ui, sans-serif; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  #panel { position: fixed; top: 10px; left: 10px; background: rgba(20,20,24,0.82);
+           padding: 12px 14px; border-radius: 8px; font-size: 13px; line-height: 1.7; min-width: 240px; }
+  #panel h1 { font-size: 14px; margin: 0 0 8px; font-weight: 600; }
+  #panel label { display: block; }
+  #panel input[type=range] { width: 130px; vertical-align: middle; }
+  #panel .v { color: #6cf; }
+  #panel .hint { color: #888; font-size: 11px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="panel">
+  <h1>OmniSim TAA preview (T1.4)</h1>
+  <label><input type="checkbox" id="taa" checked> TAA enabled</label>
+  <label><input type="checkbox" id="clamp" checked> neighborhood clamp</label>
+  <label><input type="checkbox" id="jitter" checked> sub-pixel jitter</label>
+  <label>feedback <input type="range" id="feedback" min="0.5" max="0.98" step="0.01" value="0.90"> <span class="v" id="feedbackV">0.90</span></label>
+  <label>jitter px <input type="range" id="jamp" min="0" max="1.5" step="0.05" value="0.5"> <span class="v" id="jampV">0.50</span></label>
+  <label>motion <input type="range" id="motion" min="0" max="2" step="0.05" value="0.6"> <span class="v" id="motionV">0.60</span></label>
+  <div class="hint">Turn TAA off → hard aliasing on the bars + checker.<br>
+    Turn clamp off (TAA on, motion up) → ghosting trails.<br>
+    Converged params print in the title bar comment.</div>
+</div>
+<script>
+"use strict";
+const canvas = document.getElementById("gl");
+const gl = canvas.getContext("webgl2", { antialias: false, preserveDrawingBuffer: false });
+if (!gl) { document.body.innerHTML = "<p style='padding:2em'>WebGL2 required.</p>"; throw new Error("no webgl2"); }
+
+// ---- UI state ----
+const ui = { taa: true, clamp: true, jitter: true, feedback: 0.90, jamp: 0.5, motion: 0.6 };
+function bindCheck(id, key) { const e = document.getElementById(id); e.onchange = () => ui[key] = e.checked; }
+function bindRange(id, key) { const e = document.getElementById(id), v = document.getElementById(id + "V");
+  e.oninput = () => { ui[key] = parseFloat(e.value); v.textContent = ui[key].toFixed(2); }; }
+bindCheck("taa", "taa"); bindCheck("clamp", "clamp"); bindCheck("jitter", "jitter");
+bindRange("feedback", "feedback"); bindRange("jamp", "jamp"); bindRange("motion", "motion");
+
+// ---- GL helpers ----
+function sh(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+function prog(vs, fs) { const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)); return p; }
+
+// Fullscreen triangle.
+const triVAO = gl.createVertexArray();
+
+// ---- Scene pass: a "stress grid" that aliases hard (thin bars + checker floor) ----
+// Procedural in the fragment shader (ray-march-free; a screen-space pattern that
+// MOVES so motion exercises the history reprojection + clamp).
+const sceneFS = `#version 300 es
+precision highp float;
+out vec4 o;
+uniform vec2 uRes;
+uniform vec2 uJitterPx;   // sub-pixel jitter in pixels
+uniform float uPhase;     // animates the pattern (motion)
+void main() {
+  // Apply the camera jitter by shifting the sample position sub-pixel.
+  vec2 px = gl_FragCoord.xy - uJitterPx;
+  vec2 uv = px / uRes;
+  // A perspective-ish checker floor (strong minification aliasing) in the
+  // lower half + a fan of thin rotating bars in the upper half.
+  vec3 col = vec3(0.10, 0.11, 0.13);
+  if (uv.y < 0.5) {
+    float persp = 1.0 / max(0.04, (0.5 - uv.y));
+    vec2 g = vec2((uv.x - 0.5) * persp * 8.0 + uPhase * 2.0, persp * 6.0);
+    float c = mod(floor(g.x) + floor(g.y), 2.0);
+    col = mix(vec3(0.18), vec3(0.72, 0.74, 0.78), c);
+  } else {
+    // Thin bars radiating from screen center, rotating with uPhase.
+    vec2 d = (px - uRes * vec2(0.5, 0.75)) / uRes.y;
+    float ang = atan(d.y, d.x) + uPhase;
+    float bars = step(0.82, abs(sin(ang * 9.0)));   // hard edges = aliasing
+    col = mix(col, vec3(0.95, 0.55, 0.20), bars);
+    float r = length(d);
+    col = mix(col, vec3(0.2, 0.8, 1.0), step(abs(r - 0.28), 0.006)); // a thin ring
+  }
+  o = vec4(col, 1.0);
+}`;
+
+// ---- Resolve pass: TAA (reproject history → neighborhood clamp → feedback blend) ----
+const resolveFS = `#version 300 es
+precision highp float;
+out vec4 o;
+uniform sampler2D uCur;     // this frame (jittered scene)
+uniform sampler2D uHist;    // previous resolved frame
+uniform vec2 uRes;
+uniform vec2 uMotionPx;     // screen-space motion (how far the scene moved, px)
+uniform float uFeedback;    // history weight
+uniform bool uTAA;
+uniform bool uClamp;
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec3 cur = texture(uCur, uv).rgb;
+  if (!uTAA) { o = vec4(cur, 1.0); return; }
+
+  // Reproject history by the (negated) motion vector.
+  vec2 histUv = uv - uMotionPx / uRes;
+  vec3 hist = texture(uHist, histUv).rgb;
+
+  if (uClamp) {
+    // 3x3 neighborhood AABB of the current frame; clamp history into it.
+    vec3 mn = cur, mx = cur;
+    for (int y = -1; y <= 1; ++y)
+      for (int x = -1; x <= 1; ++x) {
+        vec3 s = texture(uCur, uv + vec2(float(x), float(y)) / uRes).rgb;
+        mn = min(mn, s); mx = max(mx, s);
+      }
+    hist = clamp(hist, mn, mx);
+  }
+  // Drop history that reprojected off-screen (no valid sample).
+  float valid = (histUv.x < 0.0 || histUv.x > 1.0 || histUv.y < 0.0 || histUv.y > 1.0) ? 0.0 : 1.0;
+  float fb = uFeedback * valid;
+  o = vec4(mix(cur, hist, fb), 1.0);
+}`;
+
+const blitFS = `#version 300 es
+precision highp float;
+out vec4 o; uniform sampler2D uTex; uniform vec2 uRes;
+void main(){ o = vec4(texture(uTex, gl_FragCoord.xy/uRes).rgb, 1.0); }`;
+
+const fsVS = `#version 300 es
+void main(){ vec2 p = vec2((gl_VertexID<<1)&2, gl_VertexID&2); gl_Position = vec4(p*2.0-1.0,0,1); }`;
+
+const sceneProg = prog(fsVS, sceneFS);
+const resolveProg = prog(fsVS, resolveFS);
+const blitProg = prog(fsVS, blitFS);
+
+// ---- render targets ----
+let W = 0, H = 0, curTex, histTex = [null, null], fbo, histFbo = [null, null], hp = 0;
+function makeTex(w, h) { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); return t; }
+function fboFor(t) { const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); return f; }
+function resize() {
+  const w = canvas.clientWidth | 0, h = canvas.clientHeight | 0;
+  if (w === W && h === H) return; W = w; H = h; canvas.width = w; canvas.height = h;
+  if (!gl.getExtension("EXT_color_buffer_float")) { /* RGBA16F render: needs this ext */ }
+  curTex = makeTex(W, H); fbo = fboFor(curTex);
+  for (let i = 0; i < 2; ++i) { histTex[i] = makeTex(W, H); histFbo[i] = fboFor(histTex[i]); }
+}
+
+// ---- Halton(2,3) jitter sequence ----
+function halton(i, b) { let f = 1, r = 0; while (i > 0) { f /= b; r += f * (i % b); i = Math.floor(i / b); } return r; }
+let frame = 0, lastPhase = 0;
+
+function loc(p, n) { return gl.getUniformLocation(p, n); }
+
+function render() {
+  resize();
+  gl.bindVertexArray(triVAO);
+
+  // Jitter for this frame (±jamp px), Halton 8-sample sequence.
+  const ji = (frame % 8) + 1;
+  const jx = ui.jitter ? (halton(ji, 2) - 0.5) * 2.0 * ui.jamp : 0.0;
+  const jy = ui.jitter ? (halton(ji, 3) - 0.5) * 2.0 * ui.jamp : 0.0;
+
+  // Scene motion this frame (pixels), drives the analytic motion vector.
+  const phase = lastPhase + ui.motion * 0.01;
+  const motionPx = (phase - lastPhase) * H * 0.15;  // approx screen-px the pattern shifts
+  lastPhase = phase;
+
+  // 1) Scene → curTex (jittered).
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo); gl.viewport(0, 0, W, H);
+  gl.useProgram(sceneProg);
+  gl.uniform2f(loc(sceneProg, "uRes"), W, H);
+  gl.uniform2f(loc(sceneProg, "uJitterPx"), jx, jy);
+  gl.uniform1f(loc(sceneProg, "uPhase"), phase);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  // 2) Resolve curTex⊕history(prev) → history(cur).
+  const dst = hp, src = 1 - hp;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, histFbo[dst]); gl.viewport(0, 0, W, H);
+  gl.useProgram(resolveProg);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, curTex); gl.uniform1i(loc(resolveProg, "uCur"), 0);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, histTex[src]); gl.uniform1i(loc(resolveProg, "uHist"), 1);
+  gl.uniform2f(loc(resolveProg, "uRes"), W, H);
+  gl.uniform2f(loc(resolveProg, "uMotionPx"), motionPx, 0.0);
+  gl.uniform1f(loc(resolveProg, "uFeedback"), ui.feedback);
+  gl.uniform1i(loc(resolveProg, "uTAA"), ui.taa ? 1 : 0);
+  gl.uniform1i(loc(resolveProg, "uClamp"), ui.clamp ? 1 : 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  // 3) Blit history(cur) → screen.
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, W, H);
+  gl.useProgram(blitProg);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, histTex[dst]); gl.uniform1i(loc(blitProg, "uTex"), 0);
+  gl.uniform2f(loc(blitProg, "uRes"), W, H);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  hp = 1 - hp; frame++;
+  requestAnimationFrame(render);
+}
+gl.getExtension("EXT_color_buffer_float");
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

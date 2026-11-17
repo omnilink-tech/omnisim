@@ -1,0 +1,190 @@
+#VRML_SIM R2025a utf8
+
+# The first cloth world in OmniSim. A square sheet is pinned along one edge and
+# drapes over a static box under gravity, simulated by newton's SolverVBD while
+# the rigid scene stays on SolverMuJoCo -- the two coupled over ONE Model by
+# SolverCoupledProxy (newtonSolver "mujoco+vbd").
+#
+# WHY THIS WORLD EXISTS. It is the end-to-end check that the three layers meet:
+# the `Cloth` node parses, OmNewtonBackend::addClothGrid reaches the runtime's
+# add_cloth_grid, SolverVBD steps the particles, and the per-frame particle
+# readback streams into a WrDynamicMesh so the sheet is actually VISIBLE. Every
+# one of those was verified in isolation before this file existed; this is the
+# first time they run together.
+#
+# WHAT TO EXPECT. The sheet starts flat at z = 1.0, hinged along its +Y edge.
+# It falls, folds over the box top (z = 0.5) and hangs. The proof is numeric,
+# not visual: the lowest particle must end well below its start and ABOVE the
+# floor, and the pinned edge must not move at all.
+#
+# ⚠ CLOTH IS A GPU WORKLOAD. Measured on an RTX 3060 laptop: a 289-particle
+# sheet steps at 6.7 frame/s on the CPU and 164 on CUDA with graph capture.
+# This world is deliberately small (17x17 = 289 particles) so it stays usable
+# either way; raise dimX/dimY only if you are on CUDA.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  gravity 9.81
+  basicTimeStep 8
+  coordinateSystem "ENU"
+  # The coupled path: SolverMuJoCo keeps every rigid body and joint, SolverVBD
+  # owns only the cloth particles, and SolverCoupledProxy exchanges forces
+  # between them. MuJoCo keeps its OWN contact detection here -- measured, two
+  # boxes 20 m from the cloth land within 1.5e-08 m of a rigid-only run, so the
+  # coupler does not double-resolve rigid contact.
+  newtonSolver "mujoco+vbd"
+  newtonStatics TRUE
+  newtonGroundMu 1
+}
+Viewpoint {
+  position -2.2 -2.4 1.9
+  orientation 0.36 -0.30 -0.88 1.24
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+DEF FLOOR Solid {
+  translation 0 0 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.35 0.36 0.40
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 6 6 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 6 6 0.1
+  }
+}
+# The obstacle the sheet drapes over. Top face at z = 0.5.
+DEF TABLE Solid {
+  translation 0 0 0.25
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.55 0.40 0.25
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.5 0.5 0.5
+      }
+    }
+  ]
+  name "table"
+  boundingObject Box {
+    size 0.5 0.5 0.5
+  }
+}
+# 17 x 17 particles at 5 cm spacing = a 0.8 m square sheet, pinned along +Y so
+# it hinges and folds over the box instead of dropping flat onto it.
+#
+# ⚠ THE `appearance` IS NOT DECORATION, AND THE NUMBER THAT PROVES IT IS THE
+# BLACK COUNT. The canonical recipe declares `ambientIntensity 0`
+# (OmniSimSun.proto), so every scrap of fill light in an OmniSim world is
+# IMAGE-BASED -- and image-based light reaches a surface ONLY through a
+# PBRAppearance. A Phong Cloth therefore renders hard (0,0,0) everywhere the sun
+# does not strike it directly, which on a folded sheet is most of the far side.
+# MEASURED on this world (harness, 300 steps, hero framing, 1900x1080):
+#
+#   diffuseColor only (Phong)   2.67% of the frame PURE BLACK
+#   this PBRAppearance          0.00%
+#
+# and the black was not a smooth shaded falloff -- it was a hard sawtooth strip
+# down the sheet's shaded edge, one tooth per triangle, because there is no
+# ambient floor for an unlit face to land on.
+#
+# THE MAPS. `woven_cotton_*` from scripts/dev/gen_surface_textures.py: plain 1/1
+# weave, 48 threads per 2 cm tile (~60/inch, ordinary shirting).
+#   ⚠ baseColorMap is MULTIPLIED by the `baseColor` field (pbr.frag:259), not
+#     replaced. The woven set is generated deliberately NEAR-NEUTRAL
+#     (0.82 0.815 0.80 linear) precisely so a world can tint it here -- which is
+#     why this sheet keeps its red identity without a second texture. The sponge
+#     set is the opposite case: it carries its own yellow and must be used at
+#     baseColor 1 1 1.
+#   ⚠ metalness 0 EXPLICITLY. The schema default is 1, so an inline
+#     PBRAppearance that omits it is a METAL, and fabric-as-foil is the single
+#     most common way this goes wrong.
+#   ⚠ THE TILE IS 8 CM AND THE PHYSICALLY HONEST 2 CM IS UNRENDERABLE. THIS
+#     WAS SWEPT, NOT GUESSED. `scale 10 10` over 0.8 m is an 8 cm tile, 4x the
+#     map's 2 cm design size. The obvious objection is that a real cotton weave
+#     tiles at 2 cm and the world should just say 40 -- so that was rendered,
+#     at this world's hero framing, 300 steps, one variable:
+#
+#       scale  5  = 16.0 cm tile   weave clearly legible, but coarse: reads as
+#                                  insect screen / knitted wool, not cotton
+#       scale 10  =  8.0 cm tile   fine, even weave -- reads as cloth  <-- USED
+#       scale 16  =  5.0 cm tile   weave fading, moire beginning
+#       scale 25  =  3.2 cm tile   essentially flat
+#       scale 40  =  2.0 cm tile   COMPLETELY FLAT. No weave survives at all.
+#
+#     At the design size a thread is 0.42 mm, which is far under one pixel at
+#     any distance this demo is framed at, so the mip chain averages the entire
+#     weave to a uniform colour: the map is fully paid for and renders nothing.
+#     8 cm is therefore a LEGIBILITY choice made against a measurement, and it
+#     is dishonest by a factor of 4 -- the threads read as 1.7 mm, which is
+#     heavy canvas rather than shirting. That is the trade, stated rather than
+#     hidden.
+#   ⚠ normalMapFactor 0.5, because the 4x stretch makes the map's slopes read
+#     4x too strong at full factor. (The map's median tilt is 48.6 deg, which
+#     is aggressive even before stretching.)
+#
+# The normal map's green channel is DOWN (-Y / "DirectX"), which is what this
+# engine's v-increases-downward upload requires. Do not substitute a stock
+# OpenGL/+Y map from a texture library: every thread would light as a groove.
+#
+# `diffuseColor` below is now dead weight in the render (the appearance carries
+# the colour) and is kept only as the documented fallback if the appearance is
+# ever removed.
+DEF SHEET Cloth {
+  translation -0.4 -0.4 1.0
+  dimX 16
+  dimY 16
+  cellX 0.05
+  cellY 0.05
+  mass 0.001
+  particleRadius 0.01
+  fixTop TRUE
+  diffuseColor 0.85 0.25 0.25
+  appearance PBRAppearance {
+    baseColor 0.80 0.18 0.15
+    baseColorMap ImageTexture {
+      url [
+        "textures/woven_cotton_basecolor.png"
+      ]
+    }
+    normalMap ImageTexture {
+      url [
+        "textures/woven_cotton_normal.png"
+      ]
+    }
+    roughnessMap ImageTexture {
+      url [
+        "textures/woven_cotton_roughness.png"
+      ]
+    }
+    occlusionMap ImageTexture {
+      url [
+        "textures/woven_cotton_occlusion.png"
+      ]
+    }
+    metalness 0
+    normalMapFactor 0.5
+    IBLStrength 1.1
+    textureTransform TextureTransform {
+      scale 10 10
+    }
+  }
+}

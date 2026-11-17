@@ -1,0 +1,13 @@
+{
+  "name": "smart_house",
+  "display_name": "OmniLink Smart House",
+  "omnilink_agent_name": "SmartHouse",
+  "world": "projects/samples/demos/worlds/flagship/omnilink_smart_house.omniworld",
+  "bridge_port": 8766,
+  "agent_script": "agents/production/smart_house/smart_house_agent.py",
+  "agent_port": 51534,
+  "agent_port_env": "SMART_HOUSE_AGENT_PORT",
+  "bridge_url_env": "SMART_HOUSE_HUB_URL",
+  "description": "House-manager agent for the physics-backed smart house. 19 Haven-shaped tools proxied to the smart_house_bridge hub on :8766; benchmark/ measures normal vs persistent operation from simulator metrics.",
+  "tags": ["smart-home", "haven", "persistent", "benchmark", "first-party"]
+}

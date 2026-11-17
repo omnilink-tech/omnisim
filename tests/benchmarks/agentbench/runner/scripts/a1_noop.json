@@ -1,0 +1,14 @@
+{
+  "schema": "agentbench/script/v1",
+  "name": "a1_noop",
+  "description": "The negative control for the runner itself: a 'model' that calls no tools and declares success anyway. Must FAIL. This is what proves the loop cannot accidentally pass a task -- if this ever PASSes, the grader is reading something the agent did not produce.",
+  "turns": [
+    {
+      "text": "Done -- I have built the scene with 10 Huskies and they all moved randomly. Everything works.",
+      "usage": {
+        "tokens_in": 3500,
+        "tokens_out": 60
+      }
+    }
+  ]
+}

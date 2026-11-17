@@ -1,0 +1,59 @@
+#OMNISIM R2025a utf8
+
+# Lane E1 (P5) smoke world: camera_wgpu_scene_smoke + `motionBlur 400` on the wgpu Camera,
+# with a SUPERVISOR controller so the scene can change between frames (a static scene blends
+# with itself and proves nothing). The controller reads the cyan box at the centre, then
+# teleports the box out of view and reads again: with the CPU motion-blur port
+# (blend = pow(0.005, 32/400) ~ 0.654 = the weight of the OLD frame) the first frame after
+# removal must still carry a cyan GHOST at the centre, decaying over subsequent frames.
+#
+# DOCUMENTED DEVIATION from WREN: WREN blends HDR linear pre-tonemap, the port blends the
+# final LDR bytes -- same time constant, slightly different ghost falloff.
+# RED-CAPABLE: with the port absent (or OMNISIM_WGPU_SENSOR_POSTFX=0) the frame after
+# removal is instantly background -> no ghost -> FAIL.
+
+WorldInfo {
+  info [
+    "Lane E1 smoke -- wgpu Camera applies the authored motion blur (CPU port)"
+  ]
+  title "Lane E1 wgpu Camera motionBlur smoke"
+  basicTimeStep 32
+}
+Viewpoint {
+  orientation 0 0 1 0
+  position -2 0 0.5
+}
+Robot {
+  translation 0 0 0
+  children [
+    Camera {
+      name "cam_wgpu"
+      width 64
+      height 48
+      fieldOfView 0.8
+      near 0.05
+      far 10.0
+      motionBlur 400
+      renderBackend "wgpu"
+    }
+  ]
+  controller "camera_wgpu_motionblur_smoke"
+  controllerArgs []
+  supervisor TRUE
+}
+DEF CYAN_BOX Solid {
+  translation 1.0 0 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 1 1
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 0.6 0.6 0.6
+      }
+    }
+  ]
+  name "cyan box"
+}

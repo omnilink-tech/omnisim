@@ -1,0 +1,15 @@
+#OMNISIM R2025a utf8
+# template language: javascript
+
+EXTERNPROTO "omnisim://tests/protos/protos/TemplateNested.proto"
+
+PROTO TemplateDirectMain [
+  field SFBool mainParameter TRUE
+]
+{
+  %< if (!fields.mainParameter.value) { >%
+    TemplateNested {
+      nestedParameter IS mainParameter
+    }
+  %< } >%
+}

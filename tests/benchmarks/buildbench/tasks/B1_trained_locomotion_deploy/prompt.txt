@@ -1,0 +1,1 @@
+Train a locomotion policy for a legged robot, then use that trained policy to drive the robot through a navigation course whose route is not known in advance, using a planar LiDAR to find the way. Deliver the trained policy, the world, and the controller that runs them, and show the robot completing the course.

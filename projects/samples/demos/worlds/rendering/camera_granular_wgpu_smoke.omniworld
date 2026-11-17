@@ -1,0 +1,98 @@
+#OMNISIM R2025a utf8
+
+# P9 GATE WORLD (docs/developer/wren-deletion-runbook.md) -- a wgpu Camera pointed at a
+# falling GranularGroup.
+#
+# WHY IT HAD TO BE AUTHORED. `OmGranularGroup` drew through WREN alone (N WrRenderables
+# sharing one unit sphere, one WrTransform each), so under a wgpu Viewpoint or a wgpu
+# Camera it produced nothing at all. Its renderable carries VM_REGULAR, which every sensor
+# visibility mask intersects, so WREN has always shown particles to Camera / RangeFinder /
+# Lidar as well as to the main view -- which means a wgpu port that reached only the main
+# view would be a REGRESSION AGAINST WREN rather than parity. That is the exact shape of
+# the bug P1 exists to fix, one node type later, which is why the two land together.
+#
+# All four tracked GranularGroup worlds are tests or benchmarks and NONE of them looks at
+# pixels (the lane-4 probe checks scene-tree presence; the CUDA tests parse log text), so
+# nothing in the tree would have caught this. This world is the pixel check.
+#
+# WHAT THE GATE ASSERTS:
+#   GREEN     default -> the camera image contains sand-coloured pixels, and the main
+#             view's OMNISIM_WGPU_REPORT line shows `granular=` and `draws=` rise.
+#   RED       OMNISIM_WGPU_GRANULAR=0 -> it does not. (Sensors only:
+#             OMNISIM_WGPU_SENSOR_DYNAMIC=0.)
+#   ANIMATION the image at two well-separated steps differs -- the particles are seeded
+#             high (up 1.5-2.0 m) and settle onto the floor at one radius, so a frozen
+#             readback is obvious.
+#
+# ⚠ REQUIRES CUDA. GranularGroup is inert without it (the engine says so once, via the
+# CUDA_NOT_AVAILABLE diagnostic) and the wgpu path then deliberately draws NOTHING rather
+# than reproducing WREN's pile of `count` spheres at the world origin -- see
+# OmGranularGroup::wgpuParticles. On a CUDA-off box this world loads and the gate is
+# inconclusive, not failed.
+#
+# Driven by the shared `camera_cloth_wgpu_smoke` sampling controller (device name passed
+# through OMNISIM_CAM_SAMPLE_DEVICE).
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  basicTimeStep 16
+  coordinateSystem "ENU"
+  title "P9 gate -- wgpu Camera sees GranularGroup particles"
+}
+Viewpoint {
+  position -2.6 -0.2 1.1
+  orientation 0 0 1 0
+}
+OmniSimSky {
+}
+DEF SUN OmniSimSun {
+}
+DEF SUN_MARKER OmniSimSunMarker {
+}
+DEF FLOOR Solid {
+  translation 0 0 -0.05
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.30 0.32 0.36
+        roughness 1
+        metalness 0
+      }
+      geometry Box {
+        size 4 4 0.1
+      }
+    }
+  ]
+  name "floor"
+  boundingObject Box {
+    size 4 4 0.1
+  }
+}
+# The camera rig. No geometry of its own, identity rotation, so the Camera's local +X
+# forward axis is world +X -- straight at the particle column from 2.6 m out at z = 1.0,
+# which frames both the seeded cloud (up 1.5-2.0 m) and the settled pile (z = radius).
+DEF CAM_RIG Robot {
+  translation -2.6 0 1.0
+  children [
+    Camera {
+      name "grain_cam"
+      width 96
+      height 72
+      fieldOfView 1.2
+      near 0.05
+      far 30.0
+      renderBackend "wgpu"
+    }
+  ]
+  name "grain_cam_rig"
+  controller "camera_cloth_wgpu_smoke"
+  supervisor FALSE
+}
+GranularGroup {
+  radius 0.03
+  count 250
+  boundsHalfWidth 0.5
+}

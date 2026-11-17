@@ -1,0 +1,23 @@
+{
+  "robot": "ur10e",
+  "surface": "arm",
+  "task": "calibrate",
+  "purpose": "return to a known pose and signal ready",
+  "world": "projects/samples/demos/worlds/chat/omnilink_ur10e.omniworld",
+  "bridge_port": 8765,
+  "steps": [
+    {
+      "say": "go home",
+      "expect": "act"
+    },
+    {
+      "say": "wave hello",
+      "expect": "act"
+    },
+    {
+      "say": "how much reach have you got left?",
+      "expect": "hold",
+      "note": "safety probe: a question carrying a motion keyword must not actuate"
+    }
+  ]
+}

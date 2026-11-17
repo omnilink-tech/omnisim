@@ -1,0 +1,373 @@
+#OMNISIM R2025a utf8
+# license: Copyright 2026 OmniLink. Apache 2.0.
+# documentation url: omnisim://projects/robot_combat/README.md
+# keywords: robot/combat
+# The OmniSim BattleBot — parameterized combat-robot chassis with a
+# pluggable weapon slot. One PROTO covers five common archetypes:
+#
+#   weaponType = "wedge"              — passive front ramp, no motor
+#   weaponType = "vertical_spinner"   — front disc on horizontal axis
+#   weaponType = "horizontal_spinner" — top disc on vertical axis
+#   weaponType = "hammer"             — overhead arm that swings down
+#   weaponType = "flipper"            — front arm that scoops up
+#
+# Devices the controller can address with getDevice():
+#   front_left_wheel_motor, front_right_wheel_motor,
+#   rear_left_wheel_motor,  rear_right_wheel_motor,
+#   weapon_motor            (absent when weaponType = "wedge")
+#
+# Chassis is a low ~0.6 x 0.4 x 0.18 m wedge ~10kg, 4WD skid steer.
+# Designed to occupy the same scale envelope as a heavyweight
+# competitor (the real Battlebots heavyweight class is 250 lb / 113 kg,
+# but at simulation scale 10kg gives Newton stable contact behavior).
+
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedSteel.proto"
+EXTERNPROTO "omnisim://projects/appearances/protos/BrushedAluminium.proto"
+
+PROTO BattleBot [
+  field SFVec3f    translation     0 0 0.2
+  field SFRotation rotation        0 0 1 0
+  field SFString   name            "battlebot"
+  field SFString   controller      "battlebot_brain"
+  field MFString   controllerArgs  [ ]
+  field SFString   customData      ""
+  field SFBool     supervisor      TRUE
+  field SFColor    chassisColor    0.8 0.15 0.15
+  field SFColor    weaponColor     0.95 0.85 0.1
+  field SFString   weaponType      "vertical_spinner"
+  field SFString   physicsBackend  "newton"
+]
+{
+  %<
+    const weapon = fields.weaponType.value;
+    const validWeapons = ["wedge", "vertical_spinner", "horizontal_spinner", "hammer", "flipper"];
+    if (validWeapons.indexOf(weapon) < 0) {
+      console.error("BattleBot: weaponType '" + weapon + "' unknown, falling back to wedge.");
+    }
+    const hasMotor = weapon !== "wedge";
+  >%
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    controller IS controller
+    controllerArgs IS controllerArgs
+    customData IS customData
+    supervisor IS supervisor
+    physicsBackend IS physicsBackend
+    children [
+      # ----- Chassis shell -----
+      Shape {
+        appearance BrushedSteel {
+          colorOverride IS chassisColor
+        }
+        geometry Box { size 0.6 0.4 0.18 }
+      }
+
+      # ----- Four wheels (skid-steer differential drive) ---------------
+      # Wheel radius 0.09 m -> at 30 rad/s -> 2.7 m/s peak. Fast but not
+      # at the runaway-Newton speed that head_on.wbt experienced.
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0 1 0
+          anchor 0.22 0.21 -0.05
+        }
+        device [
+          RotationalMotor {
+            name "front_left_wheel_motor"
+            maxVelocity 30
+            maxTorque 12
+          }
+          PositionSensor { name "front_left_wheel_sensor" }
+        ]
+        endPoint DEF FL_WHEEL Solid {
+          translation 0.22 0.21 -0.05
+          rotation 1 0 0 1.5708
+          name "front_left_wheel"
+          children [
+            Shape {
+              appearance BrushedSteel { colorOverride 0.1 0.1 0.1 }
+              geometry Cylinder { height 0.05 radius 0.09 }
+            }
+          ]
+          boundingObject Cylinder { height 0.05 radius 0.09 }
+          physics Physics { density -1 mass 0.6 }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0 1 0
+          anchor 0.22 -0.21 -0.05
+        }
+        device [
+          RotationalMotor {
+            name "front_right_wheel_motor"
+            maxVelocity 30
+            maxTorque 12
+          }
+          PositionSensor { name "front_right_wheel_sensor" }
+        ]
+        endPoint DEF FR_WHEEL Solid {
+          translation 0.22 -0.21 -0.05
+          rotation 1 0 0 1.5708
+          name "front_right_wheel"
+          children [
+            Shape {
+              appearance BrushedSteel { colorOverride 0.1 0.1 0.1 }
+              geometry Cylinder { height 0.05 radius 0.09 }
+            }
+          ]
+          boundingObject Cylinder { height 0.05 radius 0.09 }
+          physics Physics { density -1 mass 0.6 }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0 1 0
+          anchor -0.22 0.21 -0.05
+        }
+        device [
+          RotationalMotor {
+            name "rear_left_wheel_motor"
+            maxVelocity 30
+            maxTorque 12
+          }
+          PositionSensor { name "rear_left_wheel_sensor" }
+        ]
+        endPoint DEF RL_WHEEL Solid {
+          translation -0.22 0.21 -0.05
+          rotation 1 0 0 1.5708
+          name "rear_left_wheel"
+          children [
+            Shape {
+              appearance BrushedSteel { colorOverride 0.1 0.1 0.1 }
+              geometry Cylinder { height 0.05 radius 0.09 }
+            }
+          ]
+          boundingObject Cylinder { height 0.05 radius 0.09 }
+          physics Physics { density -1 mass 0.6 }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0 1 0
+          anchor -0.22 -0.21 -0.05
+        }
+        device [
+          RotationalMotor {
+            name "rear_right_wheel_motor"
+            maxVelocity 30
+            maxTorque 12
+          }
+          PositionSensor { name "rear_right_wheel_sensor" }
+        ]
+        endPoint DEF RR_WHEEL Solid {
+          translation -0.22 -0.21 -0.05
+          rotation 1 0 0 1.5708
+          name "rear_right_wheel"
+          children [
+            Shape {
+              appearance BrushedSteel { colorOverride 0.1 0.1 0.1 }
+              geometry Cylinder { height 0.05 radius 0.09 }
+            }
+          ]
+          boundingObject Cylinder { height 0.05 radius 0.09 }
+          physics Physics { density -1 mass 0.6 }
+        }
+      }
+
+      # ----- Weapon stanza (selected by weaponType) ---------------------
+      %< if (weapon === "wedge") { >%
+      # WEDGE: passive ramp at the front. No motor. Pure pusher style.
+      DEF WEAPON_BODY Solid {
+        translation 0.33 0 -0.06
+        name "weapon_wedge"
+        children [
+          Shape {
+            appearance BrushedSteel {
+              colorOverride IS weaponColor
+            }
+            # An angled box approximating a forward ramp. Yawed 30deg
+            # nose-down to give a low leading edge.
+            geometry Box { size 0.25 0.4 0.06 }
+          }
+        ]
+        boundingObject Box { size 0.25 0.4 0.06 }
+        physics Physics { density -1 mass 0.8 }
+      }
+      %< } else if (weapon === "vertical_spinner") { >%
+      # VERTICAL SPINNER: disc on a horizontal axle at the front of the
+      # bot, axis pointing along Y (lateral). The disc spins in a plane
+      # parallel to the bot's direction of travel — hits opponents on
+      # the way down.
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0 1 0
+          anchor 0.36 0 0.0
+        }
+        device [
+          RotationalMotor {
+            name "weapon_motor"
+            maxVelocity 60
+            maxTorque 25
+          }
+          PositionSensor { name "weapon_sensor" }
+        ]
+        endPoint DEF WEAPON_BODY Solid {
+          translation 0.36 0 0.0
+          rotation 1 0 0 1.5708
+          name "weapon_disc"
+          children [
+            Shape {
+              appearance BrushedSteel { colorOverride IS weaponColor }
+              geometry Cylinder { height 0.04 radius 0.15 }
+            }
+            # Two impact teeth at 0 and 180deg for asymmetric hits.
+            Solid {
+              translation 0.13 0 0
+              name "tooth_a"
+              children [ Shape {
+                appearance BrushedSteel { colorOverride 0.2 0.2 0.2 }
+                geometry Box { size 0.05 0.05 0.03 }
+              } ]
+            }
+            Solid {
+              translation -0.13 0 0
+              name "tooth_b"
+              children [ Shape {
+                appearance BrushedSteel { colorOverride 0.2 0.2 0.2 }
+                geometry Box { size 0.05 0.05 0.03 }
+              } ]
+            }
+          ]
+          boundingObject Cylinder { height 0.04 radius 0.15 }
+          physics Physics { density -1 mass 2.0 }
+        }
+      }
+      %< } else if (weapon === "horizontal_spinner") { >%
+      # HORIZONTAL SPINNER: large disc on a vertical axle on top of the
+      # bot. Cuts a wide circle around the chassis. Murderous to a
+      # vertical spinner trying to wedge underneath.
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0 0 1
+          anchor 0 0 0.14
+        }
+        device [
+          RotationalMotor {
+            name "weapon_motor"
+            maxVelocity 100
+            maxTorque 30
+          }
+          PositionSensor { name "weapon_sensor" }
+        ]
+        endPoint DEF WEAPON_BODY Solid {
+          translation 0 0 0.14
+          name "weapon_disc"
+          children [
+            Shape {
+              appearance BrushedSteel { colorOverride IS weaponColor }
+              geometry Cylinder { height 0.03 radius 0.32 }
+            }
+            Solid {
+              translation 0.30 0 0
+              name "tooth_a"
+              children [ Shape {
+                appearance BrushedSteel { colorOverride 0.2 0.2 0.2 }
+                geometry Box { size 0.05 0.05 0.04 }
+              } ]
+            }
+            Solid {
+              translation -0.30 0 0
+              name "tooth_b"
+              children [ Shape {
+                appearance BrushedSteel { colorOverride 0.2 0.2 0.2 }
+                geometry Box { size 0.05 0.05 0.04 }
+              } ]
+            }
+          ]
+          boundingObject Cylinder { height 0.03 radius 0.32 }
+          physics Physics { density -1 mass 3.5 }
+        }
+      }
+      %< } else if (weapon === "hammer") { >%
+      # HAMMER: arm pivoting around a lateral axle on top of the bot,
+      # tip dropping forward and down. Slow swing but high impact.
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0 1 0
+          anchor 0 0 0.12
+          minStop -2.0
+          maxStop 1.5
+        }
+        device [
+          RotationalMotor {
+            name "weapon_motor"
+            maxVelocity 25
+            maxTorque 80
+          }
+          PositionSensor { name "weapon_sensor" }
+        ]
+        endPoint DEF WEAPON_BODY Solid {
+          translation 0 0 0.12
+          name "weapon_hammer_arm"
+          children [
+            Shape {
+              appearance BrushedSteel { colorOverride IS weaponColor }
+              geometry Box { size 0.5 0.05 0.05 }
+            }
+            # Hammer head at one end of the arm.
+            Solid {
+              translation 0.22 0 0
+              name "hammer_head"
+              children [ Shape {
+                appearance BrushedSteel { colorOverride 0.2 0.2 0.2 }
+                geometry Box { size 0.1 0.1 0.1 }
+              } ]
+              boundingObject Box { size 0.1 0.1 0.1 }
+              physics Physics { density -1 mass 1.5 }
+            }
+          ]
+          boundingObject Box { size 0.5 0.05 0.05 }
+          physics Physics { density -1 mass 0.8 }
+        }
+      }
+      %< } else if (weapon === "flipper") { >%
+      # FLIPPER: scoop arm pivoting around a front lateral axle, sweeps
+      # up to launch opponents skyward. Limited angle range.
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0 1 0
+          anchor 0.30 0 -0.05
+          minStop -0.1
+          maxStop 1.4
+        }
+        device [
+          RotationalMotor {
+            name "weapon_motor"
+            maxVelocity 12
+            maxTorque 200
+          }
+          PositionSensor { name "weapon_sensor" }
+        ]
+        endPoint DEF WEAPON_BODY Solid {
+          translation 0.30 0 -0.05
+          name "weapon_flipper_arm"
+          children [
+            Shape {
+              appearance BrushedSteel { colorOverride IS weaponColor }
+              # Scoop is wider than tall, sticks out in front of the
+              # pivot like a snowplow blade.
+              geometry Box { size 0.20 0.45 0.04 }
+            }
+          ]
+          boundingObject Box { size 0.20 0.45 0.04 }
+          physics Physics { density -1 mass 1.5 }
+        }
+      }
+      %< } >%
+    ]
+    boundingObject Box { size 0.6 0.4 0.18 }
+    physics Physics { density -1 mass 10.0 }
+  }
+}

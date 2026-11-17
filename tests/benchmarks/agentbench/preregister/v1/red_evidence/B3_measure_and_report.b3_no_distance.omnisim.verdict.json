@@ -1,0 +1,243 @@
+{
+  "schema": "agenticsimbench/red-evidence/v1",
+  "suite": "agenticsimbench/v1",
+  "task": "B3_measure_and_report",
+  "sim": "omnisim",
+  "fixture": "b3_no_distance",
+  "fixture_kind": "targeted_live_adapter_evidence_fixture",
+  "expected_failures": [
+    "B3.1",
+    "B3.2"
+  ],
+  "observed_failures": [
+    "B3.1",
+    "B3.2"
+  ],
+  "outcome": "FAIL",
+  "qualifies_as_non_null_red_evidence": true,
+  "generated_utc": "2026-08-13T18:05:26.715554+00:00",
+  "engine_binary": {
+    "path": "msys64\\mingw64\\bin\\omnisim-bin.exe",
+    "sha256": "cbd80861c9f0d314f9760a39abc0f686ce161cac74337f80c41f5e2b5e0b836d"
+  },
+  "sources": [
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\run_final_red_fixtures.py",
+      "sha256": "fca4717c0fbf8217c9cf53676f5a653dc350960a3f1e3ca2340a528fbb158b9a"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\graders\\b3_core.py",
+      "sha256": "6205980c283b0caf98935eb7071b982083d4a8a9d77b0e3761a896e5468b41de"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\tasks\\B3_measure_and_report\\meta.json",
+      "sha256": "458f6c85d099820660a77229a217dd97a913d08f09ae79ffe8b51b4a1879662d"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\tasks\\B3_measure_and_report\\initial\\two_huskies.wbt",
+      "sha256": "c12e848a8fb65ed60ef37b56253ac0e382be1115df5bdce01dc0fd34d15dfebc"
+    }
+  ],
+  "staged_world_sha256": "a52ffb069a5a87699a74e55b486e00a9d5dc2e1659eb7a9bf490b94fa90a6565",
+  "answer": "husky_plinth is taller; I am deliberately omitting the separation measurement.",
+  "view": null,
+  "attribution_before_deliberate_strip": null,
+  "verdict": {
+    "task": "B3_measure_and_report",
+    "outcome": "FAIL",
+    "progress": 3,
+    "progress_name": "artifact_runs",
+    "assertions": {
+      "B3.1": {
+        "ok": false,
+        "what": "a distance is stated at all",
+        "measured": {
+          "unit-tagged numbers": [],
+          "bare numbers": [],
+          "scored (m)": null,
+          "chosen by": "the answer states no number at all"
+        },
+        "threshold": ">= 1 number in the answer",
+        "detail": "",
+        "basis": "core-structural",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "a number is present",
+            "how_to_fail": "an answer with no number in it at all",
+            "witness": "the agent's final message was captured",
+            "witness_present": true,
+            "detail": ""
+          }
+        ]
+      },
+      "B3.2": {
+        "ok": false,
+        "what": "the stated distance matches the measured one",
+        "measured": {
+          "scored stated (m)": null,
+          "chosen by": "the answer states no number at all",
+          "other numbers in the answer, not scored": [],
+          "measured node-centre (m)": 6.7794,
+          "measured AABB-centre (m)": 6.7794,
+          "error (m)": null
+        },
+        "threshold": {
+          "error (m)": "<= 0.30"
+        },
+        "detail": "",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "distance matches",
+            "how_to_fail": "a stated distance more than 0.30 m from the measured one",
+            "witness": "a measured ground-truth distance from t=0 geometry",
+            "witness_present": true,
+            "detail": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)"
+          }
+        ]
+      },
+      "B3.3": {
+        "ok": true,
+        "what": "the answer says which one is taller",
+        "measured": {
+          "named": "husky_plinth"
+        },
+        "threshold": "one of the two robot names",
+        "detail": "",
+        "basis": "core-structural",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "names a body",
+            "how_to_fail": "an answer that names neither body",
+            "witness": "the agent's final message was captured",
+            "witness_present": true,
+            "detail": ""
+          }
+        ]
+      },
+      "B3.4": {
+        "ok": true,
+        "what": "and it is the right one",
+        "measured": {
+          "named": "husky_plinth",
+          "measured taller": "husky_plinth",
+          "top z (m)": {
+            "husky_ground": 0.4513,
+            "husky_plinth": 0.8514
+          }
+        },
+        "threshold": "husky_plinth",
+        "detail": "",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": [
+          {
+            "clause": "names the right body",
+            "how_to_fail": "naming the shorter body",
+            "witness": "both bodies have a measured world-space AABB top z at t=0",
+            "witness_present": true,
+            "detail": "the grader-owned recorder's frozen t=0 scan (synchronized supervisor; geometry.bounds_for_subtree, the same world-space AABB an agent gets from GET /scene/tree?bounds=1)"
+          }
+        ]
+      }
+    },
+    "n_pass": 2,
+    "n_total": 4,
+    "failed_assertion": "B3.1",
+    "failed_assertions": [
+      "B3.1",
+      "B3.2"
+    ],
+    "self_verified": false,
+    "attribution": {},
+    "measurements": {
+      "truth": {
+        "distance_m": 6.779380502671318,
+        "aabb_distance_m": 6.779380502671318,
+        "taller": "husky_plinth",
+        "top_z_m": {
+          "husky_ground": 0.45135,
+          "husky_plinth": 0.85135
+        }
+      },
+      "answer": "husky_plinth is taller; I am deliberately omitting the separation measurement."
+    },
+    "artifacts": {},
+    "notes": [
+      "'taller' is graded as greater world-space AABB top z; both robots are the same Husky model, so only their height above the floor differs (recorded SPEC ambiguity)."
+    ],
+    "basis": {
+      "core-physical": [
+        "B3.2",
+        "B3.4"
+      ],
+      "core-structural": [
+        "B3.1",
+        "B3.3"
+      ]
+    },
+    "vacuous_assertions": {}
+  },
+  "run": {
+    "world": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-b3_no_distance\\project\\worlds\\measure_and_report.wbt",
+    "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-b3_no_distance\\project\\worlds\\_agentbench_phaseB_measure_and_report.wbt",
+    "rc": 0,
+    "wall_s": 34.71140210000158,
+    "timed_out": false,
+    "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\final-provenance-b3_no_distance\\phaseB\\phaseB_engine.log",
+    "sidecar": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.8.1",
+        "mujoco_warp": "3.8.0.3",
+        "newton": "1.2.0",
+        "warp": "1.13.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "present": true
+    },
+    "recorder_complete": true,
+    "rows": 63,
+    "n_robots": 2,
+    "n_tracks": 2,
+    "n_link_tracks": 0,
+    "n_solid_tracks": 0,
+    "links_truncated": false,
+    "scene_scan": {
+      "supported": true,
+      "cap": 128,
+      "found": 2,
+      "bounded": 1,
+      "truncated": false
+    },
+    "run_contacts": {
+      "supported": true,
+      "every_n_steps": 8,
+      "steps_sampled": 8,
+      "total_observed": 112,
+      "distinct_named": 56,
+      "unpaired": 56,
+      "truncated": false,
+      "error": null
+    },
+    "run_contact_pairs": [
+      "husky_plinth/plinth",
+      "husky_ground/None"
+    ],
+    "attempts_used": 1,
+    "launch_backend_env": {},
+    "tamper": [],
+    "error": null
+  },
+  "secondary_run": null
+}

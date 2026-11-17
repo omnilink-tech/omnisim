@@ -1,0 +1,56 @@
+#OMNISIM R2025a utf8
+
+# G1 COMMANDO-CRAWL training world. Same as g1_walk_orig.omniworld EXCEPT the robot
+# uses the CRAWL-collider model (g1_23dof_omnisim_crawl.urdf: hands/knees/
+# forearms/torso/pelvis boxes added) so a prone body has ground contact to
+# crawl on, and it spawns low + pitched (the CRAWL-mode trainer overrides the
+# per-episode spawn via g1_crawl_mode anyway; this is just the t=0 pose).
+# Drive with: run_walk_rl.sh ... CRAWL=1 WALK_WORLD=this GHOST_LUT_JSON=ghost_crawl_v1.
+
+EXTERNPROTO "omnisim://projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  newtonSolver "mujoco"
+  basicTimeStep 16
+  title "Unitree G1 commando-crawl training"
+  contactProperties [
+    ContactProperties {
+      material1 "default"
+      material2 "default"
+      coulombFriction [ 1.5 ]
+      bounce 0.0
+      bounceVelocity 0.5
+    }
+  ]
+}
+Viewpoint {
+  orientation -0.5773 0.5773 0.5773 2.0944
+  position 0 0 5
+  follow ""
+  followType "None"
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+RectangleArena {
+  floorSize 20 6
+  wallHeight 0.05
+  floorAppearance PBRAppearance {
+    baseColor 0.18 0.20 0.22
+    roughness 0.95
+    metalness 0
+  }
+}
+
+URDFRobot {
+  url "../../robots/unitree/g1/urdf/g1_23dof_omnisim_crawl.urdf"
+  translation 0 0 0.30
+  rotation 0 1 0 1.5708
+  name "g1"
+  supervisor TRUE
+  controller "humanoid_stand_deploy"
+  physicsBackend "newton"
+}

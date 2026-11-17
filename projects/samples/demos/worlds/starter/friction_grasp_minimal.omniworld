@@ -1,0 +1,155 @@
+#OMNISIM R2025a utf8
+
+# The smallest world that holds an object by FRICTION alone.
+#
+# Two fingers close on a cylinder, lift it, hold it in the air, and set it
+# down. Nothing is welded, nothing is teleported: if the physics is wrong the
+# object slips out and lands, which is the point of having a minimal case.
+#
+#   python -m omnisim run-headless \
+#     projects/samples/demos/worlds/starter/friction_grasp_minimal.omniworld --duration 20
+#
+# ⚠ EVERY PHYSICS SETTING BELOW IS LOad-BEARING. A friction pinch is the most
+# settings-sensitive thing this engine does, and the defaults are tuned for
+# wheeled robots rolling on a floor, not for fingers holding a part. Each line
+# says what it buys; the long form is docs/guide/friction-grasp.md.
+
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+
+WorldInfo {
+  title "Minimal friction grasp"
+
+  # 8 ms, not the default 16. High-friction contact goes unstable at 16 and
+  # the part jitters out of the fingers.
+  basicTimeStep 8
+
+  defaultPhysicsBackend "newton"
+
+  # MuJoCo, not the default XPBD. XPBD's soft positional contact structurally
+  # cannot hold a static pinch -- the part creeps out no matter the grip force.
+  newtonSolver "mujoco"
+
+  # Tangential friction for every shape. ⚠ THIS is friction on the Newton
+  # path. WorldInfo.contactProperties/coulombFriction is an ODE-path field and
+  # is IGNORED here (the engine warns when a world declares one without the
+  # other). 1.0 (the default) is not enough to hold a part against gravity.
+  newtonGroundMu 3
+
+  # Contact stiffness. The 2500 default lets fingers sink into the part and
+  # squirt it out sideways; 8000 makes them stop at its surface.
+  newtonContactKe 8000
+  newtonContactKd 200
+
+  # Elliptic cone + a high impedance ratio kill the tangential CREEP that
+  # otherwise slides the part out of a closed grip a millimetre at a time.
+  newtonCone "elliptic"
+  newtonImpratio 100
+
+  # More solver work per step: a grip must HOLD, not merely be nearly solved.
+  newtonIterations 150
+  newtonLsIterations 50
+
+  # Let static collision geometry participate.
+  newtonStatics TRUE
+
+  # Do not let a resting body fall asleep -- a sleeping part reports no
+  # contacts and looks like it is not being held.
+  physicsDisableTime 0
+}
+Viewpoint {
+  orientation -0.42 0.38 0.82 1.85
+  position 0.75 -0.62 0.5
+}
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+
+DEF FLOOR Solid {
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.42 0.44 0.46 roughness 1 metalness 0 }
+      geometry Box { size 2 2 0.05 }
+    }
+  ]
+  name "floor"
+  boundingObject Box { size 2 2 0.05 }
+}
+
+# The part. ⚠ A BOX ON PURPOSE. A `Cylinder` boundingObject is SUBSTITUTED on
+# the Newton path (it becomes a capsule), so the collider is not the shape the
+# file draws and the part rests at a height the geometry does not explain --
+# measured here at z=0.0448 for a cylinder whose flat base should have settled
+# at 0.055. Box, Sphere and Capsule are exact; prefer them for anything a
+# gripper has to touch.
+DEF PART Solid {
+  translation 0 0 0.055
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.85 0.45 0.15 roughness 0.6 metalness 0 }
+      geometry Box { size 0.04 0.04 0.06 }
+    }
+  ]
+  name "part"
+  boundingObject Box { size 0.04 0.04 0.06 }
+  physics Physics { mass 0.15 }
+}
+
+# The gripper: a lift stage carrying two prismatic fingers. Primitives only --
+# no vendor model -- so the physics is the only thing being demonstrated.
+DEF GRIPPER Robot {
+  translation 0 0 0.30
+  name "gripper"
+  controller "friction_grasp_minimal"
+  supervisor TRUE
+  children [
+    SliderJoint {
+      jointParameters JointParameters { axis 0 0 1 minStop -0.30 maxStop 0.05 }
+      device [ LinearMotor { name "lift" maxForce 200 maxVelocity 0.5 } ]
+      endPoint DEF WRIST Solid {
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.25 0.27 0.30 roughness 0.5 metalness 0.4 }
+            geometry Box { size 0.10 0.04 0.02 }
+          }
+          SliderJoint {
+            jointParameters JointParameters { axis 1 0 0 minStop -0.05 maxStop 0.0 }
+            device [ LinearMotor { name "finger_left" maxForce 120 maxVelocity 0.2 } ]
+            endPoint DEF FINGER_L Solid {
+              translation 0.035 0 -0.035
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.9 0.9 0.9 roughness 0.4 metalness 0 }
+                  geometry Box { size 0.012 0.03 0.05 }
+                }
+              ]
+              name "finger_left"
+              boundingObject Box { size 0.012 0.03 0.05 }
+              physics Physics { mass 0.05 }
+            }
+          }
+          SliderJoint {
+            jointParameters JointParameters { axis -1 0 0 minStop -0.05 maxStop 0.0 }
+            device [ LinearMotor { name "finger_right" maxForce 120 maxVelocity 0.2 } ]
+            endPoint DEF FINGER_R Solid {
+              translation -0.035 0 -0.035
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.9 0.9 0.9 roughness 0.4 metalness 0 }
+                  geometry Box { size 0.012 0.03 0.05 }
+                }
+              ]
+              name "finger_right"
+              boundingObject Box { size 0.012 0.03 0.05 }
+              physics Physics { mass 0.05 }
+            }
+          }
+        ]
+        name "wrist"
+        boundingObject Box { size 0.10 0.04 0.02 }
+        physics Physics { mass 0.4 }
+      }
+    }
+  ]
+}

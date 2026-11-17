@@ -1,0 +1,13 @@
+{
+  "mode": "authored",
+  "world_sha256": "42c8f7f4df5aaefc3a42356ba7a49a10f923af3919f258e4fdf1343c0b748028",
+  "config_sha256": "f37599d62d61e71004852732fa95920afd2f95ec81f7057829cc4801d99899a5",
+  "model_sha256": {
+    "left": "effb0f9b406bad6cac5a889637bc17dfd575450eb0e2c4083ea115eda03549e4",
+    "right": "61a89e913b15acf2a96937362619dc251aa2b9e291807020a05571584d41b722"
+  },
+  "source_revision": "06dc3da83c4fd3d1889b00f1dfd3780da8421f64",
+  "no_grip": true,
+  "actuation": "Motor.setPosition",
+  "timed_episode_pose_writes": 0
+}

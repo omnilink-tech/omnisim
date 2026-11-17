@@ -1,0 +1,10 @@
+#OMNISIM R2025a utf8
+
+EXTERNPROTO "omnisim://tests/protos/protos/SlotNode.proto"
+
+PROTO SlotNodeDerived [
+]
+{
+  SlotNode {
+  }
+}

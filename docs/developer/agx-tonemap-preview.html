@@ -1,0 +1,184 @@
+<!--
+  OmniSim AgX tonemap + auto-exposure — standalone WebGL2 preview.
+
+  Spec-by-example for the wgpu T1.1 color pipeline (engine-migration-plan.md
+  §14.4 T1.1). T1.1 is WREN-cancelled and ships on wgpu post-R3.4 as a WGSL
+  tonemap pass; the plan requires it re-attempt "must still include A/B
+  reference world set + verified-better A/B *before* shipping." This preview
+  is that A/B tool — engine-agnostic, no engine build, so it doesn't contend
+  with in-flight engine work. Compare AgX vs Reinhard vs clip side by side on
+  the same HDR input and pick exposure/look BEFORE writing the WGSL.
+
+  Why AgX (vs ACES/Reinhard): AgX (Troy Sobotka's filmic transform, now the
+  Blender 4.x default) desaturates highlights gracefully and avoids the
+  ACES "notorious-six" hue shifts on saturated emissives — exactly the
+  failure mode on robot status LEDs / warning beacons / sky. Reinhard clips
+  hue and washes mids; raw clip blows highlights to white. This preview makes
+  that difference visible on a synthetic HDR scene (a bright sky gradient, a
+  saturated emissive beacon, a metallic specular hotspot).
+
+  What this demonstrates:
+    * Linear HDR scene (values > 1.0) → tonemap → sRGB.
+    * Tonemappers: AgX (minimal fit), Reinhard, and raw clip — toggle/compare.
+    * Exposure (EV) slider + a simple auto-exposure (log-average luminance →
+      target middle-grey 0.18), toggleable.
+    * A split-screen wipe (drag) so AgX vs the comparison sits on one image.
+
+  Limitations vs the wgpu T1.1 pass:
+    * The AgX here is the widely-used minimal polynomial fit (Benjamin Wrensch
+      / Troy Sobotka approximation), not the full 3×3 AgX inset + per-channel
+      log2 + 6th-order curve + outset. Close enough to choose the LOOK; the
+      WGSL port should use the full transform.
+    * No bloom / lens flare / chromatic effects — tonemap only.
+    * Scene is synthetic (procedural HDR), not a real OmniSim framebuffer.
+
+  Sources:
+    * Sobotka 2020+, "AgX" (the reference image-formation transform).
+    * Wrensch 2023, "Minimal AgX" (the polynomial fit used here).
+    * Reinhard et al. 2002, "Photographic Tone Reproduction."
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OmniSim AgX tonemap preview</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #111; color: #ddd; font-family: system-ui, sans-serif; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; cursor: ew-resize; }
+  #panel { position: fixed; top: 10px; left: 10px; background: rgba(20,20,24,0.82);
+           padding: 12px 14px; border-radius: 8px; font-size: 13px; line-height: 1.7; min-width: 240px; }
+  #panel h1 { font-size: 14px; margin: 0 0 8px; font-weight: 600; }
+  #panel label { display: block; }
+  #panel input[type=range] { width: 130px; vertical-align: middle; }
+  #panel .v { color: #6cf; }
+  #panel .hint { color: #888; font-size: 11px; margin-top: 8px; }
+  select { background:#222; color:#ddd; border:1px solid #444; border-radius:4px; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="panel">
+  <h1>OmniSim AgX tonemap (T1.1)</h1>
+  <label>left half:
+    <select id="left"><option value="0">AgX</option><option value="1">Reinhard</option><option value="2">Clip</option></select>
+  </label>
+  <label>right half:
+    <select id="right"><option value="2">Clip</option><option value="1">Reinhard</option><option value="0">AgX</option></select>
+  </label>
+  <label><input type="checkbox" id="autoexp"> auto-exposure (target 0.18)</label>
+  <label>EV <input type="range" id="ev" min="-3" max="3" step="0.1" value="0"> <span class="v" id="evV">0.0</span></label>
+  <div class="hint">Drag to move the split. AgX (left default) holds highlight
+    hue on the beacon + sky; Clip (right) blows them to white. This is the
+    A/B the plan gates T1.1 shipping on.</div>
+</div>
+<script>
+"use strict";
+const canvas = document.getElementById("gl");
+const gl = canvas.getContext("webgl2", { antialias: false });
+if (!gl) { document.body.innerHTML = "<p style='padding:2em'>WebGL2 required.</p>"; throw new Error("no webgl2"); }
+
+const ui = { left: 0, right: 2, autoexp: false, ev: 0.0, split: 0.5 };
+document.getElementById("left").onchange = e => ui.left = parseInt(e.target.value);
+document.getElementById("right").onchange = e => ui.right = parseInt(e.target.value);
+document.getElementById("autoexp").onchange = e => ui.autoexp = e.target.checked;
+document.getElementById("ev").oninput = e => { ui.ev = parseFloat(e.target.value); document.getElementById("evV").textContent = ui.ev.toFixed(1); };
+canvas.addEventListener("pointermove", e => { if (e.buttons & 1) ui.split = e.clientX / canvas.clientWidth; });
+canvas.addEventListener("pointerdown", e => ui.split = e.clientX / canvas.clientWidth);
+
+function sh(t, s) { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o);
+  if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; }
+function prog(vs, fs) { const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)); return p; }
+
+const fsVS = `#version 300 es
+void main(){ vec2 p = vec2((gl_VertexID<<1)&2, gl_VertexID&2); gl_Position = vec4(p*2.0-1.0,0,1); }`;
+
+// Procedural linear-HDR scene + tonemap compare. The scene is computed in
+// linear space with values > 1.0 (sky gradient, a saturated emissive beacon,
+// a metallic specular hotspot), then each half is exposure-scaled + tonemapped.
+const fs = `#version 300 es
+precision highp float;
+out vec4 o;
+uniform vec2 uRes; uniform float uExposure; uniform float uSplit;
+uniform int uLeft; uniform int uRight;
+
+// Linear-HDR synthetic scene.
+vec3 sceneHDR(vec2 uv){
+  // Sky: blue→white gradient, bright near the top (HDR > 1).
+  vec3 sky = mix(vec3(0.25,0.45,0.95), vec3(2.2,2.0,1.7), pow(clamp(uv.y,0.0,1.0),1.5));
+  vec3 col = sky;
+  // Saturated orange beacon (emissive, very bright = the AgX/ACES hue test).
+  vec2 b = uv - vec2(0.32,0.42); float bd = length(b*vec2(1.0,1.3));
+  col += vec3(8.0,2.2,0.2) * smoothstep(0.16,0.0,bd);
+  // Metallic specular hotspot (near-white, extreme HDR).
+  vec2 s = uv - vec2(0.68,0.55); float sd = length(s);
+  col += vec3(12.0) * smoothstep(0.05,0.0,sd);
+  // A mid-grey ground band so mid-tones are visible.
+  if (uv.y < 0.25) col = mix(col, vec3(0.18,0.19,0.2), smoothstep(0.25,0.1,uv.y));
+  return max(col, 0.0);
+}
+
+vec3 reinhard(vec3 c){ return c/(1.0+c); }
+vec3 clipt(vec3 c){ return clamp(c,0.0,1.0); }
+// Minimal AgX (Wrensch/Sobotka polynomial fit), operates in ~log space.
+vec3 agxDefaultContrast(vec3 x){
+  vec3 x2=x*x, x4=x2*x2;
+  return 15.5*x4*x2 - 40.14*x4*x + 31.96*x4 - 6.868*x2*x + 0.4298*x2 + 0.1191*x - 0.00232;
+}
+vec3 agx(vec3 c){
+  const mat3 inset = mat3(0.842479062253094,0.0423282422610123,0.0423756549057051,
+                          0.0784335999999992,0.878468636469772,0.0784336,
+                          0.0792237451477643,0.0791661274605434,0.879142973793104);
+  c = inset*c;
+  c = clamp((log2(max(c,1e-10)) + 12.47393)/(12.47393+4.026069), 0.0, 1.0);
+  c = agxDefaultContrast(c);
+  const mat3 outset = mat3(1.19687900512017,-0.0528968517574562,-0.0529716355144438,
+                          -0.0980208811401368,1.15190312990417,-0.0980434501171241,
+                          -0.0990297440797205,-0.0989611768448433,1.15107367264116);
+  c = outset*c;
+  return clamp(c,0.0,1.0);  // already display-encoded-ish; sRGB applied below softly
+}
+vec3 tonemap(int m, vec3 c){
+  if (m==0) return agx(c);
+  if (m==1) return reinhard(c);
+  return clipt(c);
+}
+vec3 toSRGB(vec3 c){ return pow(c, vec3(1.0/2.2)); }
+
+void main(){
+  vec2 uv = gl_FragCoord.xy/uRes;
+  vec3 hdr = sceneHDR(uv) * uExposure;
+  int m = (uv.x < uSplit) ? uLeft : uRight;
+  vec3 mapped = tonemap(m, hdr);
+  // AgX path is roughly display-referred already; sRGB-encode Reinhard/clip.
+  vec3 outc = (m==0) ? mapped : toSRGB(mapped);
+  // thin split line
+  if (abs(uv.x - uSplit) < 0.0012) outc = vec3(0.0,0.8,1.0);
+  o = vec4(outc, 1.0);
+}`;
+
+const p = prog(fsVS, fs);
+const vao = gl.createVertexArray();
+function L(n){ return gl.getUniformLocation(p, n); }
+
+function frame(){
+  const w = canvas.clientWidth|0, h = canvas.clientHeight|0;
+  if (canvas.width !== w || canvas.height !== h){ canvas.width = w; canvas.height = h; }
+  // Auto-exposure: target middle grey 0.18 against a coarse luminance estimate
+  // of the scene's mid band (cheap stand-in for log-average luminance).
+  let exposure = Math.pow(2.0, ui.ev);
+  if (ui.autoexp) exposure *= 0.18 / 0.35;  // mid band ~0.35 lin → scale to 0.18
+  gl.viewport(0,0,w,h); gl.useProgram(p); gl.bindVertexArray(vao);
+  gl.uniform2f(L("uRes"), w, h);
+  gl.uniform1f(L("uExposure"), exposure);
+  gl.uniform1f(L("uSplit"), ui.split);
+  gl.uniform1i(L("uLeft"), ui.left);
+  gl.uniform1i(L("uRight"), ui.right);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

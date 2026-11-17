@@ -1,0 +1,234 @@
+Licence and provenance notice for wrenjs.js, wrenjs.wasm, wrenjs.data
+=====================================================================
+
+This notice accompanies three files in this directory:
+
+    wrenjs.js      202,523 bytes  Emscripten module loader + file-package loader
+    wrenjs.wasm    357,135 bytes  WebAssembly build of the WREN renderer
+    wrenjs.data    166,631 bytes  Emscripten VFS bundle: 84 GLSL shader files
+
+None of the three carries an embedded licence header or copyright notice.
+`wrenjs.wasm` is a fully stripped release build: a byte scan for the strings
+"copyright", "licence"/"license", "Cyberbotics", "Webots" and "emscripten"
+returns ZERO hits, and it retains no symbol names either (`wr_*` appears only
+in the JavaScript export table, not in the binary). This file exists because
+three separately-licensed bodies of work are combined in these files and,
+until now, none of the three was named in any attribution document in this
+repository.
+
+The files themselves are byte-unmodified. Nothing here changes them; this is a
+notice added beside them.
+
+
+-------------------------------------------------------------------------
+Where these files came from
+-------------------------------------------------------------------------
+
+They were NOT built in this repository. They are prebuilt artifacts fetched
+from Cyberbotics' own R2025a web-viewer distribution, vendored so the
+streaming viewer does not have to load them from cyberbotics.com at runtime.
+The recipe is recorded in this directory's own `.gitignore`, which was turned
+into an instructional note by the same change:
+
+    curl -o enum.js     https://cyberbotics.com/wwi/R<rel>/enum.js
+    curl -o wrenjs.js   https://cyberbotics.com/wwi/R<rel>/wrenjs.js
+    curl -o wrenjs.wasm https://cyberbotics.com/wwi/R<rel>/wrenjs.wasm
+    curl -o wrenjs.data https://cyberbotics.com/wwi/R<rel>/wrenjs.data
+
+That matters for attribution, because it means the vendored build contains
+**no OmniSim modification**. It is upstream Cyberbotics' R2025a build.
+
+sha256, so a future refresh is distinguishable from these bytes:
+
+    wrenjs.js    deb8dbde9465e90562ef46668d2014b331ede8fb1b1d4ebb6377aa214b79556b
+    wrenjs.wasm  72770c92912d47757cf3de7f1447a11d7fba2344aa8e0ef9e9b0bf417e723b56
+    wrenjs.data  544350205fd8929d2c5ab6be93ef6b61dc72f9639436b7de32bee3c6371002ae
+
+`enum.js` in this directory came from the same fetch and is the same
+Cyberbotics Apache-2.0 material (a table of `WR_*` constants); it is plain
+source, not a build artifact, and is covered by the fork derivation recorded
+in the repository-root `NOTICE` along with the rest of `resources/web/wwi/`.
+
+
+-------------------------------------------------------------------------
+Layer 1 -- WREN, the renderer itself: Apache-2.0, Cyberbotics Ltd.
+-------------------------------------------------------------------------
+
+`wrenjs.wasm` is a compiled build of WREN, the "Webots RENderer", which is
+Cyberbotics' own code. The evidence is in `wrenjs.js`, which exports **325**
+distinct `_wr_*` entry points -- WREN's public C API -- among them
+`_wr_camera_apply_pitch`, `_wr_camera_get_fovy`, `_wr_camera_new`,
+`_wr_camera_set_aspect_ratio`, `_wr_scene_*`, `_wr_material_*`.
+
+WREN is licensed under the Apache License, Version 2.0. The licence text
+retained in this repository for it is:
+
+    resources/wren/LICENSE
+
+which reads, in full:
+
+    Copyright 1996-2019 Cyberbotics Ltd.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       https://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+Upstream project: https://github.com/cyberbotics/webots
+
+Apache-2.0 section 4(a)/(b) require the licence and the modification notice to
+travel with a redistribution in **any** medium, including Object form; 4(d)
+requires attribution notices to be carried. Naming the work and pointing at the
+retained licence text is what this section does.
+
+
+-------------------------------------------------------------------------
+Layer 2 -- the shaders inside wrenjs.data: Apache-2.0, Cyberbotics Ltd.
+-------------------------------------------------------------------------
+
+`wrenjs.data` is an Emscripten file-package containing **84** files, all of
+them GLSL under one path prefix (52 `.frag`, 32 `.vert`):
+
+    /resources/wren/shaders/pbr.frag
+    /resources/wren/shaders/phong.vert
+    /resources/wren/shaders/gtao.frag
+    /resources/wren/shaders/smaa_edge_detect.frag
+    ... 80 more
+
+The file list is not inferred -- it is read directly out of the package
+manifest embedded in `wrenjs.js` (`"filename":"..."` entries). These are
+Cyberbotics' WREN shaders and carry WREN's Apache-2.0 licence, Layer 1 above.
+
+!! NOTE: these 84 shaders no longer exist as source in this repository. The
+   WREN engine was deleted on 2026-08-23 (commit 976b9449d, "wgpu: D1.4 -- THE
+   ATOMIC WREN DELETION"), which removed `resources/wren/shaders/` along with
+   `src/wren/`. `resources/wren/LICENSE` was deliberately kept, and the
+   shaders now ship ONLY inside this .data blob. That is why they are
+   enumerated here: after the deletion, this file is the only place in the
+   tree that records what is in that package.
+
+
+-------------------------------------------------------------------------
+Layer 3 -- the Emscripten runtime glue: MIT / University of Illinois NCSA
+-------------------------------------------------------------------------
+
+`wrenjs.js` is not hand-written. It is Emscripten's generated module loader,
+and a substantial part of its bytes are Emscripten's **own runtime library**
+compiled into the output -- not Cyberbotics code and not covered by
+Cyberbotics' Apache-2.0 grant.
+
+The evidence is the runtime's own internal names, present verbatim in the
+file: `ENVIRONMENT_IS_WEB`, `ENVIRONMENT_IS_PTHREAD`, `wasmBinaryFile`,
+`instantiateAsync`, `getBinaryPromise`, `createWasm`, `keepRuntimeAlive`,
+`procExit`, `logExceptionOnExit`, `requireNodeFS`, `UTF8ArrayToString`,
+`writeAsciiToMemory`, `FS.createPreloadedFile`, `GL.getNewId`,
+`emscripten_resize_heap`, `emscripten_get_now`, `emscripten_memcpy_big`. The
+`GL.*` and `FS.*` names come from Emscripten's `library_webgl.js` and
+`library_fs.js`; the `emscripten_*` imports are its C runtime shims. Some of
+the same code is linked into `wrenjs.wasm`.
+
+Emscripten's own LICENSE
+(https://github.com/emscripten-core/emscripten/blob/main/LICENSE) opens with
+this, verbatim:
+
+    Emscripten is available under 2 licenses, the MIT license and the
+    University of Illinois/NCSA Open Source License.
+
+    Both are permissive open source licenses, with little if any
+    practical difference between them.
+
+    The reason for offering both is that (1) the MIT license is
+    well-known, while (2) the University of Illinois/NCSA Open Source
+    License allows Emscripten's code to be integrated upstream into
+    LLVM, which uses that license, should the opportunity arise.
+
+    The full text of both licenses follows.
+
+Both blocks carry the same copyright line, verbatim:
+
+    Copyright (c) 2010-2014 Emscripten authors, see AUTHORS file.
+
+Note that the NCSA option carries an explicit BINARY-redistribution notice
+requirement ("Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimers in the
+documentation and/or other materials provided with the distribution"), which
+is exactly the case a shipped .js/.wasm presents.
+
+OmniSim relies on the **MIT** option, whose text is reproduced in full below
+so that its notice requirement travels with these binaries.
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to permit
+    persons to whom the Software is furnished to do so, subject to the
+    following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+    NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+    DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+    OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+    USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+The identical layer exists in `dependencies/assimpjs.js`, which is Emscripten
+output of the same generation (both files carry `requireNodeFS`,
+`logExceptionOnExit`, `keepRuntimeAlive`, `instantiateAsync`,
+`getBinaryPromise` and `writeAsciiToMemory`); see
+`dependencies/LICENSE-assimpjs.txt`.
+
+
+-------------------------------------------------------------------------
+Unresolved
+-------------------------------------------------------------------------
+
+  * THE EMSCRIPTEN VERSION IS NOT RECORDED IN THE FILES. Neither `wrenjs.js`
+    nor `wrenjs.wasm` embeds a version string. The feature fingerprint above
+    -- `requireNodeFS` and `logExceptionOnExit` both present, arrow functions
+    in use -- places it in the Emscripten 3.1.x generation of 2022, but that
+    is an inference from which runtime helpers are present, not a version
+    read out of the file. The MIT/NCSA dual licence and the copyright line
+    above are stable across Emscripten releases; only the exact build is
+    unknown.
+
+  * EMSCRIPTEN HAS NO PUBLISHED POSITION ON THE LICENCE OF ITS GENERATED
+    OUTPUT. Its LICENSE file and its documentation are both silent on it. The
+    nearest thing is emscripten-core/emscripten#6824, where the project's
+    creator wrote that "The LICENSE file should contain those copyright
+    notices, so quoting/linking it should be enough" -- expressly maintainer
+    opinion, contested in the same thread by another contributor, and the
+    issue was closed by stalebot without any documentation change. This file
+    therefore takes the conservative route and reproduces the notice rather
+    than relying on that view.
+
+  * THE WEBOTS RELEASE IS INFERRED FROM THE FETCH RECIPE, NOT FROM THE BYTES.
+    The `.gitignore` note and the vendoring change name
+    `https://cyberbotics.com/wwi/R2025a/` as the source path. Nothing inside
+    the three files states a Webots or WREN version, so a re-fetch from a
+    different release would be indistinguishable except by the sha256 above.
+
+  * TWO SHADERS INSIDE wrenjs.data MAY CARRY AN UPSTREAM OBLIGATION THAT
+    UPSTREAM NEVER DECLARED, and this is recorded rather than decided.
+    `smaa_edge_detect.frag` and `smaa_blending_weights.frag` implement SMAA
+    (Enhanced Subpixel Morphological Antialiasing) by Jorge Jimenez et al.,
+    reusing its macro vocabulary (`SMAA_THRESHOLD`, `SMAA_MAX_SEARCH_STEPS`,
+    `SMAA_AREATEX_MAX_DISTANCE_DIAG`, `SMAAColorEdgeDetection`, ...), and
+    `gtao.frag` carries a source comment citing
+    `github.com/asylum2010/Asylum_Tutorials`. Neither file carried a
+    copyright header in `resources/wren/shaders/` before the deletion, so
+    whatever the position is, it is inherited from Cyberbotics and is not
+    something this repository introduced or can settle from its own contents.
+    Named here so a later reader can find it; NO conclusion is asserted
+    either way.

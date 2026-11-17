@@ -1,0 +1,67 @@
+DEF ROBOT Robot {
+  translation -4 -4 0
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.15 0.35 0.55 roughness 0.7 }
+      geometry DEF R4_BASE_GEO Box { size 0.4 0.3 0.2 }
+    }
+    HingeJoint {
+      device [ RotationalMotor { name "r4_joint_1" } ]
+      endPoint DEF R4_LINK1 Solid {
+        translation 0.10 0 0.35
+        children [ Shape { geometry Sphere { radius 0.025 } } ]
+        name "fixture link 1"
+      }
+    }
+    HingeJoint {
+      device [ RotationalMotor { name "r4_joint_2" } ]
+      endPoint DEF R4_LINK2 Solid {
+        translation 0.20 0 0.50
+        children [ Shape { geometry Sphere { radius 0.025 } } ]
+        name "fixture link 2"
+      }
+    }
+    HingeJoint {
+      device [ RotationalMotor { name "r4_joint_3" } ]
+      endPoint DEF R4_LINK3 Solid {
+        translation 0.50 0 0.90
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.9 0.2 0.1 roughness 0.8 }
+            geometry Sphere { radius 0.035 }
+          }
+        ]
+        name "fixture gripper witness"
+      }
+    }
+    HingeJoint {
+      device [ RotationalMotor { name "r4_joint_4" } ]
+      endPoint Solid {
+        translation -0.10 0 0.25
+        children [ Shape { geometry Sphere { radius 0.02 } } ]
+        name "fixture link 4"
+      }
+    }
+    HingeJoint {
+      device [ RotationalMotor { name "r4_joint_5" } ]
+      endPoint Solid {
+        translation -0.15 0 0.30
+        children [ Shape { geometry Sphere { radius 0.02 } } ]
+        name "fixture link 5"
+      }
+    }
+    HingeJoint {
+      device [ RotationalMotor { name "r4_joint_6" } ]
+      endPoint Solid {
+        translation -0.20 0 0.35
+        children [ Shape { geometry Sphere { radius 0.02 } } ]
+        name "fixture link 6"
+      }
+    }
+  ]
+  name "fixture mobile manipulator"
+  supervisor TRUE
+  boundingObject USE R4_BASE_GEO
+  controller "r4_fixture"
+  controllerArgs [ "__R4_MODE__" ]
+}

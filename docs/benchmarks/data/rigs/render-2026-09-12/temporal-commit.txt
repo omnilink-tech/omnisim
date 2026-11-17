@@ -1,0 +1,15 @@
+render: validate temporal history and profile GPU passes
+
+Reject history taps from different surfaces, align reprojection with raster
+jitter, and reduce persistence on changing colors. Keep temporal rendering
+optional and preserve the unjittered sensor path.
+
+Add optional asynchronous GPU timestamp profiling with a bounded readback
+ring, per-target pass timings and render-start intervals. Invalidate dependent
+bindings explicitly when scene buffers grow so recycled native handles cannot
+hide newly inserted objects.
+
+Validation: 11 focused checks; repeated 16-state insertion/sensor comparison;
+1,290 unit tests, 16 documentation tests and two license tests. House,
+warehouse and city TAA-off images match the previous executable exactly,
+including with profiling enabled. Concurrent workloads preclude an FPS claim.

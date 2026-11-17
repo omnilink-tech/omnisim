@@ -1,0 +1,67 @@
+{
+ "battlebox_duel.trace": {
+  "analysis": {
+   "rows": 156,
+   "duration_s": 14.976,
+   "tick_s": 0.096,
+   "nan": false,
+   "bots": [
+    "blue",
+    "red"
+   ],
+   "contact_ticks": 0,
+   "contact_time_s": 0.0,
+   "hit_events": 0,
+   "first_hit_s": null,
+   "penetration_m": {
+    "max": 0.0,
+    "p95": 0.0,
+    "mean": 0.0,
+    "samples": 0,
+    "max_chassis": 0.0,
+    "max_weapon": 0.0,
+    "max_wheel": 0.0
+   },
+   "biggest_struck_dv": {
+    "mps": 0.0,
+    "bot": null,
+    "t": null
+   },
+   "biggest_spin_energy_given_up": {
+    "fraction": 0.0,
+    "bot": null,
+    "t": null
+   },
+   "per_bot": {
+    "blue": {
+     "top_speed_mps": 1.81,
+     "rest_z_m": 0.1399,
+     "min_z_m": 0.1338,
+     "launch_m": 0.064,
+     "peak_tumble_radps": 2.108,
+     "weapon_peak_radps": 2.11
+    },
+    "red": {
+     "top_speed_mps": 2.548,
+     "rest_z_m": 0.1436,
+     "min_z_m": 0.1165,
+     "launch_m": 0.2077,
+     "peak_tumble_radps": 5.751,
+     "weapon_peak_radps": 60.75
+    }
+   },
+   "events": [],
+   "hp_deductions": 0,
+   "hits_by_bot": {}
+  },
+  "scorecard": {
+   "winner": "draw",
+   "win_reason": "timeout_tie",
+   "match_t_s": 15.01,
+   "broken": {
+    "red": [],
+    "blue": []
+   }
+  }
+ }
+}

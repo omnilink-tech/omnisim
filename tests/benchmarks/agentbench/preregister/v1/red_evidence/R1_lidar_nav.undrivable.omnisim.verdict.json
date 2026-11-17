@@ -1,0 +1,342 @@
+{
+  "schema": "agenticsimbench/red-evidence/v1",
+  "suite": "agenticsimbench/v1",
+  "task": "R1_lidar_nav",
+  "sim": "omnisim",
+  "fixture": "undrivable",
+  "fixture_kind": "mutated_world_real_engine",
+  "fixture_transforms": [
+    "removed three of four rover joints"
+  ],
+  "staged_world_sha256": "92c932debba9d39b6e758d221600cb4350a6e6c0c46bdd86a3cbc3a10fbd026c",
+  "expected_failures": [
+    "R1.2",
+    "R1.4",
+    "R1.5",
+    "R1.6"
+  ],
+  "observed_failures": [
+    "R1.2",
+    "R1.4",
+    "R1.5",
+    "R1.6"
+  ],
+  "outcome": "FAIL",
+  "qualifies_as_non_null_red_evidence": true,
+  "purpose": {
+    "R1.2": "a Robot with only one joint is not a drivable mobile robot",
+    "R1.4": "an undrivable robot cannot reach the goal",
+    "R1.5": "an undrivable robot cannot earn collision-free motion credit",
+    "R1.6": "an undrivable robot cannot demonstrate a legal driven path"
+  },
+  "generated_utc": "2026-08-13T16:21:08.914769+00:00",
+  "engine_binary": {
+    "path": "msys64\\mingw64\\bin\\omnisim-bin.exe",
+    "sha256": "cbd80861c9f0d314f9760a39abc0f686ce161cac74337f80c41f5e2b5e0b836d"
+  },
+  "sources": [
+    {
+      "path": "tests\\benchmarks\\agentbench\\adapters\\omnisim\\omnisim_lane\\worlds\\r1_null.wbt",
+      "sha256": "9838b37deb7978c86debdf2019bab9e8b4eddcfb832c32e9acbc487375209474"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\adapters\\omnisim\\omnisim_lane\\controllers\\r1_null\\r1_null.py",
+      "sha256": "267a568eb2bd6cdfcddb4266152c6eb38bba249d6e24c4ffc450ccfa0117d41c"
+    },
+    {
+      "path": "tests\\benchmarks\\agentbench\\preregister\\v1\\run_red_fixture.py",
+      "sha256": "e555df39e97e5979bfc59f4d3a2d359c3d5383dbd356d8dbeb1e097686feb9bd"
+    }
+  ],
+  "verdict": {
+    "task": "R1_lidar_nav",
+    "outcome": "FAIL",
+    "progress": 3,
+    "progress_name": "artifact_runs",
+    "assertions": {
+      "R1.1": {
+        "ok": true,
+        "what": "the run is clean",
+        "measured": {
+          "exit code": 0,
+          "ERROR: lines": 0,
+          "driver reached a clean quit": true
+        },
+        "threshold": {
+          "exit code": 0,
+          "ERROR: lines": 0
+        },
+        "detail": "",
+        "basis": "mixed",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R1.2": {
+        "ok": false,
+        "what": "there is one drivable robot",
+        "measured": {
+          "robot-class bodies": 1,
+          "of those, with >= 2 joints": 0,
+          "names": [
+            "rover"
+          ]
+        },
+        "threshold": {
+          "robots with enough joints": 1
+        },
+        "detail": "",
+        "basis": "mixed",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R1.3": {
+        "ok": true,
+        "what": "the benchmark obstacles are intact",
+        "measured": {
+          "specified obstacles found": 5,
+          "specified obstacles missing": [],
+          "of those, blocking the straight line": [
+            "OBSTACLE_1",
+            "OBSTACLE_2",
+            "OBSTACLE_3"
+          ],
+          "layout scored against": "PUBLISHED layout -- no grade-time placement"
+        },
+        "threshold": {
+          "specified obstacles found": 5,
+          "the straight line must be blocked": ">= 1"
+        },
+        "detail": "matched by position and footprint within 0.05 m, never by name, against the layout this run was GRADED on; the sensing argument rests on the direct path being blocked, re-derived here from measured geometry",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R1.4": {
+        "ok": false,
+        "what": "the goal is reached",
+        "measured": null,
+        "threshold": null,
+        "detail": "no drivable robot to measure",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R1.5": {
+        "ok": false,
+        "what": "nothing was hit",
+        "measured": null,
+        "threshold": null,
+        "detail": "no drivable robot to measure",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      },
+      "R1.6": {
+        "ok": false,
+        "what": "it drove around the obstacles, and did not teleport",
+        "measured": null,
+        "threshold": null,
+        "detail": "no drivable robot to measure",
+        "basis": "core-physical",
+        "attested": [],
+        "vacuous": false,
+        "falsifiability": []
+      }
+    },
+    "n_pass": 2,
+    "n_total": 6,
+    "failed_assertion": "R1.2",
+    "failed_assertions": [
+      "R1.2",
+      "R1.4",
+      "R1.5",
+      "R1.6"
+    ],
+    "self_verified": false,
+    "attribution": {
+      "backend": "newton",
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "degraded": false,
+      "finalised": true,
+      "source": "<log>.newton.json sidecar"
+    },
+    "measurements": {
+      "r1_graded_layout": {
+        "placed": false,
+        "source": "PUBLISHED layout -- no grade-time placement",
+        "obstacles": [
+          {
+            "name": "OBSTACLE_1",
+            "position": [
+              0.0,
+              0.0,
+              0.25
+            ]
+          },
+          {
+            "name": "OBSTACLE_2",
+            "position": [
+              -2.0,
+              -1.4,
+              0.25
+            ]
+          },
+          {
+            "name": "OBSTACLE_3",
+            "position": [
+              1.6,
+              0.6,
+              0.25
+            ]
+          },
+          {
+            "name": "OBSTACLE_4",
+            "position": [
+              -1.2,
+              2.0,
+              0.25
+            ]
+          },
+          {
+            "name": "OBSTACLE_5",
+            "position": [
+              2.4,
+              -2.0,
+              0.25
+            ]
+          }
+        ]
+      },
+      "phase_b": {
+        "world": "O:\\omnisim\\.agentbench-v1-red-work\\r1-undrivable\\project\\worlds\\lidar_nav.wbt",
+        "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\r1-undrivable\\project\\worlds\\_agentbench_phaseB_lidar_nav.wbt",
+        "rc": 0,
+        "wall_s": 40.00835709999956,
+        "timed_out": false,
+        "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\r1-undrivable\\phaseB\\phaseB_engine.log",
+        "sidecar": {
+          "backend": "newton",
+          "degraded": false,
+          "finalised": true,
+          "runtime": {
+            "device": "cpu",
+            "mujoco": "3.8.1",
+            "mujoco_warp": "3.8.0.3",
+            "newton": "1.2.0",
+            "warp": "1.13.0"
+          },
+          "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+          "present": true
+        },
+        "recorder_complete": true,
+        "rows": 7501,
+        "n_robots": 1,
+        "n_tracks": 1,
+        "n_link_tracks": 0,
+        "n_solid_tracks": 0,
+        "links_truncated": false,
+        "scene_scan": {
+          "supported": true,
+          "cap": 128,
+          "found": 5,
+          "bounded": 5,
+          "truncated": false
+        },
+        "run_contacts": {
+          "supported": true,
+          "every_n_steps": 8,
+          "steps_sampled": 938,
+          "total_observed": 1876,
+          "distinct_named": 1876,
+          "unpaired": 0,
+          "truncated": false,
+          "error": null
+        },
+        "run_contact_pairs": [
+          "rover/floor"
+        ],
+        "attempts_used": 1,
+        "launch_backend_env": {},
+        "tamper": [],
+        "error": null
+      }
+    },
+    "artifacts": {
+      "world": "O:\\omnisim\\.agentbench-v1-red-work\\r1-undrivable\\project\\worlds\\lidar_nav.wbt"
+    },
+    "notes": [
+      "no grade-time obstacle placement was applied to this run: it was scored against the layout the task publishes, which the agent has seen. A controller that planned a fixed path from benchmark_assets/obstacles.json and cast no sensor beam passes every assertion here (measured). This row is not evidence of perception."
+    ],
+    "basis": {
+      "core-physical": [
+        "R1.3",
+        "R1.4",
+        "R1.5",
+        "R1.6"
+      ],
+      "mixed": [
+        "R1.1",
+        "R1.2"
+      ]
+    },
+    "vacuous_assertions": {}
+  },
+  "run": {
+    "world": "O:\\omnisim\\.agentbench-v1-red-work\\r1-undrivable\\project\\worlds\\lidar_nav.wbt",
+    "injected_world": "O:\\omnisim\\.agentbench-v1-red-work\\r1-undrivable\\project\\worlds\\_agentbench_phaseB_lidar_nav.wbt",
+    "rc": 0,
+    "wall_s": 40.00835709999956,
+    "timed_out": false,
+    "log_path": "O:\\omnisim\\.agentbench-v1-red-work\\r1-undrivable\\phaseB\\phaseB_engine.log",
+    "sidecar": {
+      "backend": "newton",
+      "degraded": false,
+      "finalised": true,
+      "runtime": {
+        "device": "cpu",
+        "mujoco": "3.8.1",
+        "mujoco_warp": "3.8.0.3",
+        "newton": "1.2.0",
+        "warp": "1.13.0"
+      },
+      "solver": "MuJoCo (cpu/mj_step, WorldInfo.newtonSolver)",
+      "present": true
+    },
+    "recorder_complete": true,
+    "rows": 7501,
+    "n_robots": 1,
+    "n_tracks": 1,
+    "n_link_tracks": 0,
+    "n_solid_tracks": 0,
+    "links_truncated": false,
+    "scene_scan": {
+      "supported": true,
+      "cap": 128,
+      "found": 5,
+      "bounded": 5,
+      "truncated": false
+    },
+    "run_contacts": {
+      "supported": true,
+      "every_n_steps": 8,
+      "steps_sampled": 938,
+      "total_observed": 1876,
+      "distinct_named": 1876,
+      "unpaired": 0,
+      "truncated": false,
+      "error": null
+    },
+    "run_contact_pairs": [
+      "rover/floor"
+    ],
+    "attempts_used": 1,
+    "launch_backend_env": {},
+    "tamper": [],
+    "error": null
+  }
+}

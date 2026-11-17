@@ -1,0 +1,64 @@
+{
+  "schema": 2,
+  "name": "h1_walk",
+  "title": "H1 walk (Unitree official policy re-hosted in-engine)",
+  "class": "humanoid",
+  "robots": [
+    "h1"
+  ],
+  "kind": "rl",
+  "method": "unitree-rehost",
+  "status": "verified",
+  "motion_class": "cyclic",
+  "summary": "The Unitree official H1 walk policy (motion.pt) re-hosted and driven inside OmniSim's Newton engine -- the second humanoid in the library, and proof the manifest holds non-Shadowing RL skills. Its recorded in-engine walk was folded into ghost_h1_lut.json (the cleanest ghost: spreads .003, sway +/-1deg) which PASSes the ghost_validator all-green -- i.e. H1 has an achievable, verified ghost ready for a Shadowing corridor-train, but the shipped walker today is the re-host. Deploy launches the world (controller baked in), NOT the g1 recipe.",
+  "ghost": {
+    "lut": "projects/policies/ghosts/h1/ghost_h1_lut.json",
+    "format": "lut",
+    "provenance": "recorded",
+    "validator": "PASS",
+    "owner_signoff": "2026-07-03",
+    "notes": "Recorded from the official H1 walk in-engine (58.7 m / 139 s straight, 173 cycles folded, 5-harmonic smooth). 10-DOF leg track (H1, not G1's 12). Ready for a Shadowing corridor-train (not yet done)."
+  },
+  "policy": {
+    "checkpoint": "projects/policies/research/controllers/h1_unitree_deploy/motion.pt",
+    "arch": "unitree-rehost",
+    "obs": {
+      "family": "unitree_h1",
+      "dim": 41
+    },
+    "action": {
+      "dim": 10,
+      "space": "legs",
+      "decode": "unitree PD recipe"
+    }
+  },
+  "baton": {
+    "blend": "cyclic",
+    "mode": "walk",
+    "vx": "0.42",
+    "attractor": "locomotion",
+    "notes": "Not BATON-blendable with the g1 cyclic family (different robot + obs); listed for cross-robot cataloguing. A shadowed H1 (trained via the recipe on ghost_h1_lut) would join a future h1_shadow_deploy profile."
+  },
+  "train": {
+    "trainer": "external (Unitree official)",
+    "status": "external",
+    "notes": "The shipped policy is the Unitree re-host (motion.pt), not trained here. To make a native H1 walk, corridor-train the recipe on ghost_h1_lut.json (validator already PASSes)."
+  },
+  "deploy": {
+    "run": "world",
+    "world": "projects/policies/research/worlds/h1_walk_deploy.omniworld",
+    "controller": "projects/policies/research/controllers/h1_unitree_deploy/h1_unitree_deploy.py",
+    "notes": "The controller + motion.pt are baked into the .wbt; `skill_lib.py run h1_walk` just launches the world."
+  },
+  "verification": {
+    "date": "2026-07-03",
+    "engine": "Newton/mujoco_warp",
+    "result": "Official H1 walks 58.7 m / 139 s straight in-engine; the folded ghost PASSes the validator all-green."
+  },
+  "doc": "docs/developer/rl-current-state.md",
+  "memory": "project_h1_unitree_official_walk_omnisim",
+  "related": [
+    "g1_walk",
+    "balance_two_legs"
+  ]
+}

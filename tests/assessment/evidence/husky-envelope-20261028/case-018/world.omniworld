@@ -1,0 +1,21 @@
+#OMNISIM R2025a utf8
+EXTERNPROTO "omnisim://projects/objects/backgrounds/protos/OmniSimSky.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSun.proto"
+EXTERNPROTO "omnisim://projects/objects/lights/protos/OmniSimSunMarker.proto"
+WorldInfo { basicTimeStep 16 title "husky mobility assessment"
+  newtonSolver "mujoco" newtonGroundMu 0.4 newtonSubsteps 8 }
+Viewpoint { position 3.964 -4.219 4.158 orientation -0.278945 0.120681 0.952694 2.359689 }
+OmniSimSky { }
+DEF SUN OmniSimSun { }
+DEF SUN_MARKER OmniSimSunMarker { }
+DEF FLOOR Solid {
+  translation -0.008715574274765816 0 -0.09961946980917456 rotation 0 1 0 0.08726646259971647
+  children [ Shape { appearance PBRAppearance { baseColor .23 .27 .30 roughness .9 metalness 0 }
+    geometry Box { size 40 6 .2 } } ]
+  boundingObject Box { size 40 6 .2 }
+}
+DEF ASSESSMENT_ROBOT URDFRobot {
+  url "O:/omnisim/tests/assessment/evidence/husky-envelope-20261028/case-018/model.urdf"
+  translation 0.02004582083196138 0 0.2291247805611015 rotation 0 1 0 0.08726646259971647
+  name "husky" supervisor TRUE controller "husky_braking"
+}

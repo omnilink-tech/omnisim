@@ -1,0 +1,40 @@
+# A Solid node can be used to represent objects in the simulated environment (e.g. obstacles, walls, ground, robot parts, etc.).
+# Solid nodes can be collision detected (boundingObject) and therefore can prevent objects from intersecting.
+# In addition, Solid nodes can have an optional Physics node that allow them to be simulated with the physics engine.
+# parent: Pose
+
+Solid {
+  #fields that inherit from the Pose node:
+  w3dField SFVec3f    translation         0 0 0
+  w3dField SFRotation rotation            0 0 1 0
+  w3dField MFNode     children            []           # shape and solids fixed to that solid
+  #fields specific to the Solid node:
+  w3dField SFString   name                "solid"      # used by wb_robot_get_device()
+  field    SFString   model               ""           # generic name of the solid (eg: "chair")
+  field    SFString   description         ""           # a short (1 line) of description of the solid
+  field    SFString   contactMaterial     "default"    # see ContactProperties node
+  field    SFString{"ode", "newton", "auto"} physicsBackend "auto"  # "auto" (default) resolves to Newton, the only backend. "newton" pins it explicitly. "ode" is a RETIRED SELECTOR kept only so worlds in the wild still parse: since 2026-09-02 it warns once per world and the Solid runs on Newton like every other (until then it left the Solid with NO physics -- no contact, no gravity -- which was a trap, not a feature).
+  field    SFNode     boundingObject      NULL         # for collision detection
+  field    SFNode     physics             NULL         # optional Physics node
+  field    SFBool     locked              FALSE        # to avoid moving objects with the mouse
+  # Whether the CLOTH solver can see this body. Only read on the coupled path (WorldInfo.newtonSolver "mujoco+vbd"); inert everywhere else, including "vbd", where one solver owns everything by construction and there is no proxy roster to narrow.
+  #   0  (default) = unset. Leave every Solid at 0 and the world behaves EXACTLY as it did before this field existed: every rigid body is a cloth proxy.
+  #   1            = couple. Declaring 1 on ANY Solid switches the world to ALLOWLIST mode -- from then on ONLY the Solids declaring 1 are visible to the fabric.
+  #  -1            = do not couple. Subtractive; use it to drop a few bodies without listing every one you want to keep.
+  # WHY YOU WANT THIS. newton clears COLLIDE_SHAPES|COLLIDE_PARTICLES on every shape whose body is not a proxy (solver_coupled.py:805-838), so the roster is the cloth's whole collision world. Left at the default, that is EVERY body in the scene -- every table, wall and arm link broadphased against the sheet every step. newton's own Franka cable demo lists just the hand and fingers. For a gripper closing on fabric the answer is usually two pads.
+  # ⚠ THE TRAP, AND IT FAILS SILENTLY: a body left OFF the roster is invisible to the cloth and the fabric falls straight THROUGH it. Only world/static shapes (newton's body -1, i.e. the implicit z=0 ground plane) survive narrowing -- an authored floor or table Solid is a real body and must be named to be seen. Narrow the roster and the engine logs the resolved list; read it. Resolving to zero bodies falls back to all of them with a warning rather than shipping a cloth that collides with nothing.
+  # The narrowing touches only the cloth's view: it is written through a copy-on-write shape_flags array, so MuJoCo's own rigid-rigid contact is unaffected no matter what is declared here. OMNISIM_CLOTH_COUPLED_BODIES overrides ("all", or a comma-separated newton body-index list).
+  field    SFInt32    newtonClothCoupling 0            # -1 / 0 / 1: hide from / leave to the runtime / show to the cloth solver
+  field    SFFloat    newtonGravityCompensation 0        # Fraction of gravity cancelled on THIS Solid's body (MuJoCo body_gravcomp). 0 (default) = normal weight, so every existing world is byte-identical; 1 = the body does not fall. Arm models are routinely authored gravity-compensated -- ManiSkill disables gravity on every Panda link and tunes its PD gains for that world -- and until 2026-08-27 OmniSim could not express it at all. ⚠ NOT the geom_condim route: MuJoCo decides at COMPILE time whether the gravcomp pass runs, so writing mj_model.body_gravcomp after construction leaves qfrc_gravcomp at zero and the body still falls (measured: z=-3.895 after 500 steps vs 1.000 when baked in). The value therefore reaches the mjSpec via newton's "mujoco:gravcomp" custom attribute, whose registration is LAZY -- a world that never sets this field carries none of MuJoCo's custom attribute set. Ignored on non-MuJoCo Newton solvers.
+  field    SFFloat    newtonFrictionTorsional -1       # PER-SOLID torsional friction (MuJoCo geom_friction[1] -- resistance to SPINNING about the contact normal). NEGATIVE = unset. ⚠ ONLY CONSULTED AT WorldInfo.newtonCondim >= 4; at the default condim 3 MuJoCo never reads it, so setting this alone is a silent no-op. That is the pairing a two-finger friction grasp needs -- without it a pinched part is free to spin between the pads at zero cost.
+  field    SFFloat    newtonFrictionRolling   -1       # PER-SOLID rolling friction (MuJoCo geom_friction[2] -- resistance to ROLLING). NEGATIVE = unset. ⚠ ONLY CONSULTED AT WorldInfo.newtonCondim >= 6; below that a cylinder or ball rolls for ever on flat ground however this is set. Supersedes the global OMNISIM_NEWTON_ROLL_MU for Solids that declare it.
+  field    SFFloat    newtonFriction      -1           # PER-SOLID Newton contact friction (MuJoCo tangential mu on this Solid's shapes). NEGATIVE = unset, inheriting WorldInfo.newtonGroundMu -- so every existing world is byte-identical. 0 is a LEGAL value meaning frictionless, matching newtonGroundMu's own convention. ⚠ THIS IS THE FIELD WorldInfo.wrl:34 SAYS DOES NOT EXIST: contactProperties is a per-material LIST and newtonGroundMu is ONE global value, so until 2026-08-27 a world needing two materials -- a gripper pad at mu=2 gripping a part resting on a table at mu=0.3 -- could not state itself in its own file at all, and had to pick one and be wrong about the other. Set it on the Solid that owns the differing surface (the finger pads, not the arm). Applied as a per-shape newton ShapeConfig at build time, not a post-finalize patch, so it reaches BOTH the CPU mj_step and mujoco_warp paths. Unset Solids keep sharing the world value exactly as before.
+  field    SFFloat    radarCrossSection   0.0          # radar cross section of this solid
+  field    MFColor    recognitionColors   []           # colors returned for this Solid by Cameras with a Recognition node
+  #fields that inherit from the Pose node:
+  field    SFFloat    translationStep     0.01         # step size used by translation manipulator
+  field    SFFloat    rotationStep        0.261799387  # step size used by rotation manipulator (PI/12)
+  # hidden fields
+  hiddenField SFVec3f linearVelocity      0 0 0        # (m/s) Solid's initial linear velocity
+  hiddenField SFVec3f angularVelocity     0 0 0        # (rad/s) Solid's initial angular velocity
+}

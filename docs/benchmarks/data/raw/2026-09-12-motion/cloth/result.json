@@ -1,0 +1,151 @@
+{
+  "dumped": true,
+  "errors": 0,
+  "warnings": 0,
+  "render_ms": 3,
+  "profile": {
+    "samples": 1,
+    "warmup_frames": 60,
+    "timing_scope": "CPU collect/render calls and local-shadow encoding; not GPU timestamps or FPS",
+    "collectUs": {
+      "p50": 931.2,
+      "p95": 931.2
+    },
+    "renderUs": {
+      "p50": 5997.2,
+      "p95": 5997.2
+    },
+    "localShadowUs": {
+      "p50": 0.0,
+      "p95": 0.0
+    },
+    "localCandidates": {
+      "p50": 0.0,
+      "p95": 0.0
+    },
+    "localDraws": {
+      "p50": 0.0,
+      "p95": 0.0
+    },
+    "localFaces": {
+      "p50": 0.0,
+      "p95": 0.0
+    },
+    "local_cache_hit_fraction": 0.0
+  },
+  "gpu_profile": [
+    {
+      "target": 1,
+      "samples": 60,
+      "warmup_frames": 0,
+      "status": "available",
+      "dimensions": [
+        [
+          1896,
+          1113
+        ]
+      ],
+      "aoUs": {
+        "samples": 60,
+        "p50": 440.32,
+        "p95": 722.944
+      },
+      "bloomUs": {
+        "samples": 60,
+        "p50": 351.232,
+        "p95": 458.752
+      },
+      "cpuIntervalUs": {
+        "samples": 59,
+        "p50": 127940.7,
+        "p95": 716727.1
+      },
+      "gpuSpanUs": {
+        "samples": 60,
+        "p50": 4221.952,
+        "p95": 10071.04
+      },
+      "motionUs": {
+        "samples": 57,
+        "p50": 86.016,
+        "p95": 116.736
+      },
+      "sceneUs": {
+        "samples": 60,
+        "p50": 1854.464,
+        "p95": 2906.112
+      },
+      "ssrUs": {
+        "samples": 60,
+        "p50": 365.568,
+        "p95": 618.496
+      },
+      "sunShadowUs": {
+        "samples": 60,
+        "p50": 154.624,
+        "p95": 251.904
+      },
+      "taaUs": {
+        "samples": 60,
+        "p50": 560.128,
+        "p95": 1388.544
+      },
+      "tonemapUs": {
+        "samples": 60,
+        "p50": 202.752,
+        "p95": 230.4
+      }
+    },
+    {
+      "target": 2,
+      "samples": 64,
+      "warmup_frames": 0,
+      "status": "available",
+      "dimensions": [
+        [
+          96,
+          72
+        ]
+      ],
+      "cpuIntervalUs": {
+        "samples": 63,
+        "p50": 28841.5,
+        "p95": 169516.3
+      },
+      "gpuSpanUs": {
+        "samples": 64,
+        "p50": 70.656,
+        "p95": 71.68
+      },
+      "sceneUs": {
+        "samples": 64,
+        "p50": 18.432,
+        "p95": 19.456
+      },
+      "sunShadowUs": {
+        "samples": 64,
+        "p50": 23.552,
+        "p95": 23.552
+      },
+      "tonemapUs": {
+        "samples": 64,
+        "p50": 3.072,
+        "p95": 4.096
+      }
+    }
+  ],
+  "binary": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-motion-final.exe",
+  "binary_sha256": "5e07b75edba796b35cb0b67756db194feb313aa44a3da030ab240c4c90b4bacf",
+  "world_sha256": "b42458d204b4ba77cc38315ce184d2e3ae51763815b285d68426cfcf1a854b5c",
+  "environment": {
+    "OMNISIM_BINARY": "O:\\omnisim\\msys64\\mingw64\\bin\\omnisim-bin-motion-final.exe",
+    "OMNILIGHT": "0",
+    "OMNISIM_WGPU_TAA": "1",
+    "OMNISIM_WGPU_MOTION_VECTORS": "1",
+    "OMNISIM_WGPU_CAMFX": "0",
+    "OMNISIM_WGPU_AUTOEXP": "0",
+    "OMNISIM_WGPU_GPU_TIMING": "O:\\omnisim\\.local-runs\\motion-pipeline\\cloth\\render.gpu",
+    "OMNISIM_CAM_SAMPLE_DIR": "O:\\omnisim\\.local-runs\\motion-pipeline\\cloth",
+    "OMNISIM_CAM_SAMPLE_STEPS": "8,64"
+  }
+}
